@@ -1,0 +1,55 @@
+.wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+
+    a,
+    span {
+        color: #1a73e8;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+}
+
+.content {
+    .title {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .meta {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 20px;
+
+        span {
+            margin-right: 10px;
+        }
+    }
+
+    .image {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .description {
+        font-size: 1rem;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .full-content {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+}

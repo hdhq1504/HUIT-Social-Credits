@@ -1,0 +1,65 @@
+@import 'normalize.css';
+
+:root {
+    --primary: #00008b;
+    --black-color: #000000;
+    --white-color: #ffffff;
+    --text-color: #000000;
+    --orange-color: #ff5c00;
+    --secondary-color: #eeeefe;
+    --yellow-color: #ebb143;
+    --warning-color: #dc7700;
+    --info-color: #dcdcea;
+    --danger-color: #dc3545;
+    --muted-color: #999999;
+    --information-color: #39b5fa;
+    --success-color: #198754;
+
+    --content-width: 1152px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    overflow-x: hidden; // Chặn scroll ngang
+}
+
+body {
+    background-color: rgb(236, 236, 236);
+    font-family: 'Montserrat';
+}
+
+// Scrollbar CSS
+html *::-webkit-scrollbar {
+    border-radius: 0;
+    width: 8px;
+}
+
+html *::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+html *::-webkit-scrollbar-track {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+a {
+    text-decoration: none;
+}
+
+button {
+    border: none;
+    outline: none;
+}
+
+ul {
+    list-style-type: none;
+    padding-left: 0;
+}

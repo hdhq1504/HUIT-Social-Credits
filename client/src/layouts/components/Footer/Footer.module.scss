@@ -1,0 +1,140 @@
+/* src/components/Footer/Footer.module.scss */
+
+/* ========== Tokens ========== */
+$max-w: 1200px;
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-6: 24px;
+$space-8: 32px;
+$space-12: 48px;
+
+$color-heading: #1f3bb3;   // Xanh tiêu đề
+$color-icon:    #ff6b2c;   // Cam icon
+$color-text:    #4b5563;   // Xám chữ
+$color-strong:  #111827;   // Đậm hơn dùng cho brand, hover
+$color-border:  #e5e7eb;   // Viền mảnh top
+
+$fs-14: 14px;
+$fs-15: 15px;
+$fs-16: 16px;
+$fs-18: 18px;
+
+/* ========== Layout ========== */
+.wrapper {
+  background: #fff;
+  border-top: 1px solid $color-border;
+  padding: $space-12 0;
+}
+
+.container {
+  max-width: $max-w;
+  margin: 0 auto;
+  padding: 0 $space-4;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr; // Thông tin rộng hơn 1 chút
+  gap: $space-8;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+    gap: $space-6;
+  }
+}
+
+/* ========== Columns ========== */
+.footer-column {
+  .column-title {
+    font-weight: 700;
+    font-size: $fs-16;
+    color: $color-heading;
+    margin-bottom: $space-3;
+    letter-spacing: 0.2px;
+  }
+
+  .column-content {
+    color: $color-text;
+    font-size: $fs-14;
+    line-height: 1.65;
+  }
+}
+
+/* Cột 1: Thông tin */
+.footer-info {
+  .footer-brand {
+    font-weight: 700;
+    font-size: $fs-18;
+    color: $color-strong;
+    margin-bottom: $space-4;
+    letter-spacing: 0.2px;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-3;
+    margin: $space-2 0;
+
+    /* Nếu bạn dùng SVG <img>, có thể nhuộm màu icon bằng filter; 
+       tốt nhất là dùng inline SVG và set fill: $color-icon */
+    img,
+    svg {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      flex: 0 0 16px;
+    }
+
+    /* Tuỳ chọn: tô màu cam cho SVG inline */
+    svg {
+      fill: $color-icon;
+      color: $color-icon;
+    }
+  }
+}
+
+/* Cột 2 & 3: Liên kết */
+.column-links {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $space-2;
+
+  /* Riêng khối “Liên kết nhanh” có 2 cột nhỏ bên trong theo ảnh */
+  &.column-khoa {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: $space-8;
+
+    @media (max-width: 680px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.footer-link {
+  display: block;
+  width: fit-content;
+  text-decoration: none;
+  color: $color-text;
+  font-size: $fs-15;
+  padding: 2px 0;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+
+  &:hover {
+    color: $color-strong;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba($color-heading, 0.35);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+}

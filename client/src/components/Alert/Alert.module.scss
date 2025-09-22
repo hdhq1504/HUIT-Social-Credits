@@ -1,0 +1,56 @@
+.alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: 0.3s ease-in-out;
+
+    &-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &-icon {
+        display: flex;
+        align-items: center;
+    }
+
+    &-message {
+        flex: 1;
+        margin-left: 4px;
+    }
+
+    &-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        display: flex;
+        align-items: center;
+        margin-left: 10px;
+    }
+}
+
+// Màu sắc theo loại alert
+.alert-success {
+    background-color: #dee9e4;
+    color: var(--success-color);
+}
+
+.alert-danger {
+    background-color: #f2e1e3;
+    color: var(--danger-color);
+}
+
+.alert-info {
+    background-color: #dcdcea;
+    color: var(--primary);
+}

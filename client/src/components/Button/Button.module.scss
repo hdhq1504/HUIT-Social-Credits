@@ -1,0 +1,55 @@
+// Định nghĩa màu sắc và kiểu button
+$primary: #0018f9;
+$secondary: #ff6600;
+$gray: #ccc;
+$dark-gray: #888;
+$white: #fff;
+
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease-in-out;
+
+    &.primary {
+        background-color: var(--primary);
+        color: $white;
+        &:hover {
+            background-color: darken($primary, 10%);
+        }
+    }
+
+    &.secondary {
+        background-color: $secondary;
+        color: $white;
+        &:hover {
+            background-color: darken($secondary, 10%);
+        }
+    }
+
+    &.outline {
+        background-color: transparent;
+        border: 2px solid $gray;
+        color: $dark-gray;
+        &:hover {
+            background-color: $gray;
+        }
+    }
+
+    &.disabled {
+        background-color: $gray;
+        color: $dark-gray;
+        cursor: not-allowed;
+    }
+
+    &.icon {
+        display: flex;
+        gap: 8px;
+    }
+}

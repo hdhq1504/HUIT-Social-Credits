@@ -1,0 +1,42 @@
+.wrapper {
+    margin: 0 auto;
+    margin-top: 74px;
+    width: calc(var(--content-width) + 52px);
+}
+
+.title {
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--primary);
+    text-align: center;
+}
+
+.btn-submit {
+    background-color: var(--primary);
+    padding: 10px 16px;
+    margin-top: 12px;
+    border-radius: 8px;
+    color: var(--white-color);
+    cursor: pointer;
+    font-family: 'Montserrat';
+    font-weight: 500;
+    display: flex;
+    margin: 0 auto;
+}
+
+.link {
+    padding: 20px 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    a {
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--primary);
+    }
+
+    a:last-child {
+        color: #b3b3b3;
+    }
+}
