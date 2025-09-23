@@ -1,80 +1,80 @@
 .wrapper {
-    margin-top: 60px;
+  margin-top: 60px;
 }
 
 .title {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--primary);
-    margin-bottom: 24px;
-    text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary);
+  margin-bottom: 24px;
+  text-align: center;
 
-    .highlight {
-        color: #ff6600;
-    }
+  .highlight {
+    color: #ff6600;
+  }
 }
 
 .faculties-list {
-    display: flex;
-    justify-content: space-between;
+  display: flex;
+  justify-content: space-between;
 }
 
 .faculty-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-decoration: none;
-    color: #333;
-    transition: transform 0.2s ease;
-    background-color: white;
-    padding-bottom: 10px;
-    border-radius: 8px;
-    width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #333;
+  transition: transform 0.2s ease;
+  background-color: white;
+  padding-bottom: 10px;
+  border-radius: 8px;
+  width: 160px;
 
-    &:hover {
-        transform: translateY(-5px);
-    }
+  &:hover {
+    transform: translateY(-5px);
+  }
 }
 
 .faculty-logo {
-    width: 100%;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-    border: 1px solid black;
-    overflow-y: hidden;
+  width: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border: 1px solid black;
+  overflow-y: hidden;
 
-    img {
-        width: 100%;
-        object-fit: cover;
-    }
+  img {
+    width: 100%;
+    object-fit: cover;
+  }
 }
 
 .faculty-name {
-    text-align: center;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 0 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 40px; // Đảm bảo chiều cao cố định
-    word-break: break-word; // Xuống dòng khi cần thiết
-    white-space: normal; // Cho phép xuống dòng nếu quá dài
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px; // Đảm bảo chiều cao cố định
+  word-break: break-word; // Xuống dòng khi cần thiết
+  white-space: normal; // Cho phép xuống dòng nếu quá dài
 }
 
 .carousel-list {
-    .slick-slide {
-        padding: 0 50px !important; // Tạo khoảng cách 10px ở cả hai bên
-    }
+  .slick-slide {
+    padding: 0 50px !important; // Tạo khoảng cách 10px ở cả hai bên
+  }
 }
 
 .carousel-item {
-    // padding: 6px 36px !important;
-    padding-top: 6px !important; // Tăng khoảng cách lên 30px
+  // padding: 6px 36px !important;
+  padding-top: 6px !important; // Tăng khoảng cách lên 30px
 }
 :global(.slick-slide) {
-    padding: 0 33px !important;
+  padding: 0 33px !important;
 }

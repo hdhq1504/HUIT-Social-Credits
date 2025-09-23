@@ -6,34 +6,34 @@ import { FaFilter } from 'react-icons/fa';
 const cx = classNames.bind(styles);
 
 function Dropdown({ options, label, withIcon }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selected, setSelected] = useState(label || 'Select an option');
+  const [isOpen, setIsOpen] = useState(false);
+  const [selected, setSelected] = useState(label || 'Select an option');
 
-    const toggleDropdown = () => setIsOpen(!isOpen);
-    const handleSelect = (option) => {
-        setSelected(option);
-        setIsOpen(false);
-    };
+  const toggleDropdown = () => setIsOpen(!isOpen);
+  const handleSelect = (option) => {
+    setSelected(option);
+    setIsOpen(false);
+  };
 
-    return (
-        <div className={cx('dropdown')}>
-            <div className={cx('dropdown-toggle')} onClick={toggleDropdown}>
-                {withIcon && <FaFilter className={cx('icon')} />}
-                {selected}
-                <img className={cx('arrow')} src="/images/Dropdown.svg" alt="" />
-            </div>
+  return (
+    <div className={cx('dropdown')}>
+      <div className={cx('dropdown-toggle')} onClick={toggleDropdown}>
+        {withIcon && <FaFilter className={cx('icon')} />}
+        {selected}
+        <img className={cx('arrow')} src="/images/Dropdown.svg" alt="" />
+      </div>
 
-            {isOpen && (
-                <ul className={cx('dropdown-menu')}>
-                    {options.map((option, index) => (
-                        <li key={index} className={cx('dropdown-item')} onClick={() => handleSelect(option)}>
-                            {option}
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
+      {isOpen && (
+        <ul className={cx('dropdown-menu')}>
+          {options.map((option, index) => (
+            <li key={index} className={cx('dropdown-item')} onClick={() => handleSelect(option)}>
+              {option}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default Dropdown;

@@ -10,52 +10,52 @@ import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AuthProvider from './context/AuthProvider';
 
 function App() {
-    return (
-        <Provider store={store}>
-            <Router>
-                <AuthProvider />
-                <Routes>
-                    {publicRoutes.map((route, index) => {
-                        const Page = route.component;
+  return (
+    <Provider store={store}>
+      <Router>
+        <AuthProvider />
+        <Routes>
+          {publicRoutes.map((route, index) => {
+            const Page = route.component;
 
-                        let Layout = DefaultLayout; // Mặc định Layout là DefaultLayout
+            let Layout = DefaultLayout; // Mặc định Layout là DefaultLayout
 
-                        if (route.layout) {
-                            Layout = route.layout;
-                        } else if (route.layout === null) {
-                            Layout = Fragment;
-                        }
+            if (route.layout) {
+              Layout = route.layout;
+            } else if (route.layout === null) {
+              Layout = Fragment;
+            }
 
-                        return (
-                            <Route
-                                key={index}
-                                path={route.path}
-                                element={
-                                    <Layout>
-                                        <Page />
-                                    </Layout>
-                                }
-                            />
-                        );
-                    })}
+            return (
+              <Route
+                key={index}
+                path={route.path}
+                element={
+                  <Layout>
+                    <Page />
+                  </Layout>
+                }
+              />
+            );
+          })}
 
-                    <Route
-                        path="*"
-                        element={
-                            <DefaultLayout>
-                                <NotFound />
-                            </DefaultLayout>
-                        }
-                    />
-                </Routes>
+          <Route
+            path="*"
+            element={
+              <DefaultLayout>
+                <NotFound />
+              </DefaultLayout>
+            }
+          />
+        </Routes>
 
-                <div>
-                    <ScrollToTop />
-                    <ChatBox />
-                </div>
-            </Router>
-        </Provider>
-    );
+        <div>
+          <ScrollToTop />
+          <ChatBox />
+        </div>
+      </Router>
+    </Provider>
+  );
 }
 
 export default App;

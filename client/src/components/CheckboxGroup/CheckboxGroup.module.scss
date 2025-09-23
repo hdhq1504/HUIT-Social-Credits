@@ -1,49 +1,49 @@
 .checkbox-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .title {
-    font-weight: 400;
-    font-size: 14px;
+  font-weight: 400;
+  font-size: 14px;
 }
 
 .checkbox-input {
-    display: none; // Ẩn checkbox mặc định
+  display: none; // Ẩn checkbox mặc định
 }
 
 .checkbox-custom {
-    width: 24px;
-    height: 24px;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 8px;
-    transition: all 0.3s;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  transition: all 0.3s;
 }
 
 .checkbox-input:checked + .checkbox-custom {
-    background-color: var(--primary);
-    border-color: var(--primary);
+  background-color: var(--primary);
+  border-color: var(--primary);
 }
 
 .checkbox-custom::after {
-    content: '✔';
-    color: white;
-    font-size: 14px;
-    display: none;
+  content: '✔';
+  color: white;
+  font-size: 14px;
+  display: none;
 }
 
 .checkbox-input:checked + .checkbox-custom::after {
-    display: block;
+  display: block;
 }

@@ -7,30 +7,30 @@ import styles from './Alert.module.scss';
 const cx = classNames.bind(styles);
 
 const Alert = ({ message, type = 'info', showIcon = false, onClose }) => {
-    return (
-        <div className={cx('alert', `alert-${type}`)}>
-            <div className={cx('alert-content')}>
-                {showIcon && (
-                    <span className={cx('alert-icon')}>
-                        {type === 'success' && <CheckCircle />}
-                        {type === 'danger' && <AlertTriangle />}
-                        {type === 'info' && <Info />}
-                    </span>
-                )}
-                <span className={cx('alert-message')}>{message}</span>
-            </div>
-            <button className={cx('alert-close')} onClick={onClose}>
-                <X size={16} />
-            </button>
-        </div>
-    );
+  return (
+    <div className={cx('alert', `alert-${type}`)}>
+      <div className={cx('alert-content')}>
+        {showIcon && (
+          <span className={cx('alert-icon')}>
+            {type === 'success' && <CheckCircle />}
+            {type === 'danger' && <AlertTriangle />}
+            {type === 'info' && <Info />}
+          </span>
+        )}
+        <span className={cx('alert-message')}>{message}</span>
+      </div>
+      <button className={cx('alert-close')} onClick={onClose}>
+        <X size={16} />
+      </button>
+    </div>
+  );
 };
 
 Alert.propTypes = {
-    message: PropTypes.string.isRequired,
-    type: PropTypes.oneOf(['success', 'danger', 'info']),
-    showIcon: PropTypes.bool,
-    onClose: PropTypes.func.isRequired,
+  message: PropTypes.string.isRequired,
+  type: PropTypes.oneOf(['success', 'danger', 'info']),
+  showIcon: PropTypes.bool,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default Alert;

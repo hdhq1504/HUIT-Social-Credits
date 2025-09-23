@@ -4,60 +4,60 @@ $primary-color: #7b61ff;
 $icon-color: #4b5563;
 
 .dropdown {
-    position: relative;
+  position: relative;
 
-    &-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #f9fafb;
-        font-weight: 400;
-        color: #b3b3b3;
-        // border: 1px solid $border-color;
-        border-radius: 8px;
-        padding: 10px;
-        cursor: pointer;
-        transition: 0.3s;
-        &:hover {
-            border-color: $primary-color;
-        }
-
-        .icon {
-            margin-right: 8px;
-            color: $icon-color;
-        }
-
-        .arrow {
-            margin-left: 4px;
-            font-size: 12px;
-            width: 16px;
-            height: 16px;
-            color: var(--black-color);
-        }
+  &-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f9fafb;
+    font-weight: 400;
+    color: #b3b3b3;
+    // border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+    &:hover {
+      border-color: $primary-color;
     }
 
-    &-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: white;
-        border: 1px solid $border-color;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        list-style: none;
-        padding: 0;
-        margin: 5px 0;
-        z-index: 10;
+    .icon {
+      margin-right: 8px;
+      color: $icon-color;
     }
 
-    &-item {
-        padding: 10px;
-        cursor: pointer;
-        transition: background 0.3s;
-
-        &:hover {
-            background: $hover-bg;
-        }
+    .arrow {
+      margin-left: 4px;
+      font-size: 12px;
+      width: 16px;
+      height: 16px;
+      color: var(--black-color);
     }
+  }
+
+  &-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    padding: 0;
+    margin: 5px 0;
+    z-index: 10;
+  }
+
+  &-item {
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: $hover-bg;
+    }
+  }
 }
