@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 .wrapper {
   width: 100%;
 }
@@ -63,6 +65,6 @@
   }
 
   &:hover {
-    background-color: darken(#ff6600, 10%);
+    background-color: color.scale(#ff6600, $lightness: -20%);
   }
 }

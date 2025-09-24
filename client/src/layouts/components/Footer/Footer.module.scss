@@ -101,17 +101,27 @@ $fs-18: 18px;
 
 /* Cột 2 & 3: Liên kết */
 .column-links {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: $space-2;
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
 
-  /* Riêng khối “Liên kết nhanh” có 2 cột nhỏ bên trong theo ảnh */
-  &.column-khoa {
+  /* Riêng khối "Liên kết nhanh" có 2 cột nhỏ bên trong theo ảnh */
+  &.column-lienket {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: $space-8;
+    row-gap: $space-1;
 
     @media (max-width: 680px) {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
+      gap: $space-1;
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: $space-1;
     }
   }
 }
