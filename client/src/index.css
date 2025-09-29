@@ -2,19 +2,19 @@
 @import 'normalize.css';
 
 :root {
-  --primary: #00008b;
-  --black-color: #000000;
-  --white-color: #ffffff;
+  --primary-color: #00008b;
+  --secondary-color: #EEEEFE;
   --text-color: #000000;
-  --orange-color: #ff5c00;
-  --secondary-color: #eeeefe;
-  --yellow-color: #ebb143;
-  --warning-color: #dc7700;
-  --info-color: #dcdcea;
-  --danger-color: #dc3545;
   --muted-color: #999999;
-  --information-color: #39b5fa;
   --success-color: #198754;
+  --warning-color: #DC7700;
+  --danger-color: #DC3545;
+  --info-color: #DCDCEA;
+  --information-color: #39B5FA;
+  --black-color: #000000;
+  --white-color: #FFFFFF;
+  --orange-color: #FF5C00;
+  --yellow-color: #EBB143;
 
   --content-width: 1152px;
 }
@@ -27,7 +27,6 @@
 
 html,
 body {
-  /* Chặn scroll ngang */
   overflow-x: hidden;
 }
 
@@ -36,7 +35,6 @@ body {
   font-family: 'Montserrat';
 }
 
-/* Scrollbar CSS */
 html *::-webkit-scrollbar {
   border-radius: 0;
   width: 8px;

@@ -6,7 +6,7 @@ import 'tippy.js/dist/tippy.css';
 import classNames from 'classnames/bind';
 import styles from './Header.module.scss';
 import logo from '../../../assets/images/logo.svg';
-import avatar from '../../../assets/images/student-photo.png';
+import avatar from '../../../assets/images/profile.png';
 import { BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
 import { logout } from '../../../redux/slices/authSlice';
 

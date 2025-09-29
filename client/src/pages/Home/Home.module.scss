@@ -6,7 +6,7 @@
 .banner {
   height: 353px;
   background-color: #1a1a1a;
-  background-image: url('../../assets/images/banner-hero.png');
+  background-image: url('../../assets/images/hero.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -68,4 +68,43 @@
   color: var(--primary);
   margin-bottom: 16px;
   text-align: left;
+}
+
+.activity-slider {
+  position: relative;
+
+  :global(.swiper) {
+    padding: 0 64px;
+  }
+
+  :global(.swiper-button-prev),
+  :global(.swiper-button-next) {
+    position: absolute;
+    top: 40%;
+    transform: translateY(-50%);
+    z-index: 10;
+
+    width: 36px;
+    height: 36px;
+    padding: 10px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      font-size: 16px;
+    }
+  }
+
+  :global(.swiper-button-prev) {
+    left: -20px;
+  }
+
+  :global(.swiper-button-next) {
+    right: -20px;
+  }
 }
