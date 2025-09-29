@@ -58,11 +58,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 8px;
-
-  i {
-    margin-right: 8px;
-  }
+  gap: 8px;
 
   &:hover {
     background-color: color.scale(#ff6600, $lightness: -20%);

@@ -6,6 +6,10 @@
   z-index: 100;
   position: fixed;
   top: 0;
+
+  @media (max-width: 768px) {
+    height: 60px;
+  }
 }
 
 .inner {
@@ -17,11 +21,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  @media (max-width: 768px) {
+    padding: 0 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 12px;
+  }
 }
 
 .logo {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .logo-link {
@@ -34,12 +47,27 @@
   width: 60px;
   height: 60px;
   margin-right: 4px;
+
+  @media (max-width: 768px) {
+    width: 45px;
+    height: 45px;
+    margin-right: 2px;
+  }
+
+  @media (max-width: 480px) {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
   justify-content: center;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 }
 
 .logo-huit {
@@ -48,6 +76,11 @@
   font-weight: 600;
   font-family: 'Montserrat Alternates', sans-serif;
   margin-top: 8px;
+
+  @media (max-width: 768px) {
+    font-size: 11px;
+    margin-top: 6px;
+  }
 }
 
 .logo-elearn {
@@ -56,11 +89,25 @@
   font-size: 30px;
   font-weight: 600;
   font-family: 'Iceland', sans-serif;
+
+  @media (max-width: 768px) {
+    font-size: 24px;
+    margin-top: -4px;
+  }
 }
 
 .actions {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 }
 
 .action-item {
@@ -70,6 +117,7 @@
   margin-left: 24px;
   transition: color 0.2s ease;
   font-weight: 500;
+  white-space: nowrap;
 
   &:hover {
     color: var(--primary);
@@ -77,6 +125,21 @@
 
   &.active {
     color: var(--primary);
+  }
+
+  @media (max-width: 1024px) {
+    margin-left: 16px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+
+  @media (max-width: 640px) {
+    display: none;
   }
 }
 
@@ -86,12 +149,21 @@
   cursor: pointer;
   font-size: 20px;
 
+  @media (max-width: 768px) {
+    margin-left: 0;
+  }
+
   &-icon {
     width: 17px;
     height: 17px;
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @media (max-width: 480px) {
+      width: 15px;
+      height: 15px;
+    }
   }
 
   &-count {
@@ -107,6 +179,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @media (max-width: 480px) {
+      width: 14px;
+      height: 14px;
+      font-size: 10px;
+      top: -10px;
+      right: -10px;
+    }
   }
 }
 
@@ -119,6 +199,19 @@
   margin-right: 8px;
   cursor: pointer;
   position: relative;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 4px;
+    width: 28px;
+    height: 28px;
+  }
+
+  @media (max-width: 480px) {
+    width: 26px;
+    height: 26px;
+    margin-right: 0;
+  }
 
   .true {
     width: 100%;
@@ -133,18 +226,33 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+
+    @media (max-width: 768px) {
+      width: 18px !important;
+      height: 18px !important;
+    }
+
+    @media (max-width: 480px) {
+      width: 16px !important;
+      height: 16px !important;
+    }
   }
 }
 
 // Style cho menu dropdown
 .menu-content {
-  background-color: #fff; // Đảm bảo màu nền trắng cho nội dung menu
+  background-color: #fff;
   box-shadow:
     rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
     rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
   padding: 10px 0;
   width: 240px;
   border-radius: 8px;
+
+  @media (max-width: 480px) {
+    width: 200px;
+    padding: 8px 0;
+  }
 }
 
 .menu-header {
@@ -152,6 +260,11 @@
   font-weight: bold;
   color: #212121;
   font-weight: 400;
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
 
   span {
     font-weight: 500;
@@ -177,11 +290,42 @@
     text-decoration: none;
     width: 100%;
     padding: 10px 15px;
+    font-size: 14px;
+
+    @media (max-width: 480px) {
+      padding: 8px 12px;
+      gap: 10px;
+      font-size: 13px;
+    }
 
     img {
       width: 18px;
       height: 18px;
+
+      @media (max-width: 480px) {
+        width: 16px;
+        height: 16px;
+      }
     }
+  }
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 8px 0;
+}
+
+// Mobile menu button (optional - có thể thêm hamburger menu)
+.mobile-menu-button {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 12px;
+
+  @media (max-width: 640px) {
+    display: block;
   }
 }
 
@@ -192,6 +336,10 @@
     border: none;
     border-radius: 8px;
     padding: 0 !important;
+
+    @media (max-width: 480px) {
+      max-width: 200px !important;
+    }
   }
 
   .tippy-content {
@@ -202,5 +350,23 @@
 
   .tippy-arrow {
     display: none;
+  }
+
+  // Điều chỉnh vị trí tooltip trên mobile
+  @media (max-width: 480px) {
+    .tippy-box[data-placement^='bottom'] {
+      transform: translateX(-20px);
+    }
+  }
+}
+
+// Container fix cho body khi có fixed header
+:global {
+  body {
+    padding-top: 5px;
+
+    @media (max-width: 768px) {
+      padding-top: 60px;
+    }
   }
 }

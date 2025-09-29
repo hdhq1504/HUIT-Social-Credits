@@ -135,7 +135,7 @@ function ForgotPasswordForm() {
       case 1:
         return (
           <>
-            <p className={cx('wellcome')}>Tiếc quá nhỉ!</p>
+            <p className={cx('welcome')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
             <div className={cx('input-gr')}>
               <div className={cx('input-email')}>
@@ -164,7 +164,7 @@ function ForgotPasswordForm() {
       case 2:
         return (
           <>
-            <p className={cx('wellcome')}>Tiếc quá nhỉ!</p>
+            <p className={cx('welcome')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
             <p className={cx('otp-message')}>
               Mã xác thực được gửi qua Email <span style={{ color: 'var(--primary)' }}>{email}</span> của bạn. Vui lòng
@@ -206,7 +206,7 @@ function ForgotPasswordForm() {
       case 3:
         return (
           <>
-            <p className={cx('wellcome')}>Tiếc quá nhỉ!</p>
+            <p className={cx('welcomee')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
             <p className={cx('password-requirements')}>
               Mật khẩu bao gồm:
@@ -268,14 +268,10 @@ function ForgotPasswordForm() {
       case 4:
         return (
           <>
-            <p className={cx('wellcome')}>Thành công!</p>
-            <h4>Mật khẩu đã được cập nhật</h4>
-            <p className={cx('otp-message')}>Bạn sẽ được chuyển về trang đăng nhập trong giây lát.</p>
-            {infoMessage && (
-              <p className={cx('error-message')} style={{ color: '#2e7d32' }}>
-                {infoMessage}
-              </p>
-            )}
+            <div className={cx('success-create')}>
+              <img src="/images/success-icon.svg" alt="" />
+              <p>Cấp lại mật khẩu thành công, vui lòng đợi vài giây !</p>
+            </div>
           </>
         );
       default:
@@ -288,7 +284,7 @@ function ForgotPasswordForm() {
       <div className={cx('link')}>
         <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Quên mật khẩu</span>
       </div>
-      <form className={cx('login-from')} onSubmit={(e) => e.preventDefault()}>
+      <form className={cx('login-form')} onSubmit={(e) => e.preventDefault()}>
         <div className={cx('form-banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
           <p className={cx('title')}>
             Tra cứu điểm công tác xã hội dễ dàng tại <br />

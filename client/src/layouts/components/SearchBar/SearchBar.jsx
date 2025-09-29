@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import classNames from 'classnames/bind';
 import styles from './SearchBar.module.scss';
 
@@ -26,7 +27,7 @@ function SearchBar() {
         />
 
         <button className={cx('search-button')} onClick={handleSearch}>
-          <i className="fas fa-search"></i> Tìm kiếm
+          <Search size={16} /> Tìm kiếm
         </button>
       </div>
     </div>

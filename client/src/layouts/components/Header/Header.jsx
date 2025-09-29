@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import Tippy from 'tippy.js';
+import { useState, useEffect } from 'react';
+import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import classNames from 'classnames/bind';
 import styles from './Header.module.scss';
@@ -15,6 +16,18 @@ function Header() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   const handleLogout = async (event) => {
     event.preventDefault();
@@ -28,6 +41,26 @@ function Header() {
 
   const renderLoggedOutMenu = () => (
     <div className={cx('menu-content')}>
+      {isMobile && (
+        <>
+          <div className={cx('menu-item')}>
+            <Link to="/upload">
+              <span>Hoạt động</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
+            <Link to="/createtest">
+              <span>Điểm danh</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
+            <Link to="/multiple-choice">
+              <span>Phản hồi</span>
+            </Link>
+          </div>
+          <div className={cx('menu-divider')} />
+        </>
+      )}
       <div className={cx('menu-item')}>
         <Link to="/login">
           <LogOut size={16} />
@@ -72,6 +105,26 @@ function Header() {
           <span>Phản hồi điểm</span>
         </Link>
       </div>
+      {isMobile && (
+        <>
+          <div className={cx('menu-divider')} />
+          <div className={cx('menu-item')}>
+            <Link to="/upload">
+              <span>Hoạt động</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
+            <Link to="/createtest">
+              <span>Điểm danh</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
+            <Link to="/multiple-choice">
+              <span>Phản hồi</span>
+            </Link>
+          </div>
+        </>
+      )}
       <div className={cx('menu-item')}>
         <Link to="/logout" onClick={handleLogout}>
           <LogOut size={16} />
@@ -104,10 +157,13 @@ function Header() {
           <NavLink to="/multiple-choice" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Phản hồi
           </NavLink>
+
           <div className={cx('notification')}>
             <img className={cx('notification-icon')} src="/images/Bell.svg" alt="" />
             <span className={cx('notification-count')}>2</span>
           </div>
+
+          {/* Mobile menu button - không cần thiết vì menu đã có trong avatar dropdown */}
 
           <Tippy
             delay={[0, 200]}

@@ -4,13 +4,13 @@ import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
-const Button = ({ children, variant = 'primary', icon, disabled, onClick }) => {
+function Button({ children, variant = 'primary', icon, disabled, onClick }) {
   return (
     <button className={cx('button', variant, { icon: icon, disabled: disabled })} onClick={onClick} disabled={disabled}>
       {icon && <span className={styles.icon}>{icon}</span>}
       {children}
     </button>
   );
-};
+}
 
 export default Button;
