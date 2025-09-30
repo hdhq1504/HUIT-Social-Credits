@@ -4,6 +4,7 @@ import { Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import Button from '../Button/Button';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -79,12 +80,12 @@ function CardActivity({
         </div>
 
         <div className={cx('card-actions')}>
-          <button className={cx('btn-outline')} onClick={onDetails}>
+          <Button variant="outline" onClick={onDetails}>
             Chi tiết
-          </button>
-          <button className={cx('btn-primary')} onClick={onRegister}>
+          </Button>
+          <Button variant="primary" onClick={onRegister}>
             Đăng ký ngay
-          </button>
+          </Button>
         </div>
       </div>
     </div>

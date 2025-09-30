@@ -1,0 +1,34 @@
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.tag {
+  border-radius: 24px;
+  padding: 9px 16px;
+  font-family: Montserrat, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  background-color: var(--white-color);
+  border: 1px solid #E5E7EB;
+
+  &.active {
+    background-color: var(--orange-color);
+    color: var(--white-color);
+    border: 1px solid var(--orange-color);
+  }
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}

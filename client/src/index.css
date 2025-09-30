@@ -2,19 +2,18 @@
 @import 'normalize.css';
 
 :root {
-  --primary-color: #00008b;
+  --primary-color: #00008B;
   --secondary-color: #EEEEFE;
-  --text-color: #000000;
-  --muted-color: #999999;
-  --success-color: #198754;
+  --yellow-color: #EBB143;
   --warning-color: #DC7700;
   --danger-color: #DC3545;
-  --info-color: #DCDCEA;
-  --information-color: #39B5FA;
   --black-color: #000000;
+  --muted-color: #999999;
   --white-color: #FFFFFF;
+  --information-color: #39B5FA;
+  --success-color: #198754;
+  --text-color: #000000;
   --orange-color: #FF5C00;
-  --yellow-color: #EBB143;
 
   --content-width: 1152px;
 }

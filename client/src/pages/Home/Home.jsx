@@ -1,32 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import classNames from 'classnames/bind';
 import styles from './Home.module.scss';
 import SearchBar from '../../layouts/components/SearchBar';
-import Label from '../../components/Label/Label';
-import CardActivity from '../../components/CardActivity/CardActivity';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, A11y } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import { mockApi } from '../../utils/mockAPI';
+import FeaturedActivitySection from '../../components/FeaturedActivitySection';
+import UpcomingActivitySection from '../../components/UpcomingActivitySection/UpcomingActivitySection';
+import ProgressSection from '../../components/ProgressSection';
 
 const cx = classNames.bind(styles);
 
 function Home() {
-  const [activities, setActivities] = useState([]);
-
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const res = await mockApi.getActivities();
-        setActivities(res);
-      } catch (err) {
-        console.error('Lỗi load activities:', err);
-      }
-    };
-    fetchActivities();
-  }, []);
-
   return (
     <div className={cx('wrapper')}>
       {/* Banner */}
@@ -46,31 +28,23 @@ function Home() {
 
       {/* Content */}
       <div className={cx('content')}>
-        <Label title="Hoạt động" highlight="nổi bật" subtitle="Những hoạt động được Ban quản lý đặc biệt giới thiệu" />
-
-        {/* Slider */}
-        <div className={cx('activity-slider')}>
-          <Swiper
-            modules={[Navigation, A11y]}
-            spaceBetween={16}
-            slidesPerView={1}
-            slidesPerGroup={1}
-            navigation
-            loopFillGroupWithBlank={true}
-            breakpoints={{
-              640: { slidesPerView: 1.2, slidesPerGroup: 1, spaceBetween: 16 },
-              768: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 16 },
-              1024: { slidesPerView: 3, slidesPerGroup: 3, spaceBetween: 20 },
-              1280: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 24 },
-            }}
-          >
-            {activities.map((a, idx) => (
-              <SwiperSlide key={idx}>
-                <CardActivity {...a} />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+        <FeaturedActivitySection />
+        <div style={{ marginBottom: '32px' }} />
+        <UpcomingActivitySection />
+        <div style={{ marginBottom: '32px' }} />
+        <ProgressSection
+          currentPoints={90}
+          targetPoints={170}
+          percent={77}
+          missingPoints={80}
+          groups={[
+            { name: 'Nhóm 1', value: '50/50', note: 'Hoàn thành', status: 'success' },
+            { name: 'Nhóm 2,3', value: '40/120', note: 'Còn 80 điểm', status: 'warning' },
+          ]}
+          onViewDetail={() => console.log('Xem chi tiết')}
+          imageUrl="https://placehold.co/320x320"
+        />
+        <div style={{ marginBottom: '32px' }} />
       </div>
     </div>
   );
