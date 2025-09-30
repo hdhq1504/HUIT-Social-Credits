@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import styles from './LoginForm.module.scss';
+import { Link, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { login } from '../../redux/slices/authSlice';
 import InputField from '../InputField/InputField';
-import { Link } from 'react-router-dom';
+import Button from '../Button/Button';
+import { login } from '../../redux/slices/authSlice';
 import { mockApi } from '../../utils/mockAPI';
+import styles from './LoginForm.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -95,9 +95,9 @@ function LoginForm() {
           </div>
 
           <div className={cx('form-btn')}>
-            <button type="submit" className={cx('btn-login')}>
+            <Button variant={'primary'}>
               Đăng nhập
-            </button>
+            </Button>
           </div>
         </div>
       </form>

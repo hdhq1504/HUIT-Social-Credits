@@ -25,7 +25,7 @@
   }
 
   a {
-    color: var(--primary);
+    color: var(--primary-color);
 
     &:hover {
       color: var(--orange-color);
@@ -129,11 +129,11 @@
   padding: 40px;
 
   p {
-    color: var(--primary);
+    color: var(--primary-color);
   }
 
   h4 {
-    color: var(--primary);
+    color: var(--primary-color);
     font-weight: 600;
     font-size: 24px;
     margin-top: 4px;
@@ -266,7 +266,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--primary);
+    background-color: var(--primary-color);
     color: white;
     padding: 10px 16px;
     border-radius: 8px;

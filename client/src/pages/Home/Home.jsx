@@ -5,6 +5,8 @@ import SearchBar from '../../layouts/components/SearchBar';
 import FeaturedActivitySection from '../../components/FeaturedActivitySection';
 import UpcomingActivitySection from '../../components/UpcomingActivitySection/UpcomingActivitySection';
 import ProgressSection from '../../components/ProgressSection';
+import MyUpcomingActivitySection from '../../components/MyUpcomingActivitySection/MyUpcomingActivitySection';
+import ProofStatusSection from '../../components/ProofStatusSection/ProofStatusSection';
 
 const cx = classNames.bind(styles);
 
@@ -45,6 +47,9 @@ function Home() {
           imageUrl="https://placehold.co/320x320"
         />
         <div style={{ marginBottom: '32px' }} />
+        <MyUpcomingActivitySection />
+        <div style={{ marginBottom: '32px' }} />
+        <ProofStatusSection />
       </div>
     </div>
   );

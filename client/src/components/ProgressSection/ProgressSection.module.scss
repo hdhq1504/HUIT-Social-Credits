@@ -114,11 +114,11 @@
     }
 
     &.success .dot {
-      background: var(--success-color);
+      color: var(--success-color);
     }
 
     &.warning .dot {
-      background: var(--orange-color);
+      color: var(--orange-color);
     }
   }
 }
@@ -126,6 +126,7 @@
 .progress-summary {
   font-size: 16px;
   font-weight: 400;
+  color: var(--orange-color);
 
   strong {
     font-weight: 700;

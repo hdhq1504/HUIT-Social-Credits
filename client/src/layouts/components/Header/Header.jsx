@@ -44,17 +44,22 @@ function Header() {
       {isMobile && (
         <>
           <div className={cx('menu-item')}>
-            <Link to="/upload">
+            <Link to="/">
               <span>Hoạt động</span>
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/createtest">
+            <Link to="/">
+              <span>Lịch sử tham gia</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
+            <Link to="/">
               <span>Điểm danh</span>
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/multiple-choice">
+            <Link to="/">
               <span>Phản hồi</span>
             </Link>
           </div>
@@ -114,6 +119,11 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
+            <Link to="/">
+              <span>Lịch sử tham gia</span>
+            </Link>
+          </div>
+          <div className={cx('menu-item')}>
             <Link to="/createtest">
               <span>Điểm danh</span>
             </Link>
@@ -148,13 +158,16 @@ function Header() {
         </div>
 
         <div className={cx('actions')}>
-          <NavLink to="/upload" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Hoạt động
           </NavLink>
-          <NavLink to="/createtest" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
+            Lịch sử tham gia
+          </NavLink>
+          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Điểm danh
           </NavLink>
-          <NavLink to="/multiple-choice" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Phản hồi
           </NavLink>
 

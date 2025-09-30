@@ -1,6 +1,8 @@
 import React from 'react';
 import classNames from 'classnames/bind';
 import { Progress } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleCheck, faClock } from '@fortawesome/free-solid-svg-icons';
 import styles from './ProgressSection.module.scss';
 
 const cx = classNames.bind(styles);
@@ -39,8 +41,8 @@ function ProgressSection({
             <Progress
               percent={percent}
               showInfo={false}
-              strokeColor="#ff5c00"
-              trailColor="#ffffff"
+              strokeColor="#FFFFFF"
+              trailColor="#FF5C00"
               strokeWidth={12}
               className={cx('progress-bar')}
             />
@@ -51,7 +53,11 @@ function ProgressSection({
               <div key={idx} className={cx('group-card', g.status)}>
                 <div className={cx('group-header')}>
                   <span>{g.name}</span>
-                  <span className={cx('dot')} />
+                  {g.status === 'success' ? (
+                    <FontAwesomeIcon icon={faCircleCheck} className={cx('dot', 'success')} />
+                  ) : (
+                    <FontAwesomeIcon icon={faClock} className={cx('dot', 'warning')} />
+                  )}
                 </div>
                 <div className={cx('group-value')}>{g.value}</div>
                 <div className={cx('group-status')}>{g.note}</div>
