@@ -2,7 +2,8 @@ const routes = {
   home: '/',
   login: '/login',
   forgotPassword: '/forgot-password',
-  infomation: '/infomation',
+  profile: '/profile',
+  listActivities: '/list-activities',
   loading: '/loading',
 };
 

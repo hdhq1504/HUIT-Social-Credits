@@ -23,44 +23,58 @@ function CardActivity({
   location,
   participants = [],
   capacity,
-  coverImage,
+  coverImage = 'https://placehold.co/240x215',
   isFeatured,
-  onRegister,
-  onDetails,
+  variant = 'vertical',
+  onRegister = () => {},
+  onDetails = () => {},
+  badgeText = 'Nổi bật',
 }) {
+  const rootClass = cx('activity-card', {
+    'activity-card--vertical': variant === 'vertical',
+    'activity-card--horizontal': variant === 'horizontal',
+    'activity-card--featured': !!isFeatured,
+  });
+
   return (
-    <div className={cx('card')}>
-      <div className={cx('card-cover')} style={{ backgroundImage: `url(${coverImage})` }}>
-        {isFeatured && <div className={cx('card-badge')}>Nổi bật</div>}
+    <div className={rootClass}>
+      <div className={cx('activity-card__cover')} style={{ backgroundImage: `url(${coverImage})` }} aria-label={title}>
+        {isFeatured && (
+          <div className={cx('activity-card__badge')} data-label={badgeText}>
+            {badgeText}
+          </div>
+        )}
+        {/* layer xoay 180° theo thiết kế (trang trí) */}
+        <div className={cx('activity-card__cover-layer')} />
       </div>
 
-      <div className={cx('card-content')}>
-        <div className={cx('card-title')}>{title}</div>
+      <div className={cx('activity-card__content')}>
+        <div className={cx('activity-card__title')}>{title}</div>
 
-        <div className={cx('card-points')}>
+        <div className={cx('activity-card__points')}>
           <FontAwesomeIcon icon={faCoins} />
-          <span className={cx('card-points-value')}>{points} điểm</span>
-        </div>
-        <div className={cx('card-date')}>
-          <FontAwesomeIcon icon={faCalendar} />
-          <span className={cx('card-date-value')}>{dateTime}</span>
-        </div>
-        <div className={cx('card-location')}>
-          <FontAwesomeIcon icon={faLocationDot} />
-          <span className={cx('card-location-value')}>{location}</span>
+          <span className={cx('activity-card__points-value')}>{points} điểm</span>
         </div>
 
-        <div className={cx('card-participants')}>
+        <div className={cx('activity-card__date')}>
+          <FontAwesomeIcon icon={faCalendar} />
+          <span className={cx('activity-card__date-value')}>{dateTime}</span>
+        </div>
+
+        <div className={cx('activity-card__location')}>
+          <FontAwesomeIcon icon={faLocationDot} />
+          <span className={cx('activity-card__location-value')}>{location}</span>
+        </div>
+
+        <div className={cx('activity-card__participants')}>
           <Avatar.Group
             max={{
               count: 3,
-              style: { color: '#f56a00', backgroundColor: '#fde3cf' },
+              style: { color: '#F56A00', backgroundColor: '#FDE3CF' },
             }}
           >
             {participants.map((p, idx) => {
-              if (typeof p === 'string') {
-                return <Avatar key={idx} src={p} alt="participant" />;
-              }
+              if (typeof p === 'string') return <Avatar key={idx} src={p} alt="participant" />;
               const { name, src } = p || {};
               return (
                 <Tooltip key={idx} title={name} placement="top">
@@ -76,10 +90,10 @@ function CardActivity({
             })}
           </Avatar.Group>
 
-          <span className={cx('card-capacity')}>Số lượng: {capacity}</span>
+          <span className={cx('activity-card__capacity')}>Số lượng: {capacity}</span>
         </div>
 
-        <div className={cx('card-actions')}>
+        <div className={cx('activity-card__actions')}>
           <Button variant="outline" onClick={onDetails}>
             Chi tiết
           </Button>

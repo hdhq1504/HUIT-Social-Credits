@@ -1,4 +1,8 @@
-.activity-slider {
+.featured-activities {
+  width: 100%;
+}
+
+.featured-activities__slider {
   position: relative;
 
   :global(.swiper-button-prev),

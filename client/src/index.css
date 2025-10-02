@@ -16,6 +16,7 @@
   --orange-color: #FF5C00;
 
   --content-width: 1152px;
+  font-family: 'Montserrat', system-ui, sans-serif;
 }
 
 * {
@@ -31,7 +32,6 @@ body {
 
 body {
   background-color: rgb(236, 236, 236);
-  font-family: 'Montserrat';
 }
 
 html *::-webkit-scrollbar {

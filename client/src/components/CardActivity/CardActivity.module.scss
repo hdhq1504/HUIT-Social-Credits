@@ -1,146 +1,171 @@
-.card {
-  width: 100%;
-  height: 100%;
+.activity-card {
   background: var(--white-color);
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-
-.card-cover {
-  align-self: stretch;
-  height: 137px;
-  position: relative;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  border-bottom-right-radius: 35px;
-  background-size: cover;
-  background-position: center;
-}
-
-.card-badge {
-  position: absolute;
-  top: 15px;
-  left: -6px;
-  background: var(--orange-color);
-  color: var(--white-color);
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 8px;
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 0;
-  box-shadow: 3px 2px 5px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
   display: inline-flex;
-  align-items: center;
-  z-index: 2;
+  border-radius: 4px;
 
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    left: 0;
-    width: 6px;
-    height: 6px;
-    background: #762b00;
-    border-bottom-left-radius: 4px;
+  &__cover {
+    background: #d9d9d9 no-repeat center / cover;
+    position: relative;
   }
-}
 
-/* Content section */
-.card-content {
-  align-self: stretch;
-  padding: 12px;
-  border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  &__badge {
+    position: absolute;
+    top: 15px;
+    left: 0;
+    background: var(--orange-color);
+    color: var(--white-color);
+    padding: 4px 8px;
+    border-radius: 8px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    z-index: 1;
+  }
 
-.card-title {
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
-  color: var(--Dark, #000);
-  word-wrap: break-word;
-}
+  &__content {
+    display: flex;
+    flex-direction: column;
+  }
 
-.card-points {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--black-color);
-}
+  &__title {
+    color: var(--black-color);
+    font-size: 14px;
+    font-weight: 500;
+  }
 
-.card-points-value {
-  margin-left: 4px;
-  color: var(--orange-color);
-}
+  &__points,
+  &__date,
+  &__location {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 
-.card-date,
-.card-location {
-  font-size: 12px;
-  font-weight: 300;
-  color: var(--black-color);
-}
+    svg {
+      width: 14px;
+      height: 14px;
+      color: var(--black-color);
+    }
+  }
 
-.card-date-value,
-.card-location-value {
-  margin-left: 4px;
-}
+  &__points-value {
+    color: var(--orange-color);
+    font-size: 12px;
+    font-weight: 700;
+  }
 
-/* Participants */
-.card-participants {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+  &__date-value,
+  &__location-value {
+    color: var(--black-color);
+    font-size: 12px;
+    font-weight: 300;
+  }
 
-.participant-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--white-color);
-  background: #d9d9d9;
-}
+  &__participants {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 
-.card-capacity {
-  font-size: 14px;
-  font-weight: 500;
-  color: #adadad;
-}
+    .ant-avatar {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #fff;
+      background: #d9d9d9;
+    }
+  }
 
-/* Actions */
-.card-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-}
+  &__capacity {
+    color: #adadad;
+    font-size: 14px;
+    font-weight: 500;
+  }
 
-.btn-outline {
-  padding: 8px 12px;
-  border: 1px solid var(--black-color);
-  border-radius: 8px;
-  background: var(--white-color);
-  color: var(--black-color);
-  font-size: 14px;
-  font-weight: 400;
-  cursor: pointer;
-}
+  &__actions {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 12px;
 
-.btn-primary {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--primary-color);
-  color: var(--white-color);
-  font-size: 14px;
-  font-weight: 400;
-  cursor: pointer;
+    :global(button[variant='outline']) {
+      border-radius: 8px;
+    }
+
+    :global(button[variant='primary']) {
+      border-radius: 8px;
+    }
+  }
+
+  /* ====== Vertical layout ====== */
+  &--vertical {
+    flex-direction: column;
+    border-radius: 20px;
+
+    .activity-card__cover {
+      align-self: stretch;
+      height: 137px;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 35px;
+    }
+
+    .activity-card__content {
+      align-self: stretch;
+      padding: 8px 12px;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+      gap: 8px;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+
+    .activity-card__actions {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+
+  /* ====== Horizontal layout ====== */
+  &--horizontal {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: flex-start;
+    align-items: flex-start;
+    border-radius: 4px;
+    font-family: Montserrat, sans-serif;
+
+    .activity-card__cover {
+      width: 240px;
+      height: 215px;
+      border-top-left-radius: 4px;
+      border-bottom-left-radius: 4px;
+      flex: 0 0 auto;
+    }
+
+    .activity-card__content {
+      flex: 1 1 0;
+      height: 215px;
+      padding: 8px;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      border-top: 1px #e3e3e3 solid;
+      border-right: 1px #e3e3e3 solid;
+      border-bottom: 1px #e3e3e3 solid;
+      justify-content: space-between;
+    }
+
+    .activity-card__actions {
+      width: 100%;
+
+      :global(button[variant='outline']) {
+        width: 94px;
+      }
+
+      :global(button[variant='primary']) {
+        flex: 1 1 0;
+      }
+    }
+  }
 }

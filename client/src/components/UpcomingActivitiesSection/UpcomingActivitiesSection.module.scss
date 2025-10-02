@@ -1,33 +1,37 @@
-.tag-filters {
+.upcoming-activities {
+  width: 100%;
+}
+
+.upcoming-activities__filters {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-bottom: 20px;
 }
 
-.tag {
+.upcoming-activities__tag {
   border-radius: 24px;
   padding: 9px 16px;
   font-family: Montserrat, sans-serif;
   font-weight: 600;
   font-size: 16px;
   background-color: var(--white-color);
-  border: 1px solid #E5E7EB;
+  border: 1px solid #e5e7eb;
 
-  &.active {
+  &--active {
     background-color: var(--orange-color);
     color: var(--white-color);
     border: 1px solid var(--orange-color);
   }
 }
 
-.list {
+.upcoming-activities__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
 }
 
-.actions {
+.upcoming-activities__actions {
   display: flex;
   justify-content: center;
   margin-top: 24px;

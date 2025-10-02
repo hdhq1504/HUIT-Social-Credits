@@ -12,23 +12,23 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: 0.3s ease-in-out;
 
-  &-content {
+  &__content {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  &-icon {
+  &__icon {
     display: flex;
     align-items: center;
   }
 
-  &-message {
+  &__message {
     flex: 1;
     margin-left: 4px;
   }
 
-  &-close {
+  &__close {
     background: none;
     border: none;
     cursor: pointer;
@@ -40,17 +40,17 @@
 }
 
 // Màu sắc theo loại alert
-.alert-success {
+.alert--success {
   background-color: #dee9e4;
   color: var(--success-color);
 }
 
-.alert-danger {
+.alert--danger {
   background-color: #f2e1e3;
   color: var(--danger-color);
 }
 
-.alert-info {
+.alert--info {
   background-color: #dcdcea;
-  color: var(--primary);
+  color: var(--primary-color);
 }

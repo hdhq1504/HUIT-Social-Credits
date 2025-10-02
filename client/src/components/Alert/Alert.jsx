@@ -8,18 +8,18 @@ const cx = classNames.bind(styles);
 
 function Alert({ message, type = 'info', showIcon = false, onClose }) {
   return (
-    <div className={cx('alert', `alert-${type}`)}>
-      <div className={cx('alert-content')}>
+    <div className={cx('alert', `alert--${type}`)}>
+      <div className={cx('alert__content')}>
         {showIcon && (
-          <span className={cx('alert-icon')}>
+          <span className={cx('alert__icon')}>
             {type === 'success' && <CheckCircle />}
             {type === 'danger' && <AlertTriangle />}
             {type === 'info' && <Info />}
           </span>
         )}
-        <span className={cx('alert-message')}>{message}</span>
+        <span className={cx('alert__message')}>{message}</span>
       </div>
-      <button className={cx('alert-close')} onClick={onClose}>
+      <button className={cx('alert__close')} onClick={onClose}>
         <X size={16} />
       </button>
     </div>

@@ -1,4 +1,4 @@
-.container {
+.personal-activities {
   width: 100%;
   background-color: #ffffff;
   border-radius: 12px;
@@ -20,7 +20,7 @@
   }
 }
 
-.item {
+.personal-activities__item {
   width: 100%;
   display: flex;
   padding: 16px 20px;
@@ -34,13 +34,7 @@
   }
 }
 
-.item-content {
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.icon {
+.personal-activities__icon {
   width: 48px;
   padding: 15.5px 12px;
   border-radius: 12px;
@@ -62,7 +56,7 @@
   }
 }
 
-.icon-shape {
+.personal-activities__icon-shape {
   width: 20px;
   height: 20px;
   border-radius: 12px;
@@ -80,42 +74,35 @@
   }
 }
 
-.details {
-  padding-left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.title {
+.personal-activities__title {
   color: #1f2937;
   font-size: 18px;
   font-weight: 600;
   font-family: 'Montserrat', sans-serif;
 }
 
-.meta {
+.personal-activities__meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+}
 
-  &-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #666;
-    font-size: 14px;
-  }
+.personal-activities__meta-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 14px;
+}
 
-  &-icon {
-    font-size: 14px;
-  }
+.personal-activities__meta-icon {
+  font-size: 14px;
+}
 
-  &-text {
-    color: #6b7280;
-    font-size: 16px;
-    font-weight: 400;
-    font-family: 'Montserrat', sans-serif;
-  }
+.personal-activities__meta-text {
+  color: #6b7280;
+  font-size: 16px;
+  font-weight: 400;
+  font-family: 'Montserrat', sans-serif;
 }

@@ -1,66 +1,49 @@
-@use 'sass:color';
-
-.wrapper {
+.searchbar {
   width: 100%;
-}
-
-.search-form {
-  display: flex;
-  background-color: #0000aa;
-  padding: 16px;
-  border-radius: 8px;
-  gap: 8px;
-}
-
-.search-input {
-  flex: 1;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 4px;
-  border: none;
-  outline: none;
-  font-size: 14px;
-}
-
-.select-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 150px;
-  margin-left: 6px;
-}
-
-.search-select {
-  width: 100%;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 4px;
-  border: none;
-  outline: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: calc(100% - 12px) center;
-  background-color: white;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.search-button {
-  height: 40px;
-  padding: 0 24px;
-  border-radius: 4px;
-  border: none;
-  background-color: #ff6600;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
+  padding: 16px 24px;
+  display: inline-flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
 
-  &:hover {
-    background-color: color.scale(#ff6600, $lightness: -20%);
+  &--home {
+    background-color: var(--primary-color);
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  &--list {
+    border-radius: 0;
+  }
+
+  &__form {
+    width: 1200px;
+  }
+
+  &__item {
+    margin: 0 !important;
+  }
+
+  &__input,
+  &__select {
+    background: var(--white-color);
+    border-radius: 8px !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
+  }
+
+  &__button {
+    border-radius: 8px !important;
+    font-weight: 500;
+    font-size: 15px;
+
+    &--orange {
+      background: var(--orange-color) !important;
+      border: none !important;
+      color: var(--white-color) !important;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    padding: 16px 16px;
   }
 }

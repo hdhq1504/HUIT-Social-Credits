@@ -1,35 +1,107 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import React from 'react';
 import classNames from 'classnames/bind';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { Input, Select, Button, Row, Col, Form } from 'antd';
 import styles from './SearchBar.module.scss';
 
 const cx = classNames.bind(styles);
 
-function SearchBar() {
-  const [keyword, setKeyword] = useState('');
+function SearchBar({
+  variant = 'list',
+  groups = [],
+  statuses = [],
+  onSubmit,
+  placeholder = 'Nhập từ khóa',
+  defaultValues = {},
+}) {
+  const [form] = Form.useForm();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSearch = () => {
-    // Điều hướng đến trang FilterBook với query string
-    navigate(`/`);
+  const initial = {
+    keyword: defaultValues.keyword || '',
+    group: defaultValues.group || undefined,
+    status: defaultValues.status || undefined,
   };
 
-  return (
-    <div className={cx('wrapper')}>
-      <div className={cx('search-form')}>
-        <input
-          type="text"
-          className={cx('search-input')}
-          placeholder="Nhập từ khóa"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-        />
+  const handleFinish = (values) => {
+    onSubmit?.(values);
 
-        <button className={cx('search-button')} onClick={handleSearch}>
-          <Search size={16} /> Tìm kiếm
-        </button>
-      </div>
+    const params = new URLSearchParams({
+      keyword: values.keyword || '',
+      group: values.group || '',
+      status: values.status || '',
+    });
+    const to = variant === 'home' ? `/activities?${params.toString()}` : `${location.pathname}?${params.toString()}`;
+
+    navigate(to);
+  };
+
+  const isHome = variant === 'home';
+
+  return (
+    <div className={cx('searchbar', { 'searchbar--home': isHome, 'searchbar--list': !isHome })}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={initial}
+        onFinish={handleFinish}
+        className={cx('searchbar__form')}
+      >
+        <Row gutter={[16, 16]} align="middle" justify="center" wrap>
+          <Col xs={24} md={isHome ? 20 : 12}>
+            <Form.Item name="keyword" className={cx('searchbar__item')} noStyle>
+              <Input size="large" placeholder={placeholder} className={cx('searchbar__input')} allowClear />
+            </Form.Item>
+          </Col>
+
+          {!isHome && (
+            <>
+              <Col xs={12} md={4}>
+                <Form.Item name="group" className={cx('searchbar__item')} noStyle>
+                  <Select
+                    size="large"
+                    placeholder="Nhóm hoạt động"
+                    options={groups.map((g) => ({ value: g, label: g }))}
+                    className={cx('searchbar__select')}
+                    allowClear
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col xs={12} md={4}>
+                <Form.Item name="status" className={cx('searchbar__item')} noStyle>
+                  <Select
+                    size="large"
+                    placeholder="Trạng thái"
+                    options={statuses.map((s) => ({ value: s, label: s }))}
+                    className={cx('searchbar__select')}
+                    allowClear
+                  />
+                </Form.Item>
+              </Col>
+            </>
+          )}
+
+          <Col xs={24} md={isHome ? 4 : 2}>
+            <Form.Item noStyle>
+              <Button
+                htmlType="submit"
+                size="large"
+                block
+                className={cx('searchbar__button', {
+                  'searchbar__button--orange': true,
+                })}
+                icon={<FontAwesomeIcon icon={faSearch} />}
+              >
+                {isHome ? 'Tìm kiếm' : 'Lọc'}
+              </Button>
+            </Form.Item>
+          </Col>
+        </Row>
+      </Form>
     </div>
   );
 }

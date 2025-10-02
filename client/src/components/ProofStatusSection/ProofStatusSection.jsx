@@ -1,9 +1,17 @@
 import React from 'react';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleCheck, faCircleInfo, faClock, faXmarkCircle, faEye, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCircleCheck,
+  faCircleInfo,
+  faClock,
+  faXmarkCircle,
+  faEye,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons';
 import Label from '../Label/Label';
 import styles from './ProofStatusSection.module.scss';
+// import mockApi from '../../utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
@@ -44,46 +52,46 @@ function ProofStatusSection() {
     <>
       <Label title="Trạng thái" highlight="minh chứng" subtitle="Phản hồi điểm nếu có xảy ra sai sót" />
 
-      <div className={cx('wrapper')}>
-        <div className={cx('cards')}>
+      <div className={cx('proof-status')}>
+        <div className={cx('proof-status__cards')}>
           {proofItems.map((item) => {
             const showReason = item.status === 'rejected' && !!item.reason;
             const reasonText = showReason ? String(item.reason).replace(/^Lý do( từ chối)?:\s*/i, '') : '';
 
             return (
-              <div key={item.title} className={cx('card')}>
-                <div className={cx('card-content')}>
-                  <div className={cx('card-info')}>
-                    <div className={cx('thumbnail')}>
+              <div key={item.id || item.title} className={cx('proof-status__card')}>
+                <div className={cx('proof-status__card-content')}>
+                  <div className={cx('proof-status__card-info')}>
+                    <div className={cx('proof-status__thumbnail')}>
                       <img src={item.imageUrl} alt={item.title} />
                     </div>
 
-                    <div className={cx('details')}>
-                      <div className={cx('title')}>{item.title}</div>
-                      <div className={cx('activity')}>{item.activity}</div>
+                    <div className={cx('proof-status__details')}>
+                      <div className={cx('proof-status__title')}>{item.title}</div>
+                      <div className={cx('proof-status__activity')}>{item.activity}</div>
 
                       {showReason && (
-                        <div className={cx('reason')} role="alert" aria-live="polite">
-                          <div className={cx('reason-icon', `reason-icon--${item.status}`)}>
+                        <div className={cx('proof-status__reason')} role="alert" aria-live="polite">
+                          <div className={cx('proof-status__reason-icon', `proof-status__reason-icon--${item.status}`)}>
                             <FontAwesomeIcon icon={statusIcons.reason} />
                           </div>
-                          <span className={cx('reason-text')}>Lý do từ chối: {reasonText}</span>
+                          <span className={cx('proof-status__reason-text')}>Lý do từ chối: {reasonText}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className={cx('status-area')}>
-                    <div className={cx('status-badge', `status-badge--${item.status}`)}>
-                      <div className={cx('status-icon', `status-icon--${item.status}`)}>
+                  <div className={cx('proof-status__status-area')}>
+                    <div className={cx('proof-status__status-badge', `proof-status__status-badge--${item.status}`)}>
+                      <div className={cx('proof-status__status-icon', `proof-status__status-icon--${item.status}`)}>
                         <FontAwesomeIcon icon={statusIcons[item.status]} />
                       </div>
-                      <span className={cx('status-text')}>{item.statusLabel}</span>
+                      <span className={cx('proof-status__status-text')}>{item.statusLabel}</span>
                     </div>
 
                     <button
                       type="button"
-                      className={cx('action-button')}
+                      className={cx('proof-status__action-button')}
                       aria-label="Xem minh chứng"
                       title="Xem minh chứng"
                       onClick={() => {
@@ -91,7 +99,7 @@ function ProofStatusSection() {
                         // ví dụ: openPreview(item)
                       }}
                     >
-                      <FontAwesomeIcon className={cx('action-icon')} icon={faEye} />
+                      <FontAwesomeIcon className={cx('proof-status__action-icon')} icon={faEye} />
                     </button>
                   </div>
                 </div>
@@ -100,14 +108,14 @@ function ProofStatusSection() {
           })}
         </div>
 
-        <div className={cx('guidelines')}>
-          <div className={cx('guidelines-header')}>
-            <div className={cx('guidelines-icon')}>
+        <div className={cx('proof-status__guidelines')}>
+          <div className={cx('proof-status__guidelines-header')}>
+            <div className={cx('proof-status__guidelines-icon')}>
               <FontAwesomeIcon icon={faCircleInfo} />
             </div>
-            <span className={cx('guidelines-title')}>Hướng dẫn gửi minh chứng</span>
+            <span className={cx('proof-status__guidelines-title')}>Hướng dẫn gửi minh chứng</span>
           </div>
-          <ul className={cx('guidelines-list')}>
+          <ul className={cx('proof-status__guidelines-list')}>
             <li>Ảnh phải rõ nét, không bị mờ hoặc nghiêng</li>
             <li>Chụp toàn bộ chứng nhận/giấy tờ, không bị cắt xén</li>
             <li>Định dạng hỗ trợ: JPG, PNG, PDF (tối đa 5MB)</li>

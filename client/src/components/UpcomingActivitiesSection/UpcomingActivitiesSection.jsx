@@ -7,7 +7,7 @@ import Label from '../Label/Label';
 import CardActivity from '../CardActivity/CardActivity';
 import Button from '../Button/Button';
 import { mockApi } from '../../utils/mockAPI';
-import styles from './UpcomingActivitySection.module.scss';
+import styles from './UpcomingActivitiesSection.module.scss';
 
 const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);
@@ -21,7 +21,7 @@ function getCategoriesOf(activity) {
   return [];
 }
 
-function UpcomingActivitySection() {
+function UpcomingActivitiesSection() {
   const [activities, setActivities] = useState([]);
   const [selected, setSelected] = useState('Tất cả');
 
@@ -49,38 +49,43 @@ function UpcomingActivitySection() {
     <>
       <Label title="Hoạt động" highlight="sắp diễn ra" subtitle="Danh sách các hoạt động sắp diễn ra" />
 
-      <div className={cx('tag-filters')}>
-        {CATEGORIES.map((cat) => (
-          <CheckableTag
-            key={cat}
-            checked={selected === cat}
-            onChange={() => setSelected(cat)}
-            className={cx('tag', { active: selected === cat })}
-          >
-            {cat}
-          </CheckableTag>
-        ))}
-      </div>
+      <div className={cx('upcoming-activities')}>
+        <div className={cx('upcoming-activities__filters')}>
+          {CATEGORIES.map((cat) => (
+            <CheckableTag
+              key={cat}
+              checked={selected === cat}
+              onChange={() => setSelected(cat)}
+              className={cx('upcoming-activities__tag', {
+                'upcoming-activities__tag--active': selected === cat,
+              })}
+            >
+              {cat}
+            </CheckableTag>
+          ))}
+        </div>
 
-      <div className={cx('list')}>
-        {filteredActivities.map((a, idx) => (
-          <CardActivity
-            key={idx}
-            {...a}
-            onDetails={() => console.log('Chi tiết:', a?.title)}
-            onRegister={() => console.log('Đăng ký:', a?.title)}
-          />
-        ))}
-      </div>
+        <div className={cx('upcoming-activities__list')}>
+          {filteredActivities.map((a, idx) => (
+            <CardActivity
+              key={idx}
+              {...a}
+              variant="vertical"
+              onDetails={() => console.log('Chi tiết:', a?.title)}
+              onRegister={() => console.log('Đăng ký:', a?.title)}
+            />
+          ))}
+        </div>
 
-      <div className={cx('actions')}>
-        <Button variant="primary" onClick={() => setSelected('Tất cả')}>
-          <span>Xem tất cả</span>
-          <FontAwesomeIcon icon={faArrowRight} />
-        </Button>
+        <div className={cx('upcoming-activities__actions')}>
+          <Button variant="primary" onClick={() => setSelected('Tất cả')}>
+            <span>Xem tất cả</span>
+            <FontAwesomeIcon icon={faArrowRight} />
+          </Button>
+        </div>
       </div>
     </>
   );
 }
 
-export default UpcomingActivitySection;
+export default UpcomingActivitiesSection;

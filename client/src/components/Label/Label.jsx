@@ -6,21 +6,21 @@ const cx = classNames.bind(styles);
 
 function Label({ title, highlight, subtitle }) {
   return (
-    <div className={cx('container')}>
-      <div className={cx('wrapper')}>
+    <div className={cx('label')}>
+      <div className={cx('label__wrapper')}>
         <div className={cx('divider')}></div>
 
-        <div className={cx('label-container')}>
-          <span className={cx('label-title')}>
-            {title} <span className={cx('label-highlight')}>{highlight}</span>
+        <div className={cx('label__container')}>
+          <span className={cx('label__title')}>
+            {title} <span className={cx('label__highlight')}>{highlight}</span>
           </span>
         </div>
 
         <div className={cx('divider')}></div>
       </div>
 
-      <div className={cx('subtitle-wrapper')}>
-        <div className={cx('label-subtitle')}>{subtitle}</div>
+      <div className={cx('label-subtitle')}>
+        <div className={cx('label-subtitle__text')}>{subtitle}</div>
       </div>
     </div>
   );

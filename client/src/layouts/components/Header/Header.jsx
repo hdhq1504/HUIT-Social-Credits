@@ -44,7 +44,7 @@ function Header() {
       {isMobile && (
         <>
           <div className={cx('menu-item')}>
-            <Link to="/">
+            <Link to="/list-activities">
               <span>Hoạt động</span>
             </Link>
           </div>
@@ -87,25 +87,25 @@ function Header() {
         Xin chào <span>{user?.TenNguoiDung || user?.email || 'Người dùng'}</span>
       </div>
       <div className={cx('menu-item')}>
-        <Link to="/infomation">
+        <Link to="/profile">
           <User size={16} />
           <span>Thông tin</span>
         </Link>
       </div>
       <div className={cx('menu-item')}>
-        <Link to="/list-favourite">
+        <Link to="/">
           <ClipboardList size={16} />
           <span>Hoạt động của tôi</span>
         </Link>
       </div>
       <div className={cx('menu-item')}>
-        <Link to="/list-favourite">
+        <Link to="/">
           <BadgeCheck size={16} />
           <span>Điểm và chứng chỉ</span>
         </Link>
       </div>
       <div className={cx('menu-item')}>
-        <Link to="/list-favourite">
+        <Link to="/">
           <BookAlert size={16} />
           <span>Phản hồi điểm</span>
         </Link>
@@ -114,7 +114,7 @@ function Header() {
         <>
           <div className={cx('menu-divider')} />
           <div className={cx('menu-item')}>
-            <Link to="/upload">
+            <Link to="/list-activities">
               <span>Hoạt động</span>
             </Link>
           </div>
@@ -124,12 +124,12 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/createtest">
+            <Link to="/">
               <span>Điểm danh</span>
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/multiple-choice">
+            <Link to="/">
               <span>Phản hồi</span>
             </Link>
           </div>
@@ -158,7 +158,7 @@ function Header() {
         </div>
 
         <div className={cx('actions')}>
-          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/list-activities" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Hoạt động
           </NavLink>
           <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>

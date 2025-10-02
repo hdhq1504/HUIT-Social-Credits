@@ -3,9 +3,9 @@ import classNames from 'classnames/bind';
 import styles from './Home.module.scss';
 import SearchBar from '../../layouts/components/SearchBar';
 import FeaturedActivitySection from '../../components/FeaturedActivitySection';
-import UpcomingActivitySection from '../../components/UpcomingActivitySection/UpcomingActivitySection';
+import UpcomingActivitiesSection from '../../components/UpcomingActivitiesSection/UpcomingActivitiesSection';
 import ProgressSection from '../../components/ProgressSection';
-import MyUpcomingActivitySection from '../../components/MyUpcomingActivitySection/MyUpcomingActivitySection';
+import PersonalActivitiesSection from '../../components/PersonalActivitiesSection/PersonalActivitiesSection';
 import ProofStatusSection from '../../components/ProofStatusSection/ProofStatusSection';
 
 const cx = classNames.bind(styles);
@@ -24,7 +24,7 @@ function Home() {
           <p className={cx('banner-subtitle')}>Trang web chính thức của Trường Đại học Công thương TP. Hồ Chí Minh</p>
         </div>
         <div className={cx('banner-search')}>
-          <SearchBar />
+          <SearchBar variant="home" onSubmit={(q) => console.log('Home search:', q)} />
         </div>
       </div>
 
@@ -32,7 +32,7 @@ function Home() {
       <div className={cx('content')}>
         <FeaturedActivitySection />
         <div style={{ marginBottom: '32px' }} />
-        <UpcomingActivitySection />
+        <UpcomingActivitiesSection />
         <div style={{ marginBottom: '32px' }} />
         <ProgressSection
           currentPoints={90}
@@ -47,7 +47,7 @@ function Home() {
           imageUrl="https://placehold.co/320x320"
         />
         <div style={{ marginBottom: '32px' }} />
-        <MyUpcomingActivitySection />
+        <PersonalActivitiesSection />
         <div style={{ marginBottom: '32px' }} />
         <ProofStatusSection />
       </div>

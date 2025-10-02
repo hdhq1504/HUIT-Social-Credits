@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames/bind';
-import styles from './InfomationPage.module.scss';
+import styles from './ProfilePage.module.scss';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
 import { Alert } from 'antd';
 import { login } from '../../redux/slices/authSlice';
@@ -17,7 +17,7 @@ const fileToBase64 = (file) =>
     reader.readAsDataURL(file);
   });
 
-function InfomationPage() {
+function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -176,6 +176,8 @@ function InfomationPage() {
         token: user?.token || `mock-token-${updatedProfile.uid}`,
       };
 
+      dispatch(login(mergedUser));
+
       // Hiển thị thông báo thành công
       setShowAlert(true);
       setAlertMessage('Cập nhật thông tin thành công');
@@ -190,7 +192,7 @@ function InfomationPage() {
   };
 
   return (
-    <div className={cx('wrapper')}>
+    <div className={cx('profile-page')}>
       {/* Hiển thị Alert */}
       {showAlert && (
         <Alert
@@ -199,30 +201,30 @@ function InfomationPage() {
           showIcon
           onClose={() => setShowAlert(false)}
           closable
-          className={cx('alert')}
+          className={cx('profile-page__alert')}
         />
       )}
 
-      <div className={cx('info')}>
-        <div className={cx('info-left')}>
-          <h4 className={cx('info-left__title')}>Ảnh đại diện</h4>
+      <div className={cx('profile-page__info')}>
+        <div className={cx('profile-page__info-left')}>
+          <h4 className={cx('profile-page__info-left__title')}>Ảnh đại diện</h4>
           <img
-            className={cx('info-left__img')}
+            className={cx('profile-page__info-left__img')}
             src={avatarFile ? URL.createObjectURL(avatarFile) : user?.AnhDaiDien || '/images/no-image.jpg'}
             alt="Ảnh đại diện"
             onError={(e) => (e.target.src = '/images/no-image.jpg')}
           />
-          <div className={cx('info-left__input')}>
+          <div className={cx('profile-page__info-left__input')}>
             <input type="file" accept="image/*" onChange={handleAvatarChange} />
           </div>
-          <button className={cx('info-left__btn')} onClick={handleOpenModal}>
+          <button className={cx('profile-page__info-left__btn')} onClick={handleOpenModal}>
             Đổi mật khẩu
           </button>
         </div>
 
-        <div className={cx('info-right')}>
-          <h4 className={cx('info-right__title')}>Thông tin</h4>
-          <div className={cx('info-right__inputs')}>
+        <div className={cx('profile-page__info-right')}>
+          <h4 className={cx('profile-page__info-right__title')}>Thông tin</h4>
+          <div className={cx('profile-page__info-right__inputs')}>
             <TextField
               label="Họ và tên"
               placeholder="Nhập họ và tên"
@@ -284,7 +286,7 @@ function InfomationPage() {
               }}
             />
           </div>
-          <button className={cx('info-right__btn')} onClick={handleUpdate}>
+          <button className={cx('profile-page__info-right__btn')} onClick={handleUpdate}>
             Cập nhật
           </button>
         </div>
@@ -453,4 +455,4 @@ function InfomationPage() {
   );
 }
 
-export default InfomationPage;
+export default ProfilePage;
