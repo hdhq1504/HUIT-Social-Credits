@@ -50,7 +50,7 @@ function SearchBar({
         onFinish={handleFinish}
         className={cx('searchbar__form')}
       >
-        <Row gutter={[16, 16]} align="middle" justify="center" wrap>
+        <Row gutter={[16, 16]} align="middle" justify="space-between" wrap>
           <Col xs={24} md={isHome ? 20 : 12}>
             <Form.Item name="keyword" className={cx('searchbar__item')} noStyle>
               <Input size="large" placeholder={placeholder} className={cx('searchbar__input')} allowClear />
@@ -63,6 +63,7 @@ function SearchBar({
                 <Form.Item name="group" className={cx('searchbar__item')} noStyle>
                   <Select
                     size="large"
+                    style={{ width: 185 }}
                     placeholder="Nhóm hoạt động"
                     options={groups.map((g) => ({ value: g, label: g }))}
                     className={cx('searchbar__select')}
@@ -75,6 +76,7 @@ function SearchBar({
                 <Form.Item name="status" className={cx('searchbar__item')} noStyle>
                   <Select
                     size="large"
+                    style={{ width: 185 }}
                     placeholder="Trạng thái"
                     options={statuses.map((s) => ({ value: s, label: s }))}
                     className={cx('searchbar__select')}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Row, Col, Typography, Select, Pagination } from 'antd';
+import { ConfigProvider, Row, Col, Typography, Select, Pagination } from 'antd';
 import CardActivity from '../../components/CardActivity/CardActivity';
 import CheckboxGroup from '../../components/CheckboxGroup/CheckboxGroup';
 import SearchBar from '../../layouts/components/SearchBar/SearchBar';
@@ -47,7 +47,7 @@ function ListActivitiesPage() {
           onSubmit={(q) => console.log('List filter search:', q)}
         />
       </div>
-      
+
       <div className={cx('wrapper')}>
         <div className={cx('link')}>
           <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> /{' '}
@@ -94,7 +94,21 @@ function ListActivitiesPage() {
               </div>
 
               <div className={cx('activities__footer')}>
-                <Pagination defaultCurrent={1} total={100} />
+                <ConfigProvider
+                  theme={{
+                    token: {
+                      colorPrimary: '#FFFFFF',
+                      fontFamily: 'Montserrat',
+                    },
+                    components: {
+                      Pagination: {
+                        itemActiveBg: '#FF5C00',
+                      },
+                    },
+                  }}
+                >
+                  <Pagination defaultCurrent={1} total={100} />
+                </ConfigProvider>
               </div>
             </Col>
 
