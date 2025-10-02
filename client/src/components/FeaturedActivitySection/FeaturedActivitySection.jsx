@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
-import Label from '../../components/Label/Label';
-import CardActivity from '../../components/CardActivity/CardActivity';
+import Label from '@components/Label/Label';
+import CardActivity from '@components/CardActivity/CardActivity';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import { mockApi } from '../../utils/mockAPI';
 import styles from './FeaturedActivitySection.module.scss';
+import { mockApi } from '../../utils/mockAPI';
 
 const cx = classNames.bind(styles);
 

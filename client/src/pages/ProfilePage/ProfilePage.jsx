@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames/bind';
-import styles from './ProfilePage.module.scss';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
 import { Alert } from 'antd';
 import { login } from '../../redux/slices/authSlice';
+import styles from './ProfilePage.module.scss';
 import { mockApi } from '../../utils/mockAPI';
 
 const cx = classNames.bind(styles);

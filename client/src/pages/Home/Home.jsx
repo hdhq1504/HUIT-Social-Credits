@@ -1,12 +1,13 @@
 import React from 'react';
 import classNames from 'classnames/bind';
 import styles from './Home.module.scss';
-import SearchBar from '../../layouts/components/SearchBar';
-import FeaturedActivitySection from '../../components/FeaturedActivitySection';
-import UpcomingActivitiesSection from '../../components/UpcomingActivitiesSection/UpcomingActivitiesSection';
-import ProgressSection from '../../components/ProgressSection';
-import PersonalActivitiesSection from '../../components/PersonalActivitiesSection/PersonalActivitiesSection';
-import ProofStatusSection from '../../components/ProofStatusSection/ProofStatusSection';
+import SearchBar from '@layouts/components/SearchBar';
+import FeaturedActivitySection from '@components/FeaturedActivitySection';
+import ActivityCategoriesSection from '@components/ActivityCategoriesSection';
+import UpcomingActivitiesSection from '@components/UpcomingActivitiesSection/UpcomingActivitiesSection';
+import ProgressSection from '@components/ProgressSection';
+import PersonalActivitiesSection from '@components/PersonalActivitiesSection/PersonalActivitiesSection';
+import ProofStatusSection from '@components/ProofStatusSection/ProofStatusSection';
 
 const cx = classNames.bind(styles);
 
@@ -32,6 +33,8 @@ function Home() {
       <div className={cx('content')}>
         <FeaturedActivitySection />
         <div style={{ marginBottom: '32px' }} />
+        <ActivityCategoriesSection />
+        <div style={{ marginBottom: '48px' }} />
         <UpcomingActivitiesSection />
         <div style={{ marginBottom: '32px' }} />
         <ProgressSection

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination } from 'antd';
-import CardActivity from '../../components/CardActivity/CardActivity';
-import CheckboxGroup from '../../components/CheckboxGroup/CheckboxGroup';
-import SearchBar from '../../layouts/components/SearchBar/SearchBar';
+import CardActivity from '@components/CardActivity/CardActivity';
+import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
+import SearchBar from '@layouts/components/SearchBar/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
 import { mockApi } from '../../utils/mockAPI';
 
