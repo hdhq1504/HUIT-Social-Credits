@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
@@ -9,6 +10,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import styles from './FeaturedActivitySection.module.scss';
 import { mockApi } from '../../utils/mockAPI';
+import routes from '../../config/routes';
 
 const cx = classNames.bind(styles);
 
@@ -16,6 +18,7 @@ function FeaturedActivitySection() {
   const [activities, setActivities] = useState([]);
   const [open, setOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -32,6 +35,14 @@ function FeaturedActivitySection() {
   const handleOpenRegister = (activity) => {
     setSelectedActivity(activity);
     setOpen(true);
+  };
+
+  const handleOpenDetail = (activity) => {
+    if (activity?.id) {
+      navigate(routes.activityDetailWithId.replace(':id', activity.id));
+    } else {
+      console.warn('Activity không có id:', activity);
+    }
   };
 
   const handleConfirm = () => {
@@ -60,9 +71,14 @@ function FeaturedActivitySection() {
               1280: { slidesPerView: 4, slidesPerGroup: 1, spaceBetween: 20 },
             }}
           >
-            {activities.map((a, idx) => (
-              <SwiperSlide key={idx}>
-                <CardActivity {...a} variant="vertical" onRegister={() => handleOpenRegister(a)} />
+            {activities.map((a) => (
+              <SwiperSlide key={a.id}>
+                <CardActivity
+                  {...a}
+                  variant="vertical"
+                  onRegister={() => handleOpenRegister(a)}
+                  onDetails={() => handleOpenDetail(a)}
+                />
               </SwiperSlide>
             ))}
           </Swiper>

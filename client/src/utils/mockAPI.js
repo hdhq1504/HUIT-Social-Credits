@@ -29,6 +29,7 @@ const defaultData = {
   ],
   activities: [
     {
+      id: 'activity-001',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -41,6 +42,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-002',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -53,6 +55,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-003',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -65,6 +68,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-004',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -77,6 +81,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-005',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -89,6 +94,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-006',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -101,6 +107,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-007',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
@@ -113,6 +120,7 @@ const defaultData = {
       onDetails: () => console.log('Xem chi tiết!'),
     },
     {
+      id: 'activity-008',
       title: 'Thăm và tặng quà cho các cụ già tại viện dưỡng lão',
       points: 15,
       dateTime: '15/12/2024 - 8:00 AM',
