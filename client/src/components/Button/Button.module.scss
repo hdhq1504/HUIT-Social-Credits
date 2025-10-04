@@ -21,6 +21,11 @@
     color: var(--white-color);
   }
 
+  &.orange {
+    background: var(--orange-color);
+    color: var(--white-color);
+  }
+
   &.outline {
     background-color: transparent;
     border: 1px solid var(--black-color);

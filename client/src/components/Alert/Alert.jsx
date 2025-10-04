@@ -1,34 +1,34 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
-import { X, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleXmark, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import styles from './Alert.module.scss';
 
 const cx = classNames.bind(styles);
 
-function Alert({ message, type = 'info', showIcon = false, onClose }) {
+function Alert({ title, message, type = 'warning', showIcon = false }) {
   return (
     <div className={cx('alert', `alert--${type}`)}>
-      <div className={cx('alert__content')}>
+      <div className={cx('alert__wrapper')}>
         {showIcon && (
           <span className={cx('alert__icon')}>
-            {type === 'success' && <CheckCircle />}
-            {type === 'danger' && <AlertTriangle />}
-            {type === 'info' && <Info />}
+            {type === 'danger' && <FontAwesomeIcon icon={faCircleXmark} />}
+            {type === 'warning' && <FontAwesomeIcon icon={faTriangleExclamation} />}
           </span>
         )}
-        <span className={cx('alert__message')}>{message}</span>
+        <div className={cx('alert__content')}>
+          <span className={cx('alert__title')}>{title}</span>
+          <span className={cx('alert__message')}>{message}</span>
+        </div>
       </div>
-      <button className={cx('alert__close')} onClick={onClose}>
-        <X size={16} />
-      </button>
     </div>
   );
 }
 
 Alert.propTypes = {
   message: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['success', 'danger', 'info']),
+  type: PropTypes.oneOf(['warning', 'danger']),
   showIcon: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
 };

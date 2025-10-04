@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
+import RegisterModal from '@components/RegisterModal/RegisterModal';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
@@ -13,6 +14,8 @@ const cx = classNames.bind(styles);
 
 function FeaturedActivitySection() {
   const [activities, setActivities] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -25,6 +28,19 @@ function FeaturedActivitySection() {
     };
     fetchActivities();
   }, []);
+
+  const handleOpenRegister = (activity) => {
+    setSelectedActivity(activity);
+    setOpen(true);
+  };
+
+  const handleConfirm = () => {
+    // TODO: call API đăng ký ở đây (nếu có)
+    // ví dụ: await api.register(selectedActivity.id)
+    setOpen(false);
+  };
+
+  const handleCancel = () => setOpen(false);
 
   return (
     <>
@@ -46,12 +62,24 @@ function FeaturedActivitySection() {
           >
             {activities.map((a, idx) => (
               <SwiperSlide key={idx}>
-                <CardActivity {...a} variant='vertical' />
+                <CardActivity {...a} variant="vertical" onRegister={() => handleOpenRegister(a)} />
               </SwiperSlide>
             ))}
           </Swiper>
         </div>
       </div>
+
+      <RegisterModal
+        open={open}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        variant='confirm'
+        campaignName={selectedActivity?.title || 'Hoạt động'}
+        pointsLabel={selectedActivity?.points != null ? `${selectedActivity.points} điểm` : undefined}
+        dateTime={selectedActivity?.dateTime}
+        location={selectedActivity?.location}
+        // groupLabel: để default trong component nếu bạn chưa có dữ liệu nhóm
+      />
     </>
   );
 }

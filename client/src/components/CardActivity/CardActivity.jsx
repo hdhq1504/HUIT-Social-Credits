@@ -44,7 +44,6 @@ function CardActivity({
             {badgeText}
           </div>
         )}
-        {/* layer xoay 180° theo thiết kế (trang trí) */}
         <div className={cx('activity-card__cover-layer')} />
       </div>
 

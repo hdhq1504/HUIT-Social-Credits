@@ -8,6 +8,7 @@ import CardActivity from '../CardActivity/CardActivity';
 import Button from '../Button/Button';
 import { mockApi } from '../../utils/mockAPI';
 import styles from './UpcomingActivitiesSection.module.scss';
+import { Link } from 'react-router-dom';
 
 const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);
@@ -78,10 +79,12 @@ function UpcomingActivitiesSection() {
         </div>
 
         <div className={cx('upcoming-activities__actions')}>
-          <Button variant="primary" onClick={() => setSelected('Tất cả')}>
-            <span>Xem tất cả</span>
-            <FontAwesomeIcon icon={faArrowRight} />
-          </Button>
+          <Link to="/list-activities">
+            <Button variant="primary" onClick={() => setSelected('Tất cả')}>
+              <span>Xem tất cả</span>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button>
+          </Link>
         </div>
       </div>
     </>
