@@ -8,7 +8,7 @@ function Label({ title, highlight, subtitle }) {
   return (
     <div className={cx('label')}>
       <div className={cx('label__wrapper')}>
-        <div className={cx('divider')}></div>
+        <div className={cx('label__divider')}></div>
 
         <div className={cx('label__container')}>
           <span className={cx('label__title')}>
@@ -16,11 +16,11 @@ function Label({ title, highlight, subtitle }) {
           </span>
         </div>
 
-        <div className={cx('divider')}></div>
+        <div className={cx('label__divider')}></div>
       </div>
 
-      <div className={cx('label-subtitle')}>
-        <div className={cx('label-subtitle__text')}>{subtitle}</div>
+      <div className={cx('label__subtitle')}>
+        <div className={cx('label__subtitle-text')}>{subtitle}</div>
       </div>
     </div>
   );

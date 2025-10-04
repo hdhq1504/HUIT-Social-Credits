@@ -42,18 +42,18 @@ function SearchBar({
   const isHome = variant === 'home';
 
   return (
-    <div className={cx('searchbar', { 'searchbar--home': isHome, 'searchbar--list': !isHome })}>
+    <div className={cx('search-bar', { 'search-bar--home': isHome, 'search-bar--list': !isHome })}>
       <Form
         form={form}
         layout="vertical"
         initialValues={initial}
         onFinish={handleFinish}
-        className={cx('searchbar__form')}
+        className={cx('search-bar__form')}
       >
         <Row gutter={[16, 16]} align="middle" justify="space-between" wrap>
           <Col xs={24} md={isHome ? 20 : 12}>
-            <Form.Item name="keyword" className={cx('searchbar__item')} noStyle>
-              <Input size="large" placeholder={placeholder} className={cx('searchbar__input')} allowClear />
+            <Form.Item name="keyword" className={cx('search-bar__item')} noStyle>
+              <Input size="large" placeholder={placeholder} className={cx('search-bar__input')} allowClear />
             </Form.Item>
           </Col>
 
@@ -66,20 +66,20 @@ function SearchBar({
                     style={{ width: 185 }}
                     placeholder="Nhóm hoạt động"
                     options={groups.map((g) => ({ value: g, label: g }))}
-                    className={cx('searchbar__select')}
+                    className={cx('search-bar__select')}
                     allowClear
                   />
                 </Form.Item>
               </Col>
 
               <Col xs={12} md={4}>
-                <Form.Item name="status" className={cx('searchbar__item')} noStyle>
+                <Form.Item name="status" className={cx('search-bar__item')} noStyle>
                   <Select
                     size="large"
                     style={{ width: 185 }}
                     placeholder="Trạng thái"
                     options={statuses.map((s) => ({ value: s, label: s }))}
-                    className={cx('searchbar__select')}
+                    className={cx('search-bar__select')}
                     allowClear
                   />
                 </Form.Item>
@@ -93,8 +93,8 @@ function SearchBar({
                 htmlType="submit"
                 size="large"
                 block
-                className={cx('searchbar__button', {
-                  'searchbar__button--orange': true,
+                className={cx('search-bar__button', {
+                  'search-bar__button--orange': true,
                 })}
                 icon={<FontAwesomeIcon icon={faSearch} />}
               >

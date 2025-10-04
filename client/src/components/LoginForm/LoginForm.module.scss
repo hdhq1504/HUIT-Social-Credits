@@ -1,4 +1,4 @@
-.wrapper {
+.login-form {
   width: var(--content-width);
   margin: 74px auto 0 auto;
 
@@ -13,326 +13,299 @@
     width: 95%;
     margin: 20px auto 0 auto;
   }
-}
 
-.link {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 20px 0;
-
-  span {
-    color: #b3b3b3;
-  }
-
-  a {
-    color: var(--primary-color);
-
-    &:hover {
-      color: var(--orange-color);
-    }
-  }
-
-  // Responsive cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 13px;
-    padding: 18px 0;
-  }
-
-  // Responsive cho mobile
-  @media (max-width: 768px) {
-    font-size: 12px;
-    padding: 15px 0;
-  }
-}
-
-.login-from {
-  border-radius: 12px;
-  background: #f4f4f4;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-
-  .title {
-    text-align: right;
-    width: 500px;
-    font-weight: 700;
-    font-size: 36px;
-    text-transform: uppercase;
-    position: absolute;
-    top: 50%;
-    right: 30px;
-    z-index: 100;
-    color: var(--white-color);
-    transform: translateY(-50%);
+  &__breadcrumb {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 20px 0;
 
     span {
-      color: var(--orange-color);
+      color: #b3b3b3;
     }
 
-    // Điều chỉnh title cho tablet
+    a {
+      color: var(--primary-color);
+
+      &:hover {
+        color: var(--orange-color);
+      }
+    }
+
+    // Responsive cho tablet
     @media (max-width: 1024px) and (min-width: 769px) {
-      font-size: 20px;
-      width: 280px;
-      right: 15px;
-      line-height: 1.2;
-      font-weight: 600;
+      font-size: 13px;
+      padding: 18px 0;
     }
 
-    // Ẩn title khi ở màn hình mobile
+    // Responsive cho mobile
+    @media (max-width: 768px) {
+      font-size: 12px;
+      padding: 15px 0;
+    }
+  }
+
+  &__card {
+    border-radius: 12px;
+    background: #f4f4f4;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    .login-form__banner-title {
+      text-align: right;
+      width: 500px;
+      font-weight: 700;
+      font-size: 36px;
+      text-transform: uppercase;
+      position: absolute;
+      top: 50%;
+      right: 30px;
+      z-index: 100;
+      color: var(--white-color);
+      transform: translateY(-50%);
+
+      span {
+        color: var(--orange-color);
+      }
+
+      // Điều chỉnh title cho tablet
+      @media (max-width: 1024px) and (min-width: 769px) {
+        font-size: 20px;
+        width: 280px;
+        right: 15px;
+        line-height: 1.2;
+        font-weight: 600;
+      }
+
+      // Ẩn title khi ở màn hình mobile
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+
+    // Responsive cho tablet: giữ layout ngang nhưng điều chỉnh tỷ lệ
+    @media (max-width: 1024px) and (min-width: 769px) {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    // Responsive: chuyển thành layout dọc trên mobile
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    @media (max-width: 480px) {
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+  }
+
+  &__banner {
+    width: 50%;
+    height: 635.03px;
+    background-size: cover;
+    background-position: left;
+    position: relative;
+
+    // Điều chỉnh banner cho tablet
+    @media (max-width: 1024px) and (min-width: 769px) {
+      width: 45%;
+      height: 500px;
+    }
+
+    // Ẩn banner trên mobile
     @media (max-width: 768px) {
       display: none;
     }
   }
 
-  // Responsive cho tablet: giữ layout ngang nhưng điều chỉnh tỷ lệ
-  @media (max-width: 1024px) and (min-width: 769px) {
-    flex-direction: row;
-    align-items: stretch;
-  }
+  &__content {
+    flex: 1;
+    padding: 40px;
 
-  // Responsive: chuyển thành layout dọc trên mobile
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
+    .login-form__greeting {
+      color: var(--primary-color);
+    }
 
-  @media (max-width: 480px) {
-    border-radius: 8px;
-    margin-bottom: 15px;
-  }
-}
+    .login-form__heading {
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 24px;
+      margin-top: 4px;
+    }
 
-.form-banner {
-  width: 50%;
-  height: 635.03px;
-  background-size: cover;
-  background-position: left;
-  position: relative;
+    // Responsive padding cho tablet
+    @media (max-width: 1024px) and (min-width: 769px) {
+      padding: 35px 30px;
 
-  // Điều chỉnh banner cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    width: 45%;
-    height: 500px;
-  }
+      .login-form__heading {
+        font-size: 22px;
+      }
+    }
 
-  // Ẩn banner trên mobile
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
+    // Responsive padding cho mobile
+    @media (max-width: 768px) {
+      padding: 30px 20px;
 
-.form-content {
-  flex: 1;
-  padding: 40px;
+      .login-form__heading {
+        font-size: 20px;
+        text-align: center;
+      }
 
-  p {
-    color: var(--primary-color);
-  }
+      .login-form__greeting {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+    }
 
-  h4 {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 24px;
-    margin-top: 4px;
-  }
+    @media (max-width: 480px) {
+      padding: 20px 15px;
 
-  // Responsive padding cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    padding: 35px 30px;
-
-    h4 {
-      font-size: 22px;
+      .login-form__heading {
+        font-size: 18px;
+      }
     }
   }
 
-  // Responsive padding cho mobile
-  @media (max-width: 768px) {
-    padding: 30px 20px;
-
-    h4 {
-      font-size: 20px;
-      text-align: center;
-    }
-
-    p {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    padding: 20px 15px;
-
-    h4 {
-      font-size: 18px;
-    }
-  }
-}
-
-.info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-top: 12px;
-
-  label {
-    span,
-    a {
-      margin-left: 5px;
-      color: var(--text-color);
-    }
-  }
-
-  // Responsive cho tablet: giữ layout ngang
-  @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 12px;
-    margin-top: 15px;
-  }
-
-  // Responsive cho mobile: chuyển thành layout dọc
-  @media (max-width: 768px) {
-    flex-direction: row;
+  &__meta {
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-top: 12px;
+
+    label {
+      span,
+      a {
+        margin-left: 5px;
+        color: var(--text-color);
+      }
+    }
+
+    // Responsive cho tablet: giữ layout ngang
+    @media (max-width: 1024px) and (min-width: 769px) {
+      font-size: 12px;
+      margin-top: 15px;
+    }
+
+    // Responsive cho mobile: chuyển thành layout dọc
+    @media (max-width: 768px) {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    @media (max-width: 480px) {
+      gap: 15px;
+    }
   }
 
-  @media (max-width: 480px) {
-    gap: 15px;
+  &__remember {
+    display: flex;
+    align-items: center;
+    width: 200px;
+
+    span {
+      font-weight: 300;
+      color: #000;
+    }
+
+    // Responsive cho tablet
+    @media (max-width: 1024px) and (min-width: 769px) {
+      width: 180px;
+
+      input {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      width: auto;
+    }
   }
-}
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  width: 200px;
-
-  input {
+  &__checkbox-input {
     width: 18px;
     height: 18px;
-  }
 
-  span {
-    font-weight: 300;
-    color: #000;
-  }
-
-  // Responsive cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    width: 180px;
-
-    input {
+    @media (max-width: 1024px) and (min-width: 769px) {
       width: 16px;
       height: 16px;
     }
   }
 
-  @media (max-width: 768px) {
-    width: auto;
-  }
-}
+  &__fields {
+    margin-top: 26px;
 
-.input-gr {
-  margin-top: 26px;
+    .login-form__field + .login-form__field {
+      margin-top: 12px;
+    }
 
-  .input-password {
-    margin-top: 12px;
-  }
+    // Responsive cho tablet
+    @media (max-width: 1024px) and (min-width: 769px) {
+      margin-top: 24px;
 
-  // Responsive cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    margin-top: 24px;
+      .login-form__field + .login-form__field {
+        margin-top: 15px;
+      }
+    }
 
-    .input-password {
-      margin-top: 15px;
+    @media (max-width: 768px) {
+      margin-top: 20px;
     }
   }
 
-  @media (max-width: 768px) {
-    margin-top: 20px;
-  }
-}
-
-.form-btn {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 14px;
-
-  .btn-login {
+  &__actions {
+    margin-top: 16px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    min-width: 120px;
-    transition: filter 0.2s ease;
+    flex-direction: column;
+    gap: 14px;
 
-    &:hover {
-      filter: opacity(0.8);
+    p {
+      color: #b3b3b3;
+      font-size: 14px;
+      font-weight: 400;
     }
+  }
 
-    // Responsive button cho tablet
+  // Error message styling responsive
+  &__error {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 8px;
+    text-align: center;
+
+    // Responsive cho tablet
     @media (max-width: 1024px) and (min-width: 769px) {
-      padding: 12px 20px;
-      min-width: 140px;
-      font-size: 15px;
+      font-size: 12px;
+      margin-top: 10px;
     }
 
-    // Responsive button cho mobile
     @media (max-width: 768px) {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 16px;
+      font-size: 12px;
+      margin-top: 10px;
     }
-  }
-
-  p {
-    color: #b3b3b3;
-    font-size: 14px;
-    font-weight: 400;
-  }
-}
-
-// Error message styling responsive
-.error-message {
-  color: #e74c3c;
-  font-size: 13px;
-  margin-top: 8px;
-  text-align: center;
-
-  // Responsive cho tablet
-  @media (max-width: 1024px) and (min-width: 769px) {
-    font-size: 12px;
-    margin-top: 10px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    margin-top: 10px;
   }
 }
 
 // Thêm media query tối ưu cho tablet landscape (1024px - 1200px)
 @media (max-width: 1200px) and (min-width: 1025px) {
-  .wrapper {
+  .login-form {
     width: 90%;
   }
 
-  .login-from .title {
+  .login-from__card .login-form__banner-title {
     font-size: 26px;
     width: 400px;
     line-height: 1.2;
   }
 
-  .form-content {
+  .login-form__content {
     padding: 38px 35px;
   }
 }

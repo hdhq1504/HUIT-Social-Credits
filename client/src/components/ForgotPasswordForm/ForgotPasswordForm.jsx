@@ -135,10 +135,10 @@ function ForgotPasswordForm() {
       case 1:
         return (
           <>
-            <p className={cx('welcome')}>Tiếc quá nhỉ!</p>
+            <p className={cx('forgot-password__greeting')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
-            <div className={cx('input-gr')}>
-              <div className={cx('input-email')}>
+            <div className={cx('forgot-password__fields')}>
+              <div className={cx('forgot-password__field')}>
                 <InputField
                   label="Email"
                   placeholder="Vui lòng nhập email của bạn"
@@ -147,15 +147,15 @@ function ForgotPasswordForm() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              {errorMessage && <p className={cx('error-message')}>{errorMessage}</p>}
+              {errorMessage && <p className={cx('forgot-password__error')}>{errorMessage}</p>}
               {infoMessage && (
-                <p className={cx('error-message')} style={{ color: '#2e7d32' }}>
+                <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
                   {infoMessage}
                 </p>
               )}
             </div>
-            <div className={cx('form-btn')}>
-              <button type="submit" className={cx('btn-login')} onClick={handleEmailSubmit}>
+            <div className={cx('forgot-password__actions')}>
+              <button type="submit" className={cx('forgot-password__submit')} onClick={handleEmailSubmit}>
                 Tiếp tục
               </button>
             </div>
@@ -164,14 +164,14 @@ function ForgotPasswordForm() {
       case 2:
         return (
           <>
-            <p className={cx('welcome')}>Tiếc quá nhỉ!</p>
+            <p className={cx('forgot-password__greeting')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
-            <p className={cx('otp-message')}>
-              Mã xác thực được gửi qua Email <span style={{ color: 'var(--primary)' }}>{email}</span> của bạn. Vui lòng
-              kiểm tra hộp thư.
+            <p className={cx('forgot-password__otp-message')}>
+              Mã xác thực được gửi qua Email <span style={{ color: 'var(--primary-color)' }}>{email}</span> của bạn. Vui
+              lòng kiểm tra hộp thư.
             </p>
-            <div className={cx('input-gr')}>
-              <div className={cx('input-otp')}>
+            <div className={cx('forgot-password__fields')}>
+              <div className={cx('forgot-password__field', 'forgot-password__field--otp')}>
                 <InputField
                   label="Mã OTP"
                   placeholder="Nhập mã xác thực bạn nhận được"
@@ -179,25 +179,25 @@ function ForgotPasswordForm() {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                 />
-                <button className={cx('resend-otp')} onClick={handleResendOtp} type="button">
+                <button className={cx('forgot-password__resend')} onClick={handleResendOtp} type="button">
                   <Phone size={14} />
                   <span>Gửi lại mã mới</span>
                 </button>
               </div>
               {generatedOtp && (
-                <p className={cx('error-message')} style={{ color: '#2e7d32' }}>
+                <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
                   Mã OTP mô phỏng: {generatedOtp}
                 </p>
               )}
-              {errorMessage && <p className={cx('error-message')}>{errorMessage}</p>}
+              {errorMessage && <p className={cx('forgot-password__error')}>{errorMessage}</p>}
               {infoMessage && (
-                <p className={cx('error-message')} style={{ color: '#2e7d32' }}>
+                <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
                   {infoMessage}
                 </p>
               )}
             </div>
-            <div className={cx('form-btn')}>
-              <button type="submit" className={cx('btn-login')} onClick={handleOtpSubmit}>
+            <div className={cx('forgot-password__actions')}>
+              <button type="submit" className={cx('forgot-password__submit')} onClick={handleOtpSubmit}>
                 Tiếp tục
               </button>
             </div>
@@ -206,9 +206,9 @@ function ForgotPasswordForm() {
       case 3:
         return (
           <>
-            <p className={cx('welcomee')}>Tiếc quá nhỉ!</p>
+            <p className={cx('forgot-password__greeting')}>Tiếc quá nhỉ!</p>
             <h4>Quên mật khẩu</h4>
-            <p className={cx('password-requirements')}>
+            <p className={cx('forgot-password__password-rules')}>
               Mật khẩu bao gồm:
               <ul>
                 <li>1 kí tự chữ viết hoa trở lên</li>
@@ -216,8 +216,8 @@ function ForgotPasswordForm() {
                 <li>Độ dài từ 6 ký tự trở lên</li>
               </ul>
             </p>
-            <div className={cx('input-gr')}>
-              <div className={cx('input-password')}>
+            <div className={cx('forgot-password__fields')}>
+              <div className={cx('forgot-password__field', 'forgot-password__field--password')}>
                 <InputField
                   label="Đặt mật khẩu mới"
                   placeholder="Nhập mật khẩu của bạn muốn đặt"
@@ -229,12 +229,12 @@ function ForgotPasswordForm() {
                     <FontAwesomeIcon
                       icon={showPassword ? faEyeSlash : faEye}
                       onClick={togglePasswordVisibility}
-                      className={cx('password-toggle')}
+                      className={cx('forgot-password__password-toggle')}
                     />
                   }
                 />
               </div>
-              <div className={cx('input-password-confirm')}>
+              <div className={cx('forgot-password__field')}>
                 <InputField
                   label="Nhập lại mật khẩu"
                   placeholder="Nhập lại mật khẩu của bạn vừa nhập"
@@ -246,20 +246,20 @@ function ForgotPasswordForm() {
                     <FontAwesomeIcon
                       icon={showPassword ? faEyeSlash : faEye}
                       onClick={togglePasswordVisibility}
-                      className={cx('password-toggle')}
+                      className={cx('forgot-password__password-toggle')}
                     />
                   }
                 />
               </div>
-              {errorMessage && <p className={cx('error-message')}>{errorMessage}</p>}
+              {errorMessage && <p className={cx('forgot-password__error')}>{errorMessage}</p>}
               {infoMessage && (
-                <p className={cx('error-message')} style={{ color: '#2e7d32' }}>
+                <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
                   {infoMessage}
                 </p>
               )}
             </div>
-            <div className={cx('form-btn')}>
-              <button type="submit" className={cx('btn-login')} onClick={handlePasswordSubmit}>
+            <div className={cx('forgot-password__actions')}>
+              <button type="submit" className={cx('forgot-password__submit')} onClick={handlePasswordSubmit}>
                 Đổi mật khẩu
               </button>
             </div>
@@ -268,7 +268,7 @@ function ForgotPasswordForm() {
       case 4:
         return (
           <>
-            <div className={cx('success-create')}>
+            <div className={cx('forgot-password__success')}>
               <img src="/images/success-icon.svg" alt="" />
               <p>Cấp lại mật khẩu thành công, vui lòng đợi vài giây !</p>
             </div>
@@ -280,18 +280,18 @@ function ForgotPasswordForm() {
   };
 
   return (
-    <div className={cx('wrapper')}>
-      <div className={cx('link')}>
+    <div className={cx('forgot-password')}>
+      <div className={cx('forgot-password__breadcrumb')}>
         <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Quên mật khẩu</span>
       </div>
-      <form className={cx('login-form')} onSubmit={(e) => e.preventDefault()}>
-        <div className={cx('form-banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
-          <p className={cx('title')}>
+      <form className={cx('forgot-password__card')} onSubmit={(e) => e.preventDefault()}>
+        <div className={cx('forgot-password__banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
+          <p className={cx('forgot-password__banner-title')}>
             Tra cứu điểm công tác xã hội dễ dàng tại <br />
             <span>HUIT SOCIAL CREDITS</span>
           </p>
         </div>
-        <div className={cx('form-content')}>{renderFormContent()}</div>
+        <div className={cx('forgot-password__content')}>{renderFormContent()}</div>
       </form>
     </div>
   );

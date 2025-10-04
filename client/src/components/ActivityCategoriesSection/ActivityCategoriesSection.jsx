@@ -2,13 +2,7 @@ import React from 'react';
 import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faHeart,
-  faLeaf,
-  faTint,
-  faSeedling,
-  faHandshakeAngle
-} from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faLeaf, faTint, faSeedling, faHandshakeAngle } from '@fortawesome/free-solid-svg-icons';
 import styles from './ActivityCategoriesSection.module.scss';
 
 const cx = classNames.bind(styles);

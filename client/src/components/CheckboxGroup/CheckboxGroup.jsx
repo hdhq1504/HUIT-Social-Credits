@@ -37,41 +37,45 @@ function CheckboxGroup({ options, selectedValues, onChange, title = 'Lọc kết
   };
 
   return (
-    <div className={cx('wrapper')}>
-      <div className={cx('header')}>
-        <div className={cx('headerIcon')}>
+    <div className={cx('checkbox-filter')}>
+      <div className={cx('checkbox-filter__header')}>
+        <div className={cx('checkbox-filter__header-icon')}>
           <FontAwesomeIcon icon={faFilter} />
         </div>
-        <div className={cx('headerTitle')}>{title}</div>
+        <div className={cx('checkbox-filter__header-title')}>{title}</div>
       </div>
 
-      <div className={cx('section')}>
-        <div className={cx('sectionHeader')}>
-          <div className={cx('sectionLabel')}>{sectionLabel}</div>
-          <div className={cx('sectionChevron')}>
+      <div className={cx('checkbox-filter__section')}>
+        <div className={cx('checkbox-filter__section-header')}>
+          <div className={cx('checkbox-filter__section-label')}>{sectionLabel}</div>
+          <div className={cx('checkbox-filter__section-chevron')}>
             <FontAwesomeIcon icon={faCaretDown} />
           </div>
         </div>
 
-        <div className={cx('options')}>
+        <div className={cx('checkbox-filter__options')}>
           {allOpt && (
-            <label className={cx('optionRow', 'optionAll')}>
+            <label className={cx('checkbox-filter__option', 'checkbox-filter__option--all')}>
               <Checkbox
-                className={cx('checkbox')}
+                className={cx('checkbox-filter__checkbox')}
                 indeterminate={indeterminate}
                 checked={allChecked}
                 onChange={(e) => handleAllChange(e.target.checked)}
               >
-                <span className={cx('optionText')}>{allOpt.label ?? 'Tất cả'}</span>
+                <span className={cx('checkbox-filter__option-text')}>{allOpt.label ?? 'Tất cả'}</span>
               </Checkbox>
             </label>
           )}
 
-          <Checkbox.Group className={cx('checkboxGroup')} value={selectedChildren} onChange={handleChildChange}>
+          <Checkbox.Group
+            className={cx('checkbox-filter__group')}
+            value={selectedChildren}
+            onChange={handleChildChange}
+          >
             {childOptions.map((o) => (
-              <label key={String(o.value)} className={cx('optionRow')}>
-                <Checkbox className={cx('checkbox')} value={o.value} disabled={o.disabled}>
-                  <span className={cx('optionText')}>{o.label ?? String(o.value)}</span>
+              <label key={String(o.value)} className={cx('checkbox-filter__option')}>
+                <Checkbox className={cx('checkbox-filter__checkbox')} value={o.value} disabled={o.disabled}>
+                  <span className={cx('checkbox-filter__option-text')}>{o.label ?? String(o.value)}</span>
                 </Checkbox>
               </label>
             ))}

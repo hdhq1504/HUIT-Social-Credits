@@ -1,11 +1,15 @@
 import React from 'react';
+import classNames from 'classnames/bind';
 import Header from '../components/Header/Header';
+import styles from './HeaderOnly.module.scss';
+
+const cx = classNames.bind(styles);
 
 function HeaderOnly({ children }) {
   return (
-    <div className="wraper">
+    <div className={cx('layout-header-only')}>
       <Header />
-      <div className="content">{children}</div>
+      <main className={cx('layout-header-only__content')}>{children}</main>
     </div>
   );
 }

@@ -1,12 +1,12 @@
-.scrollToTop {
+.scroll-to-top {
   position: fixed;
   bottom: 140px;
   right: 20px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(to right, #0000fd, #00008b);
-  color: white;
+  background: linear-gradient(to right, #0000fd, var(--primary-color));
+  color: var(--white-color);
   border: none;
   cursor: pointer;
   display: flex;

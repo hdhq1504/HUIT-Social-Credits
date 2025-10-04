@@ -44,24 +44,24 @@ function LoginForm() {
   };
 
   return (
-    <div className={cx('wrapper')}>
-      <div className={cx('link')}>
+    <div className={cx('login-form')}>
+      <div className={cx('login-form__breadcrumb')}>
         <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Đăng nhập</span>
       </div>
-      <form className={cx('login-from')} onSubmit={handleEmailLogin}>
-        <div className={cx('form-banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
-          <p className={cx('title')}>
+      <form className={cx('login-form__card')} onSubmit={handleEmailLogin}>
+        <div className={cx('login-form__banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
+          <p className={cx('login-form__banner-title')}>
             Tra cứu điểm công tác xã hội dễ dàng tại <br />
             <span>HUIT SOCIAL CREDITS</span>
           </p>
         </div>
 
-        <div className={cx('form-content')}>
-          <p>Xin chào bạn !</p>
-          <h4>Đăng nhập tài khoản</h4>
+        <div className={cx('login-form__content')}>
+          <p className={cx('login-form__greeting')}>Xin chào bạn !</p>
+          <h4 className={cx('login-form__heading')}>Đăng nhập tài khoản</h4>
 
-          <div className={cx('input-gr')}>
-            <div className={cx('input-email')}>
+          <div className={cx('login-form__fields')}>
+            <div className={cx('login-form__field')}>
               <InputField
                 label="Email"
                 placeholder="Nhập Email của bạn"
@@ -70,7 +70,7 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className={cx('input-password')}>
+            <div className={cx('login-form__field')}>
               <InputField
                 label="Mật khẩu"
                 placeholder="Nhập mật khẩu của bạn"
@@ -80,12 +80,12 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {errorMessage && <p className={cx('error-message')}>{errorMessage}</p>}
+            {errorMessage && <p className={cx('login-form__error')}>{errorMessage}</p>}
           </div>
 
-          <div className={cx('info')}>
-            <label className={cx('checkbox-label')}>
-              <input type="checkbox" className={cx('checkbox-input')} />
+          <div className={cx('login-form__meta')}>
+            <label className={cx('login-form__remember')}>
+              <input type="checkbox" className={cx('login-form__checkbox-input')} />
               <span>Lưu đăng nhập</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center' }}>
@@ -94,10 +94,8 @@ function LoginForm() {
             </label>
           </div>
 
-          <div className={cx('form-btn')}>
-            <Button variant={'primary'}>
-              Đăng nhập
-            </Button>
+          <div className={cx('login-form__actions')}>
+            <Button variant="primary">Đăng nhập</Button>
           </div>
         </div>
       </form>

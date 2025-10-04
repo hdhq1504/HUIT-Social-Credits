@@ -1,5 +1,5 @@
 .button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 8px 16px;
@@ -9,11 +9,11 @@
   word-wrap: break-word;
   cursor: pointer;
   border: none;
-  border-radius: 8px;
+  gap: 8px;
 
   &.primary {
     background-color: var(--primary-color);
-    color: #fff;
+    color: var(--white-color);
   }
 
   &.secondary {
@@ -37,8 +37,13 @@
     cursor: not-allowed;
   }
 
-  &.icon {
-    display: flex;
+  &--icon {
     gap: 8px;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }

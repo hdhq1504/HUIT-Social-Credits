@@ -3,7 +3,7 @@ import Home from '../pages/Home';
 import LoginPage from '../pages/LoginPage/LoginPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage/ForgotPasswordPage';
 import ProfilePage from '../pages/ProfilePage/ProfilePage';
-import ListActivitesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
+import ListActivitiesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 import Loading from '../pages/Loading/Loading';
 
@@ -13,7 +13,7 @@ const publicRoutes = [
   { path: config.routes.login, component: LoginPage },
   { path: config.routes.forgotPassword, component: ForgotPasswordPage },
   { path: config.routes.profile, component: ProfilePage, layout: HeaderOnly },
-  { path: config.routes.listActivities, component: ListActivitesPage },
+  { path: config.routes.listActivities, component: ListActivitiesPage },
   { path: config.routes.loading, component: Loading },
 ];
 

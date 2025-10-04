@@ -17,16 +17,16 @@ function Dropdown({ options, label, withIcon }) {
 
   return (
     <div className={cx('dropdown')}>
-      <div className={cx('dropdown-toggle')} onClick={toggleDropdown}>
-        {withIcon && <FaFilter className={cx('icon')} />}
+      <div className={cx('dropdown__toggle')} onClick={toggleDropdown}>
+        {withIcon && <FaFilter className={cx('dropdown__icon')} />}
         {selected}
-        <img className={cx('arrow')} src="/images/Dropdown.svg" alt="" />
+        <img className={cx('dropdown__arrow')} src="/images/Dropdown.svg" alt="" />
       </div>
 
       {isOpen && (
-        <ul className={cx('dropdown-menu')}>
+        <ul className={cx('dropdown__menu')}>
           {options.map((option, index) => (
-            <li key={index} className={cx('dropdown-item')} onClick={() => handleSelect(option)}>
+            <li key={index} className={cx('dropdown__item')} onClick={() => handleSelect(option)}>
               {option}
             </li>
           ))}

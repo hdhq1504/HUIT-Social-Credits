@@ -7,7 +7,7 @@ const cx = classNames.bind(styles);
 function Button({ children, variant = 'primary', icon, disabled, onClick }) {
   return (
     <button className={cx('button', variant, { icon: icon, disabled: disabled })} onClick={onClick} disabled={disabled}>
-      {icon && <span className={styles.icon}>{icon}</span>}
+      {icon && <span className={cx('button__icon')}>{icon}</span>}
       {children}
     </button>
   );

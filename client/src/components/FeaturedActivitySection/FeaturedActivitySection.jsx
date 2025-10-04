@@ -73,7 +73,7 @@ function FeaturedActivitySection() {
         open={open}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-        variant='confirm'
+        variant="confirm"
         campaignName={selectedActivity?.title || 'Hoạt động'}
         pointsLabel={selectedActivity?.points != null ? `${selectedActivity.points} điểm` : undefined}
         dateTime={selectedActivity?.dateTime}

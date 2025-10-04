@@ -2,18 +2,19 @@
 @import 'normalize.css';
 
 :root {
-  --primary-color: #00008B;
-  --secondary-color: #EEEEFE;
-  --yellow-color: #EBB143;
-  --warning-color: #DC7700;
-  --danger-color: #DC3545;
+  --primary-color: #00008b;
+  --secondary-color: #eeeefe;
+  --yellow-color: #ebb143;
+  --warning-color: #dc7700;
+  --danger-color: #dc3545;
   --black-color: #000000;
   --muted-color: #999999;
-  --white-color: #FFFFFF;
-  --information-color: #39B5FA;
+  --white-color: #ffffff;
+  --information-color: #39b5fa;
   --success-color: #198754;
   --text-color: #000000;
-  --orange-color: #FF5C00;
+  --orange-color: #ff5c00;
+  --border-color: #b3b3b3;
 
   --content-width: 1152px;
   font-family: 'Montserrat', system-ui, sans-serif;

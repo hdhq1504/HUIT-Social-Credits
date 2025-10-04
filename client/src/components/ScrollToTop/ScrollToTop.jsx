@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import classNames from 'classnames/bind';
 import styles from './ScrollToTop.module.scss';
+
+const cx = classNames.bind(styles);
 
 const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -33,7 +36,7 @@ const ScrollToTop = () => {
   return (
     <>
       {isVisible && (
-        <button onClick={scrollToTop} className={styles.scrollToTop} aria-label="Scroll to top">
+        <button onClick={scrollToTop} className={cx('scroll-to-top')} aria-label="Scroll to top">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"

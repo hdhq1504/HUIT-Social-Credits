@@ -18,23 +18,27 @@ function ProgressSection({
 }) {
   return (
     <div className={cx('progress-section')}>
-      <div className={cx('progress-wrapper')}>
-        <div className={cx('progress-info')}>
-          <div className={cx('progress-title')}>Tiến độ học tập của bạn</div>
+      <div className={cx('progress-section__wrapper')}>
+        <div className={cx('progress-section__info')}>
+          <div className={cx('progress-section__title')}>Tiến độ học tập của bạn</div>
 
-          <div className={cx('progress-points')}>
-            <div className={cx('points-block')}>
-              <div className={cx('points-value')}>{currentPoints}</div>
-              <div className={cx('points-label')}>Điểm hiện tại</div>
+          <div className={cx('progress-section__points')}>
+            <div className={cx('progress-section__points-item')}>
+              <div className={cx('progress-section__points-value')}>{currentPoints}</div>
+              <div className={cx('progress-section__points-label')}>Điểm hiện tại</div>
             </div>
-            <div className={cx('points-block')}>
-              <div className={cx('points-value', 'target')}>{targetPoints}</div>
-              <div className={cx('points-label', 'target')}>Điểm mục tiêu</div>
+            <div className={cx('progress-section__points-item')}>
+              <div className={cx('progress-section__points-value', 'progress-section__points-value--target')}>
+                {targetPoints}
+              </div>
+              <div className={cx('progress-section__points-label', 'progress-section__points-value--target')}>
+                Điểm mục tiêu
+              </div>
             </div>
           </div>
 
-          <div className={cx('progress-bar-section')}>
-            <div className={cx('progress-bar-header')}>
+          <div className={cx('progress-section__progress')}>
+            <div className={cx('progress-section__progress-header')}>
               <span>Tiến độ tổng thể</span>
               <span>{percent}%</span>
             </div>
@@ -44,37 +48,46 @@ function ProgressSection({
               strokeColor="#FFFFFF"
               trailColor="#FF5C00"
               strokeWidth={12}
-              className={cx('progress-bar')}
+              className={cx('progress-section__bar')}
             />
           </div>
 
-          <div className={cx('progress-groups')}>
+          <div className={cx('progress-section__group')}>
             {groups.map((g, idx) => (
-              <div key={idx} className={cx('group-card', g.status)}>
-                <div className={cx('group-header')}>
+              <div
+                key={idx}
+                className={cx('progress-section__group-card', `progress-section__group-card--${g.status}`)}
+              >
+                <div className={cx('progress-section__group-header')}>
                   <span>{g.name}</span>
                   {g.status === 'success' ? (
-                    <FontAwesomeIcon icon={faCircleCheck} className={cx('dot', 'success')} />
+                    <FontAwesomeIcon
+                      icon={faCircleCheck}
+                      className={cx('progress-section__group-icon', 'progress-section__group-icon--success')}
+                    />
                   ) : (
-                    <FontAwesomeIcon icon={faClock} className={cx('dot', 'warning')} />
+                    <FontAwesomeIcon
+                      icon={faClock}
+                      className={cx('progress-section__group-icon', 'progress-section__group-icon--warning')}
+                    />
                   )}
                 </div>
-                <div className={cx('group-value')}>{g.value}</div>
-                <div className={cx('group-status')}>{g.note}</div>
+                <div className={cx('progress-section__group-value')}>{g.value}</div>
+                <div className={cx('progress-section__group-status')}>{g.note}</div>
               </div>
             ))}
           </div>
 
-          <div className={cx('progress-summary')}>
+          <div className={cx('progress-section__summary')}>
             Bạn còn thiếu <strong>{missingPoints} điểm</strong> để đạt chứng chỉ hoàn thành.
           </div>
 
-          <button className={cx('btn-detail')} onClick={onViewDetail}>
+          <button className={cx('progress-section__actions')} onClick={onViewDetail}>
             Xem bảng điểm chi tiết
           </button>
         </div>
 
-        <div className={cx('progress-image')}>
+        <div className={cx('progress-section__image')}>
           <img src={imageUrl} alt="Progress" />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination } from 'antd';
@@ -55,41 +55,41 @@ function ListActivitiesPage() {
   const handleCancel = () => setOpen(false);
 
   return (
-    <>
+    <section className={cx('activities-page')}>
       {/* {contextHolder} */}
-      <div className={cx('searchbar')}>
+      <div className={cx('activities-page__search')}>
         <SearchBar
           variant="list"
           groups={['Tất cả', 'Địa chỉ đỏ', 'Mùa hè xanh', 'Xuân tình nguyện', 'Hiến máu', 'Hỗ trợ']}
           statuses={['Sắp diễn ra', 'Đang diễn ra', 'Đã kết thúc']}
-          onSubmit={(q) => console.log('List filter search:', q)}
+          onSubmit={(query) => console.log('List filter search:', query)}
         />
       </div>
 
-      <div className={cx('wrapper')}>
-        <div className={cx('link')}>
+      <div className={cx('activities-page__container')}>
+        <nav className={cx('activities-page__breadcrumb')}>
           <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> /{' '}
           <span>Sắp xếp ngày đăng gần nhất</span>
-        </div>
+        </nav>
 
-        <div className={cx('container')}>
+        <div className={cx('acitivities-page__layout')}>
           <Row gutter={[24, 24]}>
             {/* Content 9/12 */}
-            <Col xs={24} lg={18} className={cx('activities__col-9')}>
-              <div className={cx('activities__header')}>
-                <div className={cx('activities__count')}>
-                  <Title level={5} className={cx('activities__count-text')}>
-                    Có <span className={cx('activities__count-number')}>128</span> kết quả phù hợp
+            <Col xs={24} lg={18} className={cx('activities-page__results-column')}>
+              <div className={cx('activities-page__results-header')}>
+                <div className={cx('activities-page__results-count')}>
+                  <Title level={5} className={cx('activities-page__count-text')}>
+                    Có <span className={cx('activities-page__count-number')}>128</span> kết quả phù hợp
                   </Title>
                 </div>
 
-                <div className={cx('activities__sort')}>
-                  <Text className={cx('activities__sort-label')}>Sắp xếp theo</Text>
+                <div className={cx('activities-page__sort')}>
+                  <Text className={cx('activities-page__sort-label')}>Sắp xếp theo</Text>
                   <Select
                     size="middle"
                     value={sortBy}
                     onChange={setSortBy}
-                    className={cx('activities__sort-select')}
+                    className={cx('activities-page__sort-select')}
                     options={[
                       { value: 'latest', label: 'Ngày đăng gần nhất' },
                       { value: 'points_desc', label: 'Điểm cao → thấp' },
@@ -99,19 +99,19 @@ function ListActivitiesPage() {
                 </div>
               </div>
 
-              <div className={cx('activities__list')}>
-                {activities.map((a) => (
+              <div className={cx('activities-page__cards')}>
+                {activities.map((activity) => (
                   <CardActivity
-                    key={a.id}
-                    {...a}
+                    key={activity.id}
+                    {...activity}
                     variant="horizontal"
-                    onDetails={() => console.log('Chi tiết:', a.title)}
-                    onRegister={() => handleOpenRegister(a)}
+                    onDetails={() => console.log('Chi tiết:', activity.title)}
+                    onRegister={() => handleOpenRegister(activity)}
                   />
                 ))}
               </div>
 
-              <div className={cx('activities__footer')}>
+              <div className={cx('activities-page__pagination')}>
                 <ConfigProvider
                   theme={{
                     token: {
@@ -132,7 +132,7 @@ function ListActivitiesPage() {
 
             {/* Sidebar 3/12 */}
             <Col xs={24} lg={6}>
-              <div className="activities__sidebar">
+              <div className="activities-page__filters">
                 <CheckboxGroup selectedValues={selectedItems} onChange={setSelectedItems} options={options} />
               </div>
             </Col>
@@ -151,7 +151,7 @@ function ListActivitiesPage() {
         location={selectedActivity?.location}
         // groupLabel: để default trong component nếu bạn chưa có dữ liệu nhóm
       />
-    </>
+    </section>
   );
 }
 
