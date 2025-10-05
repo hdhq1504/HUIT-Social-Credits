@@ -4,8 +4,6 @@ import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination } from 'antd';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
-import RegisterModal from '@components/RegisterModal/RegisterModal';
-// import useToast from '@components/Toast/Toast';
 import SearchBar from '@layouts/components/SearchBar/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
 import { mockApi } from '../../utils/mockAPI';
@@ -26,9 +24,6 @@ function ListActivitiesPage() {
     { value: 'Hỗ trợ', label: 'Hỗ trợ' },
   ];
   const [activities, setActivities] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  // const { contextHolder, open } = useToast();
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -41,18 +36,6 @@ function ListActivitiesPage() {
     };
     fetchActivities();
   }, []);
-
-  const handleOpenRegister = (activity) => {
-    setSelectedActivity(activity);
-    setOpen(true);
-  };
-
-  const handleConfirm = (activity) => {
-    setSelectedActivity(activity);
-    setOpen(false);
-  };
-
-  const handleCancel = () => setOpen(false);
 
   return (
     <section className={cx('activities-page')}>
@@ -101,13 +84,7 @@ function ListActivitiesPage() {
 
               <div className={cx('activities-page__cards')}>
                 {activities.map((activity) => (
-                  <CardActivity
-                    key={activity.id}
-                    {...activity}
-                    variant="horizontal"
-                    onDetails={() => console.log('Chi tiết:', activity.title)}
-                    onRegister={() => handleOpenRegister(activity)}
-                  />
+                  <CardActivity key={activity.id} {...activity} variant="horizontal" />
                 ))}
               </div>
 
@@ -139,18 +116,6 @@ function ListActivitiesPage() {
           </Row>
         </div>
       </div>
-
-      <RegisterModal
-        open={open}
-        variant="confirm"
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        campaignName={selectedActivity?.title || 'Hoạt động'}
-        pointsLabel={selectedActivity?.points != null ? `${selectedActivity.points} điểm` : undefined}
-        dateTime={selectedActivity?.dateTime}
-        location={selectedActivity?.location}
-        // groupLabel: để default trong component nếu bạn chưa có dữ liệu nhóm
-      />
     </section>
   );
 }

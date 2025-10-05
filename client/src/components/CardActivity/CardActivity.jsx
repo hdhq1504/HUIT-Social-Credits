@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
+import RegisterModal from '../RegisterModal/RegisterModal';
+import routes from '../../config/routes';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -17,6 +20,7 @@ function getInitials(name = '') {
 }
 
 function CardActivity({
+  id,
   title,
   points,
   dateTime,
@@ -24,17 +28,58 @@ function CardActivity({
   participants = [],
   capacity,
   coverImage = 'https://placehold.co/240x215',
-  isFeatured,
+  isFeatured = false,
   variant = 'vertical',
-  onRegister = () => {},
-  onDetails = () => {},
   badgeText = 'Nổi bật',
+  onDetails,
+  onRegister,
 }) {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
   const rootClass = cx('activity-card', {
     'activity-card--vertical': variant === 'vertical',
     'activity-card--horizontal': variant === 'horizontal',
     'activity-card--featured': !!isFeatured,
   });
+
+  const activity = {
+    id,
+    title,
+    points,
+    dateTime,
+    location,
+    participants,
+    capacity,
+    coverImage,
+    isFeatured,
+  };
+
+  const handleOpenDetail = () => {
+    if (typeof onDetails === 'function') {
+      onDetails(activity);
+      return;
+    }
+    if (id) {
+      navigate(routes.activityDetailWithId.replace(':id', id));
+    } else {
+      console.warn('Activity không có id:', activity);
+    }
+  };
+
+  const handleOpenRegister = () => {
+    if (typeof onRegister === 'function') {
+      onRegister(activity);
+    }
+    setOpen(true);
+  };
+
+  const handleConfirm = () => {
+    // TODO: gọi API đăng ký thật (nếu có)
+    setOpen(false);
+  };
+
+  const handleCancel = () => setOpen(false);
 
   return (
     <div className={rootClass}>
@@ -52,17 +97,17 @@ function CardActivity({
 
         <div className={cx('activity-card__points')}>
           <FontAwesomeIcon icon={faCoins} />
-          <span className={cx('activity-card__points-value')}>{points} điểm</span>
+          <span className={cx('activity-card__points-value')}>{points != null ? `${points} điểm` : '--'}</span>
         </div>
 
         <div className={cx('activity-card__date')}>
           <FontAwesomeIcon icon={faCalendar} />
-          <span className={cx('activity-card__date-value')}>{dateTime}</span>
+          <span className={cx('activity-card__date-value')}>{dateTime || '--'}</span>
         </div>
 
         <div className={cx('activity-card__location')}>
           <FontAwesomeIcon icon={faLocationDot} />
-          <span className={cx('activity-card__location-value')}>{location}</span>
+          <span className={cx('activity-card__location-value')}>{location || '--'}</span>
         </div>
 
         <div className={cx('activity-card__participants')}>
@@ -89,18 +134,29 @@ function CardActivity({
             })}
           </Avatar.Group>
 
-          <span className={cx('activity-card__capacity')}>Số lượng: {capacity}</span>
+          <span className={cx('activity-card__capacity')}>Số lượng: {capacity || '--'}</span>
         </div>
 
         <div className={cx('activity-card__actions')}>
-          <Button variant="outline" onClick={onDetails}>
+          <Button variant="outline" onClick={handleOpenDetail}>
             Chi tiết
           </Button>
-          <Button variant="primary" onClick={onRegister}>
+          <Button variant="primary" onClick={handleOpenRegister}>
             Đăng ký ngay
           </Button>
         </div>
       </div>
+
+      <RegisterModal
+        open={open}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        variant="confirm"
+        campaignName={title || 'Hoạt động'}
+        pointsLabel={points != null ? `${points} điểm` : undefined}
+        dateTime={dateTime}
+        location={location}
+      />
     </div>
   );
 }

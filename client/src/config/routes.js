@@ -9,5 +9,4 @@ const routes = {
   loading: '/loading',
 };
 
-
 export default routes;

@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
-import RegisterModal from '@components/RegisterModal/RegisterModal';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import styles from './FeaturedActivitySection.module.scss';
 import { mockApi } from '../../utils/mockAPI';
-import routes from '../../config/routes';
 
 const cx = classNames.bind(styles);
 
 function FeaturedActivitySection() {
   const [activities, setActivities] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -31,27 +25,6 @@ function FeaturedActivitySection() {
     };
     fetchActivities();
   }, []);
-
-  const handleOpenRegister = (activity) => {
-    setSelectedActivity(activity);
-    setOpen(true);
-  };
-
-  const handleOpenDetail = (activity) => {
-    if (activity?.id) {
-      navigate(routes.activityDetailWithId.replace(':id', activity.id));
-    } else {
-      console.warn('Activity không có id:', activity);
-    }
-  };
-
-  const handleConfirm = () => {
-    // TODO: call API đăng ký ở đây (nếu có)
-    // ví dụ: await api.register(selectedActivity.id)
-    setOpen(false);
-  };
-
-  const handleCancel = () => setOpen(false);
 
   return (
     <>
@@ -73,29 +46,12 @@ function FeaturedActivitySection() {
           >
             {activities.map((a) => (
               <SwiperSlide key={a.id}>
-                <CardActivity
-                  {...a}
-                  variant="vertical"
-                  onRegister={() => handleOpenRegister(a)}
-                  onDetails={() => handleOpenDetail(a)}
-                />
+                <CardActivity {...a} variant="vertical" />
               </SwiperSlide>
             ))}
           </Swiper>
         </div>
       </div>
-
-      <RegisterModal
-        open={open}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        variant="confirm"
-        campaignName={selectedActivity?.title || 'Hoạt động'}
-        pointsLabel={selectedActivity?.points != null ? `${selectedActivity.points} điểm` : undefined}
-        dateTime={selectedActivity?.dateTime}
-        location={selectedActivity?.location}
-        // groupLabel: để default trong component nếu bạn chưa có dữ liệu nhóm
-      />
     </>
   );
 }
