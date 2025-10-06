@@ -6,9 +6,31 @@
   box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.06);
   border-radius: 16px;
 
+  @media (max-width: 1024px) {
+    padding: 24px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
+
   &__wrapper {
     display: flex;
     gap: 32px;
+
+    @media (max-width: 1024px) {
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 20px;
+    }
   }
 
   &__info {
@@ -17,16 +39,46 @@
     flex-direction: column;
     gap: 16px;
     color: var(--white-color);
+
+    @media (max-width: 768px) {
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) {
+      gap: 12px;
+    }
   }
 
   &__title {
     font-size: 24px;
     font-weight: 600;
+
+    @media (max-width: 1024px) {
+      font-size: 22px;
+    }
+
+    @media (max-width: 768px) {
+      text-align: center;
+      font-size: 20px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 18px;
+    }
   }
 
   &__points {
     display: flex;
     gap: 32px;
+
+    @media (max-width: 768px) {
+      gap: 24px;
+      justify-content: center;
+    }
+
+    @media (max-width: 480px) {
+      gap: 16px;
+    }
   }
 
   &__points-item {
@@ -39,6 +91,18 @@
     font-size: 48px;
     font-weight: 600;
 
+    @media (max-width: 1024px) {
+      font-size: 42px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 36px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 32px;
+    }
+
     &--target {
       color: var(--orange-color);
     }
@@ -47,6 +111,18 @@
   &__points-label {
     font-size: 18px;
     font-weight: 600;
+
+    @media (max-width: 1024px) {
+      font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 15px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 14px;
+    }
 
     &--target {
       color: var(--orange-color);
@@ -58,22 +134,47 @@
     flex-direction: column;
     gap: 8px;
 
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
+
     &-header {
       display: flex;
       justify-content: space-between;
       font-size: 14px;
       font-weight: 500;
       color: var(--white-color);
+
+      @media (max-width: 768px) {
+        font-size: 13px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 12px;
+      }
     }
   }
 
   &__bar {
     border-radius: 50%;
+
+    :global(.ant-progress-bg) {
+      border-radius: 6px !important;
+    }
   }
 
   &__group {
     display: flex;
     gap: 20px;
+
+    @media (max-width: 1024px) {
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 12px;
+    }
 
     &-card {
       flex: 1;
@@ -83,6 +184,22 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+
+      @media (max-width: 1024px) {
+        padding: 14px;
+      }
+
+      @media (max-width: 768px) {
+        padding: 12px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      @media (max-width: 480px) {
+        padding: 10px;
+        gap: 6px;
+      }
 
       &--success {
         .progress-section__group-icon {
@@ -100,25 +217,70 @@
     &-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-weight: 700;
       font-size: 16px;
+
+      @media (max-width: 1024px) {
+        font-size: 15px;
+      }
+
+      @media (max-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 13px;
+      }
     }
 
     &-icon {
       width: 16px;
       height: 16px;
       border-radius: 4px;
+
+      @media (max-width: 768px) {
+        width: 14px;
+        height: 14px;
+      }
     }
 
     &-value {
       font-size: 24px;
       font-weight: 600;
+
+      @media (max-width: 1024px) {
+        font-size: 22px;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 20px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 18px;
+      }
     }
 
     &-status {
       font-size: 14px;
       font-weight: 500;
       color: var(--orange-color);
+
+      @media (max-width: 1024px) {
+        font-size: 13px;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 12px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 11px;
+      }
     }
   }
 
@@ -126,6 +288,19 @@
     font-size: 16px;
     font-weight: 400;
     color: var(--orange-color);
+
+    @media (max-width: 1024px) {
+      font-size: 15px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+    }
 
     strong {
       font-weight: 700;
@@ -146,20 +321,78 @@
     margin: 12px auto 0 0;
     display: inline-flex;
     justify-content: center;
+    transition: all 0.3s ease;
 
     &:hover {
       opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 92, 0, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1024px) {
+      width: 200px;
+      padding: 10px 20px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      width: 100%;
+      margin: 12px auto 0;
+      padding: 12px 24px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      padding: 10px 20px;
+      font-size: 13px;
     }
   }
 
   &__image {
     display: flex;
     align-items: center;
+    justify-content: center;
+
+    @media (max-width: 768px) {
+      order: -1;
+    }
 
     img {
       width: 320px;
       height: 320px;
       border-radius: 12px;
+      object-fit: cover;
+
+      @media (max-width: 1024px) {
+        width: 280px;
+        height: 280px;
+      }
+
+      @media (max-width: 768px) {
+        width: 200px;
+        height: 200px;
+        border-radius: 8px;
+      }
+
+      @media (max-width: 480px) {
+        width: 160px;
+        height: 160px;
+      }
+    }
+  }
+
+  // Tablet landscape specific adjustments
+  @media (max-width: 1024px) and (min-width: 769px) and (orientation: landscape) {
+    &__group {
+      flex-direction: row;
+    }
+
+    &__group-card {
+      flex-direction: column;
     }
   }
 }

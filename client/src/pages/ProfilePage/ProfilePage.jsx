@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames/bind';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
@@ -40,6 +40,21 @@ function ProfilePage() {
   const [phone, setPhone] = useState(user?.Sdt || '');
   const [email, setEmail] = useState(user?.email || '');
   const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(user?.AnhDaiDien || '/images/no-image.jpg');
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(user?.AnhDaiDien || '/images/no-image.jpg');
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [avatarFile, user]);
 
   // Hàm mở modal
   const handleOpenModal = () => {
@@ -114,13 +129,6 @@ function ProfilePage() {
     }
   };
 
-  // Hàm xử lý khi chọn file ảnh
-  const handleAvatarChange = (e) => {
-    if (e.target.files[0]) {
-      setAvatarFile(e.target.files[0]);
-    }
-  };
-
   // Hàm cập nhật thông tin người dùng
   const handleUpdate = async () => {
     try {
@@ -192,7 +200,7 @@ function ProfilePage() {
   };
 
   return (
-    <div className={cx('profile-page')}>
+    <main className={cx('profile-page')}>
       {/* Hiển thị Alert */}
       {showAlert && (
         <Alert
@@ -205,32 +213,32 @@ function ProfilePage() {
         />
       )}
 
-      <div className={cx('profile-page__info')}>
-        <div className={cx('profile-page__info-left')}>
-          <h4 className={cx('profile-page__info-left__title')}>Ảnh đại diện</h4>
-          <img
-            className={cx('profile-page__info-left__img')}
-            src={avatarFile ? URL.createObjectURL(avatarFile) : user?.AnhDaiDien || '/images/no-image.jpg'}
-            alt="Ảnh đại diện"
-            onError={(e) => (e.target.src = '/images/no-image.jpg')}
-          />
-          <div className={cx('profile-page__info-left__input')}>
-            <input type="file" accept="image/*" onChange={handleAvatarChange} />
+      <section className={cx('profile-page__content')}>
+        <div className={cx('profile-page__media')}>
+          <h4 className={cx('profile-page__media-title')}>Ảnh đại diện</h4>
+          <div className={cx('profile-page__media-preview')}>
+            <img
+              className={cx('profile-page__media-image')}
+              src={avatarPreview}
+              alt="Ảnh đại diện"
+              onError={(e) => (e.target.src = '/images/no-image.jpg')}
+            />
           </div>
-          <button className={cx('profile-page__info-left__btn')} onClick={handleOpenModal}>
+          <button type="button" className={cx('profile-page__media-button')} onClick={handleOpenModal}>
             Đổi mật khẩu
           </button>
         </div>
 
-        <div className={cx('profile-page__info-right')}>
-          <h4 className={cx('profile-page__info-right__title')}>Thông tin</h4>
-          <div className={cx('profile-page__info-right__inputs')}>
+        <section className={cx('profile-page__form')}>
+          <h4 className={cx('profile-page__form-title')}>Thông tin</h4>
+          <div className={cx('profile-page__form-fields')}>
             <TextField
               label="Họ và tên"
               placeholder="Nhập họ và tên"
               variant="outlined"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -242,10 +250,11 @@ function ProfilePage() {
             />
             <TextField
               label="Ngày sinh"
-              placeholder="Nhập Ngày sinh"
+              placeholder="Nhập ngày sinh"
               variant="outlined"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
+              fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -257,10 +266,11 @@ function ProfilePage() {
             />
             <TextField
               label="Số điện thoại"
-              placeholder="Nhập Số điện thoại"
+              placeholder="Nhập số điện thoại"
               variant="outlined"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -276,6 +286,7 @@ function ProfilePage() {
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -286,21 +297,22 @@ function ProfilePage() {
               }}
             />
           </div>
-          <button className={cx('profile-page__info-right__btn')} onClick={handleUpdate}>
+          <button type="button" className={cx('profile-page__form-submit')} onClick={handleUpdate}>
             Cập nhật
           </button>
-        </div>
-      </div>
+        </section>
+      </section>
 
       {/* Modal đổi mật khẩu */}
-      <Modal open={openModal} onClose={handleCloseModal} className={cx('modal')}>
+      <Modal open={openModal} onClose={handleCloseModal} className={cx('profile-page__modal')}>
         <Box
           sx={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 625,
+            width: '100%',
+            maxWidth: 625,
             bgcolor: '#eeeefe',
             borderRadius: '8px',
             boxShadow: 24,
@@ -313,7 +325,7 @@ function ProfilePage() {
         >
           {!otpSent ? (
             <>
-              <Typography variant="h6" color="#00008b" sx={{ textAlign: 'center' }}>
+              <Typography variant="h6" className={cx('profile-page__modal-title')} sx={{ textAlign: 'center' }}>
                 Đổi mật khẩu
               </Typography>
 
@@ -324,6 +336,7 @@ function ProfilePage() {
                 variant="outlined"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
+                fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -341,6 +354,7 @@ function ProfilePage() {
                 variant="outlined"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -394,11 +408,11 @@ function ProfilePage() {
             </>
           ) : (
             <>
-              <Typography variant="body2" className={cx('otp')} sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" className={cx('profile-page__modal-note')} sx={{ textAlign: 'center' }}>
                 Mã OTP được gửi qua E-mail
               </Typography>
 
-              <Typography variant="body2" className={cx('user-email')} sx={{ textAlign: 'center', color: 'red' }}>
+              <Typography variant="body2" className={cx('profile-page__modal-email')} sx={{ textAlign: 'center' }}>
                 {email || 'Không có email'}
               </Typography>
 
@@ -451,7 +465,7 @@ function ProfilePage() {
           )}
         </Box>
       </Modal>
-    </div>
+    </main>
   );
 }
 

@@ -10,6 +10,10 @@
     width: 100%;
     display: flex;
     justify-content: center;
+
+    @media (max-width: 768px) {
+      margin-top: 0;
+    }
   }
 
   &__container {
@@ -19,6 +23,11 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+
+    @media (max-width: 768px) {
+      padding: 0 16px;
+      gap: 12px;
+    }
   }
 
   &__breadcrumb {
@@ -27,11 +36,12 @@
     padding: 20px 0;
 
     span {
-      color: #b3b3b3;
+      color: var(--border-color);
     }
 
     a {
       color: var(--primary-color);
+
       &:hover {
         color: var(--orange-color);
       }
@@ -52,24 +62,40 @@
     width: 100%;
   }
 
-  &__results-column {
+  &__results {
     background-color: var(--white-color);
     padding: 16px;
     border-radius: 8px;
     margin-bottom: 20px;
+
+    @media (max-width: 768px) {
+      padding: 12px;
+      margin-bottom: 16px;
+    }
   }
 
   &__results-header {
     margin-bottom: 24px;
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      margin-bottom: 16px;
+      gap: 8px;
+    }
   }
 
   &__results-count {
     display: flex;
     align-items: center;
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
   }
 
   &__results-count-text {
@@ -77,10 +103,34 @@
     color: var(--primary-color);
     font-weight: 600;
     font-family: 'Montserrat', sans-serif;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+    }
   }
 
   &__results-count-number {
-    color: var(--Text-Orange, #ff5c00);
+    color: var(--orange-color);
+  }
+
+  &__filter {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    @media (max-width: 768px) {
+      padding: 12px;
+    }
+  }
+
+  &__filter-button {
+    display: none;
+
+    @media (max-width: 1024px) and (min-width: 480px) {
+      display: block;
+    }
   }
 
   &__sort {
@@ -88,37 +138,54 @@
     align-items: center;
     gap: 8px;
 
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: space-between;
+    }
+
     &-label {
       color: var(--primary-color);
       font-weight: 500;
       font-family: 'Montserrat', sans-serif;
+
+      @media (max-width: 768px) {
+        font-size: 13px;
+      }
     }
 
     &-select {
       min-width: 210px;
       font-family: 'Montserrat', sans-serif;
+
+      @media (max-width: 768px) {
+        flex: 1;
+        min-width: auto;
+      }
     }
   }
 
   &__cards {
     display: grid;
     gap: 16px;
+
+    @media (max-width: 768px) {
+      gap: 12px;
+    }
   }
 
   &__pagination {
     margin-top: 24px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 12px;
-  }
 
-  &__filters {
-    position: sticky;
-    top: 16px;
-    padding: 16px;
-    background-color: var(--white-color);
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px #f0f0f0 inset;
+    @media (max-width: 768px) {
+      margin-top: 16px;
+
+      :global(.ant-pagination) {
+        font-size: 12px;
+      }
+    }
   }
 }

@@ -83,9 +83,9 @@
   }
 }
 
-.logo-elearn {
+.logo-sc {
   margin-top: -6px;
-  color: var(--primary);
+  color: var(--primary-color);
   font-size: 30px;
   font-weight: 600;
   font-family: 'Iceland', sans-serif;
@@ -112,7 +112,7 @@
 
 .action-item {
   font-size: 14px;
-  color: var(--text-color);
+  color: var(--black-color);
   text-decoration: none;
   margin-left: 24px;
   transition: color 0.2s ease;
@@ -120,11 +120,11 @@
   white-space: nowrap;
 
   &:hover {
-    color: var(--primary);
+    color: var(--primary-color);
   }
 
   &.active {
-    color: var(--primary);
+    color: var(--primary-color);
   }
 
   @media (max-width: 1024px) {
@@ -147,7 +147,6 @@
   position: relative;
   margin-left: 24px;
   cursor: pointer;
-  font-size: 20px;
 
   @media (max-width: 768px) {
     margin-left: 0;
@@ -241,7 +240,7 @@
 
 // Style cho menu dropdown
 .menu-content {
-  background-color: #fff;
+  background-color: var(--white-color);
   box-shadow:
     rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
     rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
@@ -260,6 +259,8 @@
   font-weight: bold;
   color: #212121;
   font-weight: 400;
+  overflow: hidden;
+  white-space: nowrap;
 
   @media (max-width: 480px) {
     padding: 8px 12px;

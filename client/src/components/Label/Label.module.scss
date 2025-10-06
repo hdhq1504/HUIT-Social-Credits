@@ -8,6 +8,15 @@
   gap: 8px;
   margin-bottom: 20px;
 
+  @media (max-width: 768px) {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 14px;
+  }
+
   &__wrapper {
     width: 100%;
     height: 100%;
@@ -16,12 +25,20 @@
     justify-content: center;
     align-items: center;
     gap: 32px;
+
+    @media (max-width: 768px) {
+      gap: 20px;
+    }
+
+    @media (max-width: 480px) {
+      gap: 12px;
+    }
   }
 
   &__divider {
     flex: 1 1 0;
     height: 0;
-    border-bottom: 1px solid #b3b3b3;
+    border-bottom: 1px solid var(--border-color);
   }
 
   &__container {
@@ -32,17 +49,41 @@
   }
 
   &__title {
-    color: #00008b;
+    color: var(--primary-color);
     font-size: 24px;
     font-weight: 600;
     word-wrap: break-word;
+
+    @media (max-width: 1024px) {
+      font-size: 22px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 20px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 18px;
+    }
   }
 
   &__highlight {
-    color: #ff5c00;
+    color: var(--orange-color);
     font-size: 24px;
     font-weight: 600;
     word-wrap: break-word;
+
+    @media (max-width: 1024px) {
+      font-size: 22px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 20px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 18px;
+    }
   }
 
   &__subtitle {
@@ -52,7 +93,7 @@
     flex-direction: column;
     align-self: stretch;
 
-    &__subtitle-text {
+    &-text {
       display: flex;
       align-self: stretch;
       text-align: center;
@@ -62,6 +103,15 @@
       font-weight: 400;
       word-wrap: break-word;
       font-size: 14px;
+
+      @media (max-width: 768px) {
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 12px;
+      }
     }
   }
 }

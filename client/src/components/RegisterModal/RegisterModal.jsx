@@ -123,8 +123,7 @@ function RegisterModal({
         <button
           className={cx('register-confirm__confirm-button', isCancel && 'register-confirm__confirm-button--danger')}
           onClick={handleConfirm}
-          // Nếu muốn bắt buộc chọn lý do khi hủy thì mở cmt dưới:
-          // disabled={isCancel && !reason}
+          disabled={isCancel && !reason}
         >
           {isCancel ? 'Xác nhận hủy' : 'Xác nhận đăng ký'}
         </button>

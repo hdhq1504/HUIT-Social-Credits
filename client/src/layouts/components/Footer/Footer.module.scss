@@ -1,88 +1,60 @@
-/* src/components/Footer/Footer.module.scss */
-
-/* ========== Tokens ========== */
-$max-w: 1200px;
-$space-1: 4px;
-$space-2: 8px;
-$space-3: 12px;
-$space-4: 16px;
-$space-6: 24px;
-$space-8: 32px;
-$space-12: 48px;
-
-$color-heading: #1f3bb3; // Xanh tiêu đề
-$color-icon: #ff6b2c; // Cam icon
-$color-text: #4b5563; // Xám chữ
-$color-strong: #111827; // Đậm hơn dùng cho brand, hover
-$color-border: #e5e7eb; // Viền mảnh top
-
-$fs-14: 14px;
-$fs-15: 15px;
-$fs-16: 16px;
-$fs-18: 18px;
-
-/* ========== Layout ========== */
 .wrapper {
-  background: #fff;
-  border-top: 1px solid $color-border;
-  padding: $space-12 0;
+  background: var(--white-color);
+  border-top: 1px solid #e5e7eb;
+  padding: 48px 0;
 }
 
 .container {
-  max-width: $max-w;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 $space-4;
+  padding: 0 16px;
 }
 
 .footer-content {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr; // Thông tin rộng hơn 1 chút
-  gap: $space-8;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 32px;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr 1fr;
   }
   @media (max-width: 680px) {
     grid-template-columns: 1fr;
-    gap: $space-6;
+    gap: 24px;
   }
 }
 
-/* ========== Columns ========== */
 .footer-column {
   .column-title {
     font-weight: 700;
-    font-size: $fs-16;
-    color: $color-heading;
-    margin-bottom: $space-3;
+    font-size: 16px;
+    color: var(--primary-color);
+    margin-bottom: 12px;
     letter-spacing: 0.2px;
   }
 
   .column-content {
-    color: $color-text;
-    font-size: $fs-14;
+    color: #212121;
+    font-size: 14px;
     line-height: 1.65;
   }
 }
 
-/* Cột 1: Thông tin */
 .footer-info {
   .footer-brand {
-    font-weight: 700;
-    font-size: $fs-18;
-    color: $color-strong;
-    margin-bottom: $space-4;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--black-color);
+    margin-bottom: 16px;
     letter-spacing: 0.2px;
   }
 
   .contact-item {
     display: flex;
     align-items: flex-start;
-    gap: $space-3;
-    margin: $space-2 0;
+    gap: 12px;
+    margin: 8px 0;
 
-    /* Nếu bạn dùng SVG <img>, có thể nhuộm màu icon bằng filter; 
-       tốt nhất là dùng inline SVG và set fill: $color-icon */
     img,
     svg {
       width: 16px;
@@ -90,38 +62,30 @@ $fs-18: 18px;
       margin-top: 2px;
       flex: 0 0 16px;
     }
-
-    /* Tuỳ chọn: tô màu cam cho SVG inline */
-    svg {
-      fill: $color-icon;
-      color: $color-icon;
-    }
   }
 }
 
-/* Cột 2 & 3: Liên kết */
 .column-links {
   display: flex;
   flex-direction: column;
-  gap: $space-1;
+  gap: 4px;
 
-  /* Riêng khối "Liên kết nhanh" có 2 cột nhỏ bên trong theo ảnh */
   &.column-lienket {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: $space-8;
-    row-gap: $space-1;
+    column-gap: 32px;
+    row-gap: 4px;
 
     @media (max-width: 680px) {
       display: flex;
       flex-direction: column;
-      gap: $space-1;
+      gap: 4px;
     }
 
     > div {
       display: flex;
       flex-direction: column;
-      gap: $space-1;
+      gap: 4px;
     }
   }
 }
@@ -130,22 +94,19 @@ $fs-18: 18px;
   display: block;
   width: fit-content;
   text-decoration: none;
-  color: $color-text;
-  font-size: $fs-15;
+  color: #212121;
+  font-size: 15px;
   padding: 2px 0;
   transition:
     color 160ms ease,
     text-decoration-color 160ms ease;
 
   &:hover {
-    color: $color-strong;
     text-decoration: underline;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 2px;
   }
 
   &:focus-visible {
-    outline: 2px solid rgba($color-heading, 0.35);
+    outline: 2px solid rgba(var(--primary-color), 0.35);
     outline-offset: 2px;
     border-radius: 3px;
   }

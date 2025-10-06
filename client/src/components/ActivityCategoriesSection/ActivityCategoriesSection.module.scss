@@ -10,6 +10,24 @@
     align-items: flex-start;
     width: 100%;
     gap: 16px;
+
+    @media (max-width: 1280px) {
+      gap: 12px;
+    }
+
+    @media (max-width: 1024px) {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 
   &__item {
@@ -20,6 +38,31 @@
     box-shadow: 0px 4px 18px rgba(130, 134, 139, 0.39);
     text-align: center;
     padding: 104px 24px 24px;
+
+    @media (max-width: 1280px) {
+      width: 220px;
+      height: 192px;
+      padding: 94px 20px 20px;
+    }
+
+    @media (max-width: 1024px) {
+      width: calc(50% - 6px);
+      min-width: 200px;
+    }
+
+    @media (max-width: 768px) {
+      height: 170px;
+    }
+
+    @media (max-width: 640px) {
+      width: 100%;
+      height: 160px;
+      padding: 80px 16px 16px;
+    }
+
+    @media (max-width: 480px) {
+      height: 150px;
+    }
 
     &--red {
       background: linear-gradient(141deg, #eff6ff 0%, #fee2e2 100%);
@@ -84,9 +127,39 @@
     align-items: center;
     justify-content: center;
 
+    @media (max-width: 1280px) {
+      width: 56px;
+      height: 56px;
+      top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      width: 52px;
+      height: 52px;
+      top: 18px;
+    }
+
+    @media (max-width: 480px) {
+      width: 48px;
+      height: 48px;
+      top: 16px;
+    }
+
     svg {
       color: #fff;
       font-size: 24px;
+
+      @media (max-width: 1280px) {
+        font-size: 22px;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 20px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 18px;
+      }
     }
   }
 
@@ -96,6 +169,20 @@
     font-family: 'Montserrat', sans-serif;
     margin-bottom: 8px;
     color: black;
+
+    @media (max-width: 1280px) {
+      font-size: 17px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
   }
 
   &__subtitle {
@@ -104,11 +191,25 @@
     font-family: 'Montserrat', sans-serif;
     color: #696969;
     margin-bottom: 8px;
+
+    @media (max-width: 768px) {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
   }
 
   &__count {
     font-size: 12px;
     font-weight: 600;
     font-family: 'Montserrat', sans-serif;
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+    }
   }
 }

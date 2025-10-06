@@ -7,7 +7,7 @@ import classNames from 'classnames/bind';
 import styles from './Header.module.scss';
 import logo from '../../../assets/images/logo.svg';
 import avatar from '../../../assets/images/profile.png';
-import { BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
+import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
 import { logout } from '../../../redux/slices/authSlice';
 
 const cx = classNames.bind(styles);
@@ -50,7 +50,7 @@ function Header() {
           </div>
           <div className={cx('menu-item')}>
             <Link to="/">
-              <span>Lịch sử tham gia</span>
+              <span>Hoạt động của tôi</span>
             </Link>
           </div>
           <div className={cx('menu-item')}>
@@ -101,7 +101,7 @@ function Header() {
       <div className={cx('menu-item')}>
         <Link to="/">
           <BadgeCheck size={16} />
-          <span>Điểm và chứng chỉ</span>
+          <span>Kết quả</span>
         </Link>
       </div>
       <div className={cx('menu-item')}>
@@ -120,7 +120,7 @@ function Header() {
           </div>
           <div className={cx('menu-item')}>
             <Link to="/">
-              <span>Lịch sử tham gia</span>
+              <span>Hoạt động của tôi</span>
             </Link>
           </div>
           <div className={cx('menu-item')}>
@@ -152,7 +152,7 @@ function Header() {
             <img src={logo} alt="HUIT Social Credits" className={cx('logo-image')} />
             <div className={cx('logo-text')}>
               <span className={cx('logo-huit')}>HUIT</span>
-              <span className={cx('logo-elearn')}>Social Credits</span>
+              <span className={cx('logo-sc')}>Social Credits</span>
             </div>
           </Link>
         </div>
@@ -161,22 +161,23 @@ function Header() {
           <NavLink to="/list-activities" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Hoạt động
           </NavLink>
-          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
-            Lịch sử tham gia
+
+          <NavLink to="/history" className={({ isActive }) => cx('action-item', { active: isActive })}>
+            Hoạt động của tôi
           </NavLink>
-          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
+
+          <NavLink to="/attendance" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Điểm danh
           </NavLink>
-          <NavLink to="/" className={({ isActive }) => cx('action-item', { active: isActive })}>
+
+          <NavLink to="/feedback" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Phản hồi
           </NavLink>
 
           <div className={cx('notification')}>
-            <img className={cx('notification-icon')} src="/images/Bell.svg" alt="" />
+            <Bell className={cx('notification-icon')} />
             <span className={cx('notification-count')}>2</span>
           </div>
-
-          {/* Mobile menu button - không cần thiết vì menu đã có trong avatar dropdown */}
 
           <Tippy
             delay={[0, 200]}
@@ -191,7 +192,7 @@ function Header() {
               {isLoggedIn ? (
                 <img className={cx('true')} src={user?.AnhDaiDien || avatar} alt="Avatar" />
               ) : (
-                <img className={cx('false')} src="/images/user-icon.svg" alt="" />
+                <User className={cx('false')} />
               )}
             </div>
           </Tippy>

@@ -5,6 +5,22 @@
 .featured-activities__slider {
   position: relative;
 
+  :global(.swiper) {
+    padding: 0 40px;
+
+    @media (max-width: 1024px) {
+      padding: 0 35px;
+    }
+
+    @media (max-width: 768px) {
+      padding: 0 30px;
+    }
+
+    @media (max-width: 480px) {
+      padding: 0 25px;
+    }
+  }
+
   :global(.swiper-button-prev),
   :global(.swiper-button-next) {
     position: absolute;
@@ -23,16 +39,79 @@
     align-items: center;
     justify-content: center;
 
+    transition: all 0.3s ease;
+
+    @media (max-width: 1024px) {
+      width: 32px;
+      height: 32px;
+      padding: 8px;
+    }
+
+    @media (max-width: 768px) {
+      width: 28px;
+      height: 28px;
+      padding: 7px;
+    }
+
+    @media (max-width: 480px) {
+      width: 26px;
+      height: 26px;
+      padding: 6px;
+    }
+
     &:after {
       font-size: 16px;
+
+      @media (max-width: 1024px) {
+        font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+        font-size: 13px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 12px;
+      }
+    }
+
+    &:hover {
+      background: var(--orange-color);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    &.swiper-button-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      &:hover {
+        transform: translateY(-50%);
+      }
     }
   }
 
-  .swiper-button-prev {
-    left: -20px;
+  :global(.swiper-button-prev) {
+    left: 0;
+
+    @media (max-width: 768px) {
+      left: 0;
+    }
   }
 
-  .swiper-button-next {
-    right: -20px;
+  :global(.swiper-button-next) {
+    right: 0;
+
+    @media (max-width: 768px) {
+      right: 0;
+    }
+  }
+
+  // Slide spacing adjustments
+  :global(.swiper-slide) {
+    height: auto;
+
+    @media (max-width: 640px) {
+      padding: 0 4px;
+    }
   }
 }
