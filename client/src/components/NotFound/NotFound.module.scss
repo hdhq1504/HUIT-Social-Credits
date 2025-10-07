@@ -1,22 +1,43 @@
-.not-found-container {
+.not-found {
   height: 68vh;
   max-width: 1200px;
-  margin: 0 auto;
-  margin-top: 74px;
+  margin: 74px auto 0;
   padding: 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 
-  .breadcrumb {
+  &__breadcrumb {
     font-size: 14px;
-    margin-bottom: 20px;
     font-weight: 500;
+    color: #6b7280;
     padding: 16px 0;
-    gap: 10;
-    color: #b3b3b3;
+  }
+
+  &__breadcrumb-list {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+  }
+
+  &__breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+
+    &:not(:last-child)::after {
+      content: '/';
+      color: #9ca3af;
+    }
 
     a {
-      color: var(--primary);
+      color: var(--primary-color);
       text-decoration: none;
-      transition: 0.3s;
+      transition: color 0.3s ease;
 
       &:hover {
         color: var(--orange-color);
@@ -24,40 +45,49 @@
     }
   }
 
-  .content {
+  &__content {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-
-    .image-404 {
-      width: 620px;
-      height: 370px;
-    }
+    text-align: center;
   }
 
-  .home-button {
-    display: flex;
+  &__figure {
+    margin: 0;
+  }
+
+  &__image {
+    width: 620px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  &__home-link {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
-    background-color: var(--primary);
-    color: white;
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: var(--white-color);
     text-decoration: none;
     border-radius: 6px;
-    transition: 0.3s;
+    transition:
+      background-color 0.3s ease,
+      transform 0.3s ease;
     font-size: 16px;
-    font-weight: 400;
-    border: none;
-    outline: none;
-
-    img {
-      width: 20px;
-      margin-left: 8px;
-    }
+    font-weight: 500;
+    gap: 8px;
 
     &:hover {
       background-color: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    &__home-icon {
+      width: 20px;
+      height: 20px;
     }
   }
 }

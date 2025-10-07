@@ -1,11 +1,3 @@
-$space-1: 4px;
-$space-3: 12px;
-$space-5: 20px;
-$space-6: 24px;
-
-$color-gray-200: #f4f4f4;
-$color-gray-400: #b3b3b3;
-
 .register-confirm {
   :global(.ant-modal-content) {
     border-radius: 12px;
@@ -21,7 +13,7 @@ $color-gray-400: #b3b3b3;
   &__header {
     justify-content: space-between;
     padding-bottom: 8px;
-    border-bottom: 1px solid #b3b3b3;
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 16px;
   }
 
@@ -167,7 +159,7 @@ $color-gray-400: #b3b3b3;
 
   &__cancel-button {
     background-color: transparent;
-    border: 1px solid #b3b3b3;
+    border: 1px solid var(--border-color);
   }
 
   &__cancel-form {
@@ -191,7 +183,7 @@ $color-gray-400: #b3b3b3;
       .ant-select-selector {
         border-radius: 8px !important;
         padding: 6px 10px !important;
-        border-color: #b3b3b3 !important;
+        border-color: var(--border-color) !important;
       }
       .ant-select-selection-placeholder {
         color: var(--black-color);
@@ -200,7 +192,7 @@ $color-gray-400: #b3b3b3;
   }
 
   &__textarea {
-    border-color: #b3b3b3;
+    border-color: var(--border-color);
 
     :global {
       .ant-input {

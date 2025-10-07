@@ -7,22 +7,28 @@ const cx = classNames.bind(styles);
 
 function NotFound() {
   return (
-    <div className={cx('not-found-container')}>
-      {/* Breadcrumb */}
-      <div className={cx('breadcrumb')}>
-        <Link to="/">Trang chủ</Link> / <span>Trang không tìm thấy</span>
-      </div>
+    <main className={cx('not-found')}>
+      <nav className={cx('not-found__breadcrumb')} aria-label="Đường dẫn">
+        <ol className={cx('not-found__breadcrumb-list')}>
+          <li className={cx('not-found__breadcrumb-item')}>
+            <Link to="/">Trang chủ</Link>
+          </li>
+          <li className={cx('not-found__breadcrumb-item')} aria-current="page">
+            Trang không tìm thấy
+          </li>
+        </ol>
+      </nav>
 
-      {/* Nội dung 404 */}
-      <div className={cx('content')}>
-        <img src="/images/404.svg" alt="404 Not Found" className={cx('image-404')} />
-
-        <Link to="/" className={cx('home-button')}>
+      <section className={cx('not-found__content')}>
+        <figure className={cx('not-found__figure')}>
+          <img src="/images/404.svg" alt="Trang bạn tìm kiếm không tồn tại" className={cx('not-found__image')} />
+        </figure>
+        <Link to="/" className={cx('not-found__home-link')}>
           Trang chủ
-          <img src="/images/Arrow_Right.svg" alt="Arrow Right" />
+          <img src="/images/Arrow_Right.svg" alt="" aria-hidden="true" className={cx('not-found__home-icon')} />
         </Link>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 

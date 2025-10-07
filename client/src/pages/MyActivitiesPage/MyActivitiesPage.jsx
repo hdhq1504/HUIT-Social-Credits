@@ -2,105 +2,29 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrophy, faCalendarCheck, faCircleCheck, faClock } from '@fortawesome/free-solid-svg-icons';
-import { Badge, Calendar, Tabs } from 'antd';
+import {
+  faTrophy,
+  faCalendarCheck,
+  faCircleCheck,
+  faClock,
+  faArrowRotateRight,
+} from '@fortawesome/free-solid-svg-icons';
+import { Button, Calendar, Input, Select, Tabs } from 'antd';
+import dayjs from 'dayjs';
 import CardActivity from '@components/CardActivity/CardActivity';
-import SearchBar from '@layouts/components/SearchBar/SearchBar';
 import styles from './MyActivitiesPage.module.scss';
 import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
-const getListData = (value) => {
-  let listData = [];
-  switch (value.date()) {
-    case 8:
-      listData = [
-        { type: 'warning', content: 'This is warning event.' },
-        { type: 'success', content: 'This is usual event.' },
-      ];
-      break;
-    case 10:
-      listData = [
-        { type: 'warning', content: 'This is warning event.' },
-        { type: 'success', content: 'This is usual event.' },
-        { type: 'error', content: 'This is error event.' },
-      ];
-      break;
-    case 15:
-      listData = [
-        { type: 'warning', content: 'This is warning event' },
-        { type: 'success', content: 'This is very long usual event......' },
-        { type: 'error', content: 'This is error event 1.' },
-        { type: 'error', content: 'This is error event 2.' },
-        { type: 'error', content: 'This is error event 3.' },
-        { type: 'error', content: 'This is error event 4.' },
-      ];
-      break;
-    default:
-  }
-  return listData || [];
-};
-
-const getMonthData = (value) => {
-  if (value.month() === 8) {
-    return 1394;
-  }
+const EVENT_MAP = {
+  '2025-10-15': { type: 'primary', label: 'Hiến máu nhân đạo' },
+  '2025-10-25': { type: 'warning', label: 'Mùa hè xanh' },
+  '2025-10-30': { type: 'success', label: 'Địa chỉ đỏ' },
 };
 
 function MyActivitiesPage() {
-  const monthCellRender = (value) => {
-    const num = getMonthData(value);
-    return num ? (
-      <div className="notes-month">
-        <section>{num}</section>
-        <span>Backlog number</span>
-      </div>
-    ) : null;
-  };
-
-  const dateCellRender = (value) => {
-    const listData = getListData(value);
-    return (
-      <ul className="events">
-        {listData.map((item) => (
-          <li key={item.content}>
-            <Badge status={item.type} text={item.content} />
-          </li>
-        ))}
-      </ul>
-    );
-  };
-
-  const cellRender = (current, info) => {
-    if (info.type === 'date') return dateCellRender(current);
-    if (info.type === 'month') return monthCellRender(current);
-    return info.originNode;
-  };
-
-  const items = useMemo(
-    () => [
-      {
-        key: '1',
-        label: 'Đã đăng ký',
-        children: '',
-      },
-      {
-        key: '2',
-        label: 'Đã tham gia',
-        children: '',
-      },
-      {
-        key: '3',
-        label: 'Đã hủy',
-        children: '',
-      },
-    ],
-    [],
-  );
-
   const [activities, setActivities] = useState([]);
-
   useEffect(() => {
     const fetchActivities = async () => {
       try {
@@ -112,6 +36,66 @@ function MyActivitiesPage() {
     };
     fetchActivities();
   }, []);
+
+  const fullCellRender = (current, info) => {
+    const key = dayjs(current).format('YYYY-MM-DD');
+    const event = EVENT_MAP[key];
+    const isCurrentMonth = info.originNode?.props?.className?.includes('ant-picker-cell-in-view');
+
+    return (
+      <div
+        className={cx(
+          'calendar__cell',
+          isCurrentMonth && 'calendar__cell--in-view',
+          event && 'calendar__cell--has',
+          event?.type === 'primary' && 'calendar__cell--primary',
+          event?.type === 'warning' && 'calendar__cell--warning',
+          event?.type === 'success' && 'calendar__cell--success',
+        )}
+      >
+        <span className={cx('calendar__date')}>{current.date()}</span>
+      </div>
+    );
+  };
+
+  const tabItems = useMemo(
+    () => [
+      {
+        key: '1',
+        label: (
+          <div className={cx('tab-label')}>
+            <FontAwesomeIcon icon={faCalendarCheck} className={cx('tab-icon')} />
+            <span>Đã đăng ký</span>
+            <span className={cx('tab-badge')}>12</span>
+          </div>
+        ),
+        children: '',
+      },
+      {
+        key: '2',
+        label: (
+          <div className={cx('tab-label')}>
+            <FontAwesomeIcon icon={faCircleCheck} className={cx('tab-icon')} />
+            <span>Đã tham gia</span>
+            <span className={cx('tab-badge')}>18</span>
+          </div>
+        ),
+        children: '',
+      },
+      {
+        key: '3',
+        label: (
+          <div className={cx('tab-label')}>
+            <FontAwesomeIcon icon={faClock} className={cx('tab-icon')} />
+            <span>Đã hủy</span>
+            <span className={cx('tab-badge')}>3</span>
+          </div>
+        ),
+        children: '',
+      },
+    ],
+    [],
+  );
 
   return (
     <section className={cx('my-activities')}>
@@ -184,15 +168,54 @@ function MyActivitiesPage() {
         {/* Calendar */}
         <div className={cx('my-activities__calendar')}>
           <div className={cx('calendar__title')}>Lịch hoạt động sắp tới</div>
-          <Calendar cellRender={cellRender} />
+          <Calendar fullscreen={false} fullCellRender={fullCellRender} className={cx('calendar')} />
+
+          {/* Legend */}
+          <div className={cx('calendar__legend')}>
+            <div className={cx('legend__item')}>
+              <span className={cx('legend__dot', 'legend__dot--primary')} />
+              <span>Hiến máu nhân đạo</span>
+            </div>
+            <div className={cx('legend__item')}>
+              <span className={cx('legend__dot', 'legend__dot--warning')} />
+              <span>Mùa hè xanh</span>
+            </div>
+            <div className={cx('legend__item')}>
+              <span className={cx('legend__dot', 'legend__dot--success')} />
+              <span>Địa chỉ đỏ</span>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
         <div className={cx('my-activities__tabs')}>
-          <Tabs defaultActiveKey="1" items={items} type="line" size="large" />
+          <Tabs defaultActiveKey="1" items={tabItems} type="line" size="large" />
 
           <div className={cx('my-activities__search')}>
-            <SearchBar variant="list" onSubmit={(query) => console.log('List filter search:', query)} />
+            <Input placeholder="Nhập từ khóa" size="large" className={cx('search-input')} allowClear />
+
+            <Select defaultValue="all" size="large" className={cx('search-select')}>
+              <Select.Option value="all">Nhóm hoạt động</Select.Option>
+              <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
+              <Select.Option value="hien-mau">Hiến máu</Select.Option>
+              <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
+            </Select>
+
+            <Select defaultValue="all" size="large" className={cx('search-select')}>
+              <Select.Option value="all">Mới nhất</Select.Option>
+              <Select.Option value="oldest">Cũ nhất</Select.Option>
+              <Select.Option value="popular">Phổ biến nhất</Select.Option>
+            </Select>
+
+            <Button
+              type="primary"
+              size="large"
+              className={cx('reset-button')}
+              icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+              onClick={() => console.log('Reset clicked')}
+            >
+              Đặt lại
+            </Button>
           </div>
 
           <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
