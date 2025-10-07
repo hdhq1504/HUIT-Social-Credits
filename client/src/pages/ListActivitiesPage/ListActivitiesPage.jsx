@@ -10,7 +10,7 @@ import { mockApi } from '../../utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
-const { Title, Text } = Typography; 
+const { Title, Text } = Typography;
 
 function ListActivitiesPage() {
   const [selectedItems, setSelectedItems] = useState([]);

@@ -128,7 +128,15 @@
   &__filter-button {
     display: none;
 
-    @media (max-width: 1024px) and (min-width: 480px) {
+    @media (max-width: 1024px) and (min-width: 769px) {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      display: block;
+    }
+
+    @media (max-width: 480px) {
       display: block;
     }
   }

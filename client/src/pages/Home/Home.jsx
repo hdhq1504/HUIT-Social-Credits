@@ -36,15 +36,15 @@ function Home() {
         <section className={cx('home__section')}>
           <FeaturedActivitySection />
         </section>
-        
+
         <section className={cx('home__section', 'home__section--spacious')}>
           <ActivityCategoriesSection />
         </section>
-        
+
         <section className={cx('home__section')}>
           <UpcomingActivitiesSection />
         </section>
-        
+
         <section className={cx('home__section')}>
           <ProgressSection
             currentPoints={90}
@@ -59,11 +59,11 @@ function Home() {
             imageUrl="https://placehold.co/320x320"
           />
         </section>
-        
+
         <section className={cx('home__section')}>
           <PersonalActivitiesSection />
         </section>
-        
+
         <section className={cx('home__section')}>
           <ProofStatusSection />
         </section>

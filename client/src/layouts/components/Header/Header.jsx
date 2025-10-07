@@ -49,7 +49,7 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/">
+            <Link to="/my-activities">
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
@@ -93,7 +93,7 @@ function Header() {
         </Link>
       </div>
       <div className={cx('menu-item')}>
-        <Link to="/">
+        <Link to="/my-activities">
           <ClipboardList size={16} />
           <span>Hoạt động của tôi</span>
         </Link>
@@ -119,7 +119,7 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/">
+            <Link to="/my-activities">
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
@@ -162,7 +162,7 @@ function Header() {
             Hoạt động
           </NavLink>
 
-          <NavLink to="/history" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/my-activities" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Hoạt động của tôi
           </NavLink>
 

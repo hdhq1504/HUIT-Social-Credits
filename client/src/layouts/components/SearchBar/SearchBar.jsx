@@ -20,7 +20,14 @@ function SearchBar({ variant = 'home', onSearch, onFilter }) {
     <div className={cx('searchBarContainer')}>
       {variant === 'home' ? (
         <div className={cx('homeSearch')}>
-          <Input placeholder="Nhập tìm kiếm" size="large" onSearch={handleSearch} className={cx('searchInput')} />;
+          <Input
+            placeholder="Nhập tìm kiếm"
+            size="large"
+            onSearch={handleSearch}
+            className={cx('searchInput')}
+            allowClear
+          />
+          ;
           <Button
             type="primary"
             size="large"
@@ -38,6 +45,7 @@ function SearchBar({ variant = 'home', onSearch, onFilter }) {
             size="large"
             className={cx('searchInput')}
             onPressEnter={(e) => handleSearch(e.target.value)}
+            allowClear
           />
 
           <Select

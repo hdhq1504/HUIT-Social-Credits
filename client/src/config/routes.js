@@ -6,6 +6,7 @@ const routes = {
   listActivities: '/list-activities',
   activityDetail: '/activity-detail',
   activityDetailWithId: '/activity-detail/:id',
+  myActivities: '/my-activities',
   loading: '/loading',
 };
 

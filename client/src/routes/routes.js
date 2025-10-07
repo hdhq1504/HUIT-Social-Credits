@@ -5,6 +5,7 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage/ForgotPasswordPage';
 import ProfilePage from '../pages/ProfilePage/ProfilePage';
 import ListActivitiesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
 import ActivityDetailPage from '../pages/ActivityDetailPage/ActivityDetailPage';
+import MyActivitiesPage from '../pages/MyActivitiesPage/MyActivitiesPage';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 import Loading from '../pages/Loading/Loading';
 
@@ -17,6 +18,7 @@ const publicRoutes = [
   { path: config.routes.listActivities, component: ListActivitiesPage },
   { path: config.routes.activityDetail, component: ActivityDetailPage },
   { path: config.routes.activityDetailWithId, component: ActivityDetailPage },
+  { path: config.routes.myActivities, component: MyActivitiesPage },
   { path: config.routes.loading, component: Loading },
 ];
 
