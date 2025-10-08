@@ -1,7 +1,7 @@
 .not-found {
-  height: 68vh;
+  width: 100%;
   max-width: 1200px;
-  margin: 74px auto 0;
+  margin: 120px auto 0;
   padding: 0 30px;
   display: flex;
   flex-direction: column;
@@ -82,7 +82,6 @@
 
     &:hover {
       background-color: #0056b3;
-      transform: translateY(-1px);
     }
 
     &__home-icon {

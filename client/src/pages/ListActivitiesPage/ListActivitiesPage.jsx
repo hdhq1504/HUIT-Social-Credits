@@ -52,7 +52,7 @@ function ListActivitiesPage() {
           <span>Sắp xếp ngày đăng gần nhất</span>
         </nav>
 
-        <div className={cx('acitivities-page__layout')}>
+        <div className={cx('activities-page__layout')}>
           <Row gutter={[24, 24]}>
             {/* Content 9/12 */}
             <Col xs={24} lg={18}>

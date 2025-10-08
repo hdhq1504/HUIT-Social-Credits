@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
 import RegisterModal from '../RegisterModal/RegisterModal';
+import CheckModal from '../CheckModal/CheckModal';
 import useToast from '../Toast/Toast';
 import styles from './CardActivity.module.scss';
 
@@ -23,48 +24,53 @@ const initials = (name = '') =>
       .join('') || 'U'
   ).toUpperCase();
 
-function CardActivity({
-  id,
-  title,
-  points,
-  dateTime,
-  location,
-  participants = [],
-  capacity,
-  coverImage,
-  isFeatured = false,
-  badgeText = 'Nổi bật',
-  variant = 'vertical',
-  className,
-  state = 'guest',
-  actions,
-  statusPill,
-  onDetails,
-  onRegister,
-  onRegistered,
-  onStateChange,
-  disableRegister = false,
-  buttonLabels = {},
-  registerModalProps = {},
-  autoSwitchStateOnRegister = true,
-  successMessage = 'Đăng ký hoạt động thành công!',
-  errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.',
-  cancelSuccessMessage = 'Hủy đăng ký thành công!',
-  cancelErrorMessage = 'Hủy đăng ký thất bại. Vui lòng thử lại.',
-  onCancelRegister,
-  onCheckin,
-  onComplete,
-  onConfirmPresent,
-  onConfirmLeave,
-  onSendFeedback,
-  modalGroupLabel = 'Nhóm 2,3',
-  showConflictAlert = false,
-}) {
+function CardActivity(props) {
+  const {
+    id,
+    title,
+    points,
+    dateTime,
+    location,
+    participants = [],
+    capacity,
+    coverImage,
+    isFeatured = false,
+    badgeText = 'Nổi bật',
+    variant = 'vertical',
+    className,
+    state = 'guest',
+    actions,
+    statusPill,
+    onDetails,
+    onRegister,
+    onRegistered,
+    onStateChange,
+    disableRegister = false,
+    buttonLabels = {},
+    registerModalProps = {},
+    autoSwitchStateOnRegister = true,
+    successMessage = 'Đăng ký hoạt động thành công!',
+    errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.',
+    cancelSuccessMessage = 'Hủy đăng ký thành công!',
+    cancelErrorMessage = 'Hủy đăng ký thất bại. Vui lòng thử lại.',
+    onCancelRegister,
+    onCheckin,
+    onComplete,
+    onConfirmPresent,
+    onConfirmLeave,
+    onSendFeedback,
+    modalGroupLabel = 'Nhóm 2,3',
+    showConflictAlert = false,
+  } = props;
+
   const [openReg, setOpenReg] = useState(false);
   const [uiState, setUiState] = useState(state);
   const navigate = useNavigate();
   const { contextHolder, open: openToast } = useToast();
   const [modalVariant, setModalVariant] = useState('confirm');
+
+  const [openCheck, setOpenCheck] = useState(false);
+  const [captured, setCaptured] = useState(null);
 
   const activity = { id, title, points, dateTime, location, participants, capacity, coverImage };
 
@@ -94,15 +100,13 @@ function CardActivity({
   const handleConfirmRegister = async (payload) => {
     try {
       if (modalVariant === 'cancel') {
-        // HỦY ĐĂNG KÝ
-        await onCancelRegister?.(activity); // optional async
+        await onCancelRegister?.(activity);
         setOpenReg(false);
-        setUiState('guest'); // hoặc 'details_only' tùy nghiệp vụ
+        setUiState('guest');
         onStateChange?.('guest');
         openToast({ message: cancelSuccessMessage, variant: 'success' });
       } else {
-        // ĐĂNG KÝ
-        await onRegistered?.({ activity, ...payload }); // optional async
+        await onRegistered?.({ activity, ...payload });
         setOpenReg(false);
         if (autoSwitchStateOnRegister) {
           setUiState('registered');
@@ -110,12 +114,32 @@ function CardActivity({
         }
         openToast({ message: successMessage, variant: 'success' });
       }
-    } catch (e) {
+    } catch {
       openToast({
         message: modalVariant === 'cancel' ? cancelErrorMessage : errorMessage,
         variant: 'danger',
       });
     }
+  };
+
+  const handleOpenAttendance = () => {
+    setCaptured(null);
+    setOpenCheck(true);
+  };
+
+  const handleCloseAttendance = () => {
+    setOpenCheck(false);
+    setCaptured(null);
+  };
+
+  const handleCaptured = ({ file, previewUrl }) => setCaptured({ file, previewUrl });
+
+  const handleSubmitAttendance = async ({ file, previewUrl }) => {
+    await onConfirmPresent?.({ activity, file, previewUrl });
+    setOpenCheck(false);
+    openToast({ message: 'Gửi điểm danh thành công!', variant: 'success' });
+    // Tùy nghiệp vụ, bạn có thể chuyển state:
+    // setUiState('feedback_pending'); onStateChange?.('feedback_pending');
   };
 
   const pill = (text, tone = 'neutral') => ({ text, tone });
@@ -135,8 +159,8 @@ function CardActivity({
     giveFeedback: 'Gửi phản hồi',
     scored: 'Đã được ghi điểm',
     canceled: 'Đã hủy',
+    ...buttonLabels,
   };
-  Object.assign(L, buttonLabels);
 
   const preset = useMemo(() => {
     if (actions?.length) return { status: statusPill, buttons: actions };
@@ -162,14 +186,11 @@ function CardActivity({
           buttons: [btn(L.details, openDetails), btn(L.complete, () => onComplete?.(activity), { variant: 'success' })],
         };
       case 'canceled':
-        return { buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { disabled: true })] };
-      case 'attendance_open':
         return {
-          buttons: [
-            btn(L.confirmIn, () => onConfirmPresent?.(activity), { variant: 'primary', fullWidth: true }),
-            btn(L.confirmOut, () => onConfirmLeave?.(activity), { disabled: true, fullWidth: true }),
-          ],
+          buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { variant: 'muted' }, { disabled: true })],
         };
+      case 'attendance_open':
+        return { buttons: [btn(L.details, openDetails), btn(L.checkin, handleOpenAttendance, { variant: 'primary' })] };
       case 'attendance_closed':
         return { buttons: [btn(L.details, openDetails), btn(L.closed, () => {}, { disabled: true, fullWidth: true })] };
       case 'details_only':
@@ -311,6 +332,20 @@ function CardActivity({
         location={location}
         showConflictAlert={showConflictAlert}
         {...registerModalProps}
+      />
+
+      <CheckModal
+        open={openCheck}
+        onCancel={handleCloseAttendance}
+        onCapture={handleCaptured}
+        onRetake={() => setCaptured(null)}
+        onSubmit={handleSubmitAttendance}
+        variant="checkin"
+        campaignName={title}
+        groupLabel={modalGroupLabel}
+        pointsLabel={points != null ? `${points} điểm` : undefined}
+        dateTime={dateTime}
+        location={location}
       />
     </div>
   );

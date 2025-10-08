@@ -6,7 +6,7 @@
   position: relative;
 
   :global(.swiper) {
-    padding: 0 40px;
+    padding: 0 40px 7px;
 
     @media (max-width: 1024px) {
       padding: 0 35px;

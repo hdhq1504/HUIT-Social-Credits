@@ -8,17 +8,6 @@ const cx = classNames.bind(styles);
 function NotFound() {
   return (
     <main className={cx('not-found')}>
-      <nav className={cx('not-found__breadcrumb')} aria-label="Đường dẫn">
-        <ol className={cx('not-found__breadcrumb-list')}>
-          <li className={cx('not-found__breadcrumb-item')}>
-            <Link to="/">Trang chủ</Link>
-          </li>
-          <li className={cx('not-found__breadcrumb-item')} aria-current="page">
-            Trang không tìm thấy
-          </li>
-        </ol>
-      </nav>
-
       <section className={cx('not-found__content')}>
         <figure className={cx('not-found__figure')}>
           <img src="/images/404.svg" alt="Trang bạn tìm kiếm không tồn tại" className={cx('not-found__image')} />

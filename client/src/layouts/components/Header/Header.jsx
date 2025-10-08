@@ -40,25 +40,25 @@ function Header() {
   };
 
   const renderLoggedOutMenu = () => (
-    <div className={cx('menu-content')}>
+    <div className={cx('header__menu')}>
       {isMobile && (
         <>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/list-activities">
               <span>Hoạt động</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/my-activities">
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/roll-call">
               <span>Điểm danh</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/">
               <span>Phản hồi</span>
             </Link>
@@ -66,13 +66,13 @@ function Header() {
           <div className={cx('menu-divider')} />
         </>
       )}
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/login">
           <LogOut size={16} />
           <span>Đăng nhập</span>
         </Link>
       </div>
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/forgot-password">
           <Lock size={16} />
           <span>Quên mật khẩu</span>
@@ -82,60 +82,60 @@ function Header() {
   );
 
   const renderLoggedInMenu = () => (
-    <div className={cx('menu-content')}>
-      <div className={cx('menu-header')}>
+    <div className={cx('header__menu')}>
+      <div className={cx('header__menu-header')}>
         Xin chào <span>{user?.TenNguoiDung || user?.email || 'Người dùng'}</span>
       </div>
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/profile">
           <User size={16} />
           <span>Thông tin</span>
         </Link>
       </div>
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/my-activities">
           <ClipboardList size={16} />
           <span>Hoạt động của tôi</span>
         </Link>
       </div>
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/">
           <BadgeCheck size={16} />
           <span>Kết quả</span>
         </Link>
       </div>
-      <div className={cx('menu-item')}>
-        <Link to="/">
+      <div className={cx('header__menu-item')}>
+        <Link to="/feedback">
           <BookAlert size={16} />
           <span>Phản hồi điểm</span>
         </Link>
       </div>
       {isMobile && (
         <>
-          <div className={cx('menu-divider')} />
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-divider')} />
+          <div className={cx('header__menu-item')}>
             <Link to="/list-activities">
               <span>Hoạt động</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/my-activities">
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
+          <div className={cx('header__menu-item')}>
             <Link to="/roll-call">
               <span>Điểm danh</span>
             </Link>
           </div>
-          <div className={cx('menu-item')}>
-            <Link to="/">
+          <div className={cx('header__menu-item')}>
+            <Link to="/feedback">
               <span>Phản hồi</span>
             </Link>
           </div>
         </>
       )}
-      <div className={cx('menu-item')}>
+      <div className={cx('header__menu-item')}>
         <Link to="/logout" onClick={handleLogout}>
           <LogOut size={16} />
           <span>Đăng xuất</span>
@@ -145,38 +145,50 @@ function Header() {
   );
 
   return (
-    <header className={cx('wrapper')}>
-      <div className={cx('inner')}>
-        <div className={cx('logo')}>
-          <Link to="/" className={cx('logo-link')}>
-            <img src={logo} alt="HUIT Social Credits" className={cx('logo-image')} />
-            <div className={cx('logo-text')}>
-              <span className={cx('logo-huit')}>HUIT</span>
-              <span className={cx('logo-sc')}>Social Credits</span>
+    <header className={cx('header')}>
+      <div className={cx('header__inner')}>
+        <div className={cx('header__logo')}>
+          <Link to="/" className={cx('header__logo-link')}>
+            <img src={logo} alt="HUIT Social Credits" className={cx('header__logo-image')} />
+            <div className={cx('header__logo-text')}>
+              <span className={cx('header__logo-huit')}>HUIT</span>
+              <span className={cx('header__logo-sc')}>Social Credits</span>
             </div>
           </Link>
         </div>
 
-        <div className={cx('actions')}>
-          <NavLink to="/list-activities" className={({ isActive }) => cx('action-item', { active: isActive })}>
+        <div className={cx('header__actions')}>
+          <NavLink
+            to="/list-activities"
+            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+          >
             Hoạt động
           </NavLink>
 
-          <NavLink to="/my-activities" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink
+            to="/my-activities"
+            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+          >
             Hoạt động của tôi
           </NavLink>
 
-          <NavLink to="/roll-call" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink
+            to="/roll-call"
+            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+          >
             Điểm danh
           </NavLink>
 
-          <NavLink to="/feedback" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink
+            to="/feedback"
+            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+          >
             Phản hồi
           </NavLink>
 
-          <div className={cx('notification')}>
-            <Bell className={cx('notification-icon')} />
-            <span className={cx('notification-count')}>2</span>
+          <div className={cx('header__notification')}>
+            <Bell className={cx('header__notification-icon')} />
+            <span className={cx('header__notification-count')}>2</span>
           </div>
 
           <Tippy
@@ -188,11 +200,11 @@ function Header() {
             hideOnClick={true}
             onClickOutside={(instance) => instance.hide()}
           >
-            <div className={cx('user-avatar')}>
+            <div className={cx('header__avatar')}>
               {isLoggedIn ? (
-                <img className={cx('true')} src={user?.AnhDaiDien || avatar} alt="Avatar" />
+                <img className={cx('header__avatar-image')} src={user?.AnhDaiDien || avatar} alt="Avatar" />
               ) : (
-                <User className={cx('false')} />
+                <User className={cx('header__avatar-placeholder')} />
               )}
             </div>
           </Tippy>
