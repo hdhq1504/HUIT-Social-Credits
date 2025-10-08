@@ -145,6 +145,7 @@
   &__notification {
     position: relative;
     margin-left: 24px;
+    background-color: transparent;
     cursor: pointer;
 
     @media (max-width: 768px) {
@@ -152,8 +153,8 @@
     }
 
     &-icon {
-      width: 17px;
-      height: 17px;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;

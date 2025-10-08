@@ -1,14 +1,16 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import classNames from 'classnames/bind';
-import styles from './Header.module.scss';
 import logo from '../../../assets/images/logo.svg';
 import avatar from '../../../assets/images/profile.png';
 import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
 import { logout } from '../../../redux/slices/authSlice';
+import Notification from '../../../components/Notification/Notification';
+import styles from './Header.module.scss';
+import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
@@ -17,17 +19,24 @@ function Header() {
   const dispatch = useDispatch();
   const { isLoggedIn, user } = useSelector((state) => state.auth);
   const [isMobile, setIsMobile] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const refreshUnread = useCallback(async () => {
+    const items = await mockApi.getNotifications();
+    const count = items.filter((n) => n.isUnread).length;
+    setUnreadCount(count);
+  }, []);
 
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 640);
-    };
-
+    const checkScreenSize = () => setIsMobile(window.innerWidth <= 640);
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
-
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  useEffect(() => {
+    refreshUnread();
+  }, [refreshUnread]);
 
   const handleLogout = async (event) => {
     event.preventDefault();
@@ -186,10 +195,21 @@ function Header() {
             Phản hồi
           </NavLink>
 
-          <div className={cx('header__notification')}>
-            <Bell className={cx('header__notification-icon')} />
-            <span className={cx('header__notification-count')}>2</span>
-          </div>
+          <Tippy
+            delay={[0, 200]}
+            interactive
+            placement="bottom-end"
+            trigger="click"
+            hideOnClick
+            onShow={refreshUnread}
+            onClickOutside={(instance) => instance.hide()}
+            content={<Notification onMarkAllRead={() => setUnreadCount(0)} />}
+          >
+            <button type="button" className={cx('header__notification')} aria-label="Thông báo">
+              <Bell className={cx('header__notification-icon')} />
+              {unreadCount > 0 && <span className={cx('header__notification-count')}>{unreadCount}</span>}
+            </button>
+          </Tippy>
 
           <Tippy
             delay={[0, 200]}

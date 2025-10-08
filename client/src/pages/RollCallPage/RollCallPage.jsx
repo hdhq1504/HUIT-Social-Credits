@@ -1,9 +1,7 @@
-import React from 'react'
+import React from 'react';
 
 function RollCallPage() {
-  return (
-    <div>RollCallPage</div>
-  )
+  return <div>RollCallPage</div>;
 }
 
-export default RollCallPage
+export default RollCallPage;

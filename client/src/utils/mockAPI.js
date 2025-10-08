@@ -295,6 +295,40 @@ const defaultData = {
       status: 'confirmed',
     },
   ],
+  notifications: [
+    {
+      id: 'noti-001',
+      type: 'warning',
+      title: 'Cập nhật hệ thống bảo trì',
+      description: 'Hệ thống sẽ bảo trì từ 23:00 ngày 15/12 đến 01:00 ngày 16/12.',
+      timeAgo: '4 giờ trước',
+      isUnread: true,
+    },
+    {
+      id: 'noti-002',
+      type: 'success',
+      title: 'Nhắc nhở tham gia hoạt động tình nguyện',
+      description: 'Hoạt động "Mùa đông ấm 2024" sẽ diễn ra vào ngày 20/12/2025.',
+      timeAgo: '1 ngày trước',
+      isUnread: true,
+    },
+    {
+      id: 'noti-003',
+      type: 'info',
+      title: 'Minh chứng đã được phê duyệt',
+      description: 'Minh chứng "Tham gia hội thảo Kỹ năng mềm" của bạn đã được phê duyệt.',
+      timeAgo: '2 ngày trước',
+      isUnread: false,
+    },
+    {
+      id: 'noti-004',
+      type: 'danger',
+      title: 'Cập nhật điểm CTXH tháng 11',
+      description: 'Điểm CTXH tháng 11/2024 của bạn đã được cập nhật. Tổng điểm: 85/170.',
+      timeAgo: '3 ngày trước',
+      isUnread: false,
+    },
+  ],
 };
 
 let dataCache = null;
@@ -435,6 +469,18 @@ export const mockApi = {
   async getScoreRecords() {
     const data = ensureData();
     return clone(data.scoreRecords);
+  },
+
+  async getNotifications() {
+    const data = ensureData();
+    return clone(data.notifications);
+  },
+
+  async markAllNotificationsRead() {
+    const data = ensureData();
+    data.notifications = data.notifications.map((n) => ({ ...n, isUnread: false }));
+    persist();
+    return true;
   },
 };
 
