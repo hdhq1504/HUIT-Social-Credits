@@ -14,6 +14,9 @@ function ActivityCategoriesSection() {
         title="Các hạng mục"
         highlight="hoạt động"
         subtitle="Khám phá các loại hoạt động cộng tác xã hội phong phú và đa dạng"
+        leftDivider
+        rightDivider
+        showSubtitle
       />
 
       <div className={cx('activity-categories')}>

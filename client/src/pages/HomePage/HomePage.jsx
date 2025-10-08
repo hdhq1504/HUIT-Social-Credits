@@ -1,6 +1,5 @@
 import React from 'react';
 import classNames from 'classnames/bind';
-import styles from './Home.module.scss';
 import SearchBar from '@layouts/components/SearchBar';
 import FeaturedActivitySection from '@components/FeaturedActivitySection';
 import ActivityCategoriesSection from '@components/ActivityCategoriesSection';
@@ -8,10 +7,11 @@ import UpcomingActivitiesSection from '@components/UpcomingActivitiesSection/Upc
 import ProgressSection from '@components/ProgressSection';
 import PersonalActivitiesSection from '@components/PersonalActivitiesSection/PersonalActivitiesSection';
 import ProofStatusSection from '@components/ProofStatusSection/ProofStatusSection';
+import styles from './HomePage.module.scss';
 
 const cx = classNames.bind(styles);
 
-function Home() {
+function HomePage() {
   return (
     <main className={cx('home')}>
       {/* Banner */}
@@ -72,4 +72,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default HomePage;

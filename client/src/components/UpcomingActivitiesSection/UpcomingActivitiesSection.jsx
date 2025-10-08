@@ -48,7 +48,14 @@ function UpcomingActivitiesSection() {
 
   return (
     <>
-      <Label title="Hoạt động" highlight="sắp diễn ra" subtitle="Danh sách các hoạt động sắp diễn ra" />
+      <Label
+        title="Hoạt động"
+        highlight="sắp diễn ra"
+        subtitle="Danh sách các hoạt động sắp diễn ra"
+        leftDivider
+        rightDivider
+        showSubtitle
+      />
 
       <div className={cx('upcoming-activities')}>
         <div className={cx('upcoming-activities__filters')}>
@@ -67,13 +74,22 @@ function UpcomingActivitiesSection() {
         </div>
 
         <div className={cx('upcoming-activities__list')}>
-          {filteredActivities.map((a, idx) => (
+          {filteredActivities.map((a) => (
             <CardActivity
-              key={idx}
+              key={a.id}
               {...a}
               variant="vertical"
-              onDetails={() => console.log('Chi tiết:', a?.title)}
-              onRegister={() => console.log('Đăng ký:', a?.title)}
+              onRegister={(activity) => console.log('Open modal for:', activity)}
+              onRegistered={async ({ activity }) => {
+                try {
+                  await mockApi.registerActivity?.(activity.id);
+                  console.log('Registered:', activity.id);
+                } catch (e) {
+                  console.error('Register failed', e);
+                }
+              }}
+              state="guest"
+              buttonLabels={{ register: 'Đăng ký ngay' }}
             />
           ))}
         </div>

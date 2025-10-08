@@ -325,7 +325,7 @@ function ActivityDetailPage() {
         <div className={cx('activity-detail__related')}>
           <div className={cx('activity-detail__related-list')}>
             {relatedActivities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="guest" />
             ))}
           </div>
 

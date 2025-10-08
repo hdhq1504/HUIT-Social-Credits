@@ -12,6 +12,7 @@ import {
 import { Button, Calendar, Input, Select, Tabs } from 'antd';
 import dayjs from 'dayjs';
 import CardActivity from '@components/CardActivity/CardActivity';
+import Label from '@components/Label/Label';
 import styles from './MyActivitiesPage.module.scss';
 import { mockApi } from '@utils/mockAPI';
 
@@ -106,12 +107,7 @@ function MyActivitiesPage() {
             <Link to="/">Trang chủ</Link> / <span>Hoạt động của tôi</span>
           </nav>
 
-          <div className={cx('my-activities__header-heading')}>
-            <span className={cx('my-activities__header-title')}>
-              Hoạt động <span className={cx('my-activities__header-highlight')}>của tôi</span>
-            </span>
-            <div className={cx('my-activities__heading-divider')}></div>
-          </div>
+          <Label title="Hoạt động" highlight="của tôi" leftDivider={false} rightDivider showSubtitle={false} />
         </header>
 
         {/* Stats */}
@@ -189,7 +185,7 @@ function MyActivitiesPage() {
 
         {/* Tabs */}
         <div className={cx('my-activities__tabs')}>
-          <Tabs defaultActiveKey="1" items={tabItems} type="line" size="large" />
+          <Tabs defaultActiveKey="1" items={tabItems} type="line" size="large" tabBarGutter={12} />
 
           <div className={cx('my-activities__search')}>
             <Input placeholder="Nhập từ khóa" size="large" className={cx('search-input')} allowClear />
@@ -222,7 +218,7 @@ function MyActivitiesPage() {
 
           <div className={cx('my-activities__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="completed" />
             ))}
           </div>
         </div>

@@ -7,6 +7,8 @@ const routes = {
   activityDetail: '/activity-detail',
   activityDetailWithId: '/activity-detail/:id',
   myActivities: '/my-activities',
+  myPoints: '/my-points',
+  rollCall: '/roll-call',
   loading: '/loading',
 };
 

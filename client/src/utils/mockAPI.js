@@ -36,7 +36,7 @@ const defaultData = {
       location: 'Viện dưỡng lão Thị Nghè',
       participants: ['https://placehold.co/32x32', 'https://placehold.co/32x32', 'https://placehold.co/32x32'],
       capacity: '12/50',
-      coverImage: '/images/activity-cover.png',
+      coverImage: 'activityCover.png',
       isFeatured: true,
       onRegister: () => console.log('Đăng ký ngay!'),
       onDetails: () => console.log('Xem chi tiết!'),
@@ -131,6 +131,62 @@ const defaultData = {
       isFeatured: true,
       onRegister: () => console.log('Đăng ký ngay!'),
       onDetails: () => console.log('Xem chi tiết!'),
+    },
+  ],
+  scoreRecords: [
+    {
+      id: 'sc-001',
+      activityName: 'Hiến máu nhân đạo tháng 10',
+      location: 'Hội trường A1, Đại học ABC',
+      group: 'Nhóm 1',
+      points: 10,
+      date: '2024-10-15',
+      status: 'confirmed',
+    },
+    {
+      id: 'sc-002',
+      activityName: 'Dạy học cho trẻ em mồ côi',
+      location: 'Trung tâm Bảo trợ trẻ em',
+      group: 'Nhóm 2,3',
+      points: 12,
+      date: '2024-10-08',
+      status: 'confirmed',
+    },
+    {
+      id: 'sc-003',
+      activityName: 'Trồng cây xanh công viên',
+      location: 'Công viên 29/3, TP.HCM',
+      group: 'Nhóm 2,3',
+      points: 6,
+      date: '2024-10-05',
+      status: 'confirmed',
+    },
+    {
+      id: 'sc-004',
+      activityName: 'Dọn dẹp bãi biển Cửa Đại',
+      location: 'Bãi biển Cửa Đại, Hội An',
+      group: 'Nhóm 2,3',
+      points: 8,
+      date: '2024-09-25',
+      status: 'pending',
+    },
+    {
+      id: 'sc-005',
+      activityName: 'Tổ chức sự kiện tân sinh viên',
+      location: 'Hội trường chính, Đại học ABC',
+      group: 'Nhóm 2,3',
+      points: 5,
+      date: '2024-09-20',
+      status: 'confirmed',
+    },
+    {
+      id: 'sc-006',
+      activityName: 'Chương trình hiến máu tình nguyện',
+      location: 'Bệnh viện Chợ Rẫy',
+      group: 'Nhóm 1',
+      points: 15,
+      date: '2024-08-15',
+      status: 'confirmed',
     },
   ],
 };
@@ -268,6 +324,11 @@ export const mockApi = {
   async getActivities() {
     const data = ensureData();
     return clone(data.activities);
+  },
+
+  async getScoreRecords() {
+    const data = ensureData();
+    return clone(data.scoreRecords);
   },
 };
 

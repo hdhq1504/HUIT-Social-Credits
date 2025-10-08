@@ -54,7 +54,7 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/">
+            <Link to="/roll-call">
               <span>Điểm danh</span>
             </Link>
           </div>
@@ -124,7 +124,7 @@ function Header() {
             </Link>
           </div>
           <div className={cx('menu-item')}>
-            <Link to="/">
+            <Link to="/roll-call">
               <span>Điểm danh</span>
             </Link>
           </div>
@@ -166,7 +166,7 @@ function Header() {
             Hoạt động của tôi
           </NavLink>
 
-          <NavLink to="/attendance" className={({ isActive }) => cx('action-item', { active: isActive })}>
+          <NavLink to="/roll-call" className={({ isActive }) => cx('action-item', { active: isActive })}>
             Điểm danh
           </NavLink>
 

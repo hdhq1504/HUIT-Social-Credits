@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Progress } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,7 +15,7 @@ function ProgressSection({
   groups = [],
   missingPoints = 0,
   onViewDetail,
-  imageUrl = 'https://placehold.co/320x320',
+  imageUrl = '/images/profile.png',
 }) {
   return (
     <div className={cx('progress-section')}>
@@ -82,9 +83,11 @@ function ProgressSection({
             Bạn còn thiếu <strong>{missingPoints} điểm</strong> để đạt chứng chỉ hoàn thành.
           </div>
 
-          <button className={cx('progress-section__actions')} onClick={onViewDetail}>
-            Xem bảng điểm chi tiết
-          </button>
+          <div className={cx('progress-section__actions')} onClick={onViewDetail}>
+            <Link to="/my-points" className={cx('progress-section__actions-link')}>
+              Xem bảng điểm chi tiết
+            </Link>
+          </div>
         </div>
 
         <div className={cx('progress-section__image')}>

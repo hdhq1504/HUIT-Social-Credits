@@ -50,7 +50,14 @@ const statusIcons = {
 function ProofStatusSection() {
   return (
     <>
-      <Label title="Trạng thái" highlight="minh chứng" subtitle="Phản hồi điểm nếu có xảy ra sai sót" />
+      <Label
+        title="Trạng thái"
+        highlight="minh chứng"
+        subtitle="Phản hồi điểm nếu có xảy ra sai sót"
+        leftDivider
+        rightDivider
+        showSubtitle
+      />
 
       <div className={cx('proof-status')}>
         <div className={cx('proof-status__cards')}>

@@ -46,6 +46,16 @@
     }
   }
 
+  &--success {
+    background: var(--success-color);
+    color: var(--white-color);
+  }
+
+  &--danger {
+    background: var(--danger-color);
+    color: var(--white-color);
+  }
+
   &--outline {
     background-color: transparent;
     border: 1px solid var(--black-color);
@@ -140,6 +150,10 @@
   &__text {
     display: inline-flex;
     align-items: center;
+  }
+
+  &__spinner .spinner {
+    animation: spin 1s linear infinite;
   }
 
   // ========== Responsive ==========

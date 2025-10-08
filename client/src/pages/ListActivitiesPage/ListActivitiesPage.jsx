@@ -91,7 +91,12 @@ function ListActivitiesPage() {
 
                 <div className={cx('activities-page__cards')}>
                   {activities.map((activity) => (
-                    <CardActivity key={activity.id} {...activity} variant={screens.md ? 'horizontal' : 'vertical'} />
+                    <CardActivity
+                      key={activity.id}
+                      {...activity}
+                      variant={screens.md ? 'horizontal' : 'vertical'}
+                      state="guest"
+                    />
                   ))}
                 </div>
 

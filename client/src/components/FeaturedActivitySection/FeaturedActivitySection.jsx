@@ -28,7 +28,14 @@ function FeaturedActivitySection() {
 
   return (
     <>
-      <Label title="Hoạt động" highlight="nổi bật" subtitle="Những hoạt động được Ban quản lý đặc biệt giới thiệu" />
+      <Label
+        title="Hoạt động"
+        highlight="nổi bật"
+        subtitle="Những hoạt động được Ban quản lý đặc biệt giới thiệu"
+        leftDivider
+        rightDivider
+        showSubtitle
+      />
 
       <div className={cx('featured-activities')}>
         <div className={cx('featured-activities__slider')}>
@@ -46,7 +53,20 @@ function FeaturedActivitySection() {
           >
             {activities.map((a) => (
               <SwiperSlide key={a.id}>
-                <CardActivity {...a} variant="vertical" />
+                <CardActivity
+                  {...a}
+                  state="guest"
+                  onRegister={(activity) => console.log('Open modal for:', activity)}
+                  onRegistered={async ({ activity }) => {
+                    try {
+                      await mockApi.registerActivity?.(activity.id);
+                      console.log('Registered:', activity.id);
+                    } catch (e) {
+                      console.error('Register failed', e);
+                    }
+                  }}
+                  showConflictAlert={false}
+                />
               </SwiperSlide>
             ))}
           </Swiper>

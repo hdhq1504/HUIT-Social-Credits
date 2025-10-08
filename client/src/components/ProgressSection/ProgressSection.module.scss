@@ -313,7 +313,6 @@
     padding: 12px 24px;
     border-radius: 8px;
     background: var(--orange-color);
-    color: var(--white-color);
     font-size: 14px;
     font-weight: 400;
     cursor: pointer;
@@ -322,6 +321,10 @@
     display: inline-flex;
     justify-content: center;
     transition: all 0.3s ease;
+
+    &-link {
+      color: var(--white-color);
+    }
 
     &:hover {
       opacity: 0.9;

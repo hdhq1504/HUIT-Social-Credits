@@ -49,6 +49,9 @@ function PersonalActivitiesSection() {
         title="Hoạt động"
         highlight="sắp tới của bạn"
         subtitle="Bạn hãy thường xuyên kiểm tra để không bỏ lỡ nhé"
+        leftDivider
+        rightDivider
+        showSubtitle
       />
 
       <List
