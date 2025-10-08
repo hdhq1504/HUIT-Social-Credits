@@ -30,7 +30,6 @@ function Button({
       {rightIcon && <span className={cx('button__icon', 'button__icon--right')}>{rightIcon}</span>}
       {loading && (
         <span className={cx('button__spinner')} aria-hidden="true">
-          {/* spinner SVG độc lập CSS */}
           <svg viewBox="0 0 50 50" className={cx('spinner')}>
             <circle cx="25" cy="25" r="20" fill="none" strokeWidth="5" />
           </svg>

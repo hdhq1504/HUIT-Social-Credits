@@ -1,0 +1,422 @@
+.my-activities {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 24px;
+  margin: 70px auto 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    margin-top: 0;
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  @media (max-width: 576px) {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  &__container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  &__header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__header-breadcrumb {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 20px 0;
+
+    @media (max-width: 992px) {
+      font-size: 13px;
+      padding: 18px 0;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 12px;
+      padding: 15px 0;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+      padding: 12px 0;
+    }
+
+    span {
+      color: var(--border-color);
+    }
+
+    a {
+      color: var(--primary-color);
+
+      &:hover {
+        color: var(--orange-color);
+      }
+    }
+  }
+
+  &__stats {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 20px;
+    gap: 24px;
+
+    @media (max-width: 1200px) {
+      gap: 20px;
+    }
+
+    @media (max-width: 992px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 576px) {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+  }
+
+  &__tabs {
+    width: 100%;
+    background-color: var(--white-color);
+    border: 1px solid rgba(0, 31, 143, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 31, 143, 0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-bottom: 24px;
+
+    @media (max-width: 768px) {
+      border-radius: 10px;
+      gap: 20px;
+      padding-bottom: 20px;
+    }
+
+    @media (max-width: 576px) {
+      border-radius: 8px;
+      gap: 16px;
+      padding-bottom: 16px;
+    }
+
+    :global {
+      .ant-tabs-nav {
+        width: 100%;
+        margin-bottom: 0;
+
+        &::before {
+          border-bottom: 2px solid #e8e8e8;
+        }
+
+        .ant-tabs-nav-wrap {
+          width: 100%;
+        }
+
+        .ant-tabs-nav-list {
+          width: 100%;
+          display: flex;
+        }
+      }
+
+      .ant-tabs-tab {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 15px !important;
+        font-weight: 500;
+        color: #475569;
+        padding: 12px 0;
+        margin: 0 !important;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease;
+
+        @media (max-width: 768px) {
+          font-size: 14px !important;
+          padding: 10px 0;
+        }
+
+        @media (max-width: 576px) {
+          font-size: 13px !important;
+          padding: 8px 0;
+        }
+
+        &:hover {
+          color: var(--white-color) !important;
+          background-color: var(--primary-color);
+        }
+
+        // First tab hover
+        &:nth-child(1):hover {
+          border-top-left-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-left-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-left-radius: 8px;
+          }
+        }
+
+        // Last tab hover
+        &:nth-child(3):hover {
+          border-top-right-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-right-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-right-radius: 8px;
+          }
+        }
+      }
+
+      // Active tab styles
+      .ant-tabs-tab-active {
+        background-color: var(--primary-color);
+
+        .ant-tabs-tab-btn {
+          color: var(--white-color) !important;
+        }
+
+        // First tab active
+        &:nth-child(1) {
+          border-top-left-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-left-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-left-radius: 8px;
+          }
+        }
+
+        // Last tab active
+        &:nth-child(3) {
+          border-top-right-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-right-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-right-radius: 8px;
+          }
+        }
+      }
+    }
+  }
+
+  &__tab-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    transition: color 0.2s ease;
+
+    @media (max-width: 576px) {
+      gap: 4px;
+    }
+
+    // Ẩn text label ở mobile, chỉ giữ icon và badge
+    > span:not(.my-activities__tab-badge) {
+      @media (max-width: 576px) {
+        display: none;
+      }
+    }
+
+    :global(.ant-tabs-tab-active) &,
+    :global(.ant-tabs-tab:hover) & {
+      color: var(--white-color) !important;
+    }
+  }
+
+  &__tab-icon {
+    font-size: 16px;
+    color: #475569;
+    transition: color 0.2s ease;
+
+    @media (max-width: 768px) {
+      font-size: 15px;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 14px;
+    }
+
+    :global(.ant-tabs-tab-active) &,
+    :global(.ant-tabs-tab:hover) & {
+      color: var(--white-color) !important;
+    }
+  }
+
+  &__tab-badge {
+    padding: 2px 10px;
+    border-radius: 24px;
+    background-color: #e2e8f0;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 28px;
+    text-align: center;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+
+    @media (max-width: 768px) {
+      font-size: 13px;
+      padding: 2px 8px;
+      min-width: 24px;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 12px;
+      padding: 1px 6px;
+      min-width: 20px;
+    }
+
+    :global(.ant-tabs-tab-active) &,
+    :global(.ant-tabs-tab:hover) & {
+      background-color: var(--orange-color) !important;
+      color: var(--white-color) !important;
+    }
+  }
+
+  &__search {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 24px;
+
+    :global(.ant-input),
+    :global(.ant-input::placeholder),
+    :global(.ant-select-selector) {
+      font-family: 'Montserrat', sans-serif !important;
+    }
+
+    @media (max-width: 768px) {
+      gap: 10px;
+    }
+
+    @media (max-width: 576px) {
+      padding: 16px;
+      gap: 8px;
+    }
+  }
+
+  &__search-input {
+    flex: 1 1 360px;
+
+    @media (max-width: 992px) {
+      flex: 1 1 280px;
+    }
+
+    @media (max-width: 768px) {
+      flex: 1 1 200px;
+    }
+
+    @media (max-width: 576px) {
+      flex: 1 1 100%;
+    }
+  }
+
+  &__search-select {
+    flex: 0 0 220px;
+
+    @media (max-width: 992px) {
+      flex: 0 0 180px;
+    }
+
+    @media (max-width: 768px) {
+      flex: 0 0 calc(50% - 5px);
+    }
+
+    @media (max-width: 576px) {
+      flex: 1 1 100%;
+    }
+  }
+
+  &__reset-button {
+    background-color: var(--orange-color);
+    border: none;
+
+    @media (max-width: 768px) {
+      flex: 0 0 calc(50% - 5px);
+    }
+
+    @media (max-width: 576px) {
+      flex: 1 1 100%;
+    }
+
+    &:hover {
+      background-color: #d74400 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 92, 0, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &__title {
+    padding: 0 24px 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: 'Montserrat', sans-serif;
+
+    @media (max-width: 768px) {
+      padding: 0 20px;
+      font-size: 16px;
+    }
+
+    @media (max-width: 576px) {
+      padding: 0 16px;
+      font-size: 15px;
+    }
+  }
+
+  &__list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 0 24px;
+    gap: 16px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 992px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 0 20px;
+    }
+
+    @media (max-width: 768px) {
+      gap: 12px;
+    }
+
+    @media (max-width: 576px) {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      padding: 0 16px;
+      gap: 10px;
+    }
+  }
+}

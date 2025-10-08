@@ -190,9 +190,27 @@ function CardActivity(props) {
           buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { variant: 'muted' }, { disabled: true })],
         };
       case 'attendance_open':
-        return { buttons: [btn(L.details, openDetails), btn(L.checkin, handleOpenAttendance, { variant: 'primary' })] };
+        return {
+          buttons: [btn(L.details, openDetails), btn(L.checkin, handleOpenAttendance, { variant: 'primary' })],
+        };
       case 'attendance_closed':
-        return { buttons: [btn(L.details, openDetails), btn(L.closed, () => {}, { disabled: true, fullWidth: true })] };
+        return { buttons: [btn(L.closed, () => {}, { variant: 'muted', disabled: true, fullWidth: true })] };
+      case 'confirm_in':
+        return {
+          buttons: [
+            btn(L.confirmIn, handleOpenAttendance, { variant: 'primary', fullWidth: true }),
+            btn(L.confirmOut, handleCloseAttendance, { variant: 'muted', fullWidth: true }),
+          ],
+          layout: 'column',
+        };
+      case 'confirm_out':
+        return {
+          buttons: [
+            btn(L.confirmOut, handleCloseAttendance, { variant: 'primary', fullWidth: true }),
+            btn(L.confirmIn, handleOpenAttendance, { variant: 'muted', fullWidth: true }),
+          ],
+          layout: 'column',
+        };
       case 'details_only':
         return { buttons: [btn(L.viewDetail, openDetails, { variant: 'success', fullWidth: true })] };
       case 'feedback_pending':
@@ -300,7 +318,8 @@ function CardActivity(props) {
         {/* ACTIONS */}
         <div
           className={cx('activity-card__actions', {
-            'actions--stacked': preset.buttons?.some((b) => b.fullWidth),
+            'actions--row': preset.layout === 'row',
+            'actions--column': preset.layout === 'column',
             'actions--single': (preset.buttons?.length || 0) === 1,
           })}
         >
