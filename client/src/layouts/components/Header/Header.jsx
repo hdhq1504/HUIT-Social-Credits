@@ -68,7 +68,7 @@ function Header() {
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/">
+            <Link to="/feedback">
               <span>Phản hồi</span>
             </Link>
           </div>

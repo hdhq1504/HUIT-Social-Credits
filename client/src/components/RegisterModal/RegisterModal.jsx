@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Tag, Select, Input } from 'antd';
 import classNames from 'classnames/bind';
+import { Modal, Tag, Select, Input } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Alert from '../Alert/Alert';
@@ -100,7 +100,7 @@ function RegisterModal({
               <TextArea
                 className={cx('register-confirm__textarea')}
                 placeholder="Nhập ghi chú thêm nếu có..."
-                autoSize={{ minRows: 3, maxRows: 6 }}
+                autoSize={{ minRows: 3, maxRows: 4 }}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />

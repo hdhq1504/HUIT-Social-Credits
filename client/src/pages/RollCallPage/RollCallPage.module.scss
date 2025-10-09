@@ -1,4 +1,4 @@
-.my-activities {
+.roll-call {
   width: 100%;
   max-width: 1200px;
   padding: 0 24px;
@@ -8,15 +8,34 @@
   align-items: center;
   gap: 20px;
 
+  // xl: 1200px
+  @media (max-width: 1200px) {
+    max-width: 992px;
+  }
+
+  // lg: 992px
+  @media (max-width: 992px) {
+    max-width: 768px;
+    gap: 18px;
+  }
+
+  // md: 768px
   @media (max-width: 768px) {
     margin-top: 0;
     padding: 0 16px;
     gap: 16px;
   }
 
+  // sm: 576px
   @media (max-width: 576px) {
     padding: 0 12px;
     gap: 12px;
+  }
+
+  // xs: 480px
+  @media (max-width: 480px) {
+    padding: 0 8px;
+    gap: 10px;
   }
 
   &__container {
@@ -36,19 +55,28 @@
     font-weight: 500;
     padding: 20px 0;
 
+    // lg: 992px
     @media (max-width: 992px) {
       font-size: 13px;
       padding: 18px 0;
     }
 
+    // md: 768px
     @media (max-width: 768px) {
       font-size: 12px;
       padding: 15px 0;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       font-size: 11px;
       padding: 12px 0;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      font-size: 10px;
+      padding: 10px 0;
     }
 
     span {
@@ -71,19 +99,33 @@
     margin-bottom: 20px;
     gap: 24px;
 
+    // xl: 1200px
     @media (max-width: 1200px) {
       gap: 20px;
     }
 
+    // lg: 992px
     @media (max-width: 992px) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
     }
 
+    // md: 768px
+    @media (max-width: 768px) {
+      gap: 14px;
+    }
+
+    // sm: 576px
     @media (max-width: 576px) {
       grid-template-columns: repeat(1, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 16px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      gap: 10px;
+      margin-bottom: 12px;
     }
   }
 
@@ -98,16 +140,25 @@
     gap: 24px;
     padding-bottom: 24px;
 
+    // md: 768px
     @media (max-width: 768px) {
       border-radius: 10px;
       gap: 20px;
       padding-bottom: 20px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       border-radius: 8px;
       gap: 16px;
       padding-bottom: 16px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      border-radius: 6px;
+      gap: 12px;
+      padding-bottom: 12px;
     }
 
     :global {
@@ -143,14 +194,22 @@
           background-color 0.2s ease,
           color 0.2s ease;
 
+        // md: 768px
         @media (max-width: 768px) {
           font-size: 14px !important;
           padding: 10px 0;
         }
 
+        // sm: 576px
         @media (max-width: 576px) {
           font-size: 13px !important;
           padding: 8px 0;
+        }
+
+        // xs: 480px
+        @media (max-width: 480px) {
+          font-size: 12px !important;
+          padding: 6px 0;
         }
 
         &:hover {
@@ -169,6 +228,10 @@
           @media (max-width: 576px) {
             border-top-left-radius: 8px;
           }
+
+          @media (max-width: 480px) {
+            border-top-left-radius: 6px;
+          }
         }
 
         // Last tab hover
@@ -181,6 +244,10 @@
 
           @media (max-width: 576px) {
             border-top-right-radius: 8px;
+          }
+
+          @media (max-width: 480px) {
+            border-top-right-radius: 6px;
           }
         }
       }
@@ -204,6 +271,10 @@
           @media (max-width: 576px) {
             border-top-left-radius: 8px;
           }
+
+          @media (max-width: 480px) {
+            border-top-left-radius: 6px;
+          }
         }
 
         // Last tab active
@@ -217,6 +288,10 @@
           @media (max-width: 576px) {
             border-top-right-radius: 8px;
           }
+
+          @media (max-width: 480px) {
+            border-top-right-radius: 6px;
+          }
         }
       }
     }
@@ -229,15 +304,14 @@
     color: #475569;
     transition: color 0.2s ease;
 
+    // sm: 576px
     @media (max-width: 576px) {
       gap: 4px;
     }
 
-    // Ẩn text label ở mobile, chỉ giữ icon và badge
-    > span:not(.my-activities__tab-badge) {
-      @media (max-width: 576px) {
-        display: none;
-      }
+    // xs: 480px
+    @media (max-width: 480px) {
+      gap: 2px;
     }
 
     :global(.ant-tabs-tab-active) &,
@@ -251,12 +325,19 @@
     color: #475569;
     transition: color 0.2s ease;
 
+    // md: 768px
     @media (max-width: 768px) {
       font-size: 15px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       font-size: 14px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      font-size: 13px;
     }
 
     :global(.ant-tabs-tab-active) &,
@@ -278,16 +359,25 @@
       background-color 0.2s ease,
       color 0.2s ease;
 
+    // md: 768px
     @media (max-width: 768px) {
       font-size: 13px;
       padding: 2px 8px;
       min-width: 24px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       font-size: 12px;
       padding: 1px 6px;
       min-width: 20px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      font-size: 11px;
+      padding: 1px 5px;
+      min-width: 18px;
     }
 
     :global(.ant-tabs-tab-active) &,
@@ -311,27 +401,39 @@
       font-family: 'Montserrat', sans-serif !important;
     }
 
+    // md: 768px
     @media (max-width: 768px) {
       gap: 10px;
+      padding: 14px 20px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       padding: 16px;
       gap: 8px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      padding: 12px;
+      gap: 6px;
     }
   }
 
   &__search-input {
     flex: 1 1 360px;
 
+    // lg: 992px
     @media (max-width: 992px) {
       flex: 1 1 280px;
     }
 
+    // md: 768px
     @media (max-width: 768px) {
       flex: 1 1 200px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       flex: 1 1 100%;
     }
@@ -340,14 +442,17 @@
   &__search-select {
     flex: 0 0 220px;
 
+    // lg: 992px
     @media (max-width: 992px) {
       flex: 0 0 180px;
     }
 
+    // md: 768px
     @media (max-width: 768px) {
       flex: 0 0 calc(50% - 5px);
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       flex: 1 1 100%;
     }
@@ -357,10 +462,12 @@
     background-color: var(--orange-color);
     border: none;
 
+    // md: 768px
     @media (max-width: 768px) {
       flex: 0 0 calc(50% - 5px);
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       flex: 1 1 100%;
     }
@@ -383,14 +490,22 @@
     color: var(--primary-color);
     font-family: 'Montserrat', sans-serif;
 
+    // md: 768px
     @media (max-width: 768px) {
-      padding: 0 20px;
+      padding: 0 20px 14px;
       font-size: 16px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
-      padding: 0 16px;
+      padding: 0 16px 12px;
       font-size: 15px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      padding: 0 12px 10px;
+      font-size: 14px;
     }
   }
 
@@ -400,23 +515,34 @@
     padding: 0 24px;
     gap: 16px;
 
+    // xl: 1200px
     @media (max-width: 1200px) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    // lg: 992px
     @media (max-width: 992px) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       padding: 0 20px;
+      gap: 14px;
     }
 
+    // md: 768px
     @media (max-width: 768px) {
       gap: 12px;
     }
 
+    // sm: 576px
     @media (max-width: 576px) {
       grid-template-columns: repeat(1, minmax(0, 1fr));
       padding: 0 16px;
       gap: 10px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      padding: 0 12px;
+      gap: 8px;
     }
   }
 }

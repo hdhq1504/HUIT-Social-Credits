@@ -8,6 +8,7 @@ import ActivityDetailPage from '../pages/ActivityDetailPage/ActivityDetailPage';
 import MyActivitiesPage from '../pages/MyActivitiesPage/MyActivitiesPage';
 import MyPointsPage from '../pages/MyPointsPage/MyPointsPage';
 import RollCallPage from '../pages/RollCallPage/RollCallPage';
+import FeedbackPage from '../pages/FeedbackPage/FeedbackPage';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 import Loading from '../pages/Loading/Loading';
 
@@ -23,6 +24,7 @@ const publicRoutes = [
   { path: config.routes.myActivities, component: MyActivitiesPage },
   { path: config.routes.myPoints, component: MyPointsPage },
   { path: config.routes.rollCall, component: RollCallPage },
+  { path: config.routes.feedback, component: FeedbackPage },
   { path: config.routes.loading, component: Loading },
 ];
 

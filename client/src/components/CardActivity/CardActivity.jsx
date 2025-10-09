@@ -5,10 +5,19 @@ import routes from '../../config/routes';
 import { Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCoins,
+  faCalendar,
+  faLocationDot,
+  faPaperPlane,
+  faCheck,
+  faCircleCheck,
+  faXmarkCircle,
+} from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
 import RegisterModal from '../RegisterModal/RegisterModal';
 import CheckModal from '../CheckModal/CheckModal';
+import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import styles from './CardActivity.module.scss';
 
@@ -61,6 +70,8 @@ function CardActivity(props) {
     onSendFeedback,
     modalGroupLabel = 'Nhóm 2,3',
     showConflictAlert = false,
+    checkinTime = '08:00, 15/11/2024',
+    checkoutTime = '17:00, 15/11/2024',
   } = props;
 
   const [openReg, setOpenReg] = useState(false);
@@ -71,6 +82,8 @@ function CardActivity(props) {
 
   const [openCheck, setOpenCheck] = useState(false);
   const [captured, setCaptured] = useState(null);
+
+  const [openFeedback, setOpenFeedback] = useState(false);
 
   const activity = { id, title, points, dateTime, location, participants, capacity, coverImage };
 
@@ -138,8 +151,25 @@ function CardActivity(props) {
     await onConfirmPresent?.({ activity, file, previewUrl });
     setOpenCheck(false);
     openToast({ message: 'Gửi điểm danh thành công!', variant: 'success' });
-    // Tùy nghiệp vụ, bạn có thể chuyển state:
+    // Sau khi điểm danh có thể chuyển sang feedback_pending tùy nghiệp vụ
     // setUiState('feedback_pending'); onStateChange?.('feedback_pending');
+  };
+
+  // ==== Feedback handlers ====
+  const handleOpenFeedback = () => {
+    setOpenFeedback(true);
+  };
+  const handleCloseFeedback = () => setOpenFeedback(false);
+  const handleSubmitFeedback = async ({ content, files, confirm }) => {
+    try {
+      await onSendFeedback?.({ activity, content, files, confirm });
+      setOpenFeedback(false);
+      setUiState('feedback_reviewing');
+      onStateChange?.('feedback_reviewing');
+      openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
+    } catch (e) {
+      openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
+    }
   };
 
   const pill = (text, tone = 'neutral') => ({ text, tone });
@@ -157,7 +187,8 @@ function CardActivity(props) {
     confirmOut: 'Xác nhận rời đi',
     sent: 'Đã gửi phản hồi',
     giveFeedback: 'Gửi phản hồi',
-    scored: 'Đã được ghi điểm',
+    accepted: 'Đã được ghi điểm',
+    denied: 'Bị từ chối',
     canceled: 'Đã hủy',
     ...buttonLabels,
   };
@@ -216,17 +247,49 @@ function CardActivity(props) {
       case 'feedback_pending':
         return {
           status: pill('• Chưa được cộng điểm', 'danger'),
-          buttons: [btn(L.giveFeedback, () => onSendFeedback?.(activity), { variant: 'warning', fullWidth: true })],
+          buttons: [
+            btn(L.giveFeedback, handleOpenFeedback, {
+              variant: 'orange',
+              fullWidth: true,
+              leftIcon: <FontAwesomeIcon icon={faPaperPlane} />,
+            }),
+          ],
         };
       case 'feedback_reviewing':
         return {
           status: pill('• Chờ duyệt', 'warning'),
-          buttons: [btn(L.sent, () => {}, { disabled: true, fullWidth: true })],
+          buttons: [
+            btn(L.sent, () => {}, {
+              variant: 'muted',
+              disabled: true,
+              fullWidth: true,
+              leftIcon: <FontAwesomeIcon icon={faCheck} />,
+            }),
+          ],
         };
-      case 'feedback_scored':
+      case 'feedback_accepted':
         return {
           status: pill('• Đã cộng điểm', 'success'),
-          buttons: [btn(L.scored, () => {}, { disabled: true, fullWidth: true })],
+          buttons: [
+            btn(L.accepted, () => {}, {
+              variant: 'muted',
+              disabled: true,
+              fullWidth: true,
+              leftIcon: <FontAwesomeIcon icon={faCircleCheck} />,
+            }),
+          ],
+        };
+      case 'feedback_denied':
+        return {
+          status: pill('• Không được cộng điểm', 'muted'),
+          buttons: [
+            btn(L.denied, () => {}, {
+              variant: 'muted',
+              disabled: true,
+              fullWidth: true,
+              leftIcon: <FontAwesomeIcon icon={faXmarkCircle} />,
+            }),
+          ],
         };
       default:
         return {
@@ -365,6 +428,18 @@ function CardActivity(props) {
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
         location={location}
+      />
+
+      {/* FeedbackModal chỉ mở khi state là feedback_pending */}
+      <FeedbackModal
+        open={openFeedback}
+        onSubmit={handleSubmitFeedback}
+        onCancel={handleCloseFeedback}
+        campaignName={title}
+        groupLabel={modalGroupLabel}
+        pointsLabel="Chưa được cộng điểm"
+        checkinTime={checkinTime}
+        checkoutTime={checkoutTime}
       />
     </div>
   );

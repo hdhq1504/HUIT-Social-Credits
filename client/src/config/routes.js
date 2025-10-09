@@ -9,6 +9,7 @@ const routes = {
   myActivities: '/my-activities',
   myPoints: '/my-points',
   rollCall: '/roll-call',
+  feedback: '/feedback',
   loading: '/loading',
 };
 

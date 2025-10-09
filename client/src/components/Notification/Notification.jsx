@@ -60,7 +60,7 @@ function Notification() {
         {items.map((n) => (
           <div key={n.id} className={cx('notification__item', { 'notification__item--unread': n.isUnread })}>
             <div className={cx('notification__icon-wrap', `notification__icon-wrap--${n.type}`)}>
-              <FontAwesomeIcon icon={TYPE_ICON[n.type] || faCircleCheck} />
+              <FontAwesomeIcon icon={TYPE_ICON[n.type]} />
             </div>
 
             <div className={cx('notification__content')}>

@@ -144,8 +144,12 @@
     cursor: pointer;
     transition: all 0.2s ease;
 
+    &:hover {
+      background-color: rgba(215, 68, 0, 1);
+    }
+
     &--checkout {
-      background-color: #ff9f43;
+      background-color: var(--orange-color);
     }
   }
 

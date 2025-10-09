@@ -6,7 +6,7 @@ import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Tabs } from 'antd';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
-import styles from './RollCallPage.module.scss';
+import styles from './FeedbackPage.module.scss';
 import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
@@ -32,7 +32,7 @@ function RollCallPage() {
         key: '1',
         label: (
           <div className={cx('roll-call__tab-label')}>
-            <span>Đang diễn ra</span>
+            <span>Tất cả</span>
           </div>
         ),
         children: (
@@ -47,7 +47,7 @@ function RollCallPage() {
         key: '2',
         label: (
           <div className={cx('roll-call__tab-label')}>
-            <span>Sắp diễn ra</span>
+            <span>Đã được cộng điểm</span>
           </div>
         ),
         children: (
@@ -62,7 +62,22 @@ function RollCallPage() {
         key: '3',
         label: (
           <div className={cx('roll-call__tab-label')}>
-            <span>Đã kết thúc</span>
+            <span>Đã gửi phản hồi</span>
+          </div>
+        ),
+        children: (
+          <div className={cx('roll-call__list')}>
+            {activities.map((activity) => (
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
+            ))}
+          </div>
+        ),
+      },
+      {
+        key: '4',
+        label: (
+          <div className={cx('roll-call__tab-label')}>
+            <span>Từ chối</span>
           </div>
         ),
         children: (
@@ -83,10 +98,10 @@ function RollCallPage() {
         {/* Header */}
         <header className={cx('roll-call__header')}>
           <nav className={cx('roll-call__header-breadcrumb')} aria-label="Breadcrumb">
-            <Link to="/">Trang chủ</Link> / <span>Điểm danh</span>
+            <Link to="/">Trang chủ</Link> / <span>Phản hồi</span>
           </nav>
 
-          <Label title="Điểm danh" highlight="hoạt động" leftDivider={false} rightDivider showSubtitle={false} />
+          <Label title="Phản hồi" highlight="điểm" leftDivider={false} rightDivider showSubtitle={false} />
         </header>
 
         {/* Tabs */}
