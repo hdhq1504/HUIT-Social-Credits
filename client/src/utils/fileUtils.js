@@ -1,4 +1,3 @@
-// utils/fileUtils.js
 export const formatFileSize = (bytes) => {
   if (!bytes) return '0 Bytes';
   const mb = bytes / (1024 * 1024);

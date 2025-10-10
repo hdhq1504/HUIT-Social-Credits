@@ -17,7 +17,6 @@ import { Row, Col, Tabs } from 'antd';
 import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
-import SearchBar from '@layouts/components/SearchBar/SearchBar';
 import { mockApi } from '@utils/mockAPI';
 import styles from './ActivityDetailPage.module.scss';
 
@@ -146,15 +145,6 @@ function ActivityDetailPage() {
 
   return (
     <section className={cx('activity-detail')}>
-      <div className={cx('activity-detail__search')}>
-        <SearchBar
-          variant="list"
-          groups={['Tất cả', 'Địa chỉ đỏ', 'Mùa hè xanh', 'Xuân tình nguyện', 'Hiến máu', 'Hỗ trợ']}
-          statuses={['Sắp diễn ra', 'Đang diễn ra', 'Đã kết thúc']}
-          onSubmit={(query) => console.log('List filter search:', query)}
-        />
-      </div>
-
       <div className={cx('activity-detail__container')}>
         <nav className={cx('activity-detail__breadcrumb')}>
           <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> / <span>Title</span>

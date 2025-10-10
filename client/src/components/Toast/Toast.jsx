@@ -26,7 +26,7 @@ export default function useToast() {
           <div className={cx('toast__message')}>{message}</div>
         </div>
       ),
-      placement: 'bottomRight',
+      placement: 'topRight',
       duration,
       className: cx('toast__notice'),
       style: { padding: 0, background: 'transparent', boxShadow: 'none', width: '320px' },

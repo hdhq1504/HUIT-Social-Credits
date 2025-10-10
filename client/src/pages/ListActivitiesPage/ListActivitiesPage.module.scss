@@ -179,6 +179,10 @@
     @media (max-width: 768px) {
       gap: 12px;
     }
+
+    @media (max-width: 480px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   &__pagination {

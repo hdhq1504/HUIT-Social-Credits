@@ -4,14 +4,6 @@
   flex-direction: column;
   align-items: center;
 
-  &__search {
-    margin-top: 66px;
-    background-color: var(--primary-color);
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
   &__container {
     width: 100%;
     max-width: 1200px;
