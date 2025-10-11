@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames/bind';
 import InputField from '../InputField/InputField';
 import Button from '../Button/Button';
@@ -96,9 +98,11 @@ function LoginForm() {
               <input type="checkbox" className={cx('login-form__checkbox-input')} />
               <span>Lưu đăng nhập</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center' }}>
-              <img src="/images/Help.svg" alt="" />
-              <Link to="/forgot-password">Quên mật khẩu</Link>
+            <label className={cx('login-form__forgot')}>
+              <Link to="/forgot-password">
+                <FontAwesomeIcon icon={faCircleQuestion} color={'#00008B'} size={'lg'} />
+                Quên mật khẩu
+              </Link>
             </label>
           </div>
 

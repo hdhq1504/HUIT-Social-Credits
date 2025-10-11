@@ -84,7 +84,7 @@ function ForgotPasswordForm() {
     }
 
     try {
-      await verifyOtpMutation({ email, otp });
+      await verifyOtpMutation.mutateAsync({ email, otp });
       setStep(3);
       setInfoMessage('Mã OTP hợp lệ. Vui lòng tạo mật khẩu mới.');
     } catch (error) {
@@ -130,7 +130,7 @@ function ForgotPasswordForm() {
   useEffect(() => {
     if (step === 4) {
       const redirectTimer = setTimeout(() => {
-        navigate('/login');
+        navigate('/');
       }, 1500);
       return () => clearTimeout(redirectTimer);
     }

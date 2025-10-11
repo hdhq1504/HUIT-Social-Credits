@@ -203,14 +203,14 @@
     }
   }
 
-  &__remember {
+  &__remember,
+  &__forgot {
     display: flex;
     align-items: center;
-    width: 200px;
 
     span {
-      font-weight: 300;
-      color: #000;
+      font-weight: 400;
+      color: var(--black-color);
     }
 
     // Responsive cho tablet

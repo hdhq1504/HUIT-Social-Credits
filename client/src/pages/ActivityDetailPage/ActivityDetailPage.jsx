@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Row, Col, Tabs } from 'antd';
 import Button from '@components/Button/Button';
+import RegisterModal from '@components/RegisterModal/RegisterModal';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
 import { mockApi } from '@utils/mockAPI';
@@ -26,6 +27,9 @@ function ActivityDetailPage() {
   const { id } = useParams();
   const [activity, setActivity] = useState(null);
   const [relatedActivities, setRelatedActivities] = useState([]);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [registerState, setRegisterState] = useState('guest');
+  const [capacity, setCapacity] = useState({ current: 42, total: 50 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,7 +37,6 @@ function ActivityDetailPage() {
       const found = all.find((a) => a.id === id);
       setActivity(found);
 
-      // Get related activities (exclude current one, limit to 4)
       const related = all.filter((a) => a.id !== id).slice(0, 4);
       setRelatedActivities(related);
     };
@@ -143,6 +146,23 @@ function ActivityDetailPage() {
     [requirementItems, guideSteps],
   );
 
+  const remaining = capacity.total - capacity.current;
+  const percent = Math.min(100, Math.round((capacity.current / capacity.total) * 100));
+
+  const openRegister = () => setIsRegisterOpen(true);
+  const closeRegister = () => setIsRegisterOpen(false);
+
+  const handleConfirmRegister = ({ variant }) => {
+    if (variant === 'cancel') {
+      setRegisterState('guest');
+      setCapacity((c) => ({ ...c, current: Math.max(0, c.current - 1) }));
+    } else {
+      setRegisterState('registered');
+      setCapacity((c) => (c.current < c.total ? { ...c, current: c.current + 1 } : c));
+    }
+    closeRegister();
+  };
+
   return (
     <section className={cx('activity-detail')}>
       <div className={cx('activity-detail__container')}>
@@ -237,12 +257,16 @@ function ActivityDetailPage() {
                 <div className={cx('activity-detail__sidebar-registration')}>
                   <div className={cx('activity-detail__registration-header')}>
                     <span className={cx('activity-detail__registration-label')}>Số lượng đăng ký</span>
-                    <span className={cx('activity-detail__registration-count')}>42/50</span>
+                    <span className={cx('activity-detail__registration-count')}>
+                      {capacity.current}/{capacity.total}
+                    </span>
                   </div>
                   <div className={cx('activity-detail__registration-progress')}>
-                    <div className={cx('activity-detail__registration-bar')} style={{ width: '84%' }} />
+                    <div className={cx('activity-detail__registration-bar')} style={{ width: `${percent}%` }} />
                   </div>
-                  <div className={cx('activity-detail__registration-remaining')}>Còn 8 chỗ trống</div>
+                  <div className={cx('activity-detail__registration-remaining')}>
+                    {remaining > 0 ? `Còn ${remaining} chỗ trống` : 'Đã đủ số lượng'}
+                  </div>
                 </div>
 
                 <div className={cx('activity-detail__sidebar-deadline')}>
@@ -268,8 +292,28 @@ function ActivityDetailPage() {
                   </div>
                 </div>
 
-                <button className={cx('activity-detail__sidebar-button')}>Đăng ký ngay</button>
+                <Button
+                  className={cx('activity-detail__sidebar-button')}
+                  variant={registerState === 'registered' ? 'danger' : 'primary'}
+                  onClick={openRegister}
+                  disabled={registerState !== 'registered' && remaining <= 0}
+                >
+                  {registerState === 'registered' ? 'Hủy đăng ký' : 'Đăng ký ngay'}
+                </Button>
               </aside>
+
+              <RegisterModal
+                open={isRegisterOpen}
+                onCancel={() => setIsRegisterOpen(false)}
+                onConfirm={handleConfirmRegister}
+                variant={registerState === 'registered' ? 'cancel' : 'confirm'}
+                campaignName={activity?.title || 'Title'}
+                groupLabel="Nhóm 2,3"
+                pointsLabel="60 điểm"
+                dateTime="15/03/2024 06:00 - 18:00"
+                location="Bãi biển Cửa Lò"
+                showConflictAlert={false}
+              />
 
               <aside className={cx('activity-detail__organizer')}>
                 <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
