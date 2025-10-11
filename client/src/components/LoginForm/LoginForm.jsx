@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import InputField from '../InputField/InputField';
 import Button from '../Button/Button';
-import { login } from '../../redux/slices/authSlice';
-import { mockApi } from '../../utils/mockAPI';
+import useAuthStore from '../../stores/useAuthStore';
+import { mockApi } from '@utils/mockAPI';
 import styles from './LoginForm.module.scss';
 
 const cx = classNames.bind(styles);
@@ -14,8 +14,22 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const authLogin = useAuthStore((state) => state.login);
+
+  const loginMutation = useMutation({
+    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.loginWithEmail(emailValue, passwordValue),
+    onSuccess: (userInfo) => {
+      authLogin(userInfo);
+      setErrorMessage('');
+      navigate('/');
+    },
+    onError: (error) => {
+      const message = error?.message || 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.';
+      setErrorMessage(message);
+      console.error('Lỗi đăng nhập:', error);
+    },
+  });
 
   // Đăng nhập bằng Email và Password từ mock API
   const handleEmailLogin = async (e) => {
@@ -29,18 +43,12 @@ function LoginForm() {
       return;
     }
 
-    try {
-      const userInfo = await mockApi.loginWithEmail(email, password);
-
-      // Dispatch action login với thông tin người dùng
-      dispatch(login(userInfo));
-      localStorage.setItem('accessToken', userInfo.token); // Lưu token giả vào localStorage
-      navigate('/');
-    } catch (error) {
-      const message = error?.message || 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.';
-      setErrorMessage(message);
-      console.error('Lỗi đăng nhập:', error);
+    if (!password) {
+      setErrorMessage('Vui lòng nhập mật khẩu.');
+      return;
     }
+
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -95,7 +103,9 @@ function LoginForm() {
           </div>
 
           <div className={cx('login-form__actions')}>
-            <Button variant="primary">Đăng nhập</Button>
+            <Button variant="primary" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </Button>
           </div>
         </div>
       </form>

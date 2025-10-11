@@ -1,23 +1,24 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
 import { useState, useEffect, useCallback } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
+import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
 import classNames from 'classnames/bind';
 import logo from '../../../assets/images/logo.svg';
 import avatar from '../../../assets/images/profile.png';
-import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
-import { logout } from '../../../redux/slices/authSlice';
 import Notification from '../../../components/Notification/Notification';
 import styles from './Header.module.scss';
 import { mockApi } from '@utils/mockAPI';
+import useAuthStore from '../../../stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
 function Header() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const [isMobile, setIsMobile] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -38,13 +39,22 @@ function Header() {
     refreshUnread();
   }, [refreshUnread]);
 
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      // Giả lập gọi API đăng xuất
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    },
+    onSuccess: () => {
+      logout();
+      navigate('/login');
+    },
+  });
+
   const handleLogout = async (event) => {
     event.preventDefault();
     const confirmLogout = window.confirm('Bạn có chắc chắn muốn đăng xuất?');
-    if (confirmLogout) {
-      dispatch(logout());
-      localStorage.removeItem('accessToken');
-      navigate('/login');
+    if (confirmLogout && !logoutMutation.isPending) {
+      logoutMutation.mutate();
     }
   };
 
@@ -147,7 +157,7 @@ function Header() {
       <div className={cx('header__menu-item')}>
         <Link to="/logout" onClick={handleLogout}>
           <LogOut size={16} />
-          <span>Đăng xuất</span>
+          <span>{logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
         </Link>
       </div>
     </div>

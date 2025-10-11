@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useMutation } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
 import { Alert } from 'antd';
-import { login } from '../../redux/slices/authSlice';
 import styles from './ProfilePage.module.scss';
-import { mockApi } from '../../utils/mockAPI';
+import { mockApi } from '@utils/mockAPI';
+import useAuthStore from '../../stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
@@ -30,17 +30,58 @@ function ProfilePage() {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
 
-  // Lấy thông tin người dùng từ Redux
-  const { user } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  // Lấy thông tin người dùng từ Zustand
+  const user = useAuthStore((state) => state.user);
+  const loginUser = useAuthStore((state) => state.login);
+  const updateUserStore = useAuthStore((state) => state.updateUser);
 
   // State để quản lý thông tin người dùng (cho phép chỉnh sửa)
-  const [fullName, setFullName] = useState(user?.TenNguoiDung || '');
-  const [birthDate, setBirthDate] = useState(user?.NgaySinh || '');
-  const [phone, setPhone] = useState(user?.Sdt || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [fullName, setFullName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(user?.AnhDaiDien || '/images/no-image.jpg');
+  const [avatarPreview, setAvatarPreview] = useState('/images/no-image.jpg');
+
+  const verifyCurrentPasswordMutation = useMutation({
+    mutationFn: ({ userId, password: passwordValue }) => mockApi.verifyCurrentPassword(userId, passwordValue),
+  });
+
+  const requestOtpMutation = useMutation({
+    mutationFn: (emailValue) => mockApi.requestPasswordOtp(emailValue),
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: ({ email: emailValue, otp: otpValue }) => mockApi.verifyPasswordOtp(emailValue, otpValue),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ email: emailValue, newPassword }) => mockApi.resetPassword(emailValue, newPassword),
+  });
+
+  const loginAfterResetMutation = useMutation({
+    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.loginWithEmail(emailValue, passwordValue),
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: ({ userId, payload }) => mockApi.updateUserProfile(userId, payload),
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.TenNguoiDung || '');
+      setBirthDate(user.NgaySinh || '');
+      setPhone(user.Sdt || '');
+      setEmail(user.email || '');
+      setAvatarPreview(user.AnhDaiDien || '/images/no-image.jpg');
+    } else {
+      setFullName('');
+      setBirthDate('');
+      setPhone('');
+      setEmail('');
+      setAvatarPreview('/images/no-image.jpg');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!avatarFile) {
@@ -89,13 +130,22 @@ function ProfilePage() {
     }
 
     try {
-      const isValidPassword = await mockApi.verifyCurrentPassword(user?.uid, oldPassword);
+      if (!user?.uid) {
+        setError('Không tìm thấy thông tin người dùng.');
+        return;
+      }
+
+      const isValidPassword = await verifyCurrentPasswordMutation.mutateAsync({
+        userId: user.uid,
+        password: oldPassword,
+      });
+
       if (!isValidPassword) {
         setError('Mật khẩu cũ không đúng');
         return;
       }
 
-      const { otp: newOtp } = await mockApi.requestPasswordOtp(email);
+      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
       setGeneratedOtp(newOtp);
       setOtpSent(true);
       setError('');
@@ -113,11 +163,10 @@ function ProfilePage() {
     }
 
     try {
-      await mockApi.verifyPasswordOtp(email, otp);
-      await mockApi.resetPassword(email, newPassword);
-      const userInfo = await mockApi.loginWithEmail(email, newPassword);
-      dispatch(login(userInfo));
-      localStorage.setItem('accessToken', userInfo.token);
+      await verifyOtpMutation.mutateAsync({ email, otp });
+      await resetPasswordMutation.mutateAsync({ email, newPassword });
+      const userInfo = await loginAfterResetMutation.mutateAsync({ email, password: newPassword });
+      loginUser(userInfo);
       setShowAlert(true);
       setAlertMessage('Đổi mật khẩu thành công');
       setAlertType('success');
@@ -164,15 +213,25 @@ function ProfilePage() {
         avatarUrl = await fileToBase64(avatarFile);
       }
 
-      const updatedProfile = await mockApi.updateUserProfile(user?.uid, {
-        TenNguoiDung: fullName,
-        NgaySinh: birthDate,
-        Sdt: phone,
-        email,
-        AnhDaiDien: avatarUrl,
+      if (!user?.uid) {
+        setShowAlert(true);
+        setAlertMessage('Không tìm thấy thông tin người dùng để cập nhật.');
+        setAlertType('error');
+        return;
+      }
+
+      const updatedProfile = await updateProfileMutation.mutateAsync({
+        userId: user.uid,
+        payload: {
+          TenNguoiDung: fullName,
+          NgaySinh: birthDate,
+          Sdt: phone,
+          email,
+          AnhDaiDien: avatarUrl,
+        },
       });
 
-      // Cập nhật thông tin vào Redux
+      // Cập nhật thông tin vào Zustand
       const mergedUser = {
         ...user,
         ...updatedProfile,
@@ -181,10 +240,10 @@ function ProfilePage() {
         Sdt: phone,
         email,
         AnhDaiDien: avatarUrl,
-        token: user?.token || `mock-token-${updatedProfile.uid}`,
+        token: user?.token || `mock-token-${updatedProfile.uid || user.uid}`,
       };
 
-      dispatch(login(mergedUser));
+      updateUserStore(mergedUser);
 
       // Hiển thị thông báo thành công
       setShowAlert(true);
@@ -297,8 +356,13 @@ function ProfilePage() {
               }}
             />
           </div>
-          <button type="button" className={cx('profile-page__form-submit')} onClick={handleUpdate}>
-            Cập nhật
+          <button
+            type="button"
+            className={cx('profile-page__form-submit')}
+            onClick={handleUpdate}
+            disabled={updateProfileMutation.isPending}
+          >
+            {updateProfileMutation.isPending ? 'Đang lưu...' : 'Cập nhật'}
           </button>
         </section>
       </section>
@@ -402,8 +466,9 @@ function ProfilePage() {
                   margin: '0 auto',
                 }}
                 onClick={handleSendOtp}
+                disabled={verifyCurrentPasswordMutation.isPending || requestOtpMutation.isPending}
               >
-                Tiếp tục
+                {verifyCurrentPasswordMutation.isPending || requestOtpMutation.isPending ? 'Đang xử lý...' : 'Tiếp tục'}
               </Button>
             </>
           ) : (
@@ -458,8 +523,13 @@ function ProfilePage() {
                   margin: '10px auto 0 auto',
                 }}
                 onClick={handleSubmit}
+                disabled={
+                  verifyOtpMutation.isPending || resetPasswordMutation.isPending || loginAfterResetMutation.isPending
+                }
               >
-                Xác nhận
+                {verifyOtpMutation.isPending || resetPasswordMutation.isPending || loginAfterResetMutation.isPending
+                  ? 'Đang xử lý...'
+                  : 'Xác nhận'}
               </Button>
             </>
           )}

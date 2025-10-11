@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { Tag } from 'antd';
-import Label from '../Label/Label';
-import CardActivity from '../CardActivity/CardActivity';
 import Button from '../Button/Button';
-import { mockApi } from '../../utils/mockAPI';
+import CardActivity from '../CardActivity/CardActivity';
+import Label from '../Label/Label';
+import { mockApi } from '@utils/mockAPI';
 import styles from './UpcomingActivitiesSection.module.scss';
-import { Link } from 'react-router-dom';
 
 const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);

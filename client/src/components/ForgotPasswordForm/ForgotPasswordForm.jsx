@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import styles from './ForgotPasswordForm.module.scss';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash, faPhone } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames/bind';
 import InputField from '../InputField/InputField';
-import { Link, useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { Phone } from 'lucide-react';
-zz
-import { login } from '../../redux/slices/authSlice';
-import { mockApi } from '../../utils/mockAPI';
+import styles from './ForgotPasswordForm.module.scss';
+import { mockApi } from '@utils/mockAPI';
+import useAuthStore from '../../stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
@@ -23,7 +22,23 @@ function ForgotPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const authLogin = useAuthStore((state) => state.login);
+
+  const requestOtpMutation = useMutation({
+    mutationFn: (emailValue) => mockApi.requestPasswordOtp(emailValue),
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: ({ email: emailValue, otp: otpValue }) => mockApi.verifyPasswordOtp(emailValue, otpValue),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.resetPassword(emailValue, passwordValue),
+  });
+
+  const loginAfterResetMutation = useMutation({
+    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.loginWithEmail(emailValue, passwordValue),
+  });
 
   // Kiểm tra email hợp lệ
   const validateEmail = (value) => {
@@ -47,7 +62,7 @@ function ForgotPasswordForm() {
     }
 
     try {
-      const { otp: newOtp } = await mockApi.requestPasswordOtp(email);
+      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
       setGeneratedOtp(newOtp);
       setStep(2);
       setInfoMessage(`Mã OTP đã được gửi tới email. (Mã mô phỏng: ${newOtp})`);
@@ -69,7 +84,7 @@ function ForgotPasswordForm() {
     }
 
     try {
-      await mockApi.verifyPasswordOtp(email, otp);
+      await verifyOtpMutation({ email, otp });
       setStep(3);
       setInfoMessage('Mã OTP hợp lệ. Vui lòng tạo mật khẩu mới.');
     } catch (error) {
@@ -89,11 +104,20 @@ function ForgotPasswordForm() {
       return;
     }
 
+    if (!confirmPassword) {
+      setErrorMessage('Vui lòng xác nhận mật khẩu');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Mật khẩu và xác nhận mật khẩu không khớp.');
+      return;
+    }
+
     try {
-      await mockApi.resetPassword(email, password);
-      const userInfo = await mockApi.loginWithEmail(email, password);
-      dispatch(login(userInfo));
-      localStorage.setItem('accessToken', userInfo.token);
+      await resetPasswordMutation.mutateAsync({ email, password });
+      const userInfo = await loginAfterResetMutation.mutateAsync({ email, password });
+      authLogin(userInfo);
       setStep(4);
       setInfoMessage('Đặt lại mật khẩu thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
     } catch (error) {
@@ -115,7 +139,7 @@ function ForgotPasswordForm() {
   // Gửi lại OTP
   const handleResendOtp = async () => {
     try {
-      const { otp: newOtp } = await mockApi.requestPasswordOtp(email);
+      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
       setGeneratedOtp(newOtp);
       setErrorMessage('');
       setInfoMessage(`Đã gửi lại mã OTP. (Mã mô phỏng: ${newOtp})`);
@@ -155,8 +179,13 @@ function ForgotPasswordForm() {
               )}
             </div>
             <div className={cx('forgot-password__actions')}>
-              <button type="submit" className={cx('forgot-password__submit')} onClick={handleEmailSubmit}>
-                Tiếp tục
+              <button
+                type="submit"
+                className={cx('forgot-password__submit')}
+                onClick={handleEmailSubmit}
+                disabled={requestOtpMutation.isPending}
+              >
+                {requestOtpMutation.isPending ? 'Đang gửi...' : 'Tiếp tục'}
               </button>
             </div>
           </>
@@ -179,9 +208,14 @@ function ForgotPasswordForm() {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                 />
-                <button className={cx('forgot-password__resend')} onClick={handleResendOtp} type="button">
-                  <Phone size={14} />
-                  <span>Gửi lại mã mới</span>
+                <button
+                  className={cx('forgot-password__resend')}
+                  onClick={handleResendOtp}
+                  type="button"
+                  disabled={requestOtpMutation.isPending}
+                >
+                  <FontAwesomeIcon icon={faPhone} />
+                  <span>{requestOtpMutation.isPending ? 'Đang gửi...' : 'Gửi lại mã mới'}</span>
                 </button>
               </div>
               {generatedOtp && (
@@ -197,8 +231,13 @@ function ForgotPasswordForm() {
               )}
             </div>
             <div className={cx('forgot-password__actions')}>
-              <button type="submit" className={cx('forgot-password__submit')} onClick={handleOtpSubmit}>
-                Tiếp tục
+              <button
+                type="submit"
+                className={cx('forgot-password__submit')}
+                onClick={handleOtpSubmit}
+                disabled={verifyOtpMutation.isPending}
+              >
+                {verifyOtpMutation.isPending ? 'Đang xác thực...' : 'Tiếp tục'}
               </button>
             </div>
           </>
@@ -259,8 +298,15 @@ function ForgotPasswordForm() {
               )}
             </div>
             <div className={cx('forgot-password__actions')}>
-              <button type="submit" className={cx('forgot-password__submit')} onClick={handlePasswordSubmit}>
-                Đổi mật khẩu
+              <button
+                type="submit"
+                className={cx('forgot-password__submit')}
+                onClick={handlePasswordSubmit}
+                disabled={resetPasswordMutation.isPending || loginAfterResetMutation.isPending}
+              >
+                {resetPasswordMutation.isPending || loginAfterResetMutation.isPending
+                  ? 'Đang cập nhật...'
+                  : 'Đổi mật khẩu'}
               </button>
             </div>
           </>
