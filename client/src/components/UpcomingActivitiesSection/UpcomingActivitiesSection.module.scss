@@ -1,110 +1,125 @@
 .upcoming-activities {
   width: 100%;
-}
 
-.upcoming-activities__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
 
-  @media (max-width: 768px) {
-    gap: 6px;
-    margin-bottom: 16px;
-  }
+    @media (max-width: 768px) {
+      gap: 6px;
+      margin-bottom: 16px;
+    }
 
-  @media (max-width: 480px) {
-    gap: 5px;
-    margin-bottom: 12px;
-  }
-}
-
-.upcoming-activities__tag {
-  border-radius: 24px;
-  padding: 9px 16px;
-  font-family: Montserrat, sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  background-color: var(--white-color);
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  @media (max-width: 768px) {
-    padding: 8px 14px;
-    font-size: 15px;
-    border-radius: 20px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 6px 12px;
-    font-size: 14px;
-    border-radius: 16px;
-  }
-
-  &:hover {
-    background-color: #d74400;
-    color: var(--white-color);
-    border-color: #d74400;
-  }
-
-  &--active {
-    background-color: var(--orange-color);
-    color: var(--white-color);
-    border-color: var(--orange-color);
-  }
-}
-
-.upcoming-activities__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 24px;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-  }
-
-  @media (max-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-}
-
-.upcoming-activities__actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-
-  @media (max-width: 768px) {
-    margin-top: 20px;
-  }
-
-  @media (max-width: 480px) {
-    margin-top: 16px;
-  }
-
-  a {
-    text-decoration: none;
-  }
-
-  button {
     @media (max-width: 480px) {
-      width: 100%;
+      gap: 5px;
+      margin-bottom: 12px;
     }
   }
 
-  span {
-    margin-right: 5px;
+  &__tag {
+    border-radius: 24px;
+    padding: 9px 16px;
+    font-weight: 600;
+    font-size: 16px;
+    background-color: var(--white-color);
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    @media (max-width: 768px) {
+      padding: 8px 14px;
+      font-size: 15px;
+      border-radius: 20px;
+    }
+
+    @media (max-width: 480px) {
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 16px;
+    }
+
+    &:hover {
+      background-color: var(--orange-color) !important;
+      color: var(--white-color) !important;
+    }
+
+    &--active {
+      background-color: var(--orange-color) !important;
+      color: var(--white-color) !important;
+
+      &:hover {
+        background-color: #d74400 !important;
+      }
+    }
+
+    :global {
+      .ant-tag-checkable:not(.ant-tag-checkable-checked) {
+        &:hover {
+          color: var(--white-color) !important;
+        }
+      }
+
+      .ant-tag-checkable-checked {
+        &:hover {
+          color: var(--white-color) !important;
+        }
+      }
+    }
+  }
+
+  &__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 640px) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+
+    @media (max-width: 768px) {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 480px) {
+      margin-top: 16px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    button {
+      @media (max-width: 480px) {
+        width: 100%;
+      }
+    }
+
+    span {
+      margin-right: 5px;
+    }
   }
 }

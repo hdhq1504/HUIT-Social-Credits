@@ -27,7 +27,7 @@ function MyPointsPage() {
         { name: 'Nhóm 2,3', value: '40/120', note: 'Còn 80 điểm', status: 'warning' },
       ],
       missingPoints: 80,
-      imageUrl: '/images/student-photo.png',
+      imageUrl: '/images/profile.png',
     }),
     [],
   );
@@ -51,11 +51,11 @@ function MyPointsPage() {
         title: 'Tên hoạt động',
         dataIndex: 'activityName',
         key: 'activityName',
-        className: cx('my-point-page__col', 'my-point-page__col--name'),
+        className: cx('my-point__col', 'my-point__col--name'),
         render: (_, record) => (
-          <div className={cx('my-point-page__name-wrap')}>
-            <div className={cx('my-point-page__name')}>{record.activityName}</div>
-            <div className={cx('my-point-page__location')}>{record.location}</div>
+          <div className={cx('my-point__name-wrap')}>
+            <div className={cx('my-point__name')}>{record.activityName}</div>
+            <div className={cx('my-point__location')}>{record.location}</div>
           </div>
         ),
       },
@@ -63,12 +63,12 @@ function MyPointsPage() {
         title: 'Nhóm hoạt động',
         dataIndex: 'group',
         key: 'group',
-        className: cx('my-point-page__col', 'my-point-page__col--group'),
+        className: cx('my-point__col', 'my-point__col--group'),
         render: (group) =>
           group === 'Nhóm 1' ? (
-            <Tag className={cx('my-point-page__group', 'my-point-page__group--danger')}>Nhóm 1</Tag>
+            <Tag className={cx('my-point__group', 'my-point__group--danger')}>Nhóm 1</Tag>
           ) : (
-            <Tag className={cx('my-point-page__group', 'my-point-page__group--success')}>Nhóm 2, 3</Tag>
+            <Tag className={cx('my-point__group', 'my-point__group--success')}>Nhóm 2, 3</Tag>
           ),
         width: 180,
         responsive: ['md'],
@@ -79,8 +79,8 @@ function MyPointsPage() {
         key: 'points',
         align: 'center',
         width: 100,
-        className: cx('my-point-page__col', 'my-point-page__col--points'),
-        render: (val) => <span className={cx('my-point-page__points')}>+{val}</span>,
+        className: cx('my-point__col', 'my-point__col--points'),
+        render: (val) => <span className={cx('my-point__points')}>+{val}</span>,
       },
       {
         title: 'Ngày tham gia',
@@ -88,8 +88,8 @@ function MyPointsPage() {
         key: 'date',
         align: 'center',
         width: 160,
-        className: cx('my-point-page__col'),
-        render: (val) => <span className={cx('my-point-page__date')}>{dayjs(val).format('DD/MM/YYYY')}</span>,
+        className: cx('my-point__col'),
+        render: (val) => <span className={cx('my-point__date')}>{dayjs(val).format('DD/MM/YYYY')}</span>,
         responsive: ['sm'],
       },
       {
@@ -98,20 +98,20 @@ function MyPointsPage() {
         key: 'status',
         align: 'center',
         width: 150,
-        className: cx('my-point-page__col', 'my-point-page__col--status'),
+        className: cx('my-point__col', 'my-point__col-status'),
         render: (status) => {
           const isConfirmed = status === 'confirmed';
           return (
             <Tag
               bordered={false}
-              className={cx('my-point-page__tag', {
-                'my-point-page__tag--confirmed': isConfirmed,
-                'my-point-page__tag--pending': !isConfirmed,
+              className={cx('my-point__tag', {
+                'my-point__tag--confirmed': isConfirmed,
+                'my-point__tag--pending': !isConfirmed,
               })}
             >
               <FontAwesomeIcon
                 icon={isConfirmed ? faCheck : faClock}
-                className={cx('my-point-page__tag-icon')}
+                className={cx('my-point__tag-icon')}
                 aria-hidden
               />
               <span>{isConfirmed ? 'Đã xác nhận' : 'Đang phản hồi'}</span>

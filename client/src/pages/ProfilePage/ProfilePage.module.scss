@@ -100,12 +100,11 @@
 
     @media (max-width: 992px) {
       width: 100%;
-      max-width: 350px;
       margin: 0 auto;
     }
 
     @media (max-width: 576px) {
-      max-width: 50%;
+      max-width: 100%;
       gap: 12px;
     }
   }
@@ -130,6 +129,16 @@
     width: 100%;
     border-radius: 8px;
     overflow: hidden;
+
+    @media (max-width: 992px) {
+      width: 100%;
+      max-width: 250px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 576px) {
+      max-width: 50%;
+    }
   }
 
   &__media-image {
@@ -168,6 +177,16 @@
         padding: 8px 12px;
       }
     }
+
+    @media (max-width: 992px) {
+      width: 100%;
+      max-width: 250px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 576px) {
+      max-width: 50%;
+    }
   }
 
   &__media-upload-text {
@@ -205,6 +224,16 @@
 
     &:hover {
       background-color: #000070;
+    }
+
+    @media (max-width: 992px) {
+      width: 100%;
+      max-width: 250px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 576px) {
+      max-width: 50%;
     }
   }
 

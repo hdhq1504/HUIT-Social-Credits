@@ -24,8 +24,15 @@
     flex-direction: column;
     gap: 16px;
 
+    // md: 768px
     @media (max-width: 768px) {
       padding: 0 16px;
+      gap: 16px;
+    }
+
+    // sm: 576px
+    @media (max-width: 576px) {
+      padding: 0 12px;
       gap: 12px;
     }
   }
