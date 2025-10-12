@@ -5,15 +5,7 @@ import routes from '../../config/routes';
 import { Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faCoins,
-  faCalendar,
-  faLocationDot,
-  faPaperPlane,
-  faCheck,
-  faCircleCheck,
-  faXmarkCircle,
-} from '@fortawesome/free-solid-svg-icons';
+import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
 import RegisterModal from '../RegisterModal/RegisterModal';
 import CheckModal from '../CheckModal/CheckModal';
@@ -159,7 +151,9 @@ function CardActivity(props) {
   const handleOpenFeedback = () => {
     setOpenFeedback(true);
   };
+
   const handleCloseFeedback = () => setOpenFeedback(false);
+
   const handleSubmitFeedback = async ({ content, files, confirm }) => {
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
@@ -181,14 +175,14 @@ function CardActivity(props) {
     cancel: 'Hủy đăng ký',
     checkin: 'Điểm danh',
     complete: 'Hoàn thành',
-    closed: 'Chưa mở điểm danh',
+    closed: 'Chưa bắt đầu',
     viewDetail: 'Xem chi tiết',
-    confirmIn: 'Xác nhận có mặt',
-    confirmOut: 'Xác nhận rời đi',
-    sent: 'Đã gửi phản hồi',
+    confirmIn: 'Tham gia',
+    confirmOut: 'Hoàn tất',
+    sent: 'Đã gửi',
     giveFeedback: 'Gửi phản hồi',
-    accepted: 'Đã được ghi điểm',
-    denied: 'Bị từ chối',
+    accepted: 'Hoàn thành',
+    denied: 'Đã từ chối',
     canceled: 'Đã hủy',
     ...buttonLabels,
   };
@@ -218,29 +212,36 @@ function CardActivity(props) {
         };
       case 'canceled':
         return {
-          buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { variant: 'muted' }, { disabled: true })],
+          buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { variant: 'muted', disabled: true })],
         };
       case 'attendance_open':
         return {
           buttons: [btn(L.details, openDetails), btn(L.checkin, handleOpenAttendance, { variant: 'primary' })],
         };
       case 'attendance_closed':
-        return { buttons: [btn(L.closed, () => {}, { variant: 'muted', disabled: true, fullWidth: true })] };
+        return {
+          buttons: [
+            btn(L.details, openDetails, { variant: 'outline' }),
+            btn(L.closed, () => {}, { variant: 'muted', disabled: true }),
+          ],
+        };
+      case 'ended':
+        return {
+          buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
+        };
       case 'confirm_in':
         return {
           buttons: [
-            btn(L.confirmIn, handleOpenAttendance, { variant: 'primary', fullWidth: true }),
-            btn(L.confirmOut, handleCloseAttendance, { variant: 'muted', fullWidth: true }),
+            btn(L.details, openDetails, { variant: 'outline' }),
+            btn(L.confirmIn, handleOpenAttendance, { variant: 'primary' }),
           ],
-          layout: 'column',
         };
       case 'confirm_out':
         return {
           buttons: [
-            btn(L.confirmOut, handleCloseAttendance, { variant: 'primary', fullWidth: true }),
-            btn(L.confirmIn, handleOpenAttendance, { variant: 'muted', fullWidth: true }),
+            btn(L.details, openDetails, { variant: 'outline' }),
+            btn(L.confirmOut, handleCloseAttendance, { variant: 'orange' }),
           ],
-          layout: 'column',
         };
       case 'details_only':
         return { buttons: [btn(L.viewDetail, openDetails, { variant: 'success', fullWidth: true })] };
@@ -248,10 +249,9 @@ function CardActivity(props) {
         return {
           status: pill('• Chưa được cộng điểm', 'danger'),
           buttons: [
+            btn(L.details, openDetails),
             btn(L.giveFeedback, handleOpenFeedback, {
               variant: 'orange',
-              fullWidth: true,
-              leftIcon: <FontAwesomeIcon icon={faPaperPlane} />,
             }),
           ],
         };
@@ -259,11 +259,10 @@ function CardActivity(props) {
         return {
           status: pill('• Chờ duyệt', 'warning'),
           buttons: [
+            btn(L.details, openDetails),
             btn(L.sent, () => {}, {
               variant: 'muted',
               disabled: true,
-              fullWidth: true,
-              leftIcon: <FontAwesomeIcon icon={faCheck} />,
             }),
           ],
         };
@@ -271,11 +270,10 @@ function CardActivity(props) {
         return {
           status: pill('• Đã cộng điểm', 'success'),
           buttons: [
+            btn(L.details, openDetails),
             btn(L.accepted, () => {}, {
               variant: 'muted',
               disabled: true,
-              fullWidth: true,
-              leftIcon: <FontAwesomeIcon icon={faCircleCheck} />,
             }),
           ],
         };
@@ -283,11 +281,10 @@ function CardActivity(props) {
         return {
           status: pill('• Không được cộng điểm', 'muted'),
           buttons: [
+            btn(L.details, openDetails),
             btn(L.denied, () => {}, {
               variant: 'muted',
               disabled: true,
-              fullWidth: true,
-              leftIcon: <FontAwesomeIcon icon={faXmarkCircle} />,
             }),
           ],
         };
@@ -372,6 +369,7 @@ function CardActivity(props) {
               'is-warning': preset.status.tone === 'warning',
               'is-danger': preset.status.tone === 'danger',
               'is-success': preset.status.tone === 'success',
+              'is-muted': preset.status.tone === 'muted',
             })}
           >
             {preset.status.text}

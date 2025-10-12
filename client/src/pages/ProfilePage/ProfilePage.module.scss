@@ -1,6 +1,6 @@
 .profile-page {
   width: var(--content-width);
-  margin: 160px auto;
+  margin: 70px auto;
   padding: 0 16px;
   display: flex;
   flex-direction: column;
@@ -10,6 +10,45 @@
     align-self: flex-end;
     width: 100%;
     max-width: 320px;
+  }
+
+  &__header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__breadcrumb {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 20px 0;
+
+    @media (max-width: 992px) {
+      font-size: 13px;
+      padding: 18px 0;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 12px;
+      padding: 15px 0;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+      padding: 12px 0;
+    }
+
+    span {
+      color: var(--border-color);
+    }
+
+    a {
+      color: var(--primary-color);
+
+      &:hover {
+        color: var(--orange-color);
+      }
+    }
   }
 
   &__content {

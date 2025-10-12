@@ -68,7 +68,7 @@ function RollCallPage() {
         children: (
           <div className={cx('roll-call__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="ended" />
             ))}
           </div>
         ),

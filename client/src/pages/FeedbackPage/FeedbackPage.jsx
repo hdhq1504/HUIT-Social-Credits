@@ -38,7 +38,7 @@ function RollCallPage() {
         children: (
           <div className={cx('roll-call__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="confirm_in" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
             ))}
           </div>
         ),
@@ -53,7 +53,7 @@ function RollCallPage() {
         children: (
           <div className={cx('roll-call__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="attendance_closed" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_accepted" />
             ))}
           </div>
         ),
@@ -68,7 +68,7 @@ function RollCallPage() {
         children: (
           <div className={cx('roll-call__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_reviewing" />
             ))}
           </div>
         ),
@@ -83,7 +83,7 @@ function RollCallPage() {
         children: (
           <div className={cx('roll-call__list')}>
             {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
+              <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_denied" />
             ))}
           </div>
         ),
@@ -97,7 +97,7 @@ function RollCallPage() {
       <div className={cx('roll-call__container')}>
         {/* Header */}
         <header className={cx('roll-call__header')}>
-          <nav className={cx('roll-call__header-breadcrumb')} aria-label="Breadcrumb">
+          <nav className={cx('roll-call__breadcrumb')} aria-label="Breadcrumb">
             <Link to="/">Trang chủ</Link> / <span>Phản hồi</span>
           </nav>
 

@@ -10,7 +10,7 @@ import { mockApi } from '../../utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function ListActivitiesPage() {
   const [selectedItems, setSelectedItems] = useState([]);
@@ -59,9 +59,9 @@ function ListActivitiesPage() {
               <section className={cx('activities-page__results')} aria-label="Kết quả hoạt động">
                 <header className={cx('activities-page__results-header')}>
                   <div className={cx('activities-page__results-count')}>
-                    <Title level={5} className={cx('activities-page__results-count-text')}>
+                    <span className={cx('activities-page__results-count-text')}>
                       Có <span className={cx('activities-page__results-count-number')}>128</span> kết quả phù hợp
-                    </Title>
+                    </span>
                   </div>
 
                   <div className={cx('activities-page__filter')}>

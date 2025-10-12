@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
 import { Alert } from 'antd';
+import Label from '@components/Label/Label';
 import styles from './ProfilePage.module.scss';
+import useAuthStore from '@stores/useAuthStore';
 import { mockApi } from '@utils/mockAPI';
-import useAuthStore from '../../stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
@@ -271,6 +273,14 @@ function ProfilePage() {
           className={cx('profile-page__alert')}
         />
       )}
+
+      <header className={cx('profile-page__header')}>
+        <nav className={cx('profile-page__breadcrumb')} aria-label="Breadcrumb">
+          <Link to="/">Trang chủ</Link> / <span>Thông tin</span>
+        </nav>
+
+        <Label title="Thông tin" highlight="sinh viên" leftDivider={false} rightDivider showSubtitle={false} />
+      </header>
 
       <section className={cx('profile-page__content')}>
         <div className={cx('profile-page__media')}>

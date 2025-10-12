@@ -9,13 +9,12 @@
   justify-content: flex-start;
   align-items: flex-start;
   gap: 30px;
-  font-family: 'Montserrat', sans-serif;
 
   &__header {
     width: 100%;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
   }
 
   &__header-icon {
@@ -83,11 +82,16 @@
     line-height: 1.2;
     display: flex;
     align-items: center;
-    font-family: 'Montserrat', sans-serif;
   }
 
   &__checkbox {
+    display: flex;
+    align-items: center;
+
     :global(.ant-checkbox) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       top: 0;
     }
 
@@ -105,36 +109,10 @@
       border-color: var(--primary-color);
 
       &::after {
-        border-color: var(--white-color);
+        transform: rotate(45deg) scale(1.2) translate(-50%, -50%);
+        width: 6px;
+        height: 12px;
       }
-    }
-
-    :global(.ant-checkbox-indeterminate .ant-checkbox-inner) {
-      background: var(--primary-color);
-      border-color: var(--primary-color);
-
-      &::after {
-        width: 16px;
-        height: 2px;
-        background-color: var(--white-color);
-        border: 0;
-        transform: none;
-        top: 50%;
-        left: 50%;
-        margin-left: -8px;
-        margin-top: -1px;
-        content: '';
-      }
-    }
-
-    :global(.ant-checkbox-input:focus-visible + .ant-checkbox-inner) {
-      outline: none;
-      box-shadow: none;
-    }
-
-    :global(.ant-checkbox-wrapper:hover .ant-checkbox-inner),
-    :global(.ant-checkbox:hover .ant-checkbox-inner) {
-      border-color: var(--primary-color);
     }
   }
 
