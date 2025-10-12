@@ -2,12 +2,20 @@
   :global(.ant-modal-content) {
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    font-family: 'Montserrat', sans-serif;
+
+    @media (max-width: 576px) {
+      border-radius: 8px;
+    }
   }
 
   :global(.ant-modal-close) {
     margin-top: 6px;
     margin-right: 10px;
+
+    @media (max-width: 480px) {
+      margin-top: 4px;
+      margin-right: 6px;
+    }
   }
 
   &__header {
@@ -15,6 +23,10 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 16px;
+
+    @media (max-width: 576px) {
+      margin-bottom: 12px;
+    }
   }
 
   &__title {
@@ -22,12 +34,24 @@
     font-size: 20px;
     font-weight: 600;
     color: var(--black-color);
+
+    @media (max-width: 576px) {
+      font-size: 18px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 16px;
+    }
   }
 
   &__body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    @media (max-width: 576px) {
+      gap: 10px;
+    }
   }
 
   &__campaign-title {
@@ -35,11 +59,25 @@
     font-weight: 600;
     color: var(--black-color);
     margin: 0;
+
+    @media (max-width: 576px) {
+      font-size: 16px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 15px;
+    }
   }
 
   &__meta {
     display: inline-flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
   }
 
   &__tag {
@@ -50,6 +88,16 @@
     font-family: Montserrat, sans-serif;
     font-weight: 700;
     border: none;
+
+    @media (max-width: 576px) {
+      font-size: 13px;
+      padding: 3px 10px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 12px;
+      padding: 3px 8px;
+    }
 
     &-group {
       background-color: var(--danger-color);
@@ -64,21 +112,42 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
   }
 
   &__info-row {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
   }
 
   &__info-icon {
     color: var(--primary-color);
+    font-size: 14px;
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+    }
   }
 
   &__info-text {
     font-size: 14px;
     color: var(--black-color);
+
+    @media (max-width: 576px) {
+      font-size: 13px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 12px;
+    }
   }
 
   &__notice {
@@ -88,28 +157,66 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    @media (max-width: 576px) {
+      padding: 12px;
+      gap: 10px;
+    }
+
+    @media (max-width: 480px) {
+      padding: 10px;
+      gap: 8px;
+    }
   }
 
   &__notice-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+      flex-wrap: wrap;
+    }
   }
 
   &__notice-label {
     font-size: 14px;
     color: var(--black-color);
+
+    @media (max-width: 576px) {
+      font-size: 13px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 12px;
+      min-width: 70px;
+    }
   }
 
   &__notice-danger {
     font-size: 14px;
     color: var(--danger-color);
     font-weight: 500;
+
+    @media (max-width: 576px) {
+      font-size: 13px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 12px;
+    }
   }
 
   &__checkin {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
   }
 
   &__chip--primary,
@@ -118,6 +225,16 @@
     padding: 4px 8px;
     font-size: 12px;
     font-weight: 500;
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 10px;
+      padding: 2px 6px;
+    }
   }
 
   &__chip--primary {
@@ -137,6 +254,11 @@
     justify-content: center;
     width: 100%;
     gap: 12px;
+
+    @media (max-width: 576px) {
+      margin-top: 12px;
+      gap: 10px;
+    }
   }
 
   &__confirm-button,
@@ -146,11 +268,32 @@
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+    transition: all 0.2s ease;
+
+    @media (max-width: 576px) {
+      font-size: 14px;
+      padding: 10px 14px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+      padding: 10px 12px;
+    }
   }
 
   &__confirm-button {
     background-color: var(--orange-color);
     color: var(--white-color);
+    border: none;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
     &--danger {
       background-color: var(--danger-color);
@@ -160,22 +303,47 @@
   &__cancel-button {
     background-color: transparent;
     border: 1px solid var(--border-color);
+    color: var(--black-color);
+
+    &:hover {
+      background-color: #fafafa;
+    }
   }
 
   &__cancel-form {
     display: grid;
     gap: 16px;
+
+    @media (max-width: 576px) {
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      gap: 10px;
+    }
   }
 
   &__form-group {
     display: grid;
     gap: 8px;
+
+    @media (max-width: 480px) {
+      gap: 6px;
+    }
   }
 
   &__label {
     font-size: 13px;
     color: var(--black-color);
     font-weight: 500;
+
+    @media (max-width: 576px) {
+      font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+    }
   }
 
   &__select {
@@ -184,9 +352,37 @@
         border-radius: 8px !important;
         padding: 6px 10px !important;
         border-color: var(--border-color) !important;
+
+        @media (max-width: 576px) {
+          padding: 5px 8px !important;
+        }
+
+        @media (max-width: 480px) {
+          padding: 4px 8px !important;
+        }
       }
       .ant-select-selection-placeholder {
         color: var(--black-color);
+        font-size: 14px;
+
+        @media (max-width: 576px) {
+          font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+          font-size: 12px;
+        }
+      }
+      .ant-select-selection-item {
+        font-size: 14px;
+
+        @media (max-width: 576px) {
+          font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+          font-size: 12px;
+        }
       }
     }
   }
@@ -196,11 +392,46 @@
 
     :global {
       .ant-input {
-        border-radius: 2px;
+        border-radius: 8px;
         padding: 10px 12px;
+        font-size: 14px;
+
+        @media (max-width: 576px) {
+          font-size: 13px;
+          padding: 8px 10px;
+        }
+
+        @media (max-width: 480px) {
+          font-size: 12px;
+          padding: 8px;
+        }
       }
       .ant-input::placeholder {
         color: var(--muted-color);
+      }
+    }
+  }
+
+  // Modal width adjustments
+  :global {
+    @media (max-width: 768px) {
+      .ant-modal {
+        max-width: calc(100vw - 32px);
+        margin: 16px auto;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .ant-modal {
+        max-width: calc(100vw - 24px);
+        margin: 12px auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ant-modal {
+        max-width: calc(100vw - 16px);
+        margin: 8px auto;
       }
     }
   }

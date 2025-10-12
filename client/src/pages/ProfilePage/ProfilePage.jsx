@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField, Modal, Box, Button, Typography } from '@mui/material';
-import { Alert } from 'antd';
+import useToast from '@components/Toast/Toast';
 import Label from '@components/Label/Label';
 import styles from './ProfilePage.module.scss';
 import useAuthStore from '@stores/useAuthStore';
 import { mockApi } from '@utils/mockAPI';
+import { message } from 'antd';
 
 const cx = classNames.bind(styles);
 
@@ -28,9 +29,6 @@ function ProfilePage() {
   const [otpSent, setOtpSent] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [error, setError] = useState('');
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [alertType, setAlertType] = useState('success');
 
   // Lấy thông tin người dùng từ Zustand
   const user = useAuthStore((state) => state.user);
@@ -38,12 +36,15 @@ function ProfilePage() {
   const updateUserStore = useAuthStore((state) => state.updateUser);
 
   // State để quản lý thông tin người dùng (cho phép chỉnh sửa)
+  const [mssv, setMssv] = useState('');
   const [fullName, setFullName] = useState('');
+  const [classCode, setClassCode] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('/images/no-image.jpg');
+  const { contextHolder, open: openToast } = useToast();
 
   const verifyCurrentPasswordMutation = useMutation({
     mutationFn: ({ userId, password: passwordValue }) => mockApi.verifyCurrentPassword(userId, passwordValue),
@@ -71,13 +72,17 @@ function ProfilePage() {
 
   useEffect(() => {
     if (user) {
+      setMssv(user.MSSV || '');
       setFullName(user.TenNguoiDung || '');
+      setClassCode(user.Lop || '');
       setBirthDate(user.NgaySinh || '');
       setPhone(user.Sdt || '');
       setEmail(user.email || '');
       setAvatarPreview(user.AnhDaiDien || '/images/no-image.jpg');
     } else {
+      setMssv('');
       setFullName('');
+      setClassCode('');
       setBirthDate('');
       setPhone('');
       setEmail('');
@@ -169,9 +174,7 @@ function ProfilePage() {
       await resetPasswordMutation.mutateAsync({ email, newPassword });
       const userInfo = await loginAfterResetMutation.mutateAsync({ email, password: newPassword });
       loginUser(userInfo);
-      setShowAlert(true);
-      setAlertMessage('Đổi mật khẩu thành công');
-      setAlertType('success');
+      openToast({ message: 'Đổi mật khẩu thành công', variant: 'success' });
       setError('');
       setOpenModal(false);
     } catch (err) {
@@ -180,32 +183,34 @@ function ProfilePage() {
     }
   };
 
+  // Hàm xử lý chọn file ảnh
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+    }
+  };
+
   // Hàm cập nhật thông tin người dùng
   const handleUpdate = async () => {
     try {
       // Kiểm tra các trường bắt buộc
-      if (!fullName || !birthDate || !phone || !email) {
-        setShowAlert(true);
-        setAlertMessage('Vui lòng điền đầy đủ thông tin');
-        setAlertType('error');
+      if (!mssv || !fullName || !classCode || !birthDate || !phone || !email) {
+        openToast({ message: 'Vui lòng điền đầy đủ thông tin', variant: 'danger' });
         return;
       }
 
       // Kiểm tra định dạng email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        setShowAlert(true);
-        setAlertMessage('Email không hợp lệ');
-        setAlertType('error');
+        openToast({ message: 'Email không hợp lệ', variant: 'danger' });
         return;
       }
 
       // Kiểm tra định dạng số điện thoại
       const phoneRegex = /^[0-9]{10}$/;
       if (!phoneRegex.test(phone)) {
-        setShowAlert(true);
-        setAlertMessage('Số điện thoại không hợp lệ (phải có 10 chữ số)');
-        setAlertType('error');
+        openToast({ message: 'Số điện thoại không hợp lệ (phải có 10 chữ số)', variant: 'danger' });
         return;
       }
 
@@ -216,16 +221,16 @@ function ProfilePage() {
       }
 
       if (!user?.uid) {
-        setShowAlert(true);
-        setAlertMessage('Không tìm thấy thông tin người dùng để cập nhật.');
-        setAlertType('error');
+        openToast({ message: 'Không tìm thấy thông tin người dùng để cập nhật.', variant: 'danger' });
         return;
       }
 
       const updatedProfile = await updateProfileMutation.mutateAsync({
         userId: user.uid,
         payload: {
+          MSSV: mssv,
           TenNguoiDung: fullName,
+          Lop: classCode,
           NgaySinh: birthDate,
           Sdt: phone,
           email,
@@ -237,7 +242,9 @@ function ProfilePage() {
       const mergedUser = {
         ...user,
         ...updatedProfile,
+        MSSV: mssv,
         TenNguoiDung: fullName,
+        Lop: classCode,
         NgaySinh: birthDate,
         Sdt: phone,
         email,
@@ -248,32 +255,17 @@ function ProfilePage() {
       updateUserStore(mergedUser);
 
       // Hiển thị thông báo thành công
-      setShowAlert(true);
-      setAlertMessage('Cập nhật thông tin thành công');
-      setAlertType('success');
+      openToast({ message: 'Cập nhật thông tin thành công', variant: 'success' });
       setAvatarFile(null);
     } catch (err) {
       console.error('Lỗi khi cập nhật thông tin:', err);
-      setShowAlert(true);
-      setAlertMessage('Cập nhật thông tin thất bại');
-      setAlertType('error');
+      openToast({ message: 'Cập nhật thông tin thất bại', variant: 'danger' });
     }
   };
 
   return (
     <main className={cx('profile-page')}>
-      {/* Hiển thị Alert */}
-      {showAlert && (
-        <Alert
-          message={alertMessage}
-          type={alertType}
-          showIcon
-          onClose={() => setShowAlert(false)}
-          closable
-          className={cx('profile-page__alert')}
-        />
-      )}
-
+      {contextHolder}
       <header className={cx('profile-page__header')}>
         <nav className={cx('profile-page__breadcrumb')} aria-label="Breadcrumb">
           <Link to="/">Trang chủ</Link> / <span>Thông tin</span>
@@ -293,6 +285,19 @@ function ProfilePage() {
               onError={(e) => (e.target.src = '/images/no-image.jpg')}
             />
           </div>
+          <label htmlFor="avatar-upload" className={cx('profile-page__media-upload')}>
+            <span>Choose file</span>
+            <span className={cx('profile-page__media-upload-text')}>
+              {avatarFile ? avatarFile.name : 'Chưa file nào được chọn'}
+            </span>
+          </label>
+          <input
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className={cx('profile-page__media-input')}
+          />
           <button type="button" className={cx('profile-page__media-button')} onClick={handleOpenModal}>
             Đổi mật khẩu
           </button>
@@ -302,11 +307,43 @@ function ProfilePage() {
           <h4 className={cx('profile-page__form-title')}>Thông tin</h4>
           <div className={cx('profile-page__form-fields')}>
             <TextField
+              label="MSSV"
+              placeholder="Nhập MSSV"
+              variant="outlined"
+              value={mssv}
+              onChange={(e) => setMssv(e.target.value)}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#00008b',
+                    borderWidth: '2px',
+                  },
+                },
+              }}
+            />
+            <TextField
               label="Họ và tên"
               placeholder="Nhập họ và tên"
               variant="outlined"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#00008b',
+                    borderWidth: '2px',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Lớp"
+              placeholder="Nhập lớp"
+              variant="outlined"
+              value={classCode}
+              onChange={(e) => setClassCode(e.target.value)}
               fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -386,78 +423,82 @@ function ProfilePage() {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: '100%',
-            maxWidth: 625,
-            bgcolor: '#eeeefe',
-            borderRadius: '8px',
+            maxWidth: 700,
+            bgcolor: '#d8d8f0',
+            borderRadius: '16px',
             boxShadow: 24,
-            p: 4,
+            p: 5,
             display: 'flex',
             flexDirection: 'column',
-            gap: 2,
+            gap: 2.5,
             overflow: 'auto',
+            maxHeight: '90vh',
           }}
         >
           {!otpSent ? (
             <>
-              <Typography variant="h6" className={cx('profile-page__modal-title')} sx={{ textAlign: 'center' }}>
+              <Typography className={cx('profile-page__modal-title')} sx={{ textAlign: 'center', mb: 1 }}>
                 Đổi mật khẩu
               </Typography>
 
-              <TextField
-                label="Mật khẩu cũ"
-                placeholder="Nhập mật khẩu cũ"
-                type="password"
-                variant="outlined"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#00008b',
-                      borderWidth: '2px',
+              <div className={cx('profile-page__form-fields')}>
+                <TextField
+                  label="Mật khẩu cũ"
+                  placeholder="Mật khẩu cũ"
+                  type="password"
+                  variant="outlined"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#00008b',
+                        borderWidth: '2px',
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
 
-              <TextField
-                label="Mật khẩu mới"
-                placeholder="Nhập mật khẩu mới"
-                type="password"
-                variant="outlined"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#00008b',
-                      borderWidth: '2px',
+                <TextField
+                  label="Mật khẩu mới"
+                  placeholder="Mật khẩu mới"
+                  type="password"
+                  variant="outlined"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#00008b',
+                        borderWidth: '2px',
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
 
-              <TextField
-                label="Xác nhận mật khẩu mới"
-                placeholder="Xác nhận mật khẩu mới"
-                type="password"
-                variant="outlined"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#00008b',
-                      borderWidth: '2px',
+                <TextField
+                  label="Xác nhận mật khẩu mới"
+                  placeholder="Xác nhận mật khẩu mới"
+                  type="password"
+                  variant="outlined"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#00008b',
+                        borderWidth: '2px',
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+              </div>
 
               {error && (
-                <Typography variant="body2" color="error" sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" color="error" sx={{ textAlign: 'center', mt: 1 }}>
                   {error}
                 </Typography>
               )}
@@ -468,12 +509,18 @@ function ProfilePage() {
                   bgcolor: '#00008b',
                   color: 'white',
                   mt: 2,
-                  width: '120px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
+                  width: '140px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   display: 'block',
-                  margin: '0 auto',
+                  margin: '16px auto 0 auto',
+                  textTransform: 'none',
+                  fontFamily: 'Montserrat, sans-serif',
+                  '&:hover': {
+                    bgcolor: '#000070',
+                  },
                 }}
                 onClick={handleSendOtp}
                 disabled={verifyCurrentPasswordMutation.isPending || requestOtpMutation.isPending}
@@ -483,11 +530,19 @@ function ProfilePage() {
             </>
           ) : (
             <>
-              <Typography variant="body2" className={cx('profile-page__modal-note')} sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="body1"
+                className={cx('profile-page__modal-note')}
+                sx={{ textAlign: 'center', mb: 0.5 }}
+              >
                 Mã OTP được gửi qua E-mail
               </Typography>
 
-              <Typography variant="body2" className={cx('profile-page__modal-email')} sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="body1"
+                className={cx('profile-page__modal-email')}
+                sx={{ textAlign: 'center', mb: 2 }}
+              >
                 {email || 'Không có email'}
               </Typography>
 
@@ -497,9 +552,18 @@ function ProfilePage() {
                 variant="outlined"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
+                fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '& fieldset': {
+                      borderColor: '#d1d1d1',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00008b',
+                    },
+                    '&.Mui-focused fieldset': {
                       borderColor: '#00008b',
                       borderWidth: '2px',
                     },
@@ -508,13 +572,13 @@ function ProfilePage() {
               />
 
               {generatedOtp && (
-                <Typography variant="body2" sx={{ textAlign: 'center', color: '#2e7d32' }}>
+                <Typography variant="body2" sx={{ textAlign: 'center', color: '#2e7d32', fontSize: '14px' }}>
                   Mã OTP mô phỏng: {generatedOtp}
                 </Typography>
               )}
 
               {error && (
-                <Typography variant="body2" color="error" sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" color="error" sx={{ textAlign: 'center', mt: 1 }}>
                   {error}
                 </Typography>
               )}
@@ -525,12 +589,18 @@ function ProfilePage() {
                   bgcolor: '#00008b',
                   color: 'white',
                   mt: 2,
-                  width: '120px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
+                  width: '140px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   display: 'block',
-                  margin: '10px auto 0 auto',
+                  margin: '16px auto 0 auto',
+                  textTransform: 'none',
+                  fontFamily: 'Montserrat, sans-serif',
+                  '&:hover': {
+                    bgcolor: '#000070',
+                  },
                 }}
                 onClick={handleSubmit}
                 disabled={

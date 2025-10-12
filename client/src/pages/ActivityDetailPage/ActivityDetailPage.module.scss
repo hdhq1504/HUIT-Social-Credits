@@ -559,26 +559,183 @@
   }
 
   // Tab sections
-  &__tab-panel {
+  &__tabs {
+    width: 100%;
+    background-color: var(--white-color);
+    border: 1px solid rgba(0, 31, 143, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 31, 143, 0.08);
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
+
+    // md: 768px
+    @media (max-width: 768px) {
+      border-radius: 10px;
+      gap: 20px;
+      padding-bottom: 20px;
+    }
 
     // sm: 576px
     @media (max-width: 576px) {
-      gap: 14px;
+      border-radius: 8px;
+      gap: 16px;
+      padding-bottom: 16px;
     }
 
     // xs: 480px
     @media (max-width: 480px) {
+      border-radius: 6px;
       gap: 12px;
+      padding-bottom: 12px;
     }
+
+    :global {
+      .ant-tabs-nav {
+        width: 100%;
+        margin-bottom: 0;
+
+        &::before {
+          border-bottom: 2px solid #e8e8e8;
+        }
+
+        .ant-tabs-nav-wrap {
+          width: 100%;
+        }
+
+        .ant-tabs-nav-list {
+          width: 100%;
+          display: flex;
+        }
+      }
+
+      .ant-tabs-tab {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        font-size: 15px !important;
+        font-weight: 500;
+        color: #475569;
+        padding: 12px 0;
+        margin: 0 !important;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease;
+
+        // md: 768px
+        @media (max-width: 768px) {
+          font-size: 14px !important;
+          padding: 10px 0;
+        }
+
+        // sm: 576px
+        @media (max-width: 576px) {
+          font-size: 13px !important;
+          padding: 8px 0;
+        }
+
+        // xs: 480px
+        @media (max-width: 480px) {
+          font-size: 12px !important;
+          padding: 6px 0;
+        }
+
+        &:hover {
+          color: var(--orange-color) !important;
+        }
+
+        // First tab hover
+        &:nth-child(1):hover {
+          border-top-left-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-left-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-left-radius: 8px;
+          }
+
+          @media (max-width: 480px) {
+            border-top-left-radius: 6px;
+          }
+        }
+
+        // Last tab hover
+        &:nth-child(3):hover {
+          border-top-right-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-right-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-right-radius: 8px;
+          }
+
+          @media (max-width: 480px) {
+            border-top-right-radius: 6px;
+          }
+        }
+      }
+
+      // Active tab styles
+      .ant-tabs-tab-active {
+        .ant-tabs-tab-btn {
+          color: var(--orange-color) !important;
+          font-weight: 600;
+        }
+
+        // First tab active
+        &:nth-child(1) {
+          border-top-left-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-left-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-left-radius: 8px;
+          }
+
+          @media (max-width: 480px) {
+            border-top-left-radius: 6px;
+          }
+        }
+
+        // Last tab active
+        &:nth-child(3) {
+          border-top-right-radius: 12px;
+
+          @media (max-width: 768px) {
+            border-top-right-radius: 10px;
+          }
+
+          @media (max-width: 576px) {
+            border-top-right-radius: 8px;
+          }
+
+          @media (max-width: 480px) {
+            border-top-right-radius: 6px;
+          }
+        }
+      }
+
+      .ant-tabs-ink-bar {
+        border-bottom: 2px solid var(--orange-color);
+      }
+    }
+  }
+
+  &__tab-panel {
+    padding: 24px;
   }
 
   &__section-title {
     color: var(--primary-color);
     font-size: 18px;
     font-weight: 600;
+    margin-bottom: 16px;
 
     // md: 768px
     @media (max-width: 768px) {
@@ -920,18 +1077,18 @@
 
   &__info-value {
     color: var(--black-color);
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     text-align: right;
 
     // md: 768px
     @media (max-width: 768px) {
-      font-size: 17px;
+      font-size: 16px;
     }
 
     // sm: 576px
     @media (max-width: 576px) {
-      font-size: 16px;
+      font-size: 15px;
     }
 
     // xs: 480px

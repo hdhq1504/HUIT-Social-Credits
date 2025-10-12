@@ -112,7 +112,6 @@
     margin: 0;
     color: var(--primary-color);
     font-weight: 600;
-    font-family: 'Montserrat', sans-serif;
 
     @media (max-width: 768px) {
       font-size: 14px;
@@ -194,7 +193,7 @@
     }
 
     @media (max-width: 480px) {
-      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
   }
 

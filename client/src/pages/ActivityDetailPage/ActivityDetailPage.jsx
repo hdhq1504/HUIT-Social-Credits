@@ -122,11 +122,15 @@ function ActivityDetailPage() {
     [],
   );
 
-  const items = useMemo(
+  const tabItems = useMemo(
     () => [
       {
         key: '1',
-        label: 'Giới thiệu chi tiết',
+        label: (
+          <div className={cx('activity-detail__tab-label')}>
+            <span>Giới thiệu chi tiết</span>
+          </div>
+        ),
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Yêu cầu tham gia</h4>
@@ -143,7 +147,11 @@ function ActivityDetailPage() {
       },
       {
         key: '2',
-        label: 'Hướng dẫn tham gia',
+        label: (
+          <div className={cx('activity-detail__tab-label')}>
+            <span>Hướng dẫn tham gia</span>
+          </div>
+        ),
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Quy trình đăng ký</h4>
@@ -235,7 +243,7 @@ function ActivityDetailPage() {
 
             <Row gutter={[24, 24]}>
               <Col xs={24} lg={16} className={cx('activity-detail__content-column')}>
-                <article className={cx('activity-detail__content', 'activity-detail__content--description')}>
+                <div className={cx('activity-detail__content', 'activity-detail__content--description')}>
                   <h2 className={cx('activity-detail__content-title')}>Mô tả</h2>
                   <div className={cx('activity-detail__content-body')}>
                     {descriptionParagraphs.map((paragraph) => (
@@ -271,11 +279,22 @@ function ActivityDetailPage() {
                       ))}
                     </ul>
                   </section>
-                </article>
+                </div>
 
-                <article className={cx('activity-detail__content', 'activity-detail__content--rule')}>
-                  <Tabs defaultActiveKey="1" items={items} type="line" size="large" />
-                </article>
+                <div className={cx('activity-detail__tabs')}>
+                  <Tabs
+                    defaultActiveKey="1"
+                    items={tabItems}
+                    type="line"
+                    size="large"
+                    tabBarGutter={12}
+                    renderTabBar={(props, DefaultTabBar) => (
+                      <>
+                        <DefaultTabBar {...props} />
+                      </>
+                    )}
+                  />
+                </div>
               </Col>
 
               {/* Sidebar */}

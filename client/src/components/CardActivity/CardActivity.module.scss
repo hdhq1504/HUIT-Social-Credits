@@ -3,6 +3,15 @@
   overflow: hidden;
   display: inline-flex;
   border-radius: 4px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    @media (max-width: 768px) {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+  }
 
   &__cover {
     background: no-repeat center / cover;
@@ -25,6 +34,7 @@
     width: 100%;
     height: 100%;
     border-bottom-right-radius: 35px;
+    object-fit: cover;
   }
 
   &__badge {
@@ -43,9 +53,15 @@
     z-index: 1;
 
     @media (max-width: 768px) {
-      font-size: 12px;
       padding: 3px 6px;
-      top: 8px;
+    }
+
+    @media (max-width: 576px) {
+      padding: 3px 5px;
+    }
+
+    @media (max-width: 480px) {
+      padding: 2px 5px;
     }
   }
 
@@ -65,8 +81,13 @@
       line-height: 1.3;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 576px) {
       font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+      line-height: 1.3;
     }
   }
 
@@ -77,14 +98,24 @@
     align-items: center;
     gap: 8px;
 
+    @media (max-width: 576px) {
+      gap: 6px;
+    }
+
     svg {
       width: 14px;
       height: 14px;
       color: var(--black-color);
+      flex-shrink: 0;
 
       @media (max-width: 768px) {
         width: 12px;
         height: 12px;
+      }
+
+      @media (max-width: 480px) {
+        width: 11px;
+        height: 11px;
       }
     }
   }
@@ -97,6 +128,14 @@
     @media (max-width: 768px) {
       font-size: 12px;
     }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 10px;
+    }
   }
 
   &__date-value,
@@ -104,9 +143,20 @@
     color: var(--black-color);
     font-size: 14px;
     font-weight: 300;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     @media (max-width: 768px) {
       font-size: 12px;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 10px;
     }
   }
 
@@ -116,6 +166,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+
+    @media (max-width: 768px) {
+      gap: 8px;
+    }
+
+    @media (max-width: 576px) {
+      gap: 6px;
+    }
 
     .ant-avatar {
       width: 32px;
@@ -127,6 +185,18 @@
         width: 28px;
         height: 28px;
       }
+
+      @media (max-width: 576px) {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+      }
+
+      @media (max-width: 480px) {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+      }
     }
   }
 
@@ -134,13 +204,39 @@
     color: #adadad;
     font-size: 14px;
     font-weight: 500;
+    white-space: nowrap;
 
     @media (max-width: 768px) {
       font-size: 12px;
     }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 10px;
+    }
   }
 
   &__status {
+    display: inline-block;
+    font-size: 13px;
+
+    @media (max-width: 768px) {
+      font-size: 12px;
+    }
+
+    @media (max-width: 576px) {
+      font-size: 11px;
+      padding: 1px 6px !important;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 10px;
+      padding: 1px 6px !important;
+    }
+
     &.is-warning {
       background-color: #dc77001f;
       color: var(--warning-color);
@@ -178,13 +274,30 @@
     display: flex;
     gap: 12px;
 
+    @media (max-width: 768px) {
+      gap: 8px;
+    }
+
+    @media (max-width: 576px) {
+      gap: 6px;
+    }
+
     &.actions--row {
       flex-direction: row;
       align-items: center;
 
+      @media (max-width: 480px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
       :global(.button) {
         flex: 1 1 0;
         min-width: 0;
+
+        @media (max-width: 480px) {
+          width: 100%;
+        }
       }
     }
 
@@ -205,27 +318,72 @@
       :global(.button) {
         flex: 1 1 auto;
       }
-    }
 
-    @media (max-width: 768px) {
-      gap: 8px;
+      @media (max-width: 480px) {
+        :global(.button) {
+          width: 100%;
+        }
+      }
     }
 
     :global(button[variant='outline']) {
       border-radius: 8px;
+      font-size: 13px;
+      padding: 8px 12px;
 
       @media (max-width: 768px) {
         font-size: 12px;
-        padding: 6px 12px;
+        padding: 6px 10px;
+      }
+
+      @media (max-width: 576px) {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 11px;
+        padding: 6px 8px;
       }
     }
 
     :global(button[variant='primary']) {
       border-radius: 8px;
+      font-size: 13px;
+      padding: 8px 12px;
 
       @media (max-width: 768px) {
         font-size: 12px;
-        padding: 6px 12px;
+        padding: 6px 10px;
+      }
+
+      @media (max-width: 576px) {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+    }
+
+    :global(button[variant='danger']),
+    :global(button[variant='success']),
+    :global(button[variant='orange']) {
+      @media (max-width: 768px) {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      @media (max-width: 576px) {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 11px;
+        padding: 6px 8px;
       }
     }
   }
@@ -236,9 +394,29 @@
     border-radius: 20px;
     box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.05);
 
+    @media (max-width: 768px) {
+      border-radius: 16px;
+    }
+
+    @media (max-width: 576px) {
+      border-radius: 12px;
+    }
+
     .activity-card__cover {
       align-self: stretch;
       height: 137px;
+
+      @media (max-width: 768px) {
+        height: 120px;
+      }
+
+      @media (max-width: 576px) {
+        height: 110px;
+      }
+
+      @media (max-width: 480px) {
+        height: 100px;
+      }
     }
 
     .activity-card__content {
@@ -249,11 +427,30 @@
       gap: 8px;
       justify-content: flex-start;
       align-items: flex-start;
+
+      @media (max-width: 768px) {
+        padding: 8px 10px;
+        gap: 6px;
+      }
+
+      @media (max-width: 576px) {
+        padding: 6px 8px;
+        gap: 5px;
+      }
+
+      @media (max-width: 480px) {
+        padding: 6px;
+        gap: 4px;
+      }
     }
 
     .activity-card__actions {
       justify-content: center;
       width: 100%;
+
+      @media (max-width: 480px) {
+        flex-direction: column;
+      }
     }
   }
 
@@ -265,6 +462,10 @@
     border-radius: 4px;
     font-family: Montserrat, sans-serif;
 
+    @media (max-width: 576px) {
+      border-radius: 8px;
+    }
+
     .activity-card__cover {
       width: 240px;
       height: 215px;
@@ -272,7 +473,12 @@
       border-bottom-left-radius: 4px;
       flex: 0 0 auto;
 
-      @media (max-width: 1024px) and (min-width: 769px) {
+      @media (max-width: 1200px) and (min-width: 993px) {
+        width: 220px;
+        height: 200px;
+      }
+
+      @media (max-width: 992px) and (min-width: 769px) {
         width: 200px;
         height: 180px;
       }
@@ -283,8 +489,14 @@
         height: auto;
       }
 
+      @media (max-width: 576px) {
+        width: 120px;
+        min-height: 150px;
+      }
+
       @media (max-width: 480px) {
-        min-height: 170px;
+        width: 100px;
+        min-height: 140px;
       }
     }
 
@@ -303,7 +515,11 @@
       border-bottom: 1px #e3e3e3 solid;
       justify-content: space-between;
 
-      @media (max-width: 1024px) and (min-width: 769px) {
+      @media (max-width: 1200px) and (min-width: 993px) {
+        min-height: 200px;
+      }
+
+      @media (max-width: 992px) and (min-width: 769px) {
         min-height: 180px;
         padding: 8px;
       }
@@ -315,9 +531,14 @@
         gap: 6px;
       }
 
-      @media (max-width: 480px) {
-        padding: 8px;
+      @media (max-width: 576px) {
+        padding: 6px;
         gap: 5px;
+      }
+
+      @media (max-width: 480px) {
+        padding: 6px;
+        gap: 4px;
       }
     }
 
@@ -330,12 +551,26 @@
         text-overflow: ellipsis;
         max-height: 2.6em;
       }
+
+      @media (max-width: 576px) {
+        -webkit-line-clamp: 2;
+        max-height: 2.4em;
+      }
+
+      @media (max-width: 480px) {
+        -webkit-line-clamp: 2;
+        max-height: 2.2em;
+      }
     }
 
     .activity-card__participants {
       @media (max-width: 768px) {
         flex-wrap: wrap;
         gap: 6px;
+      }
+
+      @media (max-width: 576px) {
+        gap: 4px;
       }
     }
 
@@ -348,21 +583,85 @@
     .activity-card__actions {
       width: 100%;
 
+      @media (max-width: 576px) {
+        flex-direction: column;
+      }
+
       :global(button[variant='outline']) {
         width: 94px;
+
+        @media (max-width: 992px) {
+          width: 80px;
+        }
 
         @media (max-width: 768px) {
           width: 70px;
         }
 
+        @media (max-width: 576px) {
+          width: 100%;
+        }
+
         @media (max-width: 480px) {
-          width: 60px;
+          width: 100%;
         }
       }
 
       :global(button[variant='primary']) {
         flex: 1 1 0;
+
+        @media (max-width: 576px) {
+          width: 100%;
+          flex: unset;
+        }
       }
+
+      :global(button[variant='danger']),
+      :global(button[variant='success']),
+      :global(button[variant='orange']) {
+        @media (max-width: 576px) {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+/* ====== LANDSCAPE MOBILE OPTIMIZATION ====== */
+@media (max-width: 768px) and (orientation: landscape) {
+  .activity-card--horizontal {
+    .activity-card__cover {
+      width: 160px;
+      height: auto;
+      min-height: 140px;
+    }
+
+    .activity-card__content {
+      padding: 6px 8px;
+      gap: 4px;
+    }
+
+    .activity-card__actions {
+      :global(button) {
+        font-size: 11px;
+        padding: 5px 8px;
+      }
+    }
+  }
+}
+
+/* ====== GRID CONTAINER OPTIMIZATION ====== */
+@media (max-width: 1200px) {
+  .activity-card--vertical {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .activity-card {
+    &--vertical,
+    &--horizontal {
+      max-width: 100%;
     }
   }
 }
