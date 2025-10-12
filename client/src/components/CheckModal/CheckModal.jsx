@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Modal, Tag, message } from 'antd';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -27,51 +27,98 @@ function CheckModal({
   const wasOpenRef = useRef(false);
   const prevUrlRef = useRef(null);
 
+  // Camera state
   const webcamRef = useRef(null);
+  const activeStreamRef = useRef(null); // giữ stream hiện tại để stop cứng khi đóng
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [facingMode, setFacingMode] = useState('user');
+
+  // Danh sách camera & camera đang chọn
+  const [videoInputs, setVideoInputs] = useState([]); // [{deviceId, label}, ...]
+  const [deviceId, setDeviceId] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [hasVideoInput, setHasVideoInput] = useState(true);
 
+  // ========= Helpers =========
+  const revokePreview = () => {
+    if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+    prevUrlRef.current = null;
+  };
+
+  // Dừng toàn bộ track của stream (fix Safari/IOS không tắt đèn camera)
+  const hardStopCamera = () => {
+    try {
+      const videoEl =
+        webcamRef.current?.video ||
+        webcamRef.current?.videoRef?.current ||
+        document.querySelector('.check-modal video');
+
+      const stream = videoEl?.srcObject || webcamRef.current?.stream || activeStreamRef.current;
+
+      if (stream?.getTracks) {
+        stream.getTracks().forEach((t) => {
+          try {
+            t.stop();
+          } catch {}
+        });
+      }
+    } catch {}
+    activeStreamRef.current = null;
+    setIsCameraOn(false);
+  };
+
+  // ========= Effects =========
   useEffect(() => {
     if (open && !wasOpenRef.current) {
       setPhase(variant || 'checkin');
       setPreviewUrl(null);
       setFile(null);
       setIsCameraOn(false);
+      setDeviceId(null);
+      setCurrentIndex(0);
+    }
+    // Khi chuyển từ open=true -> false: tắt camera cứng
+    if (!open && wasOpenRef.current) {
+      hardStopCamera();
+      revokePreview();
     }
     wasOpenRef.current = open;
   }, [open, variant]);
 
+  // Cleanup khi unmount
   useEffect(() => {
     return () => {
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-      prevUrlRef.current = null;
+      hardStopCamera();
+      revokePreview();
     };
   }, []);
 
-  useEffect(() => {
-    async function checkDevices() {
-      try {
-        const devices = await navigator.mediaDevices?.enumerateDevices?.();
-        const hasCam = !!devices?.some((d) => d.kind === 'videoinput');
-        setHasVideoInput(hasCam);
-      } catch {
-        setHasVideoInput(false);
+  const enumerateVideoInputs = async () => {
+    try {
+      const devices = await navigator.mediaDevices?.enumerateDevices?.();
+      const vids = (devices || []).filter((d) => d.kind === 'videoinput');
+      setVideoInputs(vids);
+      setHasVideoInput(vids.length > 0);
+
+      if (vids.length) {
+        const backIdx = vids.findIndex((d) => /back|rear|environment/i.test(d.label));
+        const idx = backIdx >= 0 ? backIdx : 0;
+        setCurrentIndex(idx);
+        setDeviceId(vids[idx].deviceId);
+      } else {
+        setDeviceId(null);
       }
+    } catch {
+      setHasVideoInput(false);
     }
-    if (open) checkDevices();
-  }, [open]);
+  };
 
-  const isCheckoutPhase = phase === 'checkout';
-
+  // Xin quyền trước, sau đó liệt kê device và bật khung
   const openCamera = async () => {
     try {
-      const constraints = {
-        video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      stream.getTracks().forEach((t) => t.stop());
+      const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      // stop ngay stream tạm
+      tmp.getTracks().forEach((t) => t.stop());
+      await enumerateVideoInputs();
       setIsCameraOn(true);
     } catch (err) {
       if (err?.name === 'NotAllowedError') {
@@ -81,15 +128,22 @@ function CheckModal({
       } else {
         message.error('Không thể mở camera: ' + (err?.message || 'Lỗi không xác định'));
       }
+      setIsCameraOn(false);
     }
   };
 
-  const stopCamera = () => setIsCameraOn(false);
-
-  const toggleFacingMode = () => {
-    setFacingMode((m) => (m === 'user' ? 'environment' : 'user'));
+  const toggleCamera = async () => {
+    if (!videoInputs.length) return;
+    // dừng stream hiện tại trước khi đổi
+    hardStopCamera();
+    const nextIdx = (currentIndex + 1) % videoInputs.length;
+    setCurrentIndex(nextIdx);
+    setDeviceId(videoInputs[nextIdx].deviceId);
+    // bật lại khung ở tick tiếp theo
+    setTimeout(() => setIsCameraOn(true), 0);
   };
 
+  // ========= Capture / Submit =========
   const dataURLtoFile = (dataUrl, fileName) => {
     const arr = dataUrl.split(',');
     const mime = arr[0].match(/:(.*?);/)[1] || 'image/jpeg';
@@ -108,26 +162,26 @@ function CheckModal({
       return;
     }
     const f = dataURLtoFile(dataUrl, `attendance_${Date.now()}.jpg`);
-    if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+    revokePreview();
     const url = URL.createObjectURL(f);
     prevUrlRef.current = url;
 
     setFile(f);
     setPreviewUrl(url);
     setPhase('checkout');
-    setIsCameraOn(false);
+
+    // tắt camera ngay sau khi chụp
+    hardStopCamera();
+
     onCapture?.({ file: f, previewUrl: url });
   };
 
-  const handleRetake = () => {
-    if (prevUrlRef.current) {
-      URL.revokeObjectURL(prevUrlRef.current);
-      prevUrlRef.current = null;
-    }
+  const handleRetake = async () => {
+    revokePreview();
     setFile(null);
     setPreviewUrl(null);
     setPhase('checkin');
-    setIsCameraOn(true);
+    await openCamera(); // bật lại camera
     onRetake?.();
   };
 
@@ -136,32 +190,37 @@ function CheckModal({
     onSubmit?.({ file, previewUrl });
   };
 
+  // Fallback chọn file (desktop/thiết bị không có camera)
   const fileInputRef = useRef(null);
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+    revokePreview();
     const url = URL.createObjectURL(f);
     prevUrlRef.current = url;
     setFile(f);
     setPreviewUrl(url);
     setPhase('checkout');
-    setIsCameraOn(false);
+    hardStopCamera();
     onCapture?.({ file: f, previewUrl: url });
   };
 
-  const videoConstraints = {
-    facingMode,
-    width: { ideal: 360 },
-    height: { ideal: 240 },
-  };
+  // constraints: iOS ưa dùng deviceId exact
+  const videoConstraints = useMemo(() => {
+    return deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
+  }, [deviceId]);
+
+  const webcamKey = deviceId || 'default';
 
   return (
     <Modal
       open={open}
+      destroyOnClose // unmount nội dung khi đóng modal
       onCancel={() => {
-        stopCamera();
+        hardStopCamera(); // luôn tắt stream khi đóng
         onCancel?.();
       }}
       footer={null}
@@ -196,21 +255,33 @@ function CheckModal({
 
         {/* Khung chụp / xem trước */}
         <div className={cx('check-modal__camera-box', !previewUrl && 'camera-box--idle')}>
+          {/* Khi camera ON */}
           {!previewUrl && isCameraOn && hasVideoInput && (
             <div className={cx('check-modal__webcam-wrap')}>
               <Webcam
+                key={webcamKey}
                 ref={webcamRef}
                 audio={false}
                 screenshotFormat="image/jpeg"
                 videoConstraints={videoConstraints}
                 className={cx('check-modal__webcam')}
-                mirrored={facingMode === 'user'}
+                mirrored={false}
+                playsInline
+                onUserMedia={() => {
+                  // lưu stream thực tế để stop cứng khi cần
+                  const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
+                  const stream = videoEl?.srcObject || webcamRef.current?.stream;
+                  if (stream) activeStreamRef.current = stream;
+                }}
+                onUserMediaError={(e) => {
+                  message.error('Không thể truy cập camera: ' + (e?.message || 'Lỗi không xác định'));
+                }}
               />
             </div>
           )}
 
           {/* Idle */}
-          {!previewUrl && !isCameraOn && (
+          {!previewUrl && (!isCameraOn || !hasVideoInput) && (
             <div className={cx('check-modal__camera-box-empty')}>
               <div className={cx('check-modal__camera-box-icon')}>
                 <FontAwesomeIcon icon={faCamera} />
@@ -225,14 +296,15 @@ function CheckModal({
 
           {/* Actions */}
           <div className={cx('check-modal__actions')}>
-            {!isCheckoutPhase ? (
+            {phase !== 'checkout' ? (
               <>
                 {hasVideoInput && (
                   <button
                     className={cx('check-modal__confirm-button')}
                     onClick={() => {
-                      if (!isCameraOn) openCamera();
-                      else handleCapture();
+                      if (!isCameraOn)
+                        openCamera(); // xin quyền + bật camera
+                      else handleCapture(); // đang bật: chụp ảnh
                     }}
                   >
                     <FontAwesomeIcon icon={faCamera} style={{ marginRight: 8 }} />
@@ -245,8 +317,8 @@ function CheckModal({
                     Chọn ảnh từ máy
                   </button>
                 )}
-                {isCameraOn && (
-                  <button className={cx('check-modal__cancel-button')} onClick={toggleFacingMode}>
+                {isCameraOn && videoInputs.length > 1 && (
+                  <button className={cx('check-modal__cancel-button')} onClick={toggleCamera}>
                     <FontAwesomeIcon icon={faRotate} style={{ marginRight: 8 }} />
                     Đổi camera
                   </button>
