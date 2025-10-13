@@ -48,7 +48,6 @@ function ProgressSection({
               showInfo={false}
               strokeColor="#FFFFFF"
               trailColor="#FF5C00"
-              strokeWidth={12}
               className={cx('progress-section__bar')}
             />
           </div>

@@ -4,9 +4,9 @@ import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination, Drawer, Button as AntButton, Grid } from 'antd';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
-import SearchBar from '@layouts/components/SearchBar/SearchBar';
+import SearchBar from '@layouts/SearchBar/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
-import { mockApi } from '../../utils/mockAPI';
+import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames/bind';
-import Header from '../components/Header/Header';
+import Header from '../Header/Header';
 import styles from './HeaderOnly.module.scss';
 
 const cx = classNames.bind(styles);

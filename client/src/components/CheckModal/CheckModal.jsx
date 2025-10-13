@@ -218,7 +218,7 @@ function CheckModal({
   return (
     <Modal
       open={open}
-      destroyOnClose // unmount nội dung khi đóng modal
+      destroyOnHidden // unmount nội dung khi đóng modal
       onCancel={() => {
         hardStopCamera(); // luôn tắt stream khi đóng
         onCancel?.();

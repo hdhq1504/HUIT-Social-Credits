@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames/bind';
-import SearchBar from '@layouts/components/SearchBar';
+import SearchBar from '@layouts/SearchBar/SearchBar';
 import FeaturedActivitySection from '@components/FeaturedActivitySection';
 import ActivityCategoriesSection from '@components/ActivityCategoriesSection';
 import UpcomingActivitiesSection from '@components/UpcomingActivitiesSection/UpcomingActivitiesSection';

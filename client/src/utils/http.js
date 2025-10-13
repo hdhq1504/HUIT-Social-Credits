@@ -1,8 +1,8 @@
-import axios from "axios";
+import axios from 'axios';
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true // gửi/nhận cookie refresh_token
+  withCredentials: true, // gửi/nhận cookie refresh_token
 });
 
 // interceptor: tự refresh access token khi 401
@@ -18,24 +18,23 @@ http.interceptors.response.use(
         // hàng đợi chờ token
         return new Promise((resolve, reject) => {
           pending.push({ resolve, reject });
-        })
-          .then((token) => {
-            original.headers.Authorization = `Bearer ${token}`;
-            return http.request(original);
-          });
+        }).then((token) => {
+          original.headers.Authorization = `Bearer ${token}`;
+          return http.request(original);
+        });
       }
 
       original._retry = true;
       isRefreshing = true;
       try {
-        const { data } = await http.post("/auth/refresh", {});
+        const { data } = await http.post('/auth/refresh', {});
         const newToken = data?.accessToken;
-        pending.forEach(p => p.resolve(newToken));
+        pending.forEach((p) => p.resolve(newToken));
         pending = [];
         original.headers.Authorization = `Bearer ${newToken}`;
         return http.request(original);
       } catch (e) {
-        pending.forEach(p => p.reject(e));
+        pending.forEach((p) => p.reject(e));
         pending = [];
         throw e;
       } finally {
@@ -43,7 +42,7 @@ http.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default http;

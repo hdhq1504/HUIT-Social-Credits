@@ -34,7 +34,7 @@
     color: var(--white-color);
 
     &:hover:not(.button--disabled) {
-      background-color: darken(#6366f1, 5%);
+      background-color: #5e61e5;
     }
   }
 
@@ -43,7 +43,7 @@
     color: var(--white-color);
 
     &:hover:not(.button--disabled) {
-      background-color: darken(#ff5c00, 5%);
+      background-color: #f25700;
     }
   }
 

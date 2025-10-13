@@ -5,12 +5,12 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
 import classNames from 'classnames/bind';
-import logo from '../../../assets/images/logo.svg';
-import avatar from '../../../assets/images/profile.png';
-import Notification from '../../../components/Notification/Notification';
+import logo from '@assets/images/logo.svg';
+import avatar from '@assets/images/profile.png';
+import Notification from '@components/Notification/Notification';
 import styles from './Header.module.scss';
 import { mockApi } from '@utils/mockAPI';
-import useAuthStore from '../../../stores/useAuthStore';
+import useAuthStore from '@stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
