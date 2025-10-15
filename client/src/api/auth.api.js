@@ -9,10 +9,8 @@ export const authApi = {
     return data.user;
   },
   me: async () => {
-    const token = useAuthStore.getState().accessToken;
-    const { data } = await http.get('/auth/me', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const { data } = await http.get('/auth/me');
+    useAuthStore.getState().updateUser(data.user);
     return data.user;
   },
   logout: async () => {

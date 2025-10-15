@@ -1,11 +1,20 @@
 import axios from 'axios';
+import useAuthStore from '../stores/useAuthStore';
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
   withCredentials: true, // gửi/nhận cookie refresh_token
 });
 
-// interceptor: tự refresh access token khi 401
+http.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 let isRefreshing = false;
 let pending = [];
 
@@ -15,7 +24,6 @@ http.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       if (isRefreshing) {
-        // hàng đợi chờ token
         return new Promise((resolve, reject) => {
           pending.push({ resolve, reject });
         }).then((token) => {
@@ -29,6 +37,9 @@ http.interceptors.response.use(
       try {
         const { data } = await http.post('/auth/refresh', {});
         const newToken = data?.accessToken;
+        if (newToken) {
+          useAuthStore.getState().setAccessToken(newToken);
+        }
         pending.forEach((p) => p.resolve(newToken));
         pending = [];
         original.headers.Authorization = `Bearer ${newToken}`;

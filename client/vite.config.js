@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'HUIT Social Credits',
         short_name: 'HUIT Social Credits',
-        description: 'My Awesome App description',
+        description: 'Website quản lý điểm Công tác xã hội tại Trường Đại Học Công Thương TP.HCM',
         theme_color: '#ffffff',
         icons: [
           {
@@ -51,6 +51,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@assets': path.resolve(__dirname, './src/assets'),
+      '@api': path.resolve(__dirname, './src/api'),
       '@components': path.resolve(__dirname, './src/components'),
       '@layouts': path.resolve(__dirname, './src/layouts'),
       '@pages': path.resolve(__dirname, './src/pages'),

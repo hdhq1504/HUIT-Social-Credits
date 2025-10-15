@@ -3,11 +3,11 @@ import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, A11y } from 'swiper/modules';
+import { Autoplay, Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import styles from './FeaturedActivitySection.module.scss';
-import { mockApi } from '../../utils/mockAPI';
+import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
@@ -40,10 +40,15 @@ function FeaturedActivitySection() {
       <div className={cx('featured-activities')}>
         <div className={cx('featured-activities__slider')}>
           <Swiper
-            modules={[Navigation, A11y]}
+            modules={[Autoplay, Navigation, A11y]}
             slidesPerView={1}
             slidesPerGroup={1}
             navigation
+            loop
+            autoplay={{
+              delay: 2500,
+              disableOnInteraction: false,
+            }}
             breakpoints={{
               640: { slidesPerView: 1.2, slidesPerGroup: 1, spaceBetween: 16 },
               768: { slidesPerView: 2, slidesPerGroup: 1, spaceBetween: 16 },

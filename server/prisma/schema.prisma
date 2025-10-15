@@ -15,20 +15,41 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  ADMIN
-  LECTURER
-  STAFF
-  STUDENT
+model NguoiDung {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  matKhau     String
+  hoTen       String
+  vaiTro      VaiTro    @default(SINHVIEN)
+  gioiTinh    GioiTinh?
+  maSV        String?   @db.VarChar(50)
+  maCB        String?   @db.VarChar(50)
+  maLop       String?   @db.VarChar(50)
+  maKhoa      String?   @db.VarChar(255)
+  soDT        String?   @db.VarChar(30)
+  ngaySinh    DateTime?
+  avatarUrl   String?   @db.VarChar(255)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  ghiChu      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@index([maSV])
+  @@index([maCB])
+  @@index([vaiTro, isActive])
 }
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  fullName     String
-  role         Role     @default(STUDENT)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+enum VaiTro {
+  SINHVIEN
+  GIANGVIEN
+  NHANVIEN
+  ADMIN
+}
+
+enum GioiTinh {
+  MALE
+  FEMALE
+  OTHER
 }

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
-import { TextField, Modal, Box, Button, Typography } from '@mui/material';
-import useToast from '@components/Toast/Toast';
+import { TextField } from '@mui/material';
+import ChangePasswordModal from '@components/ChangePasswordModal/ChangePasswordModal';
 import Label from '@components/Label/Label';
+import useToast from '@components/Toast/Toast';
 import styles from './ProfilePage.module.scss';
 import useAuthStore from '@stores/useAuthStore';
-import { mockApi } from '@utils/mockAPI';
-import { message } from 'antd';
+import http from '@utils/http';
 
 const cx = classNames.bind(styles);
 
@@ -22,17 +22,9 @@ const fileToBase64 = (file) =>
 
 function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [error, setError] = useState('');
 
   // Lấy thông tin người dùng từ Zustand
   const user = useAuthStore((state) => state.user);
-  const loginUser = useAuthStore((state) => state.login);
   const updateUserStore = useAuthStore((state) => state.updateUser);
 
   // State để quản lý thông tin người dùng (cho phép chỉnh sửa)
@@ -46,149 +38,69 @@ function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState('/images/no-image.jpg');
   const { contextHolder, open: openToast } = useToast();
 
-  const verifyCurrentPasswordMutation = useMutation({
-    mutationFn: ({ userId, password: passwordValue }) => mockApi.verifyCurrentPassword(userId, passwordValue),
+  // Lấy profile từ API /auth/me
+  const {
+    data: meData,
+    isLoading: isMeLoading,
+    isError: isMeError,
+  } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const { data } = await http.get('/auth/me');
+      return data?.user ?? null;
+    },
   });
 
-  const requestOtpMutation = useMutation({
-    mutationFn: (emailValue) => mockApi.requestPasswordOtp(emailValue),
-  });
-
-  const verifyOtpMutation = useMutation({
-    mutationFn: ({ email: emailValue, otp: otpValue }) => mockApi.verifyPasswordOtp(emailValue, otpValue),
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: ({ email: emailValue, newPassword }) => mockApi.resetPassword(emailValue, newPassword),
-  });
-
-  const loginAfterResetMutation = useMutation({
-    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.loginWithEmail(emailValue, passwordValue),
-  });
-
-  const updateProfileMutation = useMutation({
-    mutationFn: ({ userId, payload }) => mockApi.updateUserProfile(userId, payload),
-  });
-
+  // Khi nhận dữ liệu từ API -> đổ vào form và đồng bộ Zustand
   useEffect(() => {
-    if (user) {
-      setMssv(user.MSSV || '');
-      setFullName(user.TenNguoiDung || '');
-      setClassCode(user.Lop || '');
-      setBirthDate(user.NgaySinh || '');
-      setPhone(user.Sdt || '');
-      setEmail(user.email || '');
-      setAvatarPreview(user.AnhDaiDien || '/images/no-image.jpg');
-    } else {
-      setMssv('');
-      setFullName('');
-      setClassCode('');
-      setBirthDate('');
-      setPhone('');
-      setEmail('');
-      setAvatarPreview('/images/no-image.jpg');
-    }
-  }, [user]);
+    if (!meData) return;
+    setMssv(meData.studentCode || '');
+    setFullName(meData.fullName || '');
+    setClassCode(meData.classCode || '');
+    const dob = meData.dateOfBirth ? String(meData.dateOfBirth).slice(0, 10) : '';
+    setBirthDate(dob);
+    setPhone(meData.phoneNumber || '');
+    setEmail(meData.email || '');
+    setAvatarPreview(meData.avatarUrl || '/images/no-image.jpg');
 
+    updateUserStore({
+      id: meData.id,
+      email: meData.email,
+      TenNguoiDung: meData.fullName,
+      MSSV: meData.studentCode,
+      Lop: meData.classCode,
+      NgaySinh: meData.dateOfBirth,
+      Sdt: meData.phoneNumber,
+      AnhDaiDien: meData.avatarUrl,
+    });
+  }, [meData, updateUserStore]);
+
+  // Cập nhật preview ảnh
   useEffect(() => {
     if (!avatarFile) {
       setAvatarPreview(user?.AnhDaiDien || '/images/no-image.jpg');
       return undefined;
     }
-
     const previewUrl = URL.createObjectURL(avatarFile);
     setAvatarPreview(previewUrl);
-
-    return () => {
-      URL.revokeObjectURL(previewUrl);
-    };
+    return () => URL.revokeObjectURL(previewUrl);
   }, [avatarFile, user]);
 
-  // Hàm mở modal
-  const handleOpenModal = () => {
-    setOpenModal(true);
-    setOtpSent(false);
-    setError('');
-    setOldPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setOtp('');
-    setGeneratedOtp('');
+  // Hàm mở/đóng modal
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
+
+  // Callback sau khi đổi mật khẩu thành công
+  const handleChangePasswordSuccess = (userInfo) => {
+    openToast({ message: 'Đổi mật khẩu thành công', variant: 'success' });
+    // nếu cần đăng nhập lại bằng thông tin mới:
+    // if (userInfo) loginUser(userInfo);
   };
 
-  // Hàm đóng modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  // Hàm kiểm tra và gửi mã OTP
-  const handleSendOtp = async () => {
-    if (!oldPassword) {
-      setError('Vui lòng nhập mật khẩu cũ');
-      return;
-    }
-    if (!newPassword || !confirmPassword) {
-      setError('Vui lòng nhập mật khẩu mới và xác nhận mật khẩu');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Mật khẩu mới và xác nhận mật khẩu không khớp');
-      return;
-    }
-
-    try {
-      if (!user?.uid) {
-        setError('Không tìm thấy thông tin người dùng.');
-        return;
-      }
-
-      const isValidPassword = await verifyCurrentPasswordMutation.mutateAsync({
-        userId: user.uid,
-        password: oldPassword,
-      });
-
-      if (!isValidPassword) {
-        setError('Mật khẩu cũ không đúng');
-        return;
-      }
-
-      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
-      setGeneratedOtp(newOtp);
-      setOtpSent(true);
-      setError('');
-    } catch (err) {
-      const message = err?.message || 'Không thể gửi mã OTP. Vui lòng thử lại.';
-      setError(message);
-    }
-  };
-
-  // Hàm xử lý xác nhận đổi mật khẩu
-  const handleSubmit = async () => {
-    if (!otp) {
-      setError('Vui lòng nhập mã OTP');
-      return;
-    }
-
-    try {
-      await verifyOtpMutation.mutateAsync({ email, otp });
-      await resetPasswordMutation.mutateAsync({ email, newPassword });
-      const userInfo = await loginAfterResetMutation.mutateAsync({ email, password: newPassword });
-      loginUser(userInfo);
-      openToast({ message: 'Đổi mật khẩu thành công', variant: 'success' });
-      setError('');
-      setOpenModal(false);
-    } catch (err) {
-      const message = err?.message || 'Xác thực OTP thất bại. Vui lòng thử lại.';
-      setError(message);
-    }
-  };
-
-  // Hàm xử lý chọn file ảnh
+  // Hàm đổi avatar
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-    }
+    if (file) setAvatarFile(file);
   };
 
   // Hàm cập nhật thông tin người dùng
@@ -311,6 +223,7 @@ function ProfilePage() {
               placeholder="Nhập MSSV"
               variant="outlined"
               value={mssv}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setMssv(e.target.value)}
               fullWidth
               sx={{
@@ -327,6 +240,7 @@ function ProfilePage() {
               placeholder="Nhập họ và tên"
               variant="outlined"
               value={fullName}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setFullName(e.target.value)}
               fullWidth
               sx={{
@@ -343,6 +257,7 @@ function ProfilePage() {
               placeholder="Nhập lớp"
               variant="outlined"
               value={classCode}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setClassCode(e.target.value)}
               fullWidth
               sx={{
@@ -359,6 +274,7 @@ function ProfilePage() {
               placeholder="Nhập ngày sinh"
               variant="outlined"
               value={birthDate}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setBirthDate(e.target.value)}
               fullWidth
               sx={{
@@ -375,6 +291,7 @@ function ProfilePage() {
               placeholder="Nhập số điện thoại"
               variant="outlined"
               value={phone}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setPhone(e.target.value)}
               fullWidth
               sx={{
@@ -391,6 +308,7 @@ function ProfilePage() {
               placeholder="Nhập email"
               variant="outlined"
               value={email}
+              InputProps={{ readOnly: true }}
               onChange={(e) => setEmail(e.target.value)}
               fullWidth
               sx={{
@@ -403,218 +321,24 @@ function ProfilePage() {
               }}
             />
           </div>
-          <button
-            type="button"
-            className={cx('profile-page__form-submit')}
-            onClick={handleUpdate}
-            disabled={updateProfileMutation.isPending}
-          >
-            {updateProfileMutation.isPending ? 'Đang lưu...' : 'Cập nhật'}
+          <button type="button" className={cx('profile-page__form-submit')} onClick={handleUpdate}>
+            Cập nhật
           </button>
         </section>
       </section>
 
-      {/* Modal đổi mật khẩu */}
-      <Modal open={openModal} onClose={handleCloseModal} className={cx('profile-page__modal')}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '100%',
-            maxWidth: 700,
-            bgcolor: '#d8d8f0',
-            borderRadius: '16px',
-            boxShadow: 24,
-            p: 5,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2.5,
-            overflow: 'auto',
-            maxHeight: '90vh',
-          }}
-        >
-          {!otpSent ? (
-            <>
-              <Typography className={cx('profile-page__modal-title')} sx={{ textAlign: 'center', mb: 1 }}>
-                Đổi mật khẩu
-              </Typography>
-
-              <div className={cx('profile-page__form-fields')}>
-                <TextField
-                  label="Mật khẩu cũ"
-                  placeholder="Mật khẩu cũ"
-                  type="password"
-                  variant="outlined"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#00008b',
-                        borderWidth: '2px',
-                      },
-                    },
-                  }}
-                />
-
-                <TextField
-                  label="Mật khẩu mới"
-                  placeholder="Mật khẩu mới"
-                  type="password"
-                  variant="outlined"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#00008b',
-                        borderWidth: '2px',
-                      },
-                    },
-                  }}
-                />
-
-                <TextField
-                  label="Xác nhận mật khẩu mới"
-                  placeholder="Xác nhận mật khẩu mới"
-                  type="password"
-                  variant="outlined"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#00008b',
-                        borderWidth: '2px',
-                      },
-                    },
-                  }}
-                />
-              </div>
-
-              {error && (
-                <Typography variant="body2" color="error" sx={{ textAlign: 'center', mt: 1 }}>
-                  {error}
-                </Typography>
-              )}
-
-              <Button
-                variant="contained"
-                sx={{
-                  bgcolor: '#00008b',
-                  color: 'white',
-                  mt: 2,
-                  width: '140px',
-                  height: '40px',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  display: 'block',
-                  margin: '16px auto 0 auto',
-                  textTransform: 'none',
-                  fontFamily: 'Montserrat, sans-serif',
-                  '&:hover': {
-                    bgcolor: '#000070',
-                  },
-                }}
-                onClick={handleSendOtp}
-                disabled={verifyCurrentPasswordMutation.isPending || requestOtpMutation.isPending}
-              >
-                {verifyCurrentPasswordMutation.isPending || requestOtpMutation.isPending ? 'Đang xử lý...' : 'Tiếp tục'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Typography
-                variant="body1"
-                className={cx('profile-page__modal-note')}
-                sx={{ textAlign: 'center', mb: 0.5 }}
-              >
-                Mã OTP được gửi qua E-mail
-              </Typography>
-
-              <Typography
-                variant="body1"
-                className={cx('profile-page__modal-email')}
-                sx={{ textAlign: 'center', mb: 2 }}
-              >
-                {email || 'Không có email'}
-              </Typography>
-
-              <TextField
-                label="Nhập mã OTP"
-                placeholder="Nhập mã OTP"
-                variant="outlined"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    '& fieldset': {
-                      borderColor: '#d1d1d1',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#00008b',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#00008b',
-                      borderWidth: '2px',
-                    },
-                  },
-                }}
-              />
-
-              {generatedOtp && (
-                <Typography variant="body2" sx={{ textAlign: 'center', color: '#2e7d32', fontSize: '14px' }}>
-                  Mã OTP mô phỏng: {generatedOtp}
-                </Typography>
-              )}
-
-              {error && (
-                <Typography variant="body2" color="error" sx={{ textAlign: 'center', mt: 1 }}>
-                  {error}
-                </Typography>
-              )}
-
-              <Button
-                variant="contained"
-                sx={{
-                  bgcolor: '#00008b',
-                  color: 'white',
-                  mt: 2,
-                  width: '140px',
-                  height: '40px',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  display: 'block',
-                  margin: '16px auto 0 auto',
-                  textTransform: 'none',
-                  fontFamily: 'Montserrat, sans-serif',
-                  '&:hover': {
-                    bgcolor: '#000070',
-                  },
-                }}
-                onClick={handleSubmit}
-                disabled={
-                  verifyOtpMutation.isPending || resetPasswordMutation.isPending || loginAfterResetMutation.isPending
-                }
-              >
-                {verifyOtpMutation.isPending || resetPasswordMutation.isPending || loginAfterResetMutation.isPending
-                  ? 'Đang xử lý...'
-                  : 'Xác nhận'}
-              </Button>
-            </>
-          )}
-        </Box>
-      </Modal>
+      <ChangePasswordModal
+        open={openModal}
+        onClose={handleCloseModal}
+        email={email}
+        userId={user?.uid}
+        //  verifyCurrentPassword={({ userId, password }) => verifyCurrentPasswordMutation.mutateAsync({ userId, password })}
+        //  requestOtp={(email) => requestOtpMutation.mutateAsync(email)}
+        //  verifyOtp={({ email, otp }) => verifyOtpMutation.mutateAsync({ email, otp })}
+        //  resetPassword={({ email, newPassword }) => resetPasswordMutation.mutateAsync({ email, newPassword })}
+        //  loginAfterReset={({ email, password }) => loginAfterResetMutation.mutateAsync({ email, password })}
+        onSuccess={handleChangePasswordSuccess}
+      />
     </main>
   );
 }
