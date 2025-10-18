@@ -5,10 +5,10 @@ const cx = classNames.bind(styles);
 
 function Loading() {
   return (
-    <div className={cx('loading-container')}>
-      <div className={cx('spinner')}></div>
-      <p>Vui lòng đợi giây lát</p>
-    </div>
+    <section className={cx('loading-page')} aria-busy="true" aria-live="polite">
+      <div className={cx('loading-page__spinner')} role="presentation" />
+      <p className={cx('loading-page__message')}>Vui lòng đợi giây lát</p>
+    </section>
   );
 }
 

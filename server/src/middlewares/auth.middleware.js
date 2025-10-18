@@ -12,3 +12,16 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ error: "Token expired or invalid" });
   }
 }
+
+export function optionalAuth(req, _res, next) {
+  req.user = undefined;
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return next();
+  try {
+    req.user = verifyAccessToken(token);
+  } catch {
+    req.user = undefined;
+  }
+  next();
+}

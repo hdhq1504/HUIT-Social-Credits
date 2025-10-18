@@ -53,14 +53,14 @@ const useAuthStore = create((set) => ({
     set((state) => {
       persistAuthState(state.user, token, state.isLoggedIn);
       return { accessToken: token };
-    })
+    });
   },
   login: (payload) => {
     const hasUserObject = payload && typeof payload === 'object' && 'user' in payload;
     const rawUser = hasUserObject ? payload.user : payload;
     const { token: rawToken, ...restUser } = rawUser || {};
     const user = hasUserObject ? rawUser : rawUser ? restUser : null;
-    const accessToken = hasUserObject ? payload.accessToken ?? null : rawToken ?? null;
+    const accessToken = hasUserObject ? (payload.accessToken ?? null) : (rawToken ?? null);
     const normalizedUser = normalizeUser(user);
     persistAuthState(normalizedUser, accessToken, true);
     set({ user: normalizedUser, accessToken, isLoggedIn: true, loading: false });

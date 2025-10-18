@@ -1,4 +1,4 @@
-.my-point {
+.my-points {
   width: 100%;
   max-width: var(--content-width);
   padding: 0 24px;
@@ -8,8 +8,7 @@
   align-items: center;
   gap: 20px;
 
-  // xl: 1200px - 1599px
-  @media (max-width: 1599px) and (min-width: 1200px) {
+  @media (max-width: 1200px) and (min-width: 1200px) {
     padding: 0 24px;
     gap: 24px;
   }

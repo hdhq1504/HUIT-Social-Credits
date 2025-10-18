@@ -6,7 +6,7 @@ import CardActivity from '@components/CardActivity/CardActivity';
 import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
 import SearchBar from '@layouts/SearchBar/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
-import { mockApi } from '@utils/mockAPI';
+import activitiesApi from '@api/activities.api';
 
 const cx = classNames.bind(styles);
 
@@ -31,7 +31,7 @@ function ListActivitiesPage() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await mockApi.getActivities();
+        const res = await activitiesApi.list();
         setActivities(res);
       } catch (err) {
         console.error('Lỗi load activities:', err);
@@ -60,7 +60,8 @@ function ListActivitiesPage() {
                 <header className={cx('activities-page__results-header')}>
                   <div className={cx('activities-page__results-count')}>
                     <span className={cx('activities-page__results-count-text')}>
-                      Có <span className={cx('activities-page__results-count-number')}>128</span> kết quả phù hợp
+                      Có <span className={cx('activities-page__results-count-number')}>{activities.length}</span> kết
+                      quả phù hợp
                     </span>
                   </div>
 
@@ -95,7 +96,25 @@ function ListActivitiesPage() {
                       key={activity.id}
                       {...activity}
                       variant={screens.md ? 'horizontal' : 'vertical'}
-                      state="guest"
+                      state={activity.state || 'guest'}
+                      onRegistered={async ({ activity: current, note }) => {
+                        try {
+                          const updated = await activitiesApi.register(current.id, note ? { note } : {});
+                          setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        } catch (error) {
+                          console.error('Register failed', error);
+                          throw error;
+                        }
+                      }}
+                      onCancelRegister={async ({ activity: current, reason, note }) => {
+                        try {
+                          const updated = await activitiesApi.cancel(current.id, { reason, note });
+                          setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        } catch (error) {
+                          console.error('Cancel registration failed', error);
+                          throw error;
+                        }
+                      }}
                     />
                   ))}
                 </div>

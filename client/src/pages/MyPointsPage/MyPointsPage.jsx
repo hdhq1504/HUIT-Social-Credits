@@ -51,11 +51,11 @@ function MyPointsPage() {
         title: 'Tên hoạt động',
         dataIndex: 'activityName',
         key: 'activityName',
-        className: cx('my-point__col', 'my-point__col--name'),
+        className: cx('my-pointss__col', 'my-pointss__col--name'),
         render: (_, record) => (
-          <div className={cx('my-point__name-wrap')}>
-            <div className={cx('my-point__name')}>{record.activityName}</div>
-            <div className={cx('my-point__location')}>{record.location}</div>
+          <div className={cx('my-points__name-wrap')}>
+            <div className={cx('my-points__name')}>{record.activityName}</div>
+            <div className={cx('my-points__location')}>{record.location}</div>
           </div>
         ),
       },
@@ -63,12 +63,12 @@ function MyPointsPage() {
         title: 'Nhóm hoạt động',
         dataIndex: 'group',
         key: 'group',
-        className: cx('my-point__col', 'my-point__col--group'),
+        className: cx('my-points__col', 'my-points__col--group'),
         render: (group) =>
           group === 'Nhóm 1' ? (
-            <Tag className={cx('my-point__group', 'my-point__group--danger')}>Nhóm 1</Tag>
+            <Tag className={cx('my-points__group', 'my-points__group--danger')}>Nhóm 1</Tag>
           ) : (
-            <Tag className={cx('my-point__group', 'my-point__group--success')}>Nhóm 2, 3</Tag>
+            <Tag className={cx('my-points__group', 'my-points__group--success')}>Nhóm 2, 3</Tag>
           ),
         width: 180,
         responsive: ['md'],
@@ -79,8 +79,8 @@ function MyPointsPage() {
         key: 'points',
         align: 'center',
         width: 100,
-        className: cx('my-point__col', 'my-point__col--points'),
-        render: (val) => <span className={cx('my-point__points')}>+{val}</span>,
+        className: cx('my-points__col', 'my-points__col--points'),
+        render: (val) => <span className={cx('my-points__points')}>+{val}</span>,
       },
       {
         title: 'Ngày tham gia',
@@ -88,8 +88,8 @@ function MyPointsPage() {
         key: 'date',
         align: 'center',
         width: 160,
-        className: cx('my-point__col'),
-        render: (val) => <span className={cx('my-point__date')}>{dayjs(val).format('DD/MM/YYYY')}</span>,
+        className: cx('my-points__col'),
+        render: (val) => <span className={cx('my-points__date')}>{dayjs(val).format('DD/MM/YYYY')}</span>,
         responsive: ['sm'],
       },
       {
@@ -98,20 +98,20 @@ function MyPointsPage() {
         key: 'status',
         align: 'center',
         width: 150,
-        className: cx('my-point__col', 'my-point__col-status'),
+        className: cx('my-points__col', 'my-points__col-status'),
         render: (status) => {
           const isConfirmed = status === 'confirmed';
           return (
             <Tag
               bordered={false}
-              className={cx('my-point__tag', {
-                'my-point__tag--confirmed': isConfirmed,
-                'my-point__tag--pending': !isConfirmed,
+              className={cx('my-points__tag', {
+                'my-points__tag--confirmed': isConfirmed,
+                'my-points__tag--pending': !isConfirmed,
               })}
             >
               <FontAwesomeIcon
                 icon={isConfirmed ? faCheck : faClock}
-                className={cx('my-point__tag-icon')}
+                className={cx('my-points__tag-icon')}
                 aria-hidden
               />
               <span>{isConfirmed ? 'Đã xác nhận' : 'Đang phản hồi'}</span>
@@ -129,11 +129,11 @@ function MyPointsPage() {
   }, [records, semester]);
 
   return (
-    <section className={cx('my-point')}>
-      <div className={cx('my-point__container')}>
+    <section className={cx('my-points')}>
+      <div className={cx('my-points__container')}>
         {/* Header */}
-        <header className={cx('my-point__header')}>
-          <nav className={cx('my-point__breadcrumb')} aria-label="Breadcrumb">
+        <header className={cx('my-points__header')}>
+          <nav className={cx('my-points__breadcrumb')} aria-label="Breadcrumb">
             <Link to="/">Trang chủ</Link> / <span>Kết quả của tôi</span>
           </nav>
 
@@ -141,7 +141,7 @@ function MyPointsPage() {
         </header>
 
         {/* Progress Section */}
-        <article className={cx('my-point__progress')}>
+        <article className={cx('my-points__progress')}>
           <ProgressSection
             currentPoints={progressData.currentPoints}
             targetPoints={progressData.targetPoints}
@@ -157,16 +157,16 @@ function MyPointsPage() {
         </article>
 
         {/* Bảng điểm chi tiết */}
-        <article className={cx('my-point__scores')} id="score-table" aria-label="Bảng điểm chi tiết">
-          <div className={cx('my-point__scores-header')}>
-            <h2 className={cx('my-point__scores-title')}>Bảng điểm chi tiết</h2>
+        <article className={cx('my-points__scores')} id="score-table" aria-label="Bảng điểm chi tiết">
+          <div className={cx('my-points__scores-header')}>
+            <h2 className={cx('my-points__scores-title')}>Bảng điểm chi tiết</h2>
 
-            <div className={cx('my-point__filters')}>
+            <div className={cx('my-points__filters')}>
               <Select
                 value={semester}
                 onChange={setSemester}
                 size="large"
-                className={cx('my-point__select')}
+                className={cx('my-points__select')}
                 options={[
                   { value: 'all', label: 'Tất cả học kỳ' },
                   { value: '2024-hk1', label: 'HK1 2024-2025' },
@@ -182,7 +182,7 @@ function MyPointsPage() {
             dataSource={filteredData}
             loading={loading}
             pagination={false}
-            className={cx('my-point__table')}
+            className={cx('my-points__table')}
           />
         </article>
       </div>

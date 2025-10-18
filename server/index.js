@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { env } from "./src/env.js";
 import authRoutes from "./src/routes/auth.routes.js";
+import activityRoutes from "./src/routes/activity.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 app.use("/api/auth", authRoutes);
+app.use("/api/activities", activityRoutes);
 
 app.use(errorHandler);
 

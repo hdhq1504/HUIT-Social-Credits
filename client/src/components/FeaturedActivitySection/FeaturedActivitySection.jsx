@@ -7,7 +7,7 @@ import { Autoplay, Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import styles from './FeaturedActivitySection.module.scss';
-import { mockApi } from '@utils/mockAPI';
+import activitiesApi from '@api/activities.api';
 
 const cx = classNames.bind(styles);
 
@@ -17,7 +17,7 @@ function FeaturedActivitySection() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await mockApi.getActivities();
+        const res = await activitiesApi.list();
         setActivities(res);
       } catch (err) {
         console.error('Lỗi load activities:', err);
@@ -60,14 +60,24 @@ function FeaturedActivitySection() {
               <SwiperSlide key={a.id}>
                 <CardActivity
                   {...a}
-                  state="guest"
+                  state={a.state || 'guest'}
                   onRegister={(activity) => console.log('Open modal for:', activity)}
-                  onRegistered={async ({ activity }) => {
+                  onRegistered={async ({ activity, note }) => {
                     try {
-                      await mockApi.registerActivity?.(activity.id);
-                      console.log('Registered:', activity.id);
+                      const updated = await activitiesApi.register(activity.id, note ? { note } : {});
+                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
                     } catch (e) {
                       console.error('Register failed', e);
+                      throw e;
+                    }
+                  }}
+                  onCancelRegister={async ({ activity, reason, note }) => {
+                    try {
+                      const updated = await activitiesApi.cancel(activity.id, { reason, note });
+                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                    } catch (e) {
+                      console.error('Cancel registration failed', e);
+                      throw e;
                     }
                   }}
                   showConflictAlert={false}

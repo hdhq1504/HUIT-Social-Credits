@@ -34,11 +34,53 @@ model NguoiDung {
   ghiChu      String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  dangKy      DangKyHoatDong[]
 
   @@index([email])
   @@index([maSV])
   @@index([maCB])
   @@index([vaiTro, isActive])
+}
+
+model HoatDong {
+  id            String             @id @default(cuid())
+  maHoatDong    String?            @unique
+  tieuDe        String
+  moTa          String?
+  diemCong      Int                @default(0)
+  batDauLuc     DateTime?
+  ketThucLuc    DateTime?
+  diaDiem       String?
+  sucChuaToiDa  Int?
+  hinhAnh       String?            @db.VarChar(255)
+  danhMuc       String?            @db.VarChar(100)
+  isFeatured    Boolean            @default(false)
+  isPublished   Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  dangKy        DangKyHoatDong[]
+
+  @@index([isPublished, batDauLuc])
+  @@index([danhMuc])
+}
+
+model DangKyHoatDong {
+  id           String            @id @default(cuid())
+  nguoiDungId  String
+  hoatDongId   String
+  trangThai    TrangThaiDangKy   @default(DANG_KY)
+  lyDoHuy      String?
+  ghiChu       String?
+  dangKyLuc    DateTime          @default(now())
+  duyetLuc     DateTime?
+  updatedAt    DateTime          @updatedAt
+
+  nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
+  hoatDong     HoatDong          @relation(fields: [hoatDongId], references: [id])
+
+  @@index([hoatDongId, trangThai])
+  @@index([nguoiDungId, trangThai])
+  @@unique([nguoiDungId, hoatDongId])
 }
 
 enum VaiTro {
@@ -49,7 +91,14 @@ enum VaiTro {
 }
 
 enum GioiTinh {
-  MALE
-  FEMALE
-  OTHER
+  Nam
+  Nữ
+  Khác
+}
+
+enum TrangThaiDangKy {
+  DANG_KY
+  DA_HUY
+  DA_THAM_GIA
+  VANG_MAT
 }

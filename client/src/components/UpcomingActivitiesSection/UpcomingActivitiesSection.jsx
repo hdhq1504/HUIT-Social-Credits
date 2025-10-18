@@ -7,7 +7,7 @@ import { Tag } from 'antd';
 import Button from '../Button/Button';
 import CardActivity from '../CardActivity/CardActivity';
 import Label from '../Label/Label';
-import { mockApi } from '@utils/mockAPI';
+import activitiesApi from '@api/activities.api';
 import styles from './UpcomingActivitiesSection.module.scss';
 
 const { CheckableTag } = Tag;
@@ -29,7 +29,7 @@ function UpcomingActivitiesSection() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await mockApi.getActivities();
+        const res = await activitiesApi.list();
         setActivities(res);
       } catch (err) {
         console.error('Lỗi load activities:', err);
@@ -80,15 +80,25 @@ function UpcomingActivitiesSection() {
               {...a}
               variant="vertical"
               onRegister={(activity) => console.log('Open modal for:', activity)}
-              onRegistered={async ({ activity }) => {
+              onRegistered={async ({ activity, note }) => {
                 try {
-                  await mockApi.registerActivity?.(activity.id);
-                  console.log('Registered:', activity.id);
+                  const updated = await activitiesApi.register(activity.id, note ? { note } : {});
+                  setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
                 } catch (e) {
                   console.error('Register failed', e);
+                  throw e;
                 }
               }}
-              state="guest"
+              onCancelRegister={async ({ activity, reason, note }) => {
+                try {
+                  const updated = await activitiesApi.cancel(activity.id, { reason, note });
+                  setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                } catch (e) {
+                  console.error('Cancel registration failed', e);
+                  throw e;
+                }
+              }}
+              state={a.state || 'guest'}
               buttonLabels={{ register: 'Đăng ký ngay' }}
             />
           ))}

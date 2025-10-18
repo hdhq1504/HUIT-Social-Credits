@@ -5,9 +5,9 @@
   padding: 16px;
   border-radius: 8px;
   font-family: 'Montserrat', sans-serif;
-  box-shadow: 0px 4px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 
-  &__iconWrap {
+  &__icon-wrapper {
     width: 24px;
     height: 24px;
     display: grid;
@@ -19,15 +19,12 @@
   &__icon {
     font-size: 16px;
     line-height: 1;
+    color: var(--white-color);
   }
 
   &__message {
     font-size: 12px;
     font-weight: 600;
-    color: var(--white-color);
-  }
-
-  &__icon {
     color: var(--white-color);
   }
 
@@ -41,5 +38,12 @@
 
   &--warning {
     background: var(--warning-color);
+  }
+
+  &__notice {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    width: 320px;
   }
 }

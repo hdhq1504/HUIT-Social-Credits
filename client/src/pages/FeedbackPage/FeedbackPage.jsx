@@ -11,7 +11,7 @@ import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
-function RollCallPage() {
+function FeedbackPage() {
   const [activities, setActivities] = useState([]);
 
   useEffect(() => {
@@ -31,12 +31,12 @@ function RollCallPage() {
       {
         key: '1',
         label: (
-          <div className={cx('roll-call__tab-label')}>
+          <div className={cx('feedback__tab-label')}>
             <span>Tất cả</span>
           </div>
         ),
         children: (
-          <div className={cx('roll-call__list')}>
+          <div className={cx('feedback__list')}>
             {activities.map((activity) => (
               <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_pending" />
             ))}
@@ -46,12 +46,12 @@ function RollCallPage() {
       {
         key: '2',
         label: (
-          <div className={cx('roll-call__tab-label')}>
+          <div className={cx('feedback__tab-label')}>
             <span>Đã được cộng điểm</span>
           </div>
         ),
         children: (
-          <div className={cx('roll-call__list')}>
+          <div className={cx('feedback__list')}>
             {activities.map((activity) => (
               <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_accepted" />
             ))}
@@ -61,12 +61,12 @@ function RollCallPage() {
       {
         key: '3',
         label: (
-          <div className={cx('roll-call__tab-label')}>
+          <div className={cx('feedback__tab-label')}>
             <span>Đã gửi phản hồi</span>
           </div>
         ),
         children: (
-          <div className={cx('roll-call__list')}>
+          <div className={cx('feedback__list')}>
             {activities.map((activity) => (
               <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_reviewing" />
             ))}
@@ -76,12 +76,12 @@ function RollCallPage() {
       {
         key: '4',
         label: (
-          <div className={cx('roll-call__tab-label')}>
+          <div className={cx('feedback__tab-label')}>
             <span>Từ chối</span>
           </div>
         ),
         children: (
-          <div className={cx('roll-call__list')}>
+          <div className={cx('feedback__list')}>
             {activities.map((activity) => (
               <CardActivity key={activity.id} {...activity} variant="vertical" state="feedback_denied" />
             ))}
@@ -93,11 +93,11 @@ function RollCallPage() {
   );
 
   return (
-    <section className={cx('roll-call')}>
-      <div className={cx('roll-call__container')}>
+    <section className={cx('feedback')}>
+      <div className={cx('feedback__container')}>
         {/* Header */}
-        <header className={cx('roll-call__header')}>
-          <nav className={cx('roll-call__breadcrumb')} aria-label="Breadcrumb">
+        <header className={cx('feedback__header')}>
+          <nav className={cx('feedback__breadcrumb')} aria-label="Breadcrumb">
             <Link to="/">Trang chủ</Link> / <span>Phản hồi</span>
           </nav>
 
@@ -105,7 +105,7 @@ function RollCallPage() {
         </header>
 
         {/* Tabs */}
-        <div className={cx('roll-call__tabs')}>
+        <div className={cx('feedback__tabs')}>
           <Tabs
             defaultActiveKey="1"
             items={tabItems}
@@ -117,17 +117,17 @@ function RollCallPage() {
                 <DefaultTabBar {...props} />
 
                 {/* Thanh tìm kiếm */}
-                <div className={cx('roll-call__search')}>
-                  <Input placeholder="Nhập từ khóa" size="large" className={cx('roll-call__search-input')} allowClear />
+                <div className={cx('feedback__search')}>
+                  <Input placeholder="Nhập từ khóa" size="large" className={cx('feedback__search-input')} allowClear />
 
-                  <Select defaultValue="all" size="large" className={cx('roll-call__search-select')}>
+                  <Select defaultValue="all" size="large" className={cx('feedback__search-select')}>
                     <Select.Option value="all">Nhóm hoạt động</Select.Option>
                     <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
                     <Select.Option value="hien-mau">Hiến máu</Select.Option>
                     <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
                   </Select>
 
-                  <Select defaultValue="all" size="large" className={cx('roll-call__search-select')}>
+                  <Select defaultValue="all" size="large" className={cx('feedback__search-select')}>
                     <Select.Option value="all">Mới nhất</Select.Option>
                     <Select.Option value="oldest">Cũ nhất</Select.Option>
                     <Select.Option value="popular">Phổ biến nhất</Select.Option>
@@ -136,7 +136,7 @@ function RollCallPage() {
                   <Button
                     type="primary"
                     size="large"
-                    className={cx('roll-call__reset-button')}
+                    className={cx('feedback__reset-button')}
                     icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
                   >
                     Đặt lại
@@ -144,7 +144,7 @@ function RollCallPage() {
                 </div>
 
                 {/* Tiêu đề danh sách */}
-                <div className={cx('roll-call__title')}>Danh sách hoạt động</div>
+                <div className={cx('feedback__title')}>Danh sách hoạt động</div>
               </>
             )}
           />
@@ -154,4 +154,4 @@ function RollCallPage() {
   );
 }
 
-export default RollCallPage;
+export default FeedbackPage;

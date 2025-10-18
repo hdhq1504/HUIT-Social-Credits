@@ -105,7 +105,7 @@ function CardActivity(props) {
   const handleConfirmRegister = async (payload) => {
     try {
       if (modalVariant === 'cancel') {
-        await onCancelRegister?.(activity);
+        await onCancelRegister?.({ activity, ...payload });
         setOpenReg(false);
         setUiState('guest');
         onStateChange?.('guest');
