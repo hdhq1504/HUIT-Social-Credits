@@ -35,6 +35,8 @@ model NguoiDung {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   dangKy      DangKyHoatDong[]
+  diemDanh    DangKyHoatDong[] @relation("NguoiDungDiemDanh")
+  phanHoi     PhanHoiHoatDong[]
 
   @@index([email])
   @@index([maSV])
@@ -59,6 +61,7 @@ model HoatDong {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   dangKy        DangKyHoatDong[]
+  phanHoi       PhanHoiHoatDong[]
 
   @@index([isPublished, batDauLuc])
   @@index([danhMuc])
@@ -74,12 +77,38 @@ model DangKyHoatDong {
   dangKyLuc    DateTime          @default(now())
   duyetLuc     DateTime?
   updatedAt    DateTime          @updatedAt
+  diemDanhLuc  DateTime?
+  diemDanhBoiId String?
+  diemDanhGhiChu String?
 
   nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
   hoatDong     HoatDong          @relation(fields: [hoatDongId], references: [id])
+  diemDanhBoi  NguoiDung?        @relation("NguoiDungDiemDanh", fields: [diemDanhBoiId], references: [id])
+  phanHoi      PhanHoiHoatDong?
 
   @@index([hoatDongId, trangThai])
   @@index([nguoiDungId, trangThai])
+  @@unique([nguoiDungId, hoatDongId])
+}
+
+model PhanHoiHoatDong {
+  id           String             @id @default(cuid())
+  dangKyId     String             @unique
+  nguoiDungId  String
+  hoatDongId   String
+  noiDung      String
+  danhGia      Int?
+  minhChung    Json?
+  trangThai    TrangThaiPhanHoi  @default(CHO_DUYET)
+  taoLuc       DateTime           @default(now())
+  capNhatLuc   DateTime           @updatedAt
+
+  dangKy       DangKyHoatDong    @relation(fields: [dangKyId], references: [id])
+  nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
+  hoatDong     HoatDong          @relation(fields: [hoatDongId], references: [id])
+
+  @@index([hoatDongId])
+  @@index([nguoiDungId])
   @@unique([nguoiDungId, hoatDongId])
 }
 
@@ -101,4 +130,10 @@ enum TrangThaiDangKy {
   DA_HUY
   DA_THAM_GIA
   VANG_MAT
+}
+
+enum TrangThaiPhanHoi {
+  CHO_DUYET
+  DA_DUYET
+  BI_TU_CHOI
 }

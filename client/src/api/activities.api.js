@@ -17,6 +17,18 @@ export const activitiesApi = {
     const { data } = await http.post(`/activities/${activityId}/registrations/cancel`, payload);
     return data.activity;
   },
+  async attendance(activityId, payload = {}) {
+    const { data } = await http.post(`/activities/${activityId}/attendance`, payload);
+    return data.activity;
+  },
+  async feedback(activityId, payload = {}) {
+    const { data } = await http.post(`/activities/${activityId}/feedback`, payload);
+    return data;
+  },
+  async listMine(params = {}) {
+    const { data } = await http.get('/activities/my', { params });
+    return data.registrations ?? [];
+  },
 };
 
 export default activitiesApi;

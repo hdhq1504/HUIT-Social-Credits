@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,79 +6,146 @@ import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Tabs } from 'antd';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
+import useToast from '@components/Toast/Toast';
+import activitiesApi from '@api/activities.api';
 import styles from './RollCallPage.module.scss';
-import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
 function RollCallPage() {
-  const [activities, setActivities] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { contextHolder, open: toast } = useToast();
+
+  const fetchActivities = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await activitiesApi.listMine();
+      setRegistrations(data);
+    } catch (error) {
+      const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động.';
+      toast({ message, variant: 'danger' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const res = await mockApi.getActivities();
-        setActivities(res);
-      } catch (err) {
-        console.error('Lỗi load activities:', err);
-      }
-    };
     fetchActivities();
-  }, []);
+  }, [fetchActivities]);
+
+  const handleRegister = useCallback(
+    async ({ activity, note }) => {
+      if (!activity?.id) return;
+      await activitiesApi.register(activity.id, { note });
+      await fetchActivities();
+    },
+    [fetchActivities],
+  );
+
+  const handleCancel = useCallback(
+    async ({ activity, reason, note }) => {
+      if (!activity?.id) return;
+      await activitiesApi.cancel(activity.id, { reason, note });
+      await fetchActivities();
+    },
+    [fetchActivities],
+  );
+
+  const handleAttendance = useCallback(
+    async ({ activity }) => {
+      if (!activity?.id) return;
+      await activitiesApi.attendance(activity.id, {});
+      await fetchActivities();
+    },
+    [fetchActivities],
+  );
+
+  const handleFeedback = useCallback(
+    async ({ activity, content, files }) => {
+      if (!activity?.id) return;
+      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+      await activitiesApi.feedback(activity.id, { content, attachments });
+      await fetchActivities();
+    },
+    [fetchActivities],
+  );
+
+  const categorized = useMemo(() => {
+    const groups = { ongoing: [], upcoming: [], ended: [] };
+    registrations.forEach((registration) => {
+      const activity = registration.activity;
+      if (!activity) return;
+      switch (activity.state) {
+        case 'attendance_open':
+        case 'confirm_in':
+          groups.ongoing.push(registration);
+          break;
+        case 'registered':
+        case 'attendance_closed':
+          groups.upcoming.push(registration);
+          break;
+        default:
+          groups.ended.push(registration);
+      }
+    });
+    return groups;
+  }, [registrations]);
+
+  const buildCards = useCallback(
+    (items) =>
+      items.map((registration) => (
+        <CardActivity
+          key={registration.id}
+          {...registration.activity}
+          variant="vertical"
+          state={registration.activity?.state}
+          onRegistered={handleRegister}
+          onCancelRegister={handleCancel}
+          onConfirmPresent={handleAttendance}
+          onSendFeedback={handleFeedback}
+        />
+      )),
+    [handleRegister, handleCancel, handleAttendance, handleFeedback],
+  );
 
   const tabItems = useMemo(
     () => [
       {
-        key: '1',
+        key: 'ongoing',
         label: (
           <div className={cx('roll-call__tab-label')}>
             <span>Đang diễn ra</span>
           </div>
         ),
-        children: (
-          <div className={cx('roll-call__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="confirm_in" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('roll-call__list')}>{buildCards(categorized.ongoing)}</div>,
       },
       {
-        key: '2',
+        key: 'upcoming',
         label: (
           <div className={cx('roll-call__tab-label')}>
             <span>Sắp diễn ra</span>
           </div>
         ),
-        children: (
-          <div className={cx('roll-call__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="attendance_closed" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('roll-call__list')}>{buildCards(categorized.upcoming)}</div>,
       },
       {
-        key: '3',
+        key: 'ended',
         label: (
           <div className={cx('roll-call__tab-label')}>
             <span>Đã kết thúc</span>
           </div>
         ),
-        children: (
-          <div className={cx('roll-call__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="ended" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('roll-call__list')}>{buildCards(categorized.ended)}</div>,
       },
     ],
-    [activities],
+    [categorized, buildCards],
   );
 
   return (
     <section className={cx('roll-call')}>
+      {contextHolder}
+
       <div className={cx('roll-call__container')}>
         {/* Header */}
         <header className={cx('roll-call__header')}>
@@ -92,7 +159,7 @@ function RollCallPage() {
         {/* Tabs */}
         <div className={cx('roll-call__tabs')}>
           <Tabs
-            defaultActiveKey="1"
+            defaultActiveKey="ongoing"
             items={tabItems}
             type="line"
             size="large"
@@ -123,6 +190,8 @@ function RollCallPage() {
                     size="large"
                     className={cx('roll-call__reset-button')}
                     icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+                    onClick={fetchActivities}
+                    loading={loading}
                   >
                     Đặt lại
                   </Button>

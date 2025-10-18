@@ -2,7 +2,7 @@
 CREATE TYPE "VaiTro" AS ENUM ('SINHVIEN', 'GIANGVIEN', 'NHANVIEN', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "GioiTinh" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+CREATE TYPE "GioiTinh" AS ENUM ('Nam', 'Nữ', 'Khác');
 
 -- CreateTable
 CREATE TABLE "NguoiDung" (

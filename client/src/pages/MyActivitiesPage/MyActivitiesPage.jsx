@@ -1,23 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faTrophy,
+  faArrowRotateRight,
   faCalendarCheck,
   faCircleCheck,
   faClock,
-  faArrowRotateRight,
+  faTrophy,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Calendar, Input, Select, Tabs, ConfigProvider } from 'antd';
+import { Button, Calendar, ConfigProvider, Input, Select, Tabs } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
+import useToast from '@components/Toast/Toast';
+import activitiesApi from '@api/activities.api';
 import styles from './MyActivitiesPage.module.scss';
-import { mockApi } from '@utils/mockAPI';
 
 const cx = classNames.bind(styles);
 
@@ -25,30 +26,64 @@ dayjs.extend(updateLocale);
 dayjs.locale('vi');
 dayjs.updateLocale('vi', { weekStart: 1 });
 
-const EVENT_MAP = {
-  '2025-10-15': { type: 'primary', label: 'Hiến máu nhân đạo' },
-  '2025-10-25': { type: 'warning', label: 'Mùa hè xanh' },
-  '2025-10-30': { type: 'success', label: 'Địa chỉ đỏ' },
-};
-
 function MyActivitiesPage() {
-  const [activities, setActivities] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { contextHolder, open: toast } = useToast();
+
+  const fetchRegistrations = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await activitiesApi.listMine();
+      setRegistrations(data);
+    } catch (error) {
+      const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động của bạn';
+      toast({ message, variant: 'danger' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const res = await mockApi.getActivities();
-        setActivities(res);
-      } catch (err) {
-        console.error('Lỗi load activities:', err);
-      }
+    fetchRegistrations();
+  }, [fetchRegistrations]);
+
+  const stats = useMemo(() => {
+    const registered = registrations.filter((item) => item.status === 'DANG_KY');
+    const attended = registrations.filter((item) => item.status === 'DA_THAM_GIA');
+    const canceled = registrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
+    const totalPoints = attended.reduce((sum, item) => sum + (item.activity?.points ?? 0), 0);
+    const pendingFeedback = attended.filter((item) => item.feedback?.status !== 'DA_DUYET').length;
+
+    return {
+      totalPoints,
+      totalActivities: registrations.length,
+      completed: attended.length,
+      pending: pendingFeedback,
+      registered,
+      attended,
+      canceled,
     };
-    fetchActivities();
-  }, []);
+  }, [registrations]);
+
+  const calendarEvents = useMemo(() => {
+    const map = {};
+    registrations.forEach((registration) => {
+      const activity = registration.activity;
+      if (!activity?.startTime) return;
+      const key = dayjs(activity.startTime).format('YYYY-MM-DD');
+      if (map[key]) return;
+      let type = 'primary';
+      if (registration.status === 'DA_THAM_GIA') type = 'success';
+      else if (registration.status === 'DA_HUY' || registration.status === 'VANG_MAT') type = 'warning';
+      map[key] = { type, label: activity.title };
+    });
+    return map;
+  }, [registrations]);
 
   const fullCellRender = (current, info) => {
     const key = dayjs(current).format('YYYY-MM-DD');
-    const event = EVENT_MAP[key];
+    const event = calendarEvents[key];
     const isCurrentMonth = info.originNode?.props?.className?.includes('ant-picker-cell-in-view');
 
     return (
@@ -66,66 +101,105 @@ function MyActivitiesPage() {
     );
   };
 
-  const tabItems = useMemo(
-    () => [
+  const handleRegister = useCallback(
+    async ({ activity, note }) => {
+      if (!activity?.id) return;
+      await activitiesApi.register(activity.id, { note });
+      await fetchRegistrations();
+    },
+    [fetchRegistrations],
+  );
+
+  const handleCancel = useCallback(
+    async ({ activity, reason, note }) => {
+      if (!activity?.id) return;
+      await activitiesApi.cancel(activity.id, { reason, note });
+      await fetchRegistrations();
+    },
+    [fetchRegistrations],
+  );
+
+  const handleAttendance = useCallback(
+    async ({ activity }) => {
+      if (!activity?.id) return;
+      await activitiesApi.attendance(activity.id, {});
+      await fetchRegistrations();
+    },
+    [fetchRegistrations],
+  );
+
+  const handleFeedback = useCallback(
+    async ({ activity, content, files }) => {
+      if (!activity?.id) return;
+      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+      await activitiesApi.feedback(activity.id, { content, attachments });
+      await fetchRegistrations();
+    },
+    [fetchRegistrations],
+  );
+
+  const buildCards = useCallback(
+    (items) =>
+      items.map((registration) => (
+        <CardActivity
+          key={registration.id}
+          {...registration.activity}
+          variant="vertical"
+          state={registration.activity?.state}
+          onRegistered={handleRegister}
+          onCancelRegister={handleCancel}
+          onConfirmPresent={handleAttendance}
+          onSendFeedback={handleFeedback}
+        />
+      )),
+    [handleRegister, handleCancel, handleAttendance, handleFeedback],
+  );
+
+  const tabItems = useMemo(() => {
+    const { registered, attended, canceled } = stats;
+
+    return [
       {
-        key: '1',
+        key: 'registered',
         label: (
           <div className={cx('my-activities__tab-label')}>
             <FontAwesomeIcon icon={faCalendarCheck} className={cx('my-activities__tab-icon')} />
             <span>Đã đăng ký</span>
-            <span className={cx('my-activities__tab-badge')}>12</span>
+            <span className={cx('my-activities__tab-badge')}>{registered.length}</span>
           </div>
         ),
-        children: (
-          <div className={cx('my-activities__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="registered" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('my-activities__list')}>{buildCards(registered)}</div>,
       },
       {
-        key: '2',
+        key: 'attended',
         label: (
           <div className={cx('my-activities__tab-label')}>
             <FontAwesomeIcon icon={faCircleCheck} className={cx('my-activities__tab-icon')} />
             <span>Đã tham gia</span>
-            <span className={cx('my-activities__tab-badge')}>18</span>
+            <span className={cx('my-activities__tab-badge')}>{attended.length}</span>
           </div>
         ),
-        children: (
-          <div className={cx('my-activities__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="attendance_open" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('my-activities__list')}>{buildCards(attended)}</div>,
       },
       {
-        key: '3',
+        key: 'canceled',
         label: (
           <div className={cx('my-activities__tab-label')}>
             <FontAwesomeIcon icon={faClock} className={cx('my-activities__tab-icon')} />
             <span>Đã hủy</span>
-            <span className={cx('my-activities__tab-badge')}>3</span>
+            <span className={cx('my-activities__tab-badge')}>{canceled.length}</span>
           </div>
         ),
-        children: (
-          <div className={cx('my-activities__list')}>
-            {activities.map((activity) => (
-              <CardActivity key={activity.id} {...activity} variant="vertical" state="canceled" />
-            ))}
-          </div>
-        ),
+        children: <div className={cx('my-activities__list')}>{buildCards(canceled)}</div>,
       },
-    ],
-    [activities],
-  );
+    ];
+  }, [stats, buildCards]);
 
   return (
     <ConfigProvider locale={viVN}>
       <section className={cx('my-activities')}>
+        {contextHolder}
+
         <div className={cx('my-activities__container')}>
           {/* Header */}
           <header className={cx('my-activities__header')}>
@@ -142,7 +216,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Điểm CTXH</div>
-                  <div className={cx('my-activities__stat-card-value')}>156</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.totalPoints}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faTrophy} className={cx('my-activities__stat-card-icon-mark')} />
@@ -154,7 +228,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Tổng hoạt động</div>
-                  <div className={cx('my-activities__stat-card-value')}>24</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.totalActivities}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faCalendarCheck} className={cx('my-activities__stat-card-icon-mark')} />
@@ -166,7 +240,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Đã hoàn thành</div>
-                  <div className={cx('my-activities__stat-card-value')}>18</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.completed}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faCircleCheck} className={cx('my-activities__stat-card-icon-mark')} />
@@ -200,15 +274,15 @@ function MyActivitiesPage() {
             <div className={cx('my-activities__legend')}>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--primary')} />
-                <span>Hiến máu nhân đạo</span>
+                <span>Sắp diễn ra</span>
               </div>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
-                <span>Mùa hè xanh</span>
+                <span>Đang diễn ra</span>
               </div>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--success')} />
-                <span>Địa chỉ đỏ</span>
+                <span>Đã hủy</span>
               </div>
             </div>
           </div>
@@ -216,7 +290,7 @@ function MyActivitiesPage() {
           {/* Tabs */}
           <div className={cx('my-activities__tabs')}>
             <Tabs
-              defaultActiveKey="1"
+              defaultActiveKey="registered"
               items={tabItems}
               type="line"
               size="large"
@@ -252,6 +326,8 @@ function MyActivitiesPage() {
                       size="large"
                       className={cx('my-activities__reset-button')}
                       icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+                      onClick={fetchRegistrations}
+                      loading={loading}
                     >
                       Đặt lại
                     </Button>

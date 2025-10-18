@@ -1,84 +1,140 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
+import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faClipboardList,
-  faCircleCheck,
-  faTriangleExclamation,
-  faPhone,
-  faEnvelope,
   faArrowRight,
+  faCircleCheck,
+  faClipboardList,
+  faEnvelope,
+  faPhone,
+  faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
-import { Row, Col, Tabs } from 'antd';
+import { Col, Row, Tabs } from 'antd';
 import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckModal from '@components/CheckModal/CheckModal';
 import RegisterModal from '@components/RegisterModal/RegisterModal';
-import useToast from '@components/Toast/Toast';
 import Label from '@components/Label/Label';
-import { mockApi } from '@utils/mockAPI';
+import useToast from '@components/Toast/Toast';
+import activitiesApi from '@api/activities.api';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
 
+const formatDate = (value, format = 'DD/MM/YYYY') => (value ? dayjs(value).format(format) : '--');
+const formatDateTime = (value) => (value ? dayjs(value).format('HH:mm DD/MM/YYYY') : '--');
+
 function ActivityDetailPage() {
   const { id } = useParams();
   const [activity, setActivity] = useState(null);
-  const { contextHolder, open: toast } = useToast();
   const [relatedActivities, setRelatedActivities] = useState([]);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [viewState, setViewState] = useState('guest');
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
-  const [capacity, setCapacity] = useState({ current: 42, total: 50 });
+  const { contextHolder, open: toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  // --- SIMULATE ---
-  const SIMULATE = true; // bật/tắt mô phỏng
-  const timersRef = useRef([]);
-  const SIM_STEPS = { toCancel: 1200, toCheckin: 1200, toEnded: 12000 }; // ms
+  const viewState = activity?.state ?? 'guest';
 
-  const clearTimers = () => {
-    timersRef.current.forEach((t) => clearTimeout(t));
-    timersRef.current = [];
-  };
-  const pushTimer = (cb, ms) => {
-    const t = setTimeout(cb, ms);
-    timersRef.current.push(t);
-  };
+  const capacityInfo = useMemo(() => {
+    if (!activity) return { current: 0, total: 0, hasLimit: false };
+    const current = activity.participantsCount ?? 0;
+    const hasLimit = typeof activity.maxCapacity === 'number' && activity.maxCapacity > 0;
+    const total = hasLimit ? activity.maxCapacity : Math.max(current, 1);
+    return { current, total, hasLimit };
+  }, [activity]);
+
+  const remaining = capacityInfo.hasLimit ? Math.max(capacityInfo.total - capacityInfo.current, 0) : 0;
+  const percent =
+    capacityInfo.total > 0 ? Math.min(100, Math.round((capacityInfo.current / capacityInfo.total) * 100)) : 0;
+
+  const loadActivity = useCallback(async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const detail = await activitiesApi.detail(id);
+      setActivity(detail);
+    } catch (error) {
+      const message = error.response?.data?.error || 'Không thể tải chi tiết hoạt động';
+      toast({ message, variant: 'danger' });
+    } finally {
+      setLoading(false);
+    }
+  }, [id, toast]);
+
+  const loadRelatedActivities = useCallback(async () => {
+    try {
+      const list = await activitiesApi.list();
+      setRelatedActivities(list.filter((item) => item.id !== id).slice(0, 4));
+    } catch (error) {
+      // bỏ qua lỗi danh sách hoạt động liên quan
+      console.error('Không thể tải danh sách hoạt động liên quan:', error);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const all = await mockApi.getActivities();
-      const found = all.find((a) => a.id === id);
-      setActivity(found);
-      if (found?.capacity) {
-        const [curStr, totalStr] = String(found.capacity).split('/');
-        const cur = Number(curStr) || 0;
-        const total = Number(totalStr) || 0;
-        setCapacity({ current: cur, total });
-      }
+    loadActivity();
+    loadRelatedActivities();
+  }, [loadActivity, loadRelatedActivities]);
 
-      const related = all.filter((a) => a.id !== id).slice(0, 4);
-      setRelatedActivities(related);
-    };
-    fetchData();
-    return () => clearTimers();
-  }, [id]);
+  const handleOpenRegister = () => {
+    setModalVariant('confirm');
+    setIsRegisterOpen(true);
+  };
+
+  const handleOpenCancel = () => {
+    setModalVariant('cancel');
+    setIsRegisterOpen(true);
+  };
+
+  const handleConfirmRegister = async ({ variant, reason, note }) => {
+    if (!id) return;
+    try {
+      let updated;
+      if (variant === 'cancel') {
+        updated = await activitiesApi.cancel(id, { reason, note });
+        toast({ message: 'Hủy đăng ký thành công.', variant: 'success' });
+      } else {
+        updated = await activitiesApi.register(id, { note });
+        toast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
+      }
+      setActivity(updated);
+      setIsRegisterOpen(false);
+    } catch (error) {
+      const message = error.response?.data?.error || 'Thao tác thất bại. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    }
+  };
+
+  const handleAttendanceSubmit = async () => {
+    if (!id) return;
+    try {
+      const updated = await activitiesApi.attendance(id, {});
+      setActivity(updated);
+      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+    } catch (error) {
+      const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    } finally {
+      setIsCheckOpen(false);
+    }
+  };
 
   const descriptionParagraphs = useMemo(
     () => [
-      'Chiến dịch "Sạch biển xanh - Tương lai bền vững" là hoạt động tình nguyện ý nghĩa nhằm góp phần bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề ô nhiễm rác thải nhựa. Đây là cơ hội tuyệt vời để các bạn sinh viên thể hiện tinh thần trách nhiệm với xã hội và môi trường.',
-      'Hoạt động sẽ diễn ra tại bãi biển Cửa Lò, Nghệ An - một trong những bãi biển đẹp nhất miền Trung. Chúng ta sẽ cùng nhau thu gom rác thải, tuyên truyền ý thức bảo vệ môi trường cho du khách và cộng đồng địa phương.',
+      'Chiến dịch "Sạch biển xanh - Tương lai bền vững" là hoạt động tình nguyện ý nghĩa nhằm góp phần bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề ô nhiễm rác thải nhựa.',
+      'Đây là cơ hội tuyệt vời để các bạn sinh viên thể hiện tinh thần trách nhiệm với xã hội và môi trường, cùng nhau tạo ra tác động tích cực cho cộng đồng.',
     ],
     [],
   );
 
   const benefitItems = useMemo(
     () => [
-      'Nhận 60 điểm hoạt động CTXH',
+      'Nhận điểm hoạt động CTXH tương ứng',
       'Được cấp giấy chứng nhận tham gia từ Ban tổ chức',
-      'Hỗ trợ chi phí ăn uống và di chuyển 100%',
+      'Hỗ trợ chi phí ăn uống và di chuyển theo quy định',
       'Nhận áo đồng phục và các vật phẩm kỷ niệm',
       'Cơ hội giao lưu, kết nối với sinh viên các trường',
     ],
@@ -94,7 +150,7 @@ function ActivityDetailPage() {
     () => [
       { icon: 'faUserGraduate', text: 'Là sinh viên đang học tại các trường đại học, cao đẳng' },
       { icon: 'faHeartPulse', text: 'Không có các bệnh lý ảnh hưởng đến hoạt động ngoài trời' },
-      { icon: 'faClock', text: 'Cam kết tham gia đầy đủ 2 ngày hoạt động (Thứ 7 - Chủ nhật)' },
+      { icon: 'faClock', text: 'Cam kết tham gia đầy đủ hoạt động theo kế hoạch' },
       { icon: 'faShieldHeart', text: 'Có bảo hiểm y tế và cam kết tuân thủ các quy định an toàn' },
     ],
     [],
@@ -104,19 +160,19 @@ function ActivityDetailPage() {
     () => [
       {
         title: 'Bước 1: Đăng ký tham gia',
-        content: 'Điền đầy đủ thông tin vào form đăng ký trực tuyến. Hạn đăng ký đến 23:59 ngày 15/03/2024.',
+        content: 'Điền đầy đủ thông tin vào form đăng ký trực tuyến trước thời hạn quy định.',
       },
       {
         title: 'Bước 2: Xác nhận thông tin',
-        content: 'Ban tổ chức sẽ gửi email xác nhận trong vòng 24h. Kiểm tra email và xác nhận tham gia.',
+        content: 'Ban tổ chức sẽ gửi email xác nhận trong vòng 24 giờ. Kiểm tra email và xác nhận tham gia.',
       },
       {
-        title: 'Bước 3: Tham gia briefing online',
-        content: 'Tham dự buổi họp trực tuyến vào 19:00 ngày 18/03/2024 để nắm rõ lịch trình và quy định.',
+        title: 'Bước 3: Tham gia briefing',
+        content: 'Tham dự buổi họp trực tuyến để nắm rõ lịch trình và quy định khi tham gia hoạt động.',
       },
       {
-        title: 'Bước 4: Chuẩn bị đồ dùng cá nhân',
-        content: 'Mang theo giấy tờ tùy thân, thuốc cá nhân (nếu có), đồ bảo hộ cá nhân theo hướng dẫn.',
+        title: 'Bước 4: Chuẩn bị cá nhân',
+        content: 'Chuẩn bị đầy đủ đồ dùng cá nhân và phương tiện theo hướng dẫn của ban tổ chức.',
       },
     ],
     [],
@@ -154,7 +210,7 @@ function ActivityDetailPage() {
         ),
         children: (
           <div className={cx('activity-detail__tab-panel')}>
-            <h4 className={cx('activity-detail__section-title')}>Quy trình đăng ký</h4>
+            <h4 className={cx('activity-detail__section-title')}>Quy trình tham gia</h4>
             <div className={cx('activity-detail__guide-list')}>
               {guideSteps.map((step, index) => (
                 <div key={index} className={cx('activity-detail__guide-item')}>
@@ -167,76 +223,101 @@ function ActivityDetailPage() {
         ),
       },
     ],
-    [requirementItems, guideSteps],
+    [guideSteps, requirementItems],
   );
 
-  const remaining = capacity.total - capacity.current;
-  const percent = capacity.total > 0 ? Math.min(100, Math.round((capacity.current / capacity.total) * 100)) : 0;
-
-  const openRegisterConfirm = () => {
-    setModalVariant('confirm');
-    setIsRegisterOpen(true);
-  };
-
-  const openRegisterCancel = () => {
-    setModalVariant('cancel');
-    setIsRegisterOpen(true);
-  };
-
-  const simulateFlowAfterRegister = () => {
-    if (!SIMULATE) return;
-    clearTimers();
-    // registered -> cancel
-    pushTimer(() => setViewState('cancel'), SIM_STEPS.toCancel);
-    // cancel -> attendance_open
-    pushTimer(() => setViewState('attendance_open'), SIM_STEPS.toCancel + SIM_STEPS.toCheckin);
-    // attendance_open -> ended (nếu user không điểm danh)
-    pushTimer(
-      () => {
-        setViewState('ended');
-        toast({ message: 'Hoạt động đã kết thúc.', variant: 'warning' });
-      },
-      SIM_STEPS.toCancel + SIM_STEPS.toCheckin + SIM_STEPS.toEnded,
-    );
-  };
-
-  const closeRegister = () => setIsRegisterOpen(false);
-  const openCheck = () => setIsCheckOpen(true);
-  const closeCheck = () => setIsCheckOpen(false);
-
-  const handleConfirmRegister = ({ variant }) => {
-    if (variant === 'cancel') {
-      clearTimers();
-      setViewState('guest');
-      setCapacity((c) => ({ ...c, current: Math.max(0, c.current - 1) }));
-      toast({ message: 'Hủy đăng ký thành công.', variant: 'danger' });
-    } else {
-      setViewState('registered');
-      setCapacity((c) => (c.current < c.total ? { ...c, current: c.current + 1 } : c));
-      toast({ message: 'Đăng ký thành công!', variant: 'success' });
-      simulateFlowAfterRegister();
+  const renderActionButton = () => {
+    if (!activity) return null;
+    switch (viewState) {
+      case 'guest':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="primary"
+            onClick={handleOpenRegister}
+            disabled={capacityInfo.hasLimit && remaining <= 0}
+          >
+            Đăng ký ngay
+          </Button>
+        );
+      case 'registered':
+        return (
+          <Button className={cx('activity-detail__sidebar-button')} variant="danger" onClick={handleOpenCancel}>
+            Hủy đăng ký
+          </Button>
+        );
+      case 'attendance_open':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="primary"
+            onClick={() => setIsCheckOpen(true)}
+          >
+            Điểm danh
+          </Button>
+        );
+      case 'feedback_pending':
+        return (
+          <Link to="/feedback">
+            <Button className={cx('activity-detail__sidebar-button')} variant="orange">
+              Gửi phản hồi
+            </Button>
+          </Link>
+        );
+      case 'feedback_reviewing':
+        return (
+          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+            Đã gửi
+          </Button>
+        );
+      case 'feedback_accepted':
+        return (
+          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+            Hoàn thành
+          </Button>
+        );
+      case 'feedback_denied':
+        return (
+          <Link to="/feedback">
+            <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+              Đã từ chối
+            </Button>
+          </Link>
+        );
+      case 'canceled':
+        return (
+          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+            Đã hủy đăng ký
+          </Button>
+        );
+      case 'ended':
+      default:
+        return (
+          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+            Đã kết thúc
+          </Button>
+        );
     }
-    closeRegister();
   };
 
   return (
     <section className={cx('activity-detail')}>
       {contextHolder}
 
-      {activity && (
+      {activity && !loading && (
         <div className={cx('activity-detail__container')}>
           <nav className={cx('activity-detail__breadcrumb')}>
             <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> / <span>{activity.title}</span>
           </nav>
 
-          <div key={activity.id} className={cx('activity-detail__layout')}>
+          <div className={cx('activity-detail__layout')}>
             <div className={cx('activity-detail__card')}>
               <div className={cx('activity-detail__header')}>
                 <div className={cx('activity-detail__title')}>{activity.title}</div>
               </div>
               <div className={cx('activity-detail__group')}>
                 <div className={cx('activity-detail__group-badge')}>
-                  <span>Nhóm 2,3</span>
+                  <span>{activity.category || 'Hoạt động CTXH'}</span>
                 </div>
               </div>
             </div>
@@ -301,18 +382,20 @@ function ActivityDetailPage() {
               <Col xs={24} lg={8}>
                 <aside className={cx('activity-detail__sidebar')}>
                   <div className={cx('activity-detail__sidebar-points')}>
-                    <div className={cx('activity-detail__points-value')}>{activity.points} điểm</div>
+                    <div className={cx('activity-detail__points-value')}>
+                      {activity.points != null ? `${activity.points} điểm` : '--'}
+                    </div>
                     <div className={cx('activity-detail__points-label')}>Điểm hoạt động CTXH</div>
                   </div>
 
                   <div className={cx('activity-detail__sidebar-info')}>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Ngày bắt đầu</span>
-                      <span className={cx('activity-detail__info-value')}>15/03/2024</span>
+                      <span className={cx('activity-detail__info-value')}>{formatDate(activity.startTime)}</span>
                     </div>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Ngày kết thúc</span>
-                      <span className={cx('activity-detail__info-value')}>16/03/2024</span>
+                      <span className={cx('activity-detail__info-value')}>{formatDate(activity.endTime)}</span>
                     </div>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Thời gian</span>
@@ -320,7 +403,7 @@ function ActivityDetailPage() {
                     </div>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Địa điểm</span>
-                      <span className={cx('activity-detail__info-value')}>{activity.location}</span>
+                      <span className={cx('activity-detail__info-value')}>{activity.location || 'Đang cập nhật'}</span>
                     </div>
                   </div>
 
@@ -328,25 +411,35 @@ function ActivityDetailPage() {
                     <div className={cx('activity-detail__registration-header')}>
                       <span className={cx('activity-detail__registration-label')}>Số lượng đăng ký</span>
                       <span className={cx('activity-detail__registration-count')}>
-                        {capacity.current}/{capacity.total}
+                        {capacityInfo.hasLimit ? `${capacityInfo.current}/${capacityInfo.total}` : capacityInfo.current}
                       </span>
                     </div>
                     <div className={cx('activity-detail__registration-progress')}>
                       <div className={cx('activity-detail__registration-bar')} style={{ width: `${percent}%` }} />
                     </div>
                     <div className={cx('activity-detail__registration-remaining')}>
-                      {remaining > 0 ? `Còn ${remaining} chỗ trống` : 'Đã đủ số lượng'}
+                      {capacityInfo.hasLimit
+                        ? remaining > 0
+                          ? `Còn ${remaining} chỗ trống`
+                          : 'Đã đủ số lượng'
+                        : 'Không giới hạn số lượng'}
                     </div>
                   </div>
 
                   <div className={cx('activity-detail__sidebar-deadline')}>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Hạn đăng ký</span>
-                      <span className={cx('activity-detail__info-value')}>12/03/2024 23:59</span>
+                      <span className={cx('activity-detail__info-value')}>
+                        {activity.startTime ? formatDateTime(activity.startTime) : 'Đang cập nhật'}
+                      </span>
                     </div>
                     <div className={cx('activity-detail__info-row')}>
                       <span className={cx('activity-detail__info-label')}>Hạn hủy đăng ký</span>
-                      <span className={cx('activity-detail__info-value')}>12/03/2024 23:59</span>
+                      <span className={cx('activity-detail__info-value')}>
+                        {activity.startTime
+                          ? formatDateTime(dayjs(activity.startTime).subtract(3, 'day'))
+                          : 'Đang cập nhật'}
+                      </span>
                     </div>
                   </div>
 
@@ -362,55 +455,7 @@ function ActivityDetailPage() {
                     </div>
                   </div>
 
-                  {(() => {
-                    switch (viewState) {
-                      case 'guest':
-                        return (
-                          <Button
-                            className={cx('activity-detail__sidebar-button')}
-                            variant="primary"
-                            onClick={openRegisterConfirm}
-                            disabled={remaining <= 0}
-                          >
-                            Đăng ký ngay
-                          </Button>
-                        );
-                      case 'registered':
-                        return (
-                          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
-                            Đã đăng ký
-                          </Button>
-                        );
-                      case 'cancel':
-                        return (
-                          <Button
-                            className={cx('activity-detail__sidebar-button')}
-                            variant="danger"
-                            onClick={openRegisterCancel}
-                          >
-                            Hủy đăng ký
-                          </Button>
-                        );
-                      case 'attendance_open':
-                        return (
-                          <Button
-                            className={cx('activity-detail__sidebar-button')}
-                            variant="primary"
-                            onClick={openCheck}
-                          >
-                            Điểm danh
-                          </Button>
-                        );
-                      case 'ended':
-                        return (
-                          <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
-                            Đã kết thúc
-                          </Button>
-                        );
-                      default:
-                        return null;
-                    }
-                  })()}
+                  {renderActionButton()}
                 </aside>
 
                 <RegisterModal
@@ -419,8 +464,8 @@ function ActivityDetailPage() {
                   onConfirm={handleConfirmRegister}
                   variant={modalVariant}
                   campaignName={activity?.title}
-                  groupLabel="Nhóm 2,3"
-                  pointsLabel={`${activity.points} điểm`}
+                  groupLabel={activity?.category || 'Nhóm hoạt động'}
+                  pointsLabel={activity.points != null ? `${activity.points} điểm` : undefined}
                   dateTime={activity.dateTime}
                   location={activity.location}
                   showConflictAlert={false}
@@ -428,19 +473,14 @@ function ActivityDetailPage() {
 
                 <CheckModal
                   open={isCheckOpen}
-                  onCancel={closeCheck}
+                  onCancel={() => setIsCheckOpen(false)}
                   onCapture={() => {}}
                   onRetake={() => {}}
-                  onSubmit={() => {
-                    closeCheck();
-                    clearTimers();
-                    toast({ message: 'Điểm danh thành công!', variant: 'success' });
-                    setViewState('ended');
-                  }}
+                  onSubmit={handleAttendanceSubmit}
                   variant="checkin"
                   campaignName={activity?.title}
-                  groupLabel="Nhóm 2,3"
-                  pointsLabel={`${activity.points} điểm`}
+                  groupLabel={activity?.category || 'Nhóm hoạt động'}
+                  pointsLabel={activity.points != null ? `${activity.points} điểm` : undefined}
                   dateTime={activity.dateTime}
                   location={activity.location}
                 />
@@ -488,8 +528,30 @@ function ActivityDetailPage() {
 
           <div className={cx('activity-detail__related')}>
             <div className={cx('activity-detail__related-list')}>
-              {relatedActivities.map((activity) => (
-                <CardActivity key={activity.id} {...activity} variant="vertical" state="guest" />
+              {relatedActivities.map((item) => (
+                <CardActivity
+                  key={item.id}
+                  {...item}
+                  variant="vertical"
+                  state={item.state || 'details_only'}
+                  onRegistered={async ({ note }) => {
+                    await activitiesApi.register(item.id, { note });
+                    await loadRelatedActivities();
+                  }}
+                  onCancelRegister={async ({ reason, note }) => {
+                    await activitiesApi.cancel(item.id, { reason, note });
+                    await loadRelatedActivities();
+                  }}
+                  onConfirmPresent={async () => {
+                    await activitiesApi.attendance(item.id, {});
+                    await loadRelatedActivities();
+                  }}
+                  onSendFeedback={async ({ content, files }) => {
+                    const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+                    await activitiesApi.feedback(item.id, { content, attachments });
+                    await loadRelatedActivities();
+                  }}
+                />
               ))}
             </div>
 

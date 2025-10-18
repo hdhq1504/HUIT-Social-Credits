@@ -1,6 +1,38 @@
 import prisma from "../prisma.js";
 
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
+const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
+const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
+
+const USER_PUBLIC_FIELDS = {
+  id: true,
+  hoTen: true,
+  email: true,
+  avatarUrl: true
+};
+
+const ACTIVITY_INCLUDE = {
+  dangKy: {
+    where: { trangThai: { in: ACTIVE_REG_STATUSES } },
+    include: {
+      nguoiDung: {
+        select: USER_PUBLIC_FIELDS
+      }
+    },
+    orderBy: { dangKyLuc: "asc" }
+  }
+};
+
+const REGISTRATION_INCLUDE = {
+  phanHoi: true,
+  diemDanhBoi: {
+    select: {
+      id: true,
+      hoTen: true,
+      email: true
+    }
+  }
+};
 
 const toDate = (value) => (value ? new Date(value) : null);
 
@@ -37,7 +69,7 @@ const formatDateRange = (start, end) => {
     : `${startTime}, ${datePart} - ${endTime}, ${dateFormatter.format(endDate)}`;
 };
 
-const mapParticipants = (registrations) =>
+const mapParticipants = (registrations = []) =>
   registrations
     .filter((reg) => reg.nguoiDung)
     .map((reg) => {
@@ -48,7 +80,87 @@ const mapParticipants = (registrations) =>
       return { id: user.id, name: user.hoTen ?? user.email ?? "Người dùng" };
     });
 
-const mapActivity = (activity, currentUserId) => {
+const normalizeAttachments = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return [value];
+};
+
+const mapFeedback = (feedback) => {
+  if (!feedback) return null;
+  return {
+    id: feedback.id,
+    status: feedback.trangThai,
+    content: feedback.noiDung,
+    rating: feedback.danhGia ?? null,
+    attachments: normalizeAttachments(feedback.minhChung),
+    submittedAt: feedback.taoLuc?.toISOString() ?? null,
+    updatedAt: feedback.capNhatLuc?.toISOString() ?? null
+  };
+};
+
+const mapRegistration = (registration) => {
+  if (!registration) return null;
+  return {
+    id: registration.id,
+    activityId: registration.hoatDongId,
+    userId: registration.nguoiDungId,
+    status: registration.trangThai,
+    note: registration.ghiChu ?? null,
+    cancelReason: registration.lyDoHuy ?? null,
+    registeredAt: registration.dangKyLuc?.toISOString() ?? null,
+    approvedAt: registration.duyetLuc?.toISOString() ?? null,
+    updatedAt: registration.updatedAt?.toISOString() ?? null,
+    checkInAt: registration.diemDanhLuc?.toISOString() ?? null,
+    checkInNote: registration.diemDanhGhiChu ?? null,
+    checkInBy: registration.diemDanhBoi
+      ? {
+        id: registration.diemDanhBoi.id,
+        name: registration.diemDanhBoi.hoTen ?? registration.diemDanhBoi.email ?? "Người dùng"
+      }
+      : null,
+    feedback: mapFeedback(registration.phanHoi)
+  };
+};
+
+const determineState = (activity, registration) => {
+  const start = toDate(activity?.batDauLuc);
+  const end = toDate(activity?.ketThucLuc);
+  const now = new Date();
+
+  if (!registration) {
+    if (end && end < now) return "ended";
+    return "guest";
+  }
+
+  switch (registration.trangThai) {
+    case "DANG_KY": {
+      if (end && end < now) return "ended";
+      if (start && start <= now && (!end || end >= now)) return "attendance_open";
+      return "registered";
+    }
+    case "DA_HUY":
+      return "canceled";
+    case "VANG_MAT":
+      return "ended";
+    case "DA_THAM_GIA": {
+      const feedback = registration.phanHoi;
+      if (!feedback) return "feedback_pending";
+      switch (feedback.trangThai) {
+        case "DA_DUYET":
+          return "feedback_accepted";
+        case "BI_TU_CHOI":
+          return "feedback_denied";
+        default:
+          return "feedback_reviewing";
+      }
+    }
+    default:
+      return "guest";
+  }
+};
+
+const mapActivity = (activity, registration) => {
   if (!activity) return null;
 
   const start = toDate(activity.batDauLuc);
@@ -56,7 +168,6 @@ const mapActivity = (activity, currentUserId) => {
   const activeRegistrations = activity.dangKy ?? [];
   const participants = mapParticipants(activeRegistrations).slice(0, 5);
   const registeredCount = activeRegistrations.length;
-  const state = activeRegistrations.some((reg) => reg.nguoiDungId === currentUserId) ? "registered" : "guest";
   const capacityLabel =
     typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0
       ? `${Math.min(registeredCount, activity.sucChuaToiDa)}/${activity.sucChuaToiDa}`
@@ -80,30 +191,30 @@ const mapActivity = (activity, currentUserId) => {
     category: activity.danhMuc,
     isFeatured: activity.isFeatured,
     isPublished: activity.isPublished,
-    state
+    state: determineState(activity, registration),
+    registration: mapRegistration(registration)
   };
 };
 
-const activityWithRegistrations = (activityId, currentUserId) =>
-  prisma.hoatDong.findUnique({
-    where: { id: activityId },
-    include: {
-      dangKy: {
-        where: { trangThai: { in: ACTIVE_REG_STATUSES } },
-        include: {
-          nguoiDung: {
-            select: {
-              id: true,
-              hoTen: true,
-              email: true,
-              avatarUrl: true
-            }
-          }
-        },
-        orderBy: { dangKyLuc: "asc" }
-      }
-    }
-  }).then((activity) => mapActivity(activity, currentUserId));
+const buildActivityResponse = async (activityId, userId) => {
+  const [activity, registration] = await Promise.all([
+    prisma.hoatDong.findUnique({
+      where: { id: activityId },
+      include: ACTIVITY_INCLUDE
+    }),
+    userId
+      ? prisma.dangKyHoatDong.findUnique({
+        where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+        include: REGISTRATION_INCLUDE
+      })
+      : null
+  ]);
+
+  if (!activity) return null;
+  return mapActivity(activity, registration);
+};
+
+const sanitizeStatusFilter = (value, allowed) => (allowed.includes(value) ? value : undefined);
 
 export const listActivities = async (req, res) => {
   const currentUserId = req.user?.sub;
@@ -113,32 +224,29 @@ export const listActivities = async (req, res) => {
       { batDauLuc: "asc" },
       { tieuDe: "asc" }
     ],
-    include: {
-      dangKy: {
-        where: { trangThai: { in: ACTIVE_REG_STATUSES } },
-        include: {
-          nguoiDung: {
-            select: {
-              id: true,
-              hoTen: true,
-              email: true,
-              avatarUrl: true
-            }
-          }
-        },
-        orderBy: { dangKyLuc: "asc" }
-      }
-    }
+    include: ACTIVITY_INCLUDE
   });
 
+  let registrationMap = new Map();
+  if (currentUserId && activities.length) {
+    const registrations = await prisma.dangKyHoatDong.findMany({
+      where: {
+        nguoiDungId: currentUserId,
+        hoatDongId: { in: activities.map((activity) => activity.id) }
+      },
+      include: REGISTRATION_INCLUDE
+    });
+    registrationMap = new Map(registrations.map((registration) => [registration.hoatDongId, registration]));
+  }
+
   res.json({
-    activities: activities.map((activity) => mapActivity(activity, currentUserId))
+    activities: activities.map((activity) => mapActivity(activity, registrationMap.get(activity.id)))
   });
 };
 
 export const getActivity = async (req, res) => {
   const currentUserId = req.user?.sub;
-  const activity = await activityWithRegistrations(req.params.id, currentUserId);
+  const activity = await buildActivityResponse(req.params.id, currentUserId);
   if (!activity) return res.status(404).json({ error: "Hoạt động không tồn tại" });
   res.json({ activity });
 };
@@ -177,7 +285,10 @@ export const registerForActivity = async (req, res) => {
         trangThai: "DANG_KY",
         ghiChu: req.body?.note ?? existing.ghiChu,
         lyDoHuy: null,
-        dangKyLuc: new Date()
+        dangKyLuc: new Date(),
+        diemDanhLuc: null,
+        diemDanhBoiId: null,
+        diemDanhGhiChu: null
       }
     });
   } else {
@@ -190,7 +301,7 @@ export const registerForActivity = async (req, res) => {
     });
   }
 
-  const updated = await activityWithRegistrations(activityId, userId);
+  const updated = await buildActivityResponse(activityId, userId);
   res.status(201).json({
     message: "Đăng ký hoạt động thành công",
     activity: updated
@@ -219,9 +330,143 @@ export const cancelActivityRegistration = async (req, res) => {
     }
   });
 
-  const updated = await activityWithRegistrations(activityId, userId);
+  const updated = await buildActivityResponse(activityId, userId);
   res.json({
     message: "Hủy đăng ký thành công",
     activity: updated
+  });
+};
+
+export const markAttendance = async (req, res) => {
+  const userId = req.user?.sub;
+  const { id: activityId } = req.params;
+  const { note, status } = req.body || {};
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } }
+  });
+
+  if (!registration || registration.trangThai === "DA_HUY") {
+    return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
+  }
+
+  const nextStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";
+
+  await prisma.dangKyHoatDong.update({
+    where: { id: registration.id },
+    data: {
+      trangThai: nextStatus,
+      diemDanhLuc: new Date(),
+      diemDanhGhiChu: note ?? null,
+      diemDanhBoiId: userId
+    }
+  });
+
+  const updated = await buildActivityResponse(activityId, userId);
+  res.json({
+    message: nextStatus === "DA_THAM_GIA" ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
+    activity: updated
+  });
+};
+
+export const submitActivityFeedback = async (req, res) => {
+  const userId = req.user?.sub;
+  const { id: activityId } = req.params;
+  const { content, rating, attachments } = req.body || {};
+
+  if (!content || !String(content).trim()) {
+    return res.status(400).json({ error: "Nội dung phản hồi không được bỏ trống" });
+  }
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+    include: REGISTRATION_INCLUDE
+  });
+
+  if (!registration || registration.trangThai === "DA_HUY") {
+    return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
+  }
+
+  if (registration.trangThai !== "DA_THAM_GIA") {
+    return res.status(400).json({ error: "Bạn cần tham gia hoạt động trước khi gửi phản hồi" });
+  }
+
+  const normalizedAttachments = Array.isArray(attachments)
+    ? attachments.filter((item) => typeof item === "string" && item.trim()).slice(0, 10)
+    : [];
+
+  const normalizedRating = typeof rating === "number" ? Math.max(1, Math.min(5, rating)) : null;
+  const payload = {
+    noiDung: String(content).trim(),
+    danhGia: normalizedRating,
+    minhChung: normalizedAttachments,
+    trangThai: "CHO_DUYET"
+  };
+
+  let feedback;
+  if (registration.phanHoi) {
+    feedback = await prisma.phanHoiHoatDong.update({
+      where: { id: registration.phanHoi.id },
+      data: payload
+    });
+  } else {
+    feedback = await prisma.phanHoiHoatDong.create({
+      data: {
+        ...payload,
+        dangKyId: registration.id,
+        nguoiDungId: userId,
+        hoatDongId: activityId
+      }
+    });
+  }
+
+  const activity = await buildActivityResponse(activityId, userId);
+
+  res.status(201).json({
+    message: "Đã gửi phản hồi",
+    feedback: mapFeedback(feedback),
+    activity
+  });
+};
+
+export const listMyActivities = async (req, res) => {
+  const userId = req.user?.sub;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const { status, feedbackStatus } = req.query || {};
+  const normalizedStatus = status ? sanitizeStatusFilter(status, REGISTRATION_STATUSES) : undefined;
+  const normalizedFeedback =
+    feedbackStatus && feedbackStatus !== "ALL"
+      ? feedbackStatus === "NONE"
+        ? "NONE"
+        : sanitizeStatusFilter(feedbackStatus, FEEDBACK_STATUSES)
+      : undefined;
+
+  const registrations = await prisma.dangKyHoatDong.findMany({
+    where: {
+      nguoiDungId: userId,
+      ...(normalizedStatus ? { trangThai: normalizedStatus } : {})
+    },
+    include: {
+      ...REGISTRATION_INCLUDE,
+      hoatDong: {
+        include: ACTIVITY_INCLUDE
+      }
+    },
+    orderBy: [{ dangKyLuc: "desc" }]
+  });
+
+  const filtered = normalizedFeedback
+    ? registrations.filter((registration) => {
+      if (normalizedFeedback === "NONE") return !registration.phanHoi;
+      return registration.phanHoi?.trangThai === normalizedFeedback;
+    })
+    : registrations;
+
+  res.json({
+    registrations: filtered.map((registration) => ({
+      ...mapRegistration(registration),
+      activity: mapActivity(registration.hoatDong, registration)
+    }))
   });
 };

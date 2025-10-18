@@ -75,17 +75,6 @@ function ProfilePage() {
     });
   }, [meData, updateUserStore]);
 
-  // Cập nhật preview ảnh
-  useEffect(() => {
-    if (!avatarFile) {
-      setAvatarPreview(user?.AnhDaiDien || '/images/no-image.jpg');
-      return undefined;
-    }
-    const previewUrl = URL.createObjectURL(avatarFile);
-    setAvatarPreview(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [avatarFile, user]);
-
   // Hàm mở/đóng modal
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -197,19 +186,6 @@ function ProfilePage() {
               onError={(e) => (e.target.src = '/images/no-image.jpg')}
             />
           </div>
-          <label htmlFor="avatar-upload" className={cx('profile-page__media-upload')}>
-            <span>Choose file</span>
-            <span className={cx('profile-page__media-upload-text')}>
-              {avatarFile ? avatarFile.name : 'Chưa file nào được chọn'}
-            </span>
-          </label>
-          <input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className={cx('profile-page__media-input')}
-          />
           <button type="button" className={cx('profile-page__media-button')} onClick={handleOpenModal}>
             Đổi mật khẩu
           </button>
