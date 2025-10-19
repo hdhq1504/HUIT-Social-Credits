@@ -4,6 +4,19 @@
   display: flex;
   flex-direction: column;
 
+  &__status {
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ef4444;
+    text-align: center;
+
+    @media (max-width: 640px) {
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+  }
+
   &__list {
     display: flex;
     justify-content: space-between;

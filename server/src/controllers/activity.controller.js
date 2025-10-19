@@ -1,4 +1,5 @@
 import prisma from "../prisma.js";
+import { getPointGroupLabel, normalizePointGroup } from "../utils/points.js";
 
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
@@ -20,7 +21,8 @@ const ACTIVITY_INCLUDE = {
       }
     },
     orderBy: { dangKyLuc: "asc" }
-  }
+  },
+  danhMucRef: true
 };
 
 const REGISTRATION_INCLUDE = {
@@ -168,6 +170,9 @@ const mapActivity = (activity, registration) => {
   const activeRegistrations = activity.dangKy ?? [];
   const participants = mapParticipants(activeRegistrations).slice(0, 5);
   const registeredCount = activeRegistrations.length;
+  const pointGroup = normalizePointGroup(activity.nhomDiem);
+  const pointGroupLabel = getPointGroupLabel(pointGroup);
+  const category = activity.danhMucRef;
   const capacityLabel =
     typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0
       ? `${Math.min(registeredCount, activity.sucChuaToiDa)}/${activity.sucChuaToiDa}`
@@ -188,7 +193,11 @@ const mapActivity = (activity, registration) => {
     capacity: capacityLabel,
     maxCapacity: activity.sucChuaToiDa,
     coverImage: activity.hinhAnh,
-    category: activity.danhMuc,
+    category: category?.ten ?? null,
+    categoryCode: category?.ma ?? null,
+    categoryDescription: category?.moTa ?? null,
+    pointGroup,
+    pointGroupLabel,
     isFeatured: activity.isFeatured,
     isPublished: activity.isPublished,
     state: determineState(activity, registration),

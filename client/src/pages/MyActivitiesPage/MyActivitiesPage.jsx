@@ -333,7 +333,6 @@ function MyActivitiesPage() {
                     </Button>
                   </div>
 
-                  {/* Tiêu đề danh sách */}
                   <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
                 </>
               )}

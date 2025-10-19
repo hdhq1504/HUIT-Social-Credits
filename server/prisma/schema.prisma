@@ -44,6 +44,20 @@ model NguoiDung {
   @@index([vaiTro, isActive])
 }
 
+model DanhMucHoatDong {
+  id        String    @id @default(cuid())
+  ma        String    @unique
+  ten       String
+  moTa      String?
+  nhomDiem  NhomDiem @default(NHOM_2_3)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  hoatDong  HoatDong[]
+
+  @@index([isActive, nhomDiem])
+}
+
 model HoatDong {
   id            String             @id @default(cuid())
   maHoatDong    String?            @unique
@@ -55,16 +69,18 @@ model HoatDong {
   diaDiem       String?
   sucChuaToiDa  Int?
   hinhAnh       String?            @db.VarChar(255)
-  danhMuc       String?            @db.VarChar(100)
   isFeatured    Boolean            @default(false)
   isPublished   Boolean            @default(true)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   dangKy        DangKyHoatDong[]
   phanHoi       PhanHoiHoatDong[]
+  danhMucId     String?
+  nhomDiem      NhomDiem          @default(NHOM_2_3)
+  danhMucRef    DanhMucHoatDong?  @relation(fields: [danhMucId], references: [id])
 
   @@index([isPublished, batDauLuc])
-  @@index([danhMuc])
+  @@index([danhMucId])
 }
 
 model DangKyHoatDong {
@@ -92,16 +108,16 @@ model DangKyHoatDong {
 }
 
 model PhanHoiHoatDong {
-  id           String             @id @default(cuid())
-  dangKyId     String             @unique
+  id           String            @id @default(cuid())
+  dangKyId     String            @unique
   nguoiDungId  String
   hoatDongId   String
   noiDung      String
   danhGia      Int?
   minhChung    Json?
   trangThai    TrangThaiPhanHoi  @default(CHO_DUYET)
-  taoLuc       DateTime           @default(now())
-  capNhatLuc   DateTime           @updatedAt
+  taoLuc       DateTime          @default(now())
+  capNhatLuc   DateTime          @updatedAt
 
   dangKy       DangKyHoatDong    @relation(fields: [dangKyId], references: [id])
   nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
@@ -136,4 +152,9 @@ enum TrangThaiPhanHoi {
   CHO_DUYET
   DA_DUYET
   BI_TU_CHOI
+}
+
+enum NhomDiem {
+  NHOM_1
+  NHOM_2_3
 }

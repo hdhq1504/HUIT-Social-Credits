@@ -12,14 +12,6 @@ import http from '@utils/http';
 
 const cx = classNames.bind(styles);
 
-const fileToBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
 function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
 
@@ -34,16 +26,11 @@ function ProfilePage() {
   const [birthDate, setBirthDate] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('/images/no-image.jpg');
   const { contextHolder, open: openToast } = useToast();
 
   // Lấy profile từ API /auth/me
-  const {
-    data: meData,
-    isLoading: isMeLoading,
-    isError: isMeError,
-  } = useQuery({
+  const { data: meData } = useQuery({
     queryKey: ['me'],
     queryFn: async () => {
       const { data } = await http.get('/auth/me');
@@ -80,88 +67,10 @@ function ProfilePage() {
   const handleCloseModal = () => setOpenModal(false);
 
   // Callback sau khi đổi mật khẩu thành công
-  const handleChangePasswordSuccess = (userInfo) => {
+  const handleChangePasswordSuccess = () => {
     openToast({ message: 'Đổi mật khẩu thành công', variant: 'success' });
     // nếu cần đăng nhập lại bằng thông tin mới:
     // if (userInfo) loginUser(userInfo);
-  };
-
-  // Hàm đổi avatar
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) setAvatarFile(file);
-  };
-
-  // Hàm cập nhật thông tin người dùng
-  const handleUpdate = async () => {
-    try {
-      // Kiểm tra các trường bắt buộc
-      if (!mssv || !fullName || !classCode || !birthDate || !phone || !email) {
-        openToast({ message: 'Vui lòng điền đầy đủ thông tin', variant: 'danger' });
-        return;
-      }
-
-      // Kiểm tra định dạng email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        openToast({ message: 'Email không hợp lệ', variant: 'danger' });
-        return;
-      }
-
-      // Kiểm tra định dạng số điện thoại
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(phone)) {
-        openToast({ message: 'Số điện thoại không hợp lệ (phải có 10 chữ số)', variant: 'danger' });
-        return;
-      }
-
-      // Tải ảnh đại diện lên Firebase Storage nếu có
-      let avatarUrl = user?.AnhDaiDien || '';
-      if (avatarFile) {
-        avatarUrl = await fileToBase64(avatarFile);
-      }
-
-      if (!user?.uid) {
-        openToast({ message: 'Không tìm thấy thông tin người dùng để cập nhật.', variant: 'danger' });
-        return;
-      }
-
-      const updatedProfile = await updateProfileMutation.mutateAsync({
-        userId: user.uid,
-        payload: {
-          MSSV: mssv,
-          TenNguoiDung: fullName,
-          Lop: classCode,
-          NgaySinh: birthDate,
-          Sdt: phone,
-          email,
-          AnhDaiDien: avatarUrl,
-        },
-      });
-
-      // Cập nhật thông tin vào Zustand
-      const mergedUser = {
-        ...user,
-        ...updatedProfile,
-        MSSV: mssv,
-        TenNguoiDung: fullName,
-        Lop: classCode,
-        NgaySinh: birthDate,
-        Sdt: phone,
-        email,
-        AnhDaiDien: avatarUrl,
-        token: user?.token || `mock-token-${updatedProfile.uid || user.uid}`,
-      };
-
-      updateUserStore(mergedUser);
-
-      // Hiển thị thông báo thành công
-      openToast({ message: 'Cập nhật thông tin thành công', variant: 'success' });
-      setAvatarFile(null);
-    } catch (err) {
-      console.error('Lỗi khi cập nhật thông tin:', err);
-      openToast({ message: 'Cập nhật thông tin thất bại', variant: 'danger' });
-    }
   };
 
   return (
@@ -297,9 +206,6 @@ function ProfilePage() {
               }}
             />
           </div>
-          <button type="button" className={cx('profile-page__form-submit')} onClick={handleUpdate}>
-            Cập nhật
-          </button>
         </section>
       </section>
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
 import SearchBar from '@layouts/SearchBar/SearchBar';
 import FeaturedActivitySection from '@components/FeaturedActivitySection';
@@ -7,11 +7,29 @@ import UpcomingActivitiesSection from '@components/UpcomingActivitiesSection/Upc
 import ProgressSection from '@components/ProgressSection';
 import PersonalActivitiesSection from '@components/PersonalActivitiesSection/PersonalActivitiesSection';
 import ProofStatusSection from '@components/ProofStatusSection/ProofStatusSection';
+import { useQuery } from '@tanstack/react-query';
+import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
+import useAuthStore from '@stores/useAuthStore';
+import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
 import styles from './HomePage.module.scss';
 
 const cx = classNames.bind(styles);
 
 function HomePage() {
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+
+  const { data: progressSummary } = useQuery({
+    queryKey: PROGRESS_QUERY_KEY,
+    queryFn: statsApi.getProgress,
+    enabled: isLoggedIn,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const progressSection = useMemo(
+    () => (isLoggedIn ? mapProgressSummaryToSection(progressSummary) : DEFAULT_PROGRESS_SECTION),
+    [isLoggedIn, progressSummary],
+  );
+
   return (
     <main className={cx('home')}>
       {/* Banner */}
@@ -47,16 +65,13 @@ function HomePage() {
 
         <section className={cx('home__section')}>
           <ProgressSection
-            currentPoints={90}
-            targetPoints={170}
-            percent={77}
-            missingPoints={80}
-            groups={[
-              { name: 'Nhóm 1', value: '50/50', note: 'Hoàn thành', status: 'success' },
-              { name: 'Nhóm 2,3', value: '40/120', note: 'Còn 80 điểm', status: 'warning' },
-            ]}
+            currentPoints={progressSection.currentPoints}
+            targetPoints={progressSection.targetPoints}
+            percent={progressSection.percent}
+            missingPoints={progressSection.missingPoints}
+            groups={progressSection.groups}
             onViewDetail={() => console.log('Xem chi tiết')}
-            imageUrl="https://placehold.co/320x320"
+            imageUrl={progressSection.imageUrl}
           />
         </section>
 

@@ -567,6 +567,11 @@
       }
     }
 
+    .activity-card__status {
+      width: fit-content;
+      max-width: 100%;
+    }
+
     .activity-card__actions {
       width: 100%;
 
@@ -614,7 +619,6 @@
   }
 }
 
-/* ====== LANDSCAPE MOBILE OPTIMIZATION ====== */
 @media (max-width: 768px) and (orientation: landscape) {
   .activity-card--horizontal {
     .activity-card__cover {
@@ -637,7 +641,6 @@
   }
 }
 
-/* ====== GRID CONTAINER OPTIMIZATION ====== */
 @media (max-width: 1200px) {
   .activity-card--vertical {
     max-width: 100%;

@@ -1,13 +1,52 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
-import Label from '@components/Label/Label';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faLeaf, faTint, faSeedling, faHandshakeAngle } from '@fortawesome/free-solid-svg-icons';
+import Label from '@components/Label/Label';
+import { useQuery } from '@tanstack/react-query';
+import statsApi, { CATEGORY_QUERY_KEY } from '@api/stats.api';
 import styles from './ActivityCategoriesSection.module.scss';
 
 const cx = classNames.bind(styles);
 
+const CATEGORY_PRESETS = {
+  DIA_CHI_DO: { icon: faHeart, className: 'activity-categories__item--red', description: 'Hoạt động bắt buộc' },
+  MUA_HE_XANH: { icon: faLeaf, className: 'activity-categories__item--green', description: 'Bảo vệ môi trường' },
+  HIEN_MAU: { icon: faTint, className: 'activity-categories__item--blood', description: 'Cứu người, cứu đời' },
+  XUAN_TINH_NGUYEN: {
+    icon: faSeedling,
+    className: 'activity-categories__item--spring',
+    description: 'Hoạt động mùa xuân',
+  },
+  HO_TRO: { icon: faHandshakeAngle, className: 'activity-categories__item--support', description: 'Hỗ trợ cộng đồng' },
+};
+
+const FALLBACK_CATEGORIES = [
+  { code: 'DIA_CHI_DO', name: 'Địa chỉ đỏ', description: CATEGORY_PRESETS.DIA_CHI_DO.description },
+  { code: 'MUA_HE_XANH', name: 'Mùa hè xanh', description: CATEGORY_PRESETS.MUA_HE_XANH.description },
+  { code: 'HIEN_MAU', name: 'Hiến máu', description: CATEGORY_PRESETS.HIEN_MAU.description },
+  { code: 'XUAN_TINH_NGUYEN', name: 'Xuân tình nguyện', description: CATEGORY_PRESETS.XUAN_TINH_NGUYEN.description },
+  { code: 'HO_TRO', name: 'Hỗ trợ', description: CATEGORY_PRESETS.HO_TRO.description },
+];
+
 function ActivityCategoriesSection() {
+  const {
+    data: categories,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: CATEGORY_QUERY_KEY,
+    queryFn: statsApi.getCategories,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const displayCategories = useMemo(() => {
+    if (Array.isArray(categories) && categories.length > 0) {
+      return categories;
+    }
+    return FALLBACK_CATEGORIES.map((item) => ({ ...item, activityCount: null }));
+  }, [categories]);
+
   return (
     <>
       <Label
@@ -20,51 +59,28 @@ function ActivityCategoriesSection() {
       />
 
       <div className={cx('activity-categories')}>
+        {isError && !isLoading && (
+          <div className={cx('activity-categories__status')}>Không thể tải danh mục. Đang hiển thị dữ liệu mẫu.</div>
+        )}
+
         <div className={cx('activity-categories__list')}>
-          <div className={cx('activity-categories__item', 'activity-categories__item--red')}>
-            <div className={cx('activity-categories__icon')}>
-              <FontAwesomeIcon icon={faHeart} />
-            </div>
-            <div className={cx('activity-categories__title')}>Địa chỉ đỏ</div>
-            <div className={cx('activity-categories__subtitle')}>Hoạt động bắt buộc</div>
-            <div className={cx('activity-categories__count')}>15 hoạt động</div>
-          </div>
+          {displayCategories.map((category) => {
+            const preset = CATEGORY_PRESETS[category.code] || CATEGORY_PRESETS.HO_TRO;
+            const count = category.activityCount;
+            const countLabel =
+              typeof count === 'number' ? `${count} hoạt động` : isLoading ? 'Đang tải...' : '0 hoạt động';
 
-          <div className={cx('activity-categories__item', 'activity-categories__item--green')}>
-            <div className={cx('activity-categories__icon')}>
-              <FontAwesomeIcon icon={faLeaf} />
-            </div>
-            <div className={cx('activity-categories__title')}>Mùa hè xanh</div>
-            <div className={cx('activity-categories__subtitle')}>Bảo vệ môi trường</div>
-            <div className={cx('activity-categories__count')}>8 hoạt động</div>
-          </div>
-
-          <div className={cx('activity-categories__item', 'activity-categories__item--blood')}>
-            <div className={cx('activity-categories__icon')}>
-              <FontAwesomeIcon icon={faTint} />
-            </div>
-            <div className={cx('activity-categories__title')}>Hiến máu</div>
-            <div className={cx('activity-categories__subtitle')}>Cứu người, cứu đời</div>
-            <div className={cx('activity-categories__count')}>3 hoạt động</div>
-          </div>
-
-          <div className={cx('activity-categories__item', 'activity-categories__item--spring')}>
-            <div className={cx('activity-categories__icon')}>
-              <FontAwesomeIcon icon={faSeedling} />
-            </div>
-            <div className={cx('activity-categories__title')}>Xuân tình nguyện</div>
-            <div className={cx('activity-categories__subtitle')}>Hoạt động mùa xuân</div>
-            <div className={cx('activity-categories__count')}>6 hoạt động</div>
-          </div>
-
-          <div className={cx('activity-categories__item', 'activity-categories__item--support')}>
-            <div className={cx('activity-categories__icon')}>
-              <FontAwesomeIcon icon={faHandshakeAngle} />
-            </div>
-            <div className={cx('activity-categories__title')}>Hỗ trợ</div>
-            <div className={cx('activity-categories__subtitle')}>Hỗ trợ cộng đồng</div>
-            <div className={cx('activity-categories__count')}>12 hoạt động</div>
-          </div>
+            return (
+              <div key={category.code} className={cx('activity-categories__item', preset.className)}>
+                <div className={cx('activity-categories__icon')}>
+                  <FontAwesomeIcon icon={preset.icon} />
+                </div>
+                <div className={cx('activity-categories__title')}>{category.name}</div>
+                <div className={cx('activity-categories__subtitle')}>{category.description || preset.description}</div>
+                <div className={cx('activity-categories__count')}>{countLabel}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>

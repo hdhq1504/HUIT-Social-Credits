@@ -8,7 +8,7 @@ const seed = async () => {
     const plainPassword = process.env.SEED_PASSWORD || "1234";
     const hashed = await bcrypt.hash(plainPassword, 10);
 
-    await prisma.nguoiDung.upsert({
+    const user = await prisma.nguoiDung.upsert({
       where: { email },
       update: {},
       create: {
@@ -24,11 +24,36 @@ const seed = async () => {
         soDT: "0931318657",
         ngaySinh: new Date("2004-04-15"),
         avatarUrl: "/images/profile.png",
-        // ghiChu: "User seed mặc định"
       },
     });
 
-    const activities = [
+    const categoriesData = [
+      { ma: "DIA_CHI_DO", ten: "Địa chỉ đỏ", moTa: "Hoạt động bắt buộc", nhomDiem: "NHOM_1" },
+      { ma: "HIEN_MAU", ten: "Hiến máu", moTa: "Cứu người, cứu đời", nhomDiem: "NHOM_2_3" },
+      { ma: "MUA_HE_XANH", ten: "Mùa hè xanh", moTa: "Bảo vệ môi trường", nhomDiem: "NHOM_2_3" },
+      { ma: "XUAN_TINH_NGUYEN", ten: "Xuân tình nguyện", moTa: "Hoạt động mùa xuân", nhomDiem: "NHOM_2_3" },
+      { ma: "HO_TRO", ten: "Hỗ trợ", moTa: "Hỗ trợ cộng đồng", nhomDiem: "NHOM_2_3" }
+    ];
+
+    const categoryMap = {};
+    for (const category of categoriesData) {
+      const created = await prisma.danhMucHoatDong.upsert({
+        where: { ma: category.ma },
+        update: {
+          ten: category.ten,
+          moTa: category.moTa,
+          nhomDiem: category.nhomDiem,
+          isActive: true
+        },
+        create: {
+          ...category,
+          isActive: true
+        }
+      });
+      categoryMap[category.ma] = created;
+    }
+
+    const activitiesData = [
       {
         maHoatDong: "HD001",
         tieuDe: "Chiến dịch hiến máu nhân đạo 2025",
@@ -39,7 +64,7 @@ const seed = async () => {
         diaDiem: "Nhà hát HUTECH, cơ sở Ung Văn Khiêm",
         sucChuaToiDa: 80,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Hiến máu",
+        categoryCode: "HIEN_MAU",
         isFeatured: true
       },
       {
@@ -47,12 +72,12 @@ const seed = async () => {
         tieuDe: "Xuân tình nguyện - Gói bánh chưng trao tặng",
         moTa: "Gói bánh chưng tặng các gia đình có hoàn cảnh khó khăn.",
         diemCong: 15,
-        batDauLuc: new Date("2025-01-20T07:30:00+07:00"),
-        ketThucLuc: new Date("2025-01-20T17:00:00+07:00"),
+        batDauLuc: new Date("2025-10-20T07:30:00+07:00"),
+        ketThucLuc: new Date("2025-10-20T17:00:00+07:00"),
         diaDiem: "Khu A, ký túc xá Đại học HUTECH",
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Xuân tình nguyện",
+        categoryCode: "XUAN_TINH_NGUYEN",
         isFeatured: true
       },
       {
@@ -65,7 +90,7 @@ const seed = async () => {
         diaDiem: "Khu phố 5, phường Hiệp Bình Chánh, TP. Thủ Đức",
         sucChuaToiDa: 60,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Mùa hè xanh",
+        categoryCode: "MUA_HE_XANH",
         isFeatured: false
       },
       {
@@ -78,7 +103,7 @@ const seed = async () => {
         diaDiem: "Hội trường A-08.20, cơ sở Điện Biên Phủ",
         sucChuaToiDa: 150,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Hỗ trợ",
+        categoryCode: "HO_TRO",
         isFeatured: false
       },
       {
@@ -91,12 +116,12 @@ const seed = async () => {
         diaDiem: "Khu di tích lịch sử cấp quốc gia Văn Miếu Trấn Biên, TP. Biên Hòa, tỉnh Đồng Nai",
         sucChuaToiDa: 45,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Địa chỉ đỏ",
+        categoryCode: "DIA_CHI_DO",
         isFeatured: true
       },
       {
         maHoatDong: "HD006",
-        tieuDe: "Thông báo đăng ký tham gia CTXH tại viện chuyển đổi số ",
+        tieuDe: "Thông báo đăng ký tham gia CTXH tại viện chuyển đổi số",
         moTa: "",
         diemCong: 15,
         batDauLuc: new Date("2025-10-20T08:00:00+07:00"),
@@ -104,7 +129,7 @@ const seed = async () => {
         diaDiem: "Viện chuyển đổi số",
         sucChuaToiDa: 200,
         hinhAnh: "/images/activity-cover.png",
-        danhMuc: "Hỗ trợ",
+        categoryCode: "HO_TRO",
         isFeatured: false
       },
       // {
@@ -134,97 +159,84 @@ const seed = async () => {
       //   isFeatured: false
       // },
       // {
-      //   maHoatDong: "HD009",
-      //   tieuDe: "Tập huấn kỹ năng mềm - Thuyết trình hiệu quả",
-      //   moTa: "Rèn luyện kỹ năng thuyết trình, tương tác và xử lý tình huống.",
-      //   diemCong: 11,
-      //   batDauLuc: new Date("2025-12-22T08:00:00+07:00"),
-      //   ketThucLuc: new Date("2024-12-22T12:00:00+07:00"),
-      //   diaDiem: "Phòng hội thảo A-02.05, cơ sở Điện Biên Phủ",
-      //   sucChuaToiDa: 90,
-      //   hinhAnh: "https://placehold.co/600x360?text=Ky+Nang+Mem",
-      //   danhMuc: "Kỹ năng mềm",
-      //   isFeatured: false
-      // },
-      // {
-      //   maHoatDong: "HD010",
-      //   tieuDe: "Trại xuân truyền thống khoa CNTT",
-      //   moTa: "Các trò chơi tập thể, giao lưu văn nghệ chào mừng năm mới.",
-      //   diemCong: 16,
-      //   batDauLuc: new Date("2025-01-12T15:00:00+07:00"),
-      //   ketThucLuc: new Date("2025-01-13T09:00:00+07:00"),
-      //   diaDiem: "Khu du lịch Văn Thánh",
-      //   sucChuaToiDa: 250,
-      //   hinhAnh: "https://placehold.co/600x360?text=Trai+Xuan",
-      //   danhMuc: "Trại xuân",
-      //   isFeatured: true
-      // },
-      // {
-      //   maHoatDong: "HD011",
-      //   tieuDe: "Cuộc thi lập trình HUTECH Hackathon",
-      //   moTa: "Giải quyết các bài toán thực tế trong 24 giờ cùng đồng đội.",
-      //   diemCong: 22,
-      //   batDauLuc: new Date("2025-03-22T09:00:00+07:00"),
-      //   ketThucLuc: new Date("2025-03-23T09:00:00+07:00"),
-      //   diaDiem: "Innovation Lab, cơ sở Ung Văn Khiêm",
-      //   sucChuaToiDa: 80,
-      //   hinhAnh: "https://placehold.co/600x360?text=Hackathon",
-      //   danhMuc: "Cuộc thi",
-      //   isFeatured: true
-      // },
-      // {
-      //   maHoatDong: "HD012",
-      //   tieuDe: "Tình nguyện viên tiếp sức mùa thi",
-      //   moTa: "Hỗ trợ thí sinh và phụ huynh trong kỳ thi tốt nghiệp THPT.",
-      //   diemCong: 19,
-      //   batDauLuc: new Date("2025-06-30T05:30:00+07:00"),
-      //   ketThucLuc: new Date("2025-07-02T18:00:00+07:00"),
-      //   diaDiem: "Các điểm thi trên địa bàn TP.HCM",
-      //   sucChuaToiDa: 300,
-      //   hinhAnh: "https://placehold.co/600x360?text=Tiep+Suc+Mua+Thi",
-      //   danhMuc: "Tình nguyện",
-      //   isFeatured: false
-      // },
-      // {
-      //   maHoatDong: "HD013",
-      //   tieuDe: "Ngày hội văn hóa các CLB học thuật",
-      //   moTa: "Gian hàng giới thiệu hoạt động và kết nạp thành viên mới.",
-      //   diemCong: 7,
-      //   batDauLuc: new Date("2025-04-18T08:00:00+07:00"),
-      //   ketThucLuc: new Date("2025-04-18T15:00:00+07:00"),
-      //   diaDiem: "Sảnh B, cơ sở Điện Biên Phủ",
-      //   sucChuaToiDa: 400,
-      //   hinhAnh: "https://placehold.co/600x360?text=CLB+Hoc+Thuat",
-      //   danhMuc: "Văn hóa",
-      //   isFeatured: false
-      // }
     ];
 
-    for (const activity of activities) {
-      await prisma.hoatDong.upsert({
+    const activityMap = {};
+    for (const activity of activitiesData) {
+      const category = activity.categoryCode ? categoryMap[activity.categoryCode] : null;
+      const payload = {
+        tieuDe: activity.tieuDe,
+        moTa: activity.moTa,
+        diemCong: activity.diemCong,
+        batDauLuc: activity.batDauLuc,
+        ketThucLuc: activity.ketThucLuc,
+        diaDiem: activity.diaDiem,
+        sucChuaToiDa: activity.sucChuaToiDa,
+        hinhAnh: activity.hinhAnh,
+        isFeatured: activity.isFeatured,
+        isPublished: true,
+        danhMucId: category?.id ?? null,
+        nhomDiem: category?.nhomDiem ?? "NHOM_2_3"
+      };
+
+      const created = await prisma.hoatDong.upsert({
         where: { maHoatDong: activity.maHoatDong },
-        update: activity,
-        create: activity
+        update: payload,
+        create: {
+          maHoatDong: activity.maHoatDong,
+          ...payload
+        }
       });
+      activityMap[activity.maHoatDong] = created;
     }
 
-    const user = await prisma.nguoiDung.findUnique({ where: { email } });
-    const hoatDong = await prisma.hoatDong.findUnique({ where: { maHoatDong: "HD002" } });
-    if (user && hoatDong) {
+    const registrationsData = [
+      {
+        maHoatDong: "HD005",
+        trangThai: "DA_THAM_GIA",
+        dangKyLuc: new Date("2025-12-05T08:00:00+07:00"),
+        diemDanhLuc: new Date("2025-12-12T12:10:00+07:00")
+      },
+      {
+        maHoatDong: "HD001",
+        trangThai: "DA_THAM_GIA",
+        dangKyLuc: new Date("2025-12-10T08:00:00+07:00"),
+        diemDanhLuc: new Date("2025-12-15T11:45:00+07:00")
+      }
+    ];
+
+    const now = new Date();
+    for (const registration of registrationsData) {
+      const activity = activityMap[registration.maHoatDong];
+      if (!activity) continue;
       await prisma.dangKyHoatDong.upsert({
         where: {
-          nguoiDungId_hoatDongId: { nguoiDungId: user.id, hoatDongId: hoatDong.id }
+          nguoiDungId_hoatDongId: {
+            nguoiDungId: user.id,
+            hoatDongId: activity.id
+          }
         },
-        update: { trangThai: "DANG_KY" },
+        update: {
+          trangThai: registration.trangThai,
+          dangKyLuc: registration.dangKyLuc ?? now,
+          diemDanhLuc: registration.diemDanhLuc ?? now,
+          diemDanhBoiId: user.id,
+          lyDoHuy: null,
+          ghiChu: null,
+          diemDanhGhiChu: null
+        },
         create: {
           nguoiDungId: user.id,
-          hoatDongId: hoatDong.id,
-          trangThai: "DANG_KY"
+          hoatDongId: activity.id,
+          trangThai: registration.trangThai,
+          dangKyLuc: registration.dangKyLuc ?? now,
+          diemDanhLuc: registration.diemDanhLuc ?? now,
+          diemDanhBoiId: user.id
         }
       });
     }
 
-    console.log("Seeded NguoiDung:", email, "/", plainPassword);
+    console.log("Tạo seed thành công");
     process.exit(0);
   } catch (e) {
     console.error(e);

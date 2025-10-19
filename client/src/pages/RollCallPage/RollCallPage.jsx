@@ -197,7 +197,6 @@ function RollCallPage() {
                   </Button>
                 </div>
 
-                {/* Tiêu đề danh sách */}
                 <div className={cx('roll-call__title')}>Danh sách hoạt động</div>
               </>
             )}

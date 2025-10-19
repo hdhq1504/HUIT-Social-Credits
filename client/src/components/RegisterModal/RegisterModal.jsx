@@ -15,7 +15,7 @@ function RegisterModal({
   onCancel,
   variant = 'confirm',
   campaignName,
-  groupLabel = 'Nhóm 2,3',
+  groupLabel,
   pointsLabel,
   dateTime,
   location,

@@ -58,10 +58,14 @@ function CheckModal({
         stream.getTracks().forEach((t) => {
           try {
             t.stop();
-          } catch {}
+          } catch (stopError) {
+            console.warn('Không thể dừng track camera:', stopError);
+          }
         });
       }
-    } catch {}
+    } catch (cameraError) {
+      console.warn('Không thể tắt camera:', cameraError);
+    }
     activeStreamRef.current = null;
     setIsCameraOn(false);
   };
@@ -107,7 +111,8 @@ function CheckModal({
       } else {
         setDeviceId(null);
       }
-    } catch {
+    } catch (error) {
+      console.warn('Không thể lấy danh sách thiết bị video:', error);
       setHasVideoInput(false);
     }
   };

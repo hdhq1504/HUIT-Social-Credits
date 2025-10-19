@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 const normalizeUser = (user) => {
   if (!user || typeof user !== 'object') return null;
-  const { token, ...rest } = user;
+  const { token: _token, ...rest } = user;
   return {
     ...rest,
     TenNguoiDung: rest.TenNguoiDung ?? rest.fullName ?? rest.name ?? rest.email ?? '',

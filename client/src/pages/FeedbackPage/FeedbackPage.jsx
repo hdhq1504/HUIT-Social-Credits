@@ -183,7 +183,6 @@ function FeedbackPage() {
                   </Button>
                 </div>
 
-                {/* Tiêu đề danh sách */}
                 <div className={cx('feedback__title')}>Danh sách hoạt động</div>
               </>
             )}

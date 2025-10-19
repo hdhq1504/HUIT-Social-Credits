@@ -58,9 +58,10 @@ function CardActivity(props) {
     onCheckin,
     onComplete,
     onConfirmPresent,
-    onConfirmLeave,
     onSendFeedback,
-    modalGroupLabel = 'Nhóm 2,3',
+    modalGroupLabel: modalGroupLabelProp,
+    pointGroup,
+    pointGroupLabel,
     showConflictAlert = false,
     checkinTime = '08:00, 15/11/2024',
     checkoutTime = '17:00, 15/11/2024',
@@ -73,11 +74,27 @@ function CardActivity(props) {
   const [modalVariant, setModalVariant] = useState('confirm');
 
   const [openCheck, setOpenCheck] = useState(false);
-  const [captured, setCaptured] = useState(null);
+  const [, setCaptured] = useState(null);
 
   const [openFeedback, setOpenFeedback] = useState(false);
 
-  const activity = { id, title, points, dateTime, location, participants, capacity, coverImage };
+  const activity = {
+    id,
+    title,
+    points,
+    dateTime,
+    location,
+    participants,
+    capacity,
+    coverImage,
+    pointGroup,
+    pointGroupLabel,
+  };
+
+  const normalizedGroupLabel =
+    modalGroupLabelProp ??
+    pointGroupLabel ??
+    (pointGroup === 'NHOM_1' ? 'Nhóm 1' : pointGroup === 'NHOM_2_3' ? 'Nhóm 2,3' : undefined);
 
   const openDetails = () => {
     if (typeof onDetails === 'function') onDetails(activity);
@@ -161,7 +178,7 @@ function CardActivity(props) {
       setUiState('feedback_reviewing');
       onStateChange?.('feedback_reviewing');
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
-    } catch (e) {
+    } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
     }
   };
@@ -406,7 +423,7 @@ function CardActivity(props) {
         onConfirm={handleConfirmRegister}
         variant={modalVariant}
         campaignName={title}
-        groupLabel={modalGroupLabel}
+        groupLabel={normalizedGroupLabel}
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
         location={location}
@@ -422,7 +439,7 @@ function CardActivity(props) {
         onSubmit={handleSubmitAttendance}
         variant="checkin"
         campaignName={title}
-        groupLabel={modalGroupLabel}
+        groupLabel={normalizedGroupLabel}
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
         location={location}
@@ -434,7 +451,7 @@ function CardActivity(props) {
         onSubmit={handleSubmitFeedback}
         onCancel={handleCloseFeedback}
         campaignName={title}
-        groupLabel={modalGroupLabel}
+        groupLabel={normalizedGroupLabel}
         pointsLabel="Chưa được cộng điểm"
         checkinTime={checkinTime}
         checkoutTime={checkoutTime}

@@ -35,6 +35,7 @@ function ActivityDetailPage() {
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const viewState = activity?.state ?? 'guest';
 
@@ -54,11 +55,17 @@ function ActivityDetailPage() {
     if (!id) return;
     try {
       setLoading(true);
+      setNotFound(true);
+      setActivity(null);
       const detail = await activitiesApi.detail(id);
       setActivity(detail);
     } catch (error) {
-      const message = error.response?.data?.error || 'Không thể tải chi tiết hoạt động';
-      toast({ message, variant: 'danger' });
+      if (error.response?.status === 404) {
+        setNotFound(true);
+      } else {
+        const message = error.response?.data?.error || 'Không thể tải chi tiết hoạt động';
+        toast({ message, variant: 'danger' });
+      }
     } finally {
       setLoading(false);
     }
@@ -67,9 +74,9 @@ function ActivityDetailPage() {
   const loadRelatedActivities = useCallback(async () => {
     try {
       const list = await activitiesApi.list();
-      setRelatedActivities(list.filter((item) => item.id !== id).slice(0, 4));
+      const filtered = id ? list.filter((item) => item.id !== id) : list;
+      setRelatedActivities(filtered.slice(0, 4));
     } catch (error) {
-      // bỏ qua lỗi danh sách hoạt động liên quan
       console.error('Không thể tải danh sách hoạt động liên quan:', error);
     }
   }, [id]);
@@ -304,268 +311,280 @@ function ActivityDetailPage() {
     <section className={cx('activity-detail')}>
       {contextHolder}
 
-      {activity && !loading && (
-        <div className={cx('activity-detail__container')}>
-          <nav className={cx('activity-detail__breadcrumb')}>
-            <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> / <span>{activity.title}</span>
-          </nav>
+      <div className={cx('activity-detail__container')}>
+        {loading && <div className={cx('activity-detail__loading')}>Đang tải dữ liệu hoạt động...</div>}
 
-          <div className={cx('activity-detail__layout')}>
-            <div className={cx('activity-detail__card')}>
-              <div className={cx('activity-detail__header')}>
-                <div className={cx('activity-detail__title')}>{activity.title}</div>
-              </div>
-              <div className={cx('activity-detail__group')}>
-                <div className={cx('activity-detail__group-badge')}>
-                  <span>{activity.category || 'Hoạt động CTXH'}</span>
+        {!loading && notFound && (
+          <div className={cx('activity-detail__empty')}>
+            <h2 className={cx('activity-detail__empty-title')}>Hoạt động không tồn tại</h2>
+            <p className={cx('activity-detail__empty-subtitle')}>
+              Có thể hoạt động đã bị gỡ hoặc bạn đã nhập sai đường dẫn.
+            </p>
+            <Link to="/list-activities" className={cx('activity-detail__empty-link')}>
+              Quay lại danh sách hoạt động
+            </Link>
+          </div>
+        )}
+
+        {!loading && activity && (
+          <>
+            <nav className={cx('activity-detail__breadcrumb')}>
+              <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> /{' '}
+              <span>{activity.title}</span>
+            </nav>
+
+            <div className={cx('activity-detail__layout')}>
+              <div className={cx('activity-detail__card')}>
+                <div className={cx('activity-detail__header')}>
+                  <div className={cx('activity-detail__title')}>{activity.title}</div>
+                </div>
+                <div className={cx('activity-detail__group')}>
+                  <div className={cx('activity-detail__group-badge')}>
+                    <span>{activity.category || 'Hoạt động CTXH'}</span>
+                  </div>
+                  {activity.pointGroupLabel && (
+                    <div className={cx('activity-detail__group-badge', 'activity-detail__group-badge--highlight')}>
+                      <span>{activity.pointGroupLabel}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <Row gutter={[24, 24]}>
-              <Col xs={24} lg={16} className={cx('activity-detail__content-column')}>
-                <div className={cx('activity-detail__content', 'activity-detail__content--description')}>
-                  <h2 className={cx('activity-detail__content-title')}>Mô tả</h2>
-                  <div className={cx('activity-detail__content-body')}>
-                    {descriptionParagraphs.map((paragraph) => (
-                      <p key={paragraph} className={cx('activity-detail__paragraph')}>
-                        {paragraph}
-                      </p>
-                    ))}
+              <Row gutter={[24, 24]}>
+                <Col xs={24} lg={16} className={cx('activity-detail__content-column')}>
+                  <div className={cx('activity-detail__content', 'activity-detail__content--description')}>
+                    <h2 className={cx('activity-detail__content-title')}>Mô tả</h2>
+                    <div className={cx('activity-detail__content-body')}>
+                      {descriptionParagraphs.map((paragraph) => (
+                        <p key={paragraph} className={cx('activity-detail__paragraph')}>
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+
+                    <section className={cx('activity-detail__benefit')}>
+                      <h3 className={cx('activity-detail__benefit-title')}>Quyền lợi khi tham gia:</h3>
+                      <ul className={cx('activity-detail__benefit-list')}>
+                        {benefitItems.map((item) => (
+                          <li key={item} className={cx('activity-detail__benefit-item')}>
+                            <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+
+                    <section className={cx('activity-detail__responsibility')}>
+                      <h3 className={cx('activity-detail__responsibility-title')}>Trách nhiệm của người tham gia:</h3>
+                      <ul className={cx('activity-detail__responsibility-list')}>
+                        {responsibilityItems.map((item) => (
+                          <li key={item} className={cx('activity-detail__responsibility-item')}>
+                            <FontAwesomeIcon
+                              icon={faTriangleExclamation}
+                              className={cx('activity-detail__responsibility-icon')}
+                            />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   </div>
 
-                  <section className={cx('activity-detail__benefit')}>
-                    <h3 className={cx('activity-detail__benefit-title')}>Quyền lợi khi tham gia:</h3>
-                    <ul className={cx('activity-detail__benefit-list')}>
-                      {benefitItems.map((item) => (
-                        <li key={item} className={cx('activity-detail__benefit-item')}>
-                          <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
+                  <div className={cx('activity-detail__tabs')}>
+                    <Tabs defaultActiveKey="1" items={tabItems} type="line" size="large" tabBarGutter={12} />
+                  </div>
+                </Col>
 
-                  <section className={cx('activity-detail__responsibility')}>
-                    <h3 className={cx('activity-detail__responsibility-title')}>Trách nhiệm của người tham gia:</h3>
-                    <ul className={cx('activity-detail__responsibility-list')}>
-                      {responsibilityItems.map((item) => (
-                        <li key={item} className={cx('activity-detail__responsibility-item')}>
-                          <FontAwesomeIcon
-                            icon={faTriangleExclamation}
-                            className={cx('activity-detail__responsibility-icon')}
-                          />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                </div>
+                <Col xs={24} lg={8}>
+                  <aside className={cx('activity-detail__sidebar')}>
+                    <div className={cx('activity-detail__sidebar-points')}>
+                      <div className={cx('activity-detail__points-value')}>
+                        {activity.points != null ? `${activity.points} điểm` : '--'}
+                      </div>
+                      <div className={cx('activity-detail__points-label')}>Điểm hoạt động CTXH</div>
+                    </div>
 
-                <div className={cx('activity-detail__tabs')}>
-                  <Tabs
-                    defaultActiveKey="1"
-                    items={tabItems}
-                    type="line"
-                    size="large"
-                    tabBarGutter={12}
-                    renderTabBar={(props, DefaultTabBar) => (
-                      <>
-                        <DefaultTabBar {...props} />
-                      </>
-                    )}
+                    <div className={cx('activity-detail__sidebar-info')}>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Ngày bắt đầu</span>
+                        <span className={cx('activity-detail__info-value')}>{formatDate(activity.startTime)}</span>
+                      </div>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Ngày kết thúc</span>
+                        <span className={cx('activity-detail__info-value')}>{formatDate(activity.endTime)}</span>
+                      </div>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Thời gian</span>
+                        <span className={cx('activity-detail__info-value')}>{activity.dateTime}</span>
+                      </div>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Địa điểm</span>
+                        <span className={cx('activity-detail__info-value')}>
+                          {activity.location || 'Đang cập nhật'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={cx('activity-detail__sidebar-registration')}>
+                      <div className={cx('activity-detail__registration-header')}>
+                        <span className={cx('activity-detail__registration-label')}>Số lượng đăng ký</span>
+                        <span className={cx('activity-detail__registration-count')}>
+                          {capacityInfo.hasLimit
+                            ? `${capacityInfo.current}/${capacityInfo.total}`
+                            : capacityInfo.current}
+                        </span>
+                      </div>
+                      <div className={cx('activity-detail__registration-progress')}>
+                        <div className={cx('activity-detail__registration-bar')} style={{ width: `${percent}%` }} />
+                      </div>
+                      <div className={cx('activity-detail__registration-remaining')}>
+                        {capacityInfo.hasLimit
+                          ? remaining > 0
+                            ? `Còn ${remaining} chỗ trống`
+                            : 'Đã đủ số lượng'
+                          : 'Không giới hạn số lượng'}
+                      </div>
+                    </div>
+
+                    <div className={cx('activity-detail__sidebar-deadline')}>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Hạn đăng ký</span>
+                        <span className={cx('activity-detail__info-value')}>
+                          {activity.startTime ? formatDateTime(activity.startTime) : 'Đang cập nhật'}
+                        </span>
+                      </div>
+                      <div className={cx('activity-detail__info-row')}>
+                        <span className={cx('activity-detail__info-label')}>Hạn hủy đăng ký</span>
+                        <span className={cx('activity-detail__info-value')}>
+                          {activity.startTime
+                            ? formatDateTime(dayjs(activity.startTime).subtract(3, 'day'))
+                            : 'Đang cập nhật'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={cx('activity-detail__sidebar-checkin')}>
+                      <div className={cx('activity-detail__checkin-label')}>Phương thức điểm danh</div>
+                      <div className={cx('activity-detail__checkin-methods')}>
+                        <span className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--qr')}>
+                          QR Code
+                        </span>
+                        <span
+                          className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--checkin')}
+                        >
+                          Check in
+                        </span>
+                      </div>
+                    </div>
+
+                    {renderActionButton()}
+                  </aside>
+                </Col>
+              </Row>
+
+              <aside className={cx('activity-detail__organizer')}>
+                <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
+
+                <div className={cx('activity-detail__organizer-profile')}>
+                  <img
+                    src="https://placehold.co/48x48"
+                    alt="Organizer avatar"
+                    className={cx('activity-detail__organizer-avatar')}
                   />
+                  <div className={cx('activity-detail__organizer-info')}>
+                    <div className={cx('activity-detail__organizer-name')}>Thầy: Nguyễn Văn Minh</div>
+                    <div className={cx('activity-detail__organizer-role')}>Trưởng ban tổ chức</div>
+                  </div>
                 </div>
-              </Col>
 
-              {/* Sidebar */}
-              <Col xs={24} lg={8}>
-                <aside className={cx('activity-detail__sidebar')}>
-                  <div className={cx('activity-detail__sidebar-points')}>
-                    <div className={cx('activity-detail__points-value')}>
-                      {activity.points != null ? `${activity.points} điểm` : '--'}
-                    </div>
-                    <div className={cx('activity-detail__points-label')}>Điểm hoạt động CTXH</div>
+                <div className={cx('activity-detail__organizer-contact')}>
+                  <div className={cx('activity-detail__contact-item')}>
+                    <FontAwesomeIcon icon={faPhone} className={cx('activity-detail__contact-icon')} />
+                    <span className={cx('activity-detail__contact-text')}>0987.654.321</span>
                   </div>
-
-                  <div className={cx('activity-detail__sidebar-info')}>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Ngày bắt đầu</span>
-                      <span className={cx('activity-detail__info-value')}>{formatDate(activity.startTime)}</span>
-                    </div>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Ngày kết thúc</span>
-                      <span className={cx('activity-detail__info-value')}>{formatDate(activity.endTime)}</span>
-                    </div>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Thời gian</span>
-                      <span className={cx('activity-detail__info-value')}>{activity.dateTime}</span>
-                    </div>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Địa điểm</span>
-                      <span className={cx('activity-detail__info-value')}>{activity.location || 'Đang cập nhật'}</span>
-                    </div>
+                  <div className={cx('activity-detail__contact-item')}>
+                    <FontAwesomeIcon icon={faEnvelope} className={cx('activity-detail__contact-icon')} />
+                    <span className={cx('activity-detail__contact-text')}>minh.nv@huit.edu.vn</span>
                   </div>
+                </div>
 
-                  <div className={cx('activity-detail__sidebar-registration')}>
-                    <div className={cx('activity-detail__registration-header')}>
-                      <span className={cx('activity-detail__registration-label')}>Số lượng đăng ký</span>
-                      <span className={cx('activity-detail__registration-count')}>
-                        {capacityInfo.hasLimit ? `${capacityInfo.current}/${capacityInfo.total}` : capacityInfo.current}
-                      </span>
-                    </div>
-                    <div className={cx('activity-detail__registration-progress')}>
-                      <div className={cx('activity-detail__registration-bar')} style={{ width: `${percent}%` }} />
-                    </div>
-                    <div className={cx('activity-detail__registration-remaining')}>
-                      {capacityInfo.hasLimit
-                        ? remaining > 0
-                          ? `Còn ${remaining} chỗ trống`
-                          : 'Đã đủ số lượng'
-                        : 'Không giới hạn số lượng'}
-                    </div>
-                  </div>
-
-                  <div className={cx('activity-detail__sidebar-deadline')}>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Hạn đăng ký</span>
-                      <span className={cx('activity-detail__info-value')}>
-                        {activity.startTime ? formatDateTime(activity.startTime) : 'Đang cập nhật'}
-                      </span>
-                    </div>
-                    <div className={cx('activity-detail__info-row')}>
-                      <span className={cx('activity-detail__info-label')}>Hạn hủy đăng ký</span>
-                      <span className={cx('activity-detail__info-value')}>
-                        {activity.startTime
-                          ? formatDateTime(dayjs(activity.startTime).subtract(3, 'day'))
-                          : 'Đang cập nhật'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={cx('activity-detail__sidebar-checkin')}>
-                    <div className={cx('activity-detail__checkin-label')}>Phương thức điểm danh</div>
-                    <div className={cx('activity-detail__checkin-methods')}>
-                      <span className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--qr')}>
-                        QR Code
-                      </span>
-                      <span className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--checkin')}>
-                        Check in
-                      </span>
-                    </div>
-                  </div>
-
-                  {renderActionButton()}
-                </aside>
-
-                <RegisterModal
-                  open={isRegisterOpen}
-                  onCancel={() => setIsRegisterOpen(false)}
-                  onConfirm={handleConfirmRegister}
-                  variant={modalVariant}
-                  campaignName={activity?.title}
-                  groupLabel={activity?.category || 'Nhóm hoạt động'}
-                  pointsLabel={activity.points != null ? `${activity.points} điểm` : undefined}
-                  dateTime={activity.dateTime}
-                  location={activity.location}
-                  showConflictAlert={false}
-                />
-
-                <CheckModal
-                  open={isCheckOpen}
-                  onCancel={() => setIsCheckOpen(false)}
-                  onCapture={() => {}}
-                  onRetake={() => {}}
-                  onSubmit={handleAttendanceSubmit}
-                  variant="checkin"
-                  campaignName={activity?.title}
-                  groupLabel={activity?.category || 'Nhóm hoạt động'}
-                  pointsLabel={activity.points != null ? `${activity.points} điểm` : undefined}
-                  dateTime={activity.dateTime}
-                  location={activity.location}
-                />
-
-                <aside className={cx('activity-detail__organizer')}>
-                  <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
-
-                  <div className={cx('activity-detail__organizer-profile')}>
-                    <img
-                      src="https://placehold.co/48x48"
-                      alt="Organizer avatar"
-                      className={cx('activity-detail__organizer-avatar')}
-                    />
-                    <div className={cx('activity-detail__organizer-info')}>
-                      <div className={cx('activity-detail__organizer-name')}>Thầy: Nguyễn Văn Minh</div>
-                      <div className={cx('activity-detail__organizer-role')}>Trưởng ban tổ chức</div>
-                    </div>
-                  </div>
-
-                  <div className={cx('activity-detail__organizer-contact')}>
-                    <div className={cx('activity-detail__contact-item')}>
-                      <FontAwesomeIcon icon={faPhone} className={cx('activity-detail__contact-icon')} />
-                      <span className={cx('activity-detail__contact-text')}>0987.654.321</span>
-                    </div>
-                    <div className={cx('activity-detail__contact-item')}>
-                      <FontAwesomeIcon icon={faEnvelope} className={cx('activity-detail__contact-icon')} />
-                      <span className={cx('activity-detail__contact-text')}>minh.nv@huit.edu.vn</span>
-                    </div>
-                  </div>
-
-                  <button className={cx('activity-detail__organizer-button')}>
-                    <FontAwesomeIcon icon={faEnvelope} />
-                    <span>Liên hệ ngay</span>
-                  </button>
-                </aside>
-              </Col>
-            </Row>
-          </div>
-
-          <Label
-            title="Hoạt động"
-            highlight="liên quan"
-            subtitle="Khám phá các hoạt động liên quan cùng nhóm để tích lũy điểm CTXH"
-          />
-
-          <div className={cx('activity-detail__related')}>
-            <div className={cx('activity-detail__related-list')}>
-              {relatedActivities.map((item) => (
-                <CardActivity
-                  key={item.id}
-                  {...item}
-                  variant="vertical"
-                  state={item.state || 'details_only'}
-                  onRegistered={async ({ note }) => {
-                    await activitiesApi.register(item.id, { note });
-                    await loadRelatedActivities();
-                  }}
-                  onCancelRegister={async ({ reason, note }) => {
-                    await activitiesApi.cancel(item.id, { reason, note });
-                    await loadRelatedActivities();
-                  }}
-                  onConfirmPresent={async () => {
-                    await activitiesApi.attendance(item.id, {});
-                    await loadRelatedActivities();
-                  }}
-                  onSendFeedback={async ({ content, files }) => {
-                    const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-                    await activitiesApi.feedback(item.id, { content, attachments });
-                    await loadRelatedActivities();
-                  }}
-                />
-              ))}
+                <button className={cx('activity-detail__organizer-button')}>
+                  <FontAwesomeIcon icon={faEnvelope} />
+                  <span>Liên hệ ngay</span>
+                </button>
+              </aside>
             </div>
 
-            <div className={cx('activity-detail__related-actions')}>
-              <Link to="/list-activities">
-                <Button variant="primary">
-                  <span>Xem tất cả</span>
-                  <FontAwesomeIcon icon={faArrowRight} />
-                </Button>
-              </Link>
+            <Label
+              title="Hoạt động"
+              highlight="liên quan"
+              subtitle="Khám phá các hoạt động liên quan cùng nhóm để tích lũy điểm CTXH"
+            />
+
+            <div className={cx('activity-detail__related')}>
+              <div className={cx('activity-detail__related-list')}>
+                {relatedActivities.map((item) => (
+                  <CardActivity
+                    key={item.id}
+                    {...item}
+                    variant="vertical"
+                    state={item.state || 'details_only'}
+                    onRegistered={async ({ note }) => {
+                      await activitiesApi.register(item.id, { note });
+                      await loadRelatedActivities();
+                    }}
+                    onCancelRegister={async ({ reason, note }) => {
+                      await activitiesApi.cancel(item.id, { reason, note });
+                      await loadRelatedActivities();
+                    }}
+                    onConfirmPresent={async () => {
+                      await activitiesApi.attendance(item.id, {});
+                      await loadRelatedActivities();
+                    }}
+                    onSendFeedback={async ({ content, files }) => {
+                      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+                      await activitiesApi.feedback(item.id, { content, attachments });
+                      await loadRelatedActivities();
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className={cx('activity-detail__related-actions')}>
+                <Link to="/list-activities">
+                  <Button variant="primary">
+                    <span>Xem tất cả</span>
+                    <FontAwesomeIcon icon={faArrowRight} />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+
+      <RegisterModal
+        open={isRegisterOpen}
+        onCancel={() => setIsRegisterOpen(false)}
+        onConfirm={handleConfirmRegister}
+        variant={modalVariant}
+        campaignName={activity?.title}
+        groupLabel={activity?.pointGroupLabel}
+        pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
+        dateTime={activity?.dateTime}
+        location={activity?.location}
+      />
+
+      <CheckModal
+        open={isCheckOpen}
+        onCancel={() => setIsCheckOpen(false)}
+        onSubmit={handleAttendanceSubmit}
+        campaignName={activity?.title}
+        groupLabel={activity?.pointGroupLabel}
+        pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
+        dateTime={activity?.dateTime}
+        location={activity?.location}
+      />
     </section>
   );
 }

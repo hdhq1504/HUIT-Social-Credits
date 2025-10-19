@@ -8,6 +8,10 @@ import dayjs from 'dayjs';
 import Label from '@components/Label/Label';
 import ProgressSection from '@components/ProgressSection/ProgressSection';
 import { mockApi } from '@utils/mockAPI';
+import { useQuery } from '@tanstack/react-query';
+import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
+import useAuthStore from '@stores/useAuthStore';
+import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
 import styles from './MyPointsPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -16,20 +20,18 @@ function MyPointsPage() {
   const [records, setRecords] = useState([]);
   const [semester, setSemester] = useState('all');
   const [loading, setLoading] = useState(false);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
-  const progressData = useMemo(
-    () => ({
-      currentPoints: 90,
-      targetPoints: 170,
-      percent: 77,
-      groups: [
-        { name: 'Nhóm 1', value: '50/50', note: 'Hoàn thành', status: 'success' },
-        { name: 'Nhóm 2,3', value: '40/120', note: 'Còn 80 điểm', status: 'warning' },
-      ],
-      missingPoints: 80,
-      imageUrl: '/images/profile.png',
-    }),
-    [],
+  const { data: progressSummary } = useQuery({
+    queryKey: PROGRESS_QUERY_KEY,
+    queryFn: statsApi.getProgress,
+    enabled: isLoggedIn,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const progressSection = useMemo(
+    () => (isLoggedIn ? mapProgressSummaryToSection(progressSummary) : DEFAULT_PROGRESS_SECTION),
+    [isLoggedIn, progressSummary],
   );
 
   useEffect(() => {
@@ -143,12 +145,12 @@ function MyPointsPage() {
         {/* Progress Section */}
         <article className={cx('my-points__progress')}>
           <ProgressSection
-            currentPoints={progressData.currentPoints}
-            targetPoints={progressData.targetPoints}
-            percent={progressData.percent}
-            groups={progressData.groups}
-            missingPoints={progressData.missingPoints}
-            imageUrl={progressData.imageUrl}
+            currentPoints={progressSection.currentPoints}
+            targetPoints={progressSection.targetPoints}
+            percent={progressSection.percent}
+            groups={progressSection.groups}
+            missingPoints={progressSection.missingPoints}
+            imageUrl={progressSection.imageUrl}
             onViewDetail={() => {
               const el = document.getElementById('score-table');
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
