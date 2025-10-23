@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import dayjs from 'dayjs';
@@ -12,6 +12,7 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs } from 'antd';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckModal from '@components/CheckModal/CheckModal';
@@ -28,15 +29,40 @@ const formatDateTime = (value) => (value ? dayjs(value).format('HH:mm DD/MM/YYYY
 
 function ActivityDetailPage() {
   const { id } = useParams();
-  const [activity, setActivity] = useState(null);
-  const [relatedActivities, setRelatedActivities] = useState([]);
+  const queryClient = useQueryClient();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
 
+  // Query for activity details
+  const {
+    data: activity,
+    isLoading: loading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['activity', id],
+    queryFn: () => activitiesApi.detail(id),
+    enabled: !!id,
+    retry: 1,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    cacheTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
+  });
+
+  // Query for related activities
+  const { data: relatedActivities = [], isLoading: loadingRelated } = useQuery({
+    queryKey: ['activities', 'related', id],
+    queryFn: async () => {
+      const list = await activitiesApi.list();
+      return list.filter((item) => item.id !== id).slice(0, 4);
+    },
+    enabled: !!id && !loading,
+    staleTime: 60000, // Consider data fresh for 1 minute
+    cacheTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
+  });
+
+  const notFound = isError && error?.response?.status === 404;
   const viewState = activity?.state ?? 'guest';
 
   const capacityInfo = useMemo(() => {
@@ -51,41 +77,6 @@ function ActivityDetailPage() {
   const percent =
     capacityInfo.total > 0 ? Math.min(100, Math.round((capacityInfo.current / capacityInfo.total) * 100)) : 0;
 
-  const loadActivity = useCallback(async () => {
-    if (!id) return;
-    try {
-      setLoading(true);
-      setNotFound(true);
-      setActivity(null);
-      const detail = await activitiesApi.detail(id);
-      setActivity(detail);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setNotFound(true);
-      } else {
-        const message = error.response?.data?.error || 'Không thể tải chi tiết hoạt động';
-        toast({ message, variant: 'danger' });
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [id, toast]);
-
-  const loadRelatedActivities = useCallback(async () => {
-    try {
-      const list = await activitiesApi.list();
-      const filtered = id ? list.filter((item) => item.id !== id) : list;
-      setRelatedActivities(filtered.slice(0, 4));
-    } catch (error) {
-      console.error('Không thể tải danh sách hoạt động liên quan:', error);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    loadActivity();
-    loadRelatedActivities();
-  }, [loadActivity, loadRelatedActivities]);
-
   const handleOpenRegister = () => {
     setModalVariant('confirm');
     setIsRegisterOpen(true);
@@ -96,37 +87,50 @@ function ActivityDetailPage() {
     setIsRegisterOpen(true);
   };
 
-  const handleConfirmRegister = async ({ variant, reason, note }) => {
-    if (!id) return;
-    try {
-      let updated;
+  // Mutations for activity actions
+  const registerMutation = useMutation({
+    mutationFn: ({ variant, id, reason, note }) => {
       if (variant === 'cancel') {
-        updated = await activitiesApi.cancel(id, { reason, note });
-        toast({ message: 'Hủy đăng ký thành công.', variant: 'success' });
-      } else {
-        updated = await activitiesApi.register(id, { note });
-        toast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
+        return activitiesApi.cancel(id, { reason, note });
       }
-      setActivity(updated);
+      return activitiesApi.register(id, { note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['activity', id]);
+      queryClient.invalidateQueries(['activities', 'related', id]);
       setIsRegisterOpen(false);
-    } catch (error) {
+      toast({
+        message: modalVariant === 'cancel' ? 'Hủy đăng ký thành công.' : 'Đăng ký hoạt động thành công!',
+        variant: 'success',
+      });
+    },
+    onError: (error) => {
       const message = error.response?.data?.error || 'Thao tác thất bại. Vui lòng thử lại.';
       toast({ message, variant: 'danger' });
-    }
+    },
+  });
+
+  const attendanceMutation = useMutation({
+    mutationFn: (id) => activitiesApi.attendance(id, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['activity', id]);
+      setIsCheckOpen(false);
+      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const handleConfirmRegister = async ({ variant, reason, note }) => {
+    if (!id) return;
+    registerMutation.mutate({ variant, id, reason, note });
   };
 
   const handleAttendanceSubmit = async () => {
     if (!id) return;
-    try {
-      const updated = await activitiesApi.attendance(id, {});
-      setActivity(updated);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
-    } catch (error) {
-      const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
-      toast({ message, variant: 'danger' });
-    } finally {
-      setIsCheckOpen(false);
-    }
+    attendanceMutation.mutate(id);
   };
 
   const descriptionParagraphs = useMemo(
@@ -479,40 +483,39 @@ function ActivityDetailPage() {
 
                     {renderActionButton()}
                   </aside>
+                  <aside className={cx('activity-detail__organizer')}>
+                    <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
+
+                    <div className={cx('activity-detail__organizer-profile')}>
+                      <img
+                        src="https://placehold.co/48x48"
+                        alt="Organizer avatar"
+                        className={cx('activity-detail__organizer-avatar')}
+                      />
+                      <div className={cx('activity-detail__organizer-info')}>
+                        <div className={cx('activity-detail__organizer-name')}>Thầy: Nguyễn Văn Minh</div>
+                        <div className={cx('activity-detail__organizer-role')}>Trưởng ban tổ chức</div>
+                      </div>
+                    </div>
+
+                    <div className={cx('activity-detail__organizer-contact')}>
+                      <div className={cx('activity-detail__contact-item')}>
+                        <FontAwesomeIcon icon={faPhone} className={cx('activity-detail__contact-icon')} />
+                        <span className={cx('activity-detail__contact-text')}>0987.654.321</span>
+                      </div>
+                      <div className={cx('activity-detail__contact-item')}>
+                        <FontAwesomeIcon icon={faEnvelope} className={cx('activity-detail__contact-icon')} />
+                        <span className={cx('activity-detail__contact-text')}>minh.nv@huit.edu.vn</span>
+                      </div>
+                    </div>
+
+                    <button className={cx('activity-detail__organizer-button')}>
+                      <FontAwesomeIcon icon={faEnvelope} />
+                      <span>Liên hệ ngay</span>
+                    </button>
+                  </aside>
                 </Col>
               </Row>
-
-              <aside className={cx('activity-detail__organizer')}>
-                <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
-
-                <div className={cx('activity-detail__organizer-profile')}>
-                  <img
-                    src="https://placehold.co/48x48"
-                    alt="Organizer avatar"
-                    className={cx('activity-detail__organizer-avatar')}
-                  />
-                  <div className={cx('activity-detail__organizer-info')}>
-                    <div className={cx('activity-detail__organizer-name')}>Thầy: Nguyễn Văn Minh</div>
-                    <div className={cx('activity-detail__organizer-role')}>Trưởng ban tổ chức</div>
-                  </div>
-                </div>
-
-                <div className={cx('activity-detail__organizer-contact')}>
-                  <div className={cx('activity-detail__contact-item')}>
-                    <FontAwesomeIcon icon={faPhone} className={cx('activity-detail__contact-icon')} />
-                    <span className={cx('activity-detail__contact-text')}>0987.654.321</span>
-                  </div>
-                  <div className={cx('activity-detail__contact-item')}>
-                    <FontAwesomeIcon icon={faEnvelope} className={cx('activity-detail__contact-icon')} />
-                    <span className={cx('activity-detail__contact-text')}>minh.nv@huit.edu.vn</span>
-                  </div>
-                </div>
-
-                <button className={cx('activity-detail__organizer-button')}>
-                  <FontAwesomeIcon icon={faEnvelope} />
-                  <span>Liên hệ ngay</span>
-                </button>
-              </aside>
             </div>
 
             <Label
@@ -531,20 +534,20 @@ function ActivityDetailPage() {
                     state={item.state || 'details_only'}
                     onRegistered={async ({ note }) => {
                       await activitiesApi.register(item.id, { note });
-                      await loadRelatedActivities();
+                      queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                     onCancelRegister={async ({ reason, note }) => {
                       await activitiesApi.cancel(item.id, { reason, note });
-                      await loadRelatedActivities();
+                      queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                     onConfirmPresent={async () => {
                       await activitiesApi.attendance(item.id, {});
-                      await loadRelatedActivities();
+                      queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                     onSendFeedback={async ({ content, files }) => {
                       const attachments = (files || []).map((file) => file?.name).filter(Boolean);
                       await activitiesApi.feedback(item.id, { content, attachments });
-                      await loadRelatedActivities();
+                      queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                   />
                 ))}
