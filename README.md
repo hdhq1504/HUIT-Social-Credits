@@ -23,6 +23,7 @@ npm i
 ```bash
 # Backend
 cd server
+npx prisma generate
 npm run dev
 
 # Frontend (cổng mặc định Vite 5173)
