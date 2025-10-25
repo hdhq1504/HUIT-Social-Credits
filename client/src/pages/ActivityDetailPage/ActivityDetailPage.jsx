@@ -268,6 +268,17 @@ function ActivityDetailPage() {
             Điểm danh
           </Button>
         );
+      case 'attendance_closed':
+        return (
+          <>
+            <Button className={cx('activity-detail__sidebar-button')} variant="danger" onClick={handleOpenCancel}>
+              Hủy đăng ký
+            </Button>
+            <p className={cx('activity-detail__sidebar-hint')}>
+              Điểm danh chỉ khả dụng trong thời gian hoạt động đang diễn ra. Vui lòng quay lại sau.
+            </p>
+          </>
+        );
       case 'feedback_pending':
         return (
           <Link to="/feedback">

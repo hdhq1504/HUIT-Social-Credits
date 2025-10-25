@@ -139,6 +139,7 @@ const determineState = (activity, registration) => {
     case "DANG_KY": {
       if (end && end < now) return "ended";
       if (start && start <= now && (!end || end >= now)) return "attendance_open";
+      if (start && start > now) return "attendance_closed";
       return "registered";
     }
     case "DA_HUY":
@@ -352,11 +353,35 @@ export const markAttendance = async (req, res) => {
   const { note, status } = req.body || {};
 
   const registration = await prisma.dangKyHoatDong.findUnique({
-    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } }
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+    include: {
+      hoatDong: true
+    }
   });
 
   if (!registration || registration.trangThai === "DA_HUY") {
     return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
+  }
+
+  const activity = registration.hoatDong;
+  if (!activity) {
+    return res.status(404).json({ error: "Hoạt động không tồn tại" });
+  }
+
+  const startTime = activity.batDauLuc ? new Date(activity.batDauLuc) : null;
+  const endTime = activity.ketThucLuc ? new Date(activity.ketThucLuc) : null;
+  const now = new Date();
+
+  if (!startTime) {
+    return res.status(400).json({ error: "Hoạt động chưa có thời gian bắt đầu, không thể điểm danh" });
+  }
+
+  if (now < startTime) {
+    return res.status(400).json({ error: "Hoạt động chưa diễn ra, bạn không thể điểm danh" });
+  }
+
+  if (endTime && now > endTime) {
+    return res.status(400).json({ error: "Hoạt động đã kết thúc, bạn không thể điểm danh" });
   }
 
   const nextStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";

@@ -30,6 +30,8 @@ model NguoiDung {
   ngaySinh    DateTime?
   avatarUrl   String?   @db.VarChar(255)
   isActive    Boolean   @default(true)
+  resetPasswordToken          String?
+  resetPasswordTokenExpiresAt DateTime?
   lastLoginAt DateTime?
   ghiChu      String?
   createdAt   DateTime  @default(now())
@@ -42,6 +44,7 @@ model NguoiDung {
   @@index([maSV])
   @@index([maCB])
   @@index([vaiTro, isActive])
+  @@index([resetPasswordTokenExpiresAt])
 }
 
 model DanhMucHoatDong {
@@ -104,6 +107,7 @@ model DangKyHoatDong {
 
   @@index([hoatDongId, trangThai])
   @@index([nguoiDungId, trangThai])
+  @@index([hoatDongId, diemDanhLuc])
   @@unique([nguoiDungId, hoatDongId])
 }
 

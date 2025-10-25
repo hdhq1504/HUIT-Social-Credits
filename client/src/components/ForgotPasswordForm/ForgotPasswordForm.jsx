@@ -6,10 +6,11 @@ import { faEye, faEyeSlash, faPhone } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames/bind';
 import InputField from '../InputField/InputField';
 import styles from './ForgotPasswordForm.module.scss';
-import { mockApi } from '@utils/mockAPI';
-import useAuthStore from '../../stores/useAuthStore';
+import { authApi } from '@api/auth.api';
 
 const cx = classNames.bind(styles);
+
+const getErrorMessage = (error, fallback) => error?.response?.data?.error || error?.message || fallback;
 
 function ForgotPasswordForm() {
   const [step, setStep] = useState(1);
@@ -22,22 +23,22 @@ function ForgotPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const navigate = useNavigate();
-  const authLogin = useAuthStore((state) => state.login);
 
   const requestOtpMutation = useMutation({
-    mutationFn: (emailValue) => mockApi.requestPasswordOtp(emailValue),
+    mutationFn: (emailValue) => authApi.requestPasswordReset(emailValue),
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: ({ email: emailValue, otp: otpValue }) => mockApi.verifyPasswordOtp(emailValue, otpValue),
+    mutationFn: ({ email: emailValue, otp: otpValue }) => authApi.verifyPasswordResetOtp(emailValue, otpValue),
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.resetPassword(emailValue, passwordValue),
+    mutationFn: ({ email: emailValue, otp: otpValue, newPassword }) =>
+      authApi.resetPasswordWithOtp(emailValue, otpValue, newPassword),
   });
 
   const loginAfterResetMutation = useMutation({
-    mutationFn: ({ email: emailValue, password: passwordValue }) => mockApi.loginWithEmail(emailValue, passwordValue),
+    mutationFn: ({ email: emailValue, password: passwordValue }) => authApi.login(emailValue, passwordValue),
   });
 
   // Kiểm tra email hợp lệ
@@ -52,23 +53,27 @@ function ForgotPasswordForm() {
     setErrorMessage('');
     setInfoMessage('');
 
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       setErrorMessage('Vui lòng nhập email của bạn');
       return;
     }
-    if (!validateEmail(email)) {
+    if (!validateEmail(normalizedEmail)) {
       setErrorMessage('Email không hợp lệ. Vui lòng nhập lại.');
       return;
     }
 
     try {
-      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
-      setGeneratedOtp(newOtp);
+      const { message, otp: newOtp } = await requestOtpMutation.mutateAsync(normalizedEmail);
+      setEmail(normalizedEmail);
+      setGeneratedOtp(newOtp ?? '');
+      setOtp('');
+      setPassword('');
+      setConfirmPassword('');
       setStep(2);
-      setInfoMessage(`Mã OTP đã được gửi tới email. (Mã mô phỏng: ${newOtp})`);
+      setInfoMessage(message || 'Mã xác nhận đã được gửi, vui lòng kiểm tra email của bạn.');
     } catch (error) {
-      const message = error?.message || 'Không thể gửi OTP. Vui lòng thử lại.';
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error, 'Không thể gửi OTP. Vui lòng thử lại.'));
     }
   };
 
@@ -78,18 +83,17 @@ function ForgotPasswordForm() {
     setErrorMessage('');
     setInfoMessage('');
 
-    if (!otp) {
+    if (!otp.trim()) {
       setErrorMessage('Vui lòng nhập mã OTP');
       return;
     }
 
     try {
-      await verifyOtpMutation.mutateAsync({ email, otp });
+      const { message } = await verifyOtpMutation.mutateAsync({ email, otp: otp.trim() });
       setStep(3);
-      setInfoMessage('Mã OTP hợp lệ. Vui lòng tạo mật khẩu mới.');
+      setInfoMessage(message || 'Mã OTP hợp lệ. Vui lòng tạo mật khẩu mới.');
     } catch (error) {
-      const message = error?.message || 'Mã OTP không đúng. Vui lòng thử lại.';
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error, 'Mã OTP không đúng. Vui lòng thử lại.'));
     }
   };
 
@@ -114,15 +118,29 @@ function ForgotPasswordForm() {
       return;
     }
 
+    if (password.length < 8) {
+      setErrorMessage('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+
     try {
-      await resetPasswordMutation.mutateAsync({ email, password });
-      const userInfo = await loginAfterResetMutation.mutateAsync({ email, password });
-      authLogin(userInfo);
-      setStep(4);
-      setInfoMessage('Đặt lại mật khẩu thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
+      await resetPasswordMutation.mutateAsync({ email, otp: otp.trim(), newPassword: password });
     } catch (error) {
-      const message = error?.message || 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error, 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.'));
+      return;
+    }
+
+    setInfoMessage('Đổi mật khẩu thành công. Đang đăng nhập...');
+
+    try {
+      await loginAfterResetMutation.mutateAsync({ email, password });
+      setStep(4);
+      setInfoMessage('Đăng nhập thành công! Bạn sẽ được chuyển hướng trong giây lát.');
+    } catch (error) {
+      setInfoMessage('');
+      setErrorMessage(
+        getErrorMessage(error, 'Đặt lại mật khẩu thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.'),
+      );
     }
   };
 
@@ -138,20 +156,25 @@ function ForgotPasswordForm() {
 
   // Gửi lại OTP
   const handleResendOtp = async () => {
+    setErrorMessage('');
+    setInfoMessage('');
+    if (!email) {
+      setErrorMessage('Vui lòng nhập email trước khi yêu cầu mã OTP.');
+      return;
+    }
+
     try {
-      const { otp: newOtp } = await requestOtpMutation.mutateAsync(email);
-      setGeneratedOtp(newOtp);
-      setErrorMessage('');
-      setInfoMessage(`Đã gửi lại mã OTP. (Mã mô phỏng: ${newOtp})`);
+      const { message, otp: newOtp } = await requestOtpMutation.mutateAsync(email);
+      setGeneratedOtp(newOtp ?? '');
+      setInfoMessage(message || 'Đã gửi lại mã OTP tới email của bạn.');
     } catch (error) {
-      const message = error?.message || 'Không thể gửi OTP. Vui lòng thử lại.';
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error, 'Không thể gửi lại OTP. Vui lòng thử lại.'));
     }
   };
 
   // Chuyển đổi hiển thị mật khẩu
   const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+    setShowPassword((prev) => !prev);
   };
 
   const renderFormContent = () => {
