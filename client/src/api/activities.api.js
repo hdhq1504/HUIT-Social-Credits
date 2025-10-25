@@ -1,5 +1,8 @@
 import http from '@utils/http';
 
+export const ACTIVITIES_QUERY_KEY = ['activities'];
+export const MY_ACTIVITIES_QUERY_KEY = [...ACTIVITIES_QUERY_KEY, 'mine'];
+
 export const activitiesApi = {
   async list() {
     const { data } = await http.get('/activities');

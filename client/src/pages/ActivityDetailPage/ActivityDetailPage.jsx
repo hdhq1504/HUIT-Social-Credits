@@ -19,6 +19,7 @@ import CheckModal from '@components/CheckModal/CheckModal';
 import RegisterModal from '@components/RegisterModal/RegisterModal';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
+import Loading from '@pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
 import styles from './ActivityDetailPage.module.scss';
 
@@ -51,7 +52,7 @@ function ActivityDetailPage() {
   });
 
   // Query for related activities
-  const { data: relatedActivities = [], isLoading: loadingRelated } = useQuery({
+  const { data: relatedActivities = [] } = useQuery({
     queryKey: ['activities', 'related', id],
     queryFn: async () => {
       const list = await activitiesApi.list();
@@ -316,7 +317,7 @@ function ActivityDetailPage() {
       {contextHolder}
 
       <div className={cx('activity-detail__container')}>
-        {loading && <div className={cx('activity-detail__loading')}>Đang tải dữ liệu hoạt động...</div>}
+        {loading && <Loading />}
 
         {!loading && notFound && (
           <div className={cx('activity-detail__empty')}>

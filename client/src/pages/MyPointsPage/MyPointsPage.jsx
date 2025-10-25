@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faClock } from '@fortawesome/free-solid-svg-icons';
@@ -17,9 +17,7 @@ import styles from './MyPointsPage.module.scss';
 const cx = classNames.bind(styles);
 
 function MyPointsPage() {
-  const [records, setRecords] = useState([]);
   const [semester, setSemester] = useState('all');
-  const [loading, setLoading] = useState(false);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   const { data: progressSummary } = useQuery({
@@ -34,18 +32,11 @@ function MyPointsPage() {
     [isLoggedIn, progressSummary],
   );
 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const data = await mockApi.getScoreRecords();
-        setRecords(data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, []);
+  const { data: records = [], isFetching: loadingRecords } = useQuery({
+    queryKey: ['stats', 'score-records'],
+    queryFn: () => mockApi.getScoreRecords(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const columns = useMemo(
     () => [
@@ -182,7 +173,7 @@ function MyPointsPage() {
             rowKey="id"
             columns={columns}
             dataSource={filteredData}
-            loading={loading}
+            loading={loadingRecords}
             pagination={false}
             className={cx('my-points__table')}
           />

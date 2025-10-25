@@ -56,34 +56,36 @@ function FeaturedActivitySection() {
               1280: { slidesPerView: 4, slidesPerGroup: 1, spaceBetween: 20 },
             }}
           >
-            {activities.map((a) => (
-              <SwiperSlide key={a.id}>
-                <CardActivity
-                  {...a}
-                  state={a.state || 'guest'}
-                  onRegister={(activity) => console.log('Open modal for:', activity)}
-                  onRegistered={async ({ activity, note }) => {
-                    try {
-                      const updated = await activitiesApi.register(activity.id, note ? { note } : {});
-                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                    } catch (e) {
-                      console.error('Register failed', e);
-                      throw e;
-                    }
-                  }}
-                  onCancelRegister={async ({ activity, reason, note }) => {
-                    try {
-                      const updated = await activitiesApi.cancel(activity.id, { reason, note });
-                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                    } catch (e) {
-                      console.error('Cancel registration failed', e);
-                      throw e;
-                    }
-                  }}
-                  showConflictAlert={false}
-                />
-              </SwiperSlide>
-            ))}
+            {activities
+              .filter((a) => a.isFeatured)
+              .map((a) => (
+                <SwiperSlide key={a.id}>
+                  <CardActivity
+                    {...a}
+                    state={a.state || 'guest'}
+                    onRegister={(activity) => console.log('Open modal for:', activity)}
+                    onRegistered={async ({ activity, note }) => {
+                      try {
+                        const updated = await activitiesApi.register(activity.id, note ? { note } : {});
+                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                      } catch (e) {
+                        console.error('Register failed', e);
+                        throw e;
+                      }
+                    }}
+                    onCancelRegister={async ({ activity, reason, note }) => {
+                      try {
+                        const updated = await activitiesApi.cancel(activity.id, { reason, note });
+                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                      } catch (e) {
+                        console.error('Cancel registration failed', e);
+                        throw e;
+                      }
+                    }}
+                    showConflictAlert={false}
+                  />
+                </SwiperSlide>
+              ))}
           </Swiper>
         </div>
       </div>
