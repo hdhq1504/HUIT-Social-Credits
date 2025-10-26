@@ -11,6 +11,7 @@ const routes = {
   rollCall: '/roll-call',
   feedback: '/feedback',
   loading: '/loading',
+  admin: '/admin',
 };
 
 export default routes;

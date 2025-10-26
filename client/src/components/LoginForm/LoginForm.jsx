@@ -18,11 +18,30 @@ function LoginForm() {
   const navigate = useNavigate();
 
   const loginMutation = useMutation({
-    mutationFn: ({ email: emailValue, password: passwordValue }) => authApi.login(emailValue, passwordValue),
-    onSuccess: () => {
-      setErrorMessage('');
-      navigate('/');
+    mutationFn: async ({ email: emailValue, password: passwordValue }) => {
+      // ✅ Nếu là tài khoản admin thì không cần gọi API, đăng nhập trực tiếp
+      if ((emailValue === 'admin@huit.com' || emailValue === 'Admin') && passwordValue === '123') {
+        return {
+          name: 'Admin',
+          email: emailValue,
+          role: 'admin',
+        };
+      }
+      // Ngược lại gọi API thật
+      return await authApi.login(emailValue, passwordValue);
     },
+
+    onSuccess: (user) => {
+      setErrorMessage('');
+
+      // ✅ Nếu là admin → chuyển đến trang /admin
+      if (user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    },
+
     onError: (error) => {
       const message =
         error?.response?.data?.error || error?.message || 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.';
@@ -31,21 +50,24 @@ function LoginForm() {
     },
   });
 
-  // Đăng nhập bằng Email và Password qua API thật
+  // Xử lý đăng nhập
   const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setErrorMessage(''); // Xóa thông báo lỗi cũ
+    setErrorMessage('');
 
-    // Kiểm tra định dạng email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setErrorMessage('Email không hợp lệ. Vui lòng nhập email đầy đủ (ví dụ: example@gmail.com).');
+    // Kiểm tra dữ liệu
+    if (!email || !password) {
+      setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
 
-    if (!password) {
-      setErrorMessage('Vui lòng nhập mật khẩu.');
-      return;
+    // Nếu không phải admin → kiểm tra định dạng email
+    if (email !== 'Admin' && email !== 'admin@gmail.com') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setErrorMessage('Email không hợp lệ. Vui lòng nhập email đầy đủ (ví dụ: example@gmail.com).');
+        return;
+      }
     }
 
     loginMutation.mutate({ email, password });
@@ -56,6 +78,7 @@ function LoginForm() {
       <div className={cx('login-form__breadcrumb')}>
         <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Đăng nhập</span>
       </div>
+
       <form className={cx('login-form__card')} onSubmit={handleEmailLogin}>
         <div className={cx('login-form__banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
           <p className={cx('login-form__banner-title')}>

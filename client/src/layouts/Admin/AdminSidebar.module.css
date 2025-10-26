@@ -1,0 +1,52 @@
+.sidebar {
+  width: 240px;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Logo image */
+.logoImage {
+  width: 68px;
+  height: 61px;
+}
+
+/* Chữ ADMIN */
+.adminText {
+  font-family: 'Iceland', sans-serif;
+  font-weight: 400;
+  font-style: normal; /* Regular */
+  font-size: 32px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: var(--Primary, #00008b);
+  display: flex;
+  align-items: center;
+}
+
+.menuItem {
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: Montserrat, sans-serif;
+  font-size: 14px;
+  color: var(--Dark, #000000);
+  background: var(--Bg-Container, #f4f4f4);
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.menuItem:hover {
+  background: var(--Primary, #00008b);
+  color: var(--White, #ffffff);
+}
