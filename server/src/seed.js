@@ -56,107 +56,58 @@ const seed = async () => {
     const activitiesData = [
       {
         maHoatDong: "HD001",
-        tieuDe: "Chiến dịch hiến máu nhân đạo 2025",
-        moTa: "Tham gia hiến máu cứu người cùng Đoàn trường.",
-        diemCong: 20,
-        batDauLuc: new Date("2025-12-15T08:00:00+07:00"),
-        ketThucLuc: new Date("2025-12-15T11:30:00+07:00"),
-        diaDiem: "Nhà hát HUTECH, cơ sở Ung Văn Khiêm",
-        sucChuaToiDa: 80,
+        tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",
+        moTa: "🩸Muốn cứu vớt thế giới thì không cần phải là siêu anh hùng đội mũ bảo hiểm xanh đâu, bạn có thể là một nhà anh hùng trong mắt những người cần giúp đỡ bằng cách trở thành một tình nguyện viên hiến máu! Đây không chỉ là một hành động nhân ái, mà còn là cơ hội để bạn thể hiện tình yêu thương và sẻ chia với cộng đồng.",
+        diemCong: 25,
+        batDauLuc: new Date("2025-12-31T06:30:00+07:00"),
+        ketThucLuc: new Date("2025-12-31T11:30:00+07:00"),
+        diaDiem: "Nhà hàng tiệc cưới Đồng Xanh, 1320 Lê Đức Thọ, phường 13, quận Gò Vấp",
+        sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HIEN_MAU",
-        isFeatured: true
+        isFeatured: false
       },
       {
         maHoatDong: "HD002",
-        tieuDe: "Xuân tình nguyện - Gói bánh chưng trao tặng",
-        moTa: "Gói bánh chưng tặng các gia đình có hoàn cảnh khó khăn.",
-        diemCong: 15,
-        batDauLuc: new Date("2025-10-20T07:30:00+07:00"),
-        ketThucLuc: new Date("2025-10-20T17:00:00+07:00"),
-        diaDiem: "Khu A, ký túc xá Đại học HUTECH",
-        sucChuaToiDa: 120,
+        tieuDe: "THAM GIA CÙNG HSS - MÙA HÈ XANH 2024!",
+        moTa: null,
+        diemCong: 30,
+        batDauLuc: new Date("2025-10-15T16:30:00+07:00"),
+        ketThucLuc: null,
+        diaDiem: "Phòng B301",
+        sucChuaToiDa: 30,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "XUAN_TINH_NGUYEN",
-        isFeatured: true
+        categoryCode: "HO_TRO",
+        isFeatured: true,
+        nhomDiem: "NHOM_2_3"
       },
       {
         maHoatDong: "HD003",
-        tieuDe: "Vệ sinh môi trường - Chủ nhật xanh",
-        moTa: "Ra quân dọn dẹp tuyến đường xanh - sạch - đẹp.",
-        diemCong: 10,
-        batDauLuc: new Date("2025-11-10T06:30:00+07:00"),
-        ketThucLuc: new Date("2025-11-10T10:30:00+07:00"),
-        diaDiem: "Khu phố 5, phường Hiệp Bình Chánh, TP. Thủ Đức",
-        sucChuaToiDa: 60,
+        tieuDe: "HỖ TRỢ TTQLCL",
+        moTa: "💥 Chiến dịch Mùa Hè Xanh 2024 hứa hẹn mang đến những trải nghiệm đặc biệt và kích thích sự sáng tạo. Tại đây, bạn sẽ được thử sức, khám phá và hòa mình vào những hoạt động đầy thử thách và ý nghĩa, góp phần thay đổi tích cực cho xã hội và để lại dấu ấn đậm nét trong lòng mọi người.",
+        diemCong: 50,
+        batDauLuc: new Date("2024-07-15"),
+        ketThucLuc: new Date("2024-07-25"),
+        diaDiem: "Xã Long Chữ huyện Bến Cầu tỉnh Tây Ninh",
+        sucChuaToiDa: null,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "MUA_HE_XANH",
-        isFeatured: false
+        isFeatured: true,
+        nhomDiem: "NHOM_2_3"
       },
       {
         maHoatDong: "HD004",
-        tieuDe: "Tư vấn hướng nghiệp - Kết nối doanh nghiệp",
-        moTa: "Gặp gỡ doanh nghiệp để hiểu thêm về nhu cầu tuyển dụng và xu hướng nghề nghiệp.",
-        diemCong: 8,
-        batDauLuc: new Date("2025-12-05T13:30:00+07:00"),
-        ketThucLuc: new Date("2025-12-05T16:30:00+07:00"),
-        diaDiem: "Hội trường A-08.20, cơ sở Điện Biên Phủ",
-        sucChuaToiDa: 150,
+        tieuDe: "Test",
+        moTa: "Đây là mô tả",
+        diemCong: 50,
+        batDauLuc: new Date("2025-10-26T21:25:00+07:00"),
+        ketThucLuc: null,
+        diaDiem: null,
+        sucChuaToiDa: null,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HO_TRO",
-        isFeatured: false
-      },
-      {
-        maHoatDong: "HD005",
-        tieuDe: "Về việc triển khai tổ chức tham quan địa chỉ đỏ năm 2025",
-        moTa: "Thực hiện kế hoạch năm học 2024-2025, Trường Đại học Công Thương Thành phố Hồ Chí Minh triển khai kế hoạch tổ chức tham quan địa chỉ đỏ năm 2025 cho SV theo học tại Trường.",
-        diemCong: 60,
-        batDauLuc: new Date("2025-12-12T09:00:00+07:00"),
-        ketThucLuc: new Date("2025-12-12T12:00:00+07:00"),
-        diaDiem: "Khu di tích lịch sử cấp quốc gia Văn Miếu Trấn Biên, TP. Biên Hòa, tỉnh Đồng Nai",
-        sucChuaToiDa: 45,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "DIA_CHI_DO",
-        isFeatured: true
-      },
-      {
-        maHoatDong: "HD006",
-        tieuDe: "Thông báo đăng ký tham gia CTXH tại viện chuyển đổi số",
-        moTa: "",
-        diemCong: 15,
-        batDauLuc: new Date("2025-10-20T08:00:00+07:00"),
-        ketThucLuc: new Date("2025-11-09T11:45:00+07:00"),
-        diaDiem: "Viện chuyển đổi số",
-        sucChuaToiDa: 200,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
-        isFeatured: false
-      },
-      {
-        maHoatDong: "HD007",
-        tieuDe: "Workshop Kỹ năng thuyết trình",
-        moTa: "Hội thảo chia sẻ kỹ năng thuyết trình chuyên nghiệp.",
-        diemCong: 12,
-        batDauLuc: new Date("2025-10-25T09:00:00+07:00"),
-        ketThucLuc: new Date("2025-10-25T11:00:00+07:00"),
-        diaDiem: "Hội trường A.801, cơ sở Điện Biên Phủ",
-        sucChuaToiDa: 100,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
-        isFeatured: false
-      },
-      {
-        maHoatDong: "HD008",
-        tieuDe: "Hội thảo Công nghệ AI",
-        moTa: "Chia sẻ về xu hướng và ứng dụng AI trong công nghiệp.",
-        diemCong: 10,
-        batDauLuc: new Date("2025-10-24T14:00:00+07:00"),
-        ketThucLuc: new Date("2025-10-24T16:30:00+07:00"),
-        diaDiem: "Hội trường B.505, cơ sở Ung Văn Khiêm",
-        sucChuaToiDa: 150,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
-        isFeatured: false
+        isFeatured: false,
+        nhomDiem: "NHOM_1"
       },
     ];
 
@@ -175,7 +126,7 @@ const seed = async () => {
         isFeatured: activity.isFeatured,
         isPublished: true,
         danhMucId: category?.id ?? null,
-        nhomDiem: category?.nhomDiem ?? "NHOM_2_3"
+        nhomDiem: category?.nhomDiem
       };
 
       const created = await prisma.hoatDong.upsert({
@@ -189,32 +140,7 @@ const seed = async () => {
       activityMap[activity.maHoatDong] = created;
     }
 
-    const registrationsData = [
-      {
-        maHoatDong: "HD005",
-        trangThai: "DA_THAM_GIA",
-        dangKyLuc: new Date("2025-12-05T08:00:00+07:00"),
-        diemDanhLuc: new Date("2025-12-12T12:10:00+07:00")
-      },
-      {
-        maHoatDong: "HD001",
-        trangThai: "DA_THAM_GIA",
-        dangKyLuc: new Date("2025-12-10T08:00:00+07:00"),
-        diemDanhLuc: new Date("2025-12-15T11:45:00+07:00")
-      },
-      {
-        maHoatDong: "HD007",
-        trangThai: "DANG_KY",
-        dangKyLuc: new Date("2025-10-23T10:00:00+07:00")
-        // No diemDanhLuc yet - activity is currently happening
-      },
-      {
-        maHoatDong: "HD008",
-        trangThai: "VANG_MAT",
-        dangKyLuc: new Date("2025-10-22T15:30:00+07:00"),
-        // No diemDanhLuc - user was absent
-      }
-    ];
+    const registrationsData = [];
 
     const now = new Date();
     for (const registration of registrationsData) {

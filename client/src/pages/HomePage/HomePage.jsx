@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from '@layouts/SearchBar/SearchBar';
 import FeaturedActivitySection from '@components/FeaturedActivitySection';
 import ActivityCategoriesSection from '@components/ActivityCategoriesSection';
@@ -16,6 +17,7 @@ import styles from './HomePage.module.scss';
 const cx = classNames.bind(styles);
 
 function HomePage() {
+  const navigate = useNavigate();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   const { data: progressSummary } = useQuery({
@@ -29,6 +31,11 @@ function HomePage() {
     () => (isLoggedIn ? mapProgressSummaryToSection(progressSummary) : DEFAULT_PROGRESS_SECTION),
     [isLoggedIn, progressSummary],
   );
+
+  const handleHomeSearch = (q) => {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    navigate(`/list-activities${query}`);
+  };
 
   return (
     <main className={cx('home')}>
@@ -45,7 +52,7 @@ function HomePage() {
           </p>
         </div>
         <div className={cx('home__hero-search')}>
-          <SearchBar variant="home" onSubmit={(q) => console.log('Home search:', q)} />
+          <SearchBar variant="home" onSubmit={handleHomeSearch} />
         </div>
       </header>
 

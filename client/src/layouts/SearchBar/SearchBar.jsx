@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
@@ -7,13 +7,19 @@ import styles from './SearchBar.module.scss';
 
 const cx = classNames.bind(styles);
 
-const { Search } = Input;
 const { Option } = Select;
 
-function SearchBar({ variant = 'home', onSearch, onFilter }) {
-  const handleSearch = (value) => {
-    if (onSearch) onSearch(value);
-    console.log('Search:', value);
+function SearchBar({ variant = 'home', onSubmit, onFilterChange }) {
+  const [query, setQuery] = useState('');
+  const [group, setGroup] = useState('all');
+  const [status, setStatus] = useState('all');
+
+  const handleRunSearch = () => {
+    onSubmit?.(query.trim());
+  };
+
+  const handleEnter = (e) => {
+    if (e.key === 'Enter') handleRunSearch();
   };
 
   return (
@@ -21,19 +27,16 @@ function SearchBar({ variant = 'home', onSearch, onFilter }) {
       {variant === 'home' ? (
         <div className={cx('homeSearch')}>
           <Input
-            placeholder="Nhập tìm kiếm"
+            placeholder="Nhập từ khóa (ví dụ: Hiến máu, Mùa hè xanh...)"
             size="large"
-            onSearch={handleSearch}
             className={cx('searchInput')}
             allowClear
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleEnter}
+            aria-label="Tìm kiếm hoạt động"
           />
-          ;
-          <Button
-            type="primary"
-            size="large"
-            className={cx('searchButton')}
-            onClick={() => console.log('Filter clicked')}
-          >
+          <Button type="primary" size="large" className={cx('searchButton')} onClick={handleRunSearch}>
             <FontAwesomeIcon icon={faSearch} />
             <span className={cx('searchButtonText')}>Tìm kiếm</span>
           </Button>
@@ -44,27 +47,40 @@ function SearchBar({ variant = 'home', onSearch, onFilter }) {
             placeholder="Nhập từ khóa"
             size="large"
             className={cx('searchInput')}
-            onPressEnter={(e) => handleSearch(e.target.value)}
             allowClear
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleEnter}
+            aria-label="Tìm kiếm hoạt động"
           />
 
           <Select
-            defaultValue="Tất cả nhóm"
+            value={group}
             size="large"
             className={cx('dropdown')}
-            onChange={(val) => onFilter?.('group', val)}
+            onChange={(val) => {
+              setGroup(val);
+              onFilterChange?.({ group: val, status });
+            }}
+            aria-label="Lọc theo nhóm"
           >
             <Option value="all">Tất cả nhóm</Option>
             <Option value="mua-he-xanh">Mùa hè xanh</Option>
             <Option value="hien-mau">Hiến máu</Option>
             <Option value="dia-chi-do">Địa chỉ đỏ</Option>
+            <Option value="ho-tro">Hỗ trợ</Option>
+            <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
           </Select>
 
           <Select
-            defaultValue="Tất cả trạng thái"
+            value={status}
             size="large"
             className={cx('dropdown')}
-            onChange={(val) => onFilter?.('status', val)}
+            onChange={(val) => {
+              setStatus(val);
+              onFilterChange?.({ group, status: val });
+            }}
+            aria-label="Lọc theo trạng thái"
           >
             <Option value="all">Tất cả trạng thái</Option>
             <Option value="upcoming">Sắp diễn ra</Option>
@@ -72,12 +88,7 @@ function SearchBar({ variant = 'home', onSearch, onFilter }) {
             <Option value="ended">Đã kết thúc</Option>
           </Select>
 
-          <Button
-            type="primary"
-            size="large"
-            className={cx('filterButton')}
-            onClick={() => console.log('Filter clicked')}
-          >
+          <Button type="primary" size="large" className={cx('filterButton')} onClick={handleRunSearch}>
             <FontAwesomeIcon icon={faSearch} />
             Lọc
           </Button>

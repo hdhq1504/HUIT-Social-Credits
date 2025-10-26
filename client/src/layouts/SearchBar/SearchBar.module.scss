@@ -18,17 +18,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 12px;
 
   .searchInput {
     width: 1200px;
     max-width: 100%;
-    border-top-left-radius: 8px;
-    border-top-left-radius: 8px;
+    border-radius: 8px;
 
     input {
       font-family: 'Montserrat', sans-serif;
       font-size: 14px;
-      color: var(border-color);
       outline: none;
       box-shadow: none;
     }
@@ -51,7 +50,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 8px;
+    padding: 0 24px;
     transition: 0.2s ease;
+    flex-shrink: 0;
 
     &:hover {
       background-color: #d74400 !important;
@@ -67,6 +69,7 @@
       .searchButtonText {
         display: none;
       }
+      padding: 0 16px;
     }
   }
 }
@@ -121,7 +124,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     transition: 0.2s ease;
 
     &:hover {
@@ -136,8 +139,14 @@
     align-items: stretch;
   }
 
-  .homeSearch .searchInput {
-    width: 100%;
+  .homeSearch {
+    flex-direction: row;
+    gap: 8px;
+
+    .searchInput {
+      width: 100%;
+      flex: 1;
+    }
   }
 
   .listSearch {
@@ -149,5 +158,11 @@
     .filterButton {
       width: 100%;
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .homeSearch {
+    gap: 8px;
   }
 }

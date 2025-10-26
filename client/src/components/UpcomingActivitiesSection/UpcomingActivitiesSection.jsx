@@ -8,6 +8,7 @@ import Button from '../Button/Button';
 import CardActivity from '../CardActivity/CardActivity';
 import Label from '../Label/Label';
 import activitiesApi from '@api/activities.api';
+import { isUnregisteredOrParticipated } from '@utils/activityState';
 import styles from './UpcomingActivitiesSection.module.scss';
 
 const { CheckableTag } = Tag;
@@ -26,6 +27,11 @@ function UpcomingActivitiesSection() {
   const [activities, setActivities] = useState([]);
   const [selected, setSelected] = useState('Tất cả');
 
+  const visibleActivities = useMemo(
+    () => activities.filter((activity) => isUnregisteredOrParticipated(activity)),
+    [activities],
+  );
+
   useEffect(() => {
     const fetchActivities = async () => {
       try {
@@ -39,12 +45,12 @@ function UpcomingActivitiesSection() {
   }, []);
 
   const filteredActivities = useMemo(() => {
-    if (selected === 'Tất cả') return activities;
-    return activities.filter((a) => {
+    if (selected === 'Tất cả') return visibleActivities;
+    return visibleActivities.filter((a) => {
       const cats = getCategoriesOf(a).map((x) => String(x).trim().toLowerCase());
       return cats.includes(selected.trim().toLowerCase());
     });
-  }, [activities, selected]);
+  }, [visibleActivities, selected]);
 
   return (
     <>
@@ -74,7 +80,7 @@ function UpcomingActivitiesSection() {
         </div>
 
         <div className={cx('upcoming-activities__list')}>
-          {filteredActivities.map((a) => (
+          {filteredActivities.map((a) => !a.isFeatured && (
             <CardActivity
               key={a.id}
               {...a}

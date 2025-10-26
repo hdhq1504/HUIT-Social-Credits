@@ -8,6 +8,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import styles from './FeaturedActivitySection.module.scss';
 import activitiesApi from '@api/activities.api';
+import { isUnregisteredOrParticipated } from '@utils/activityState';
 
 const cx = classNames.bind(styles);
 
@@ -57,7 +58,7 @@ function FeaturedActivitySection() {
             }}
           >
             {activities
-              .filter((a) => a.isFeatured)
+              .filter((a) => a.isFeatured && isUnregisteredOrParticipated(a))
               .map((a) => (
                 <SwiperSlide key={a.id}>
                   <CardActivity

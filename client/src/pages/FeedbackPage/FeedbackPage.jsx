@@ -1,9 +1,9 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input, Select, Tabs } from 'antd';
+import { Button, Input, Select, Tabs, Empty } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
@@ -12,11 +12,88 @@ import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import styles from './FeedbackPage.module.scss';
 
 const cx = classNames.bind(styles);
+const { Option } = Select;
 
 function FeedbackPage() {
   const { contextHolder, open: toast } = useToast();
   const queryClient = useQueryClient();
 
+  // ====== Search/Filter/Sort states ======
+  const [q, setQ] = useState('');
+  const [group, setGroup] = useState('all');
+  const [sort, setSort] = useState('latest');
+
+  // Helpers
+  const normalize = (s) =>
+    (s || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const matchGroup = (activity) => {
+    if (group === 'all') return true;
+    const map = {
+      'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
+      'hien-mau': ['hiến máu', 'hien mau'],
+      'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
+      'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
+      'ho-tro': ['hỗ trợ', 'ho tro'],
+    };
+    const keys = map[group] || [];
+    const haystack = normalize(
+      [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
+    );
+    return keys.some((k) => haystack.includes(k));
+  };
+
+  const matchKeyword = (activity) => {
+    const key = q.trim();
+    if (!key) return true;
+    const haystack = normalize(
+      [
+        activity?.title,
+        activity?.code,
+        activity?.categoryName,
+        activity?.groupName,
+        activity?.location,
+        activity?.description,
+      ].join(' '),
+    );
+    return haystack.includes(normalize(key));
+  };
+
+  const sortItems = (arr) => {
+    const items = [...arr];
+    if (sort === 'latest') {
+      items.sort((a, b) => {
+        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+        return tb - ta;
+      });
+    } else if (sort === 'oldest') {
+      items.sort((a, b) => {
+        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+        return ta - tb;
+      });
+    } else if (sort === 'popular') {
+      items.sort((a, b) => (b.activity?.registeredCount || 0) - (a.activity?.registeredCount || 0));
+    }
+    return items;
+  };
+
+  const applySearch = useCallback(
+    (items) => {
+      const filtered = (items || []).filter(
+        (reg) => reg?.activity && matchGroup(reg.activity) && matchKeyword(reg.activity),
+      );
+      return sortItems(filtered);
+    },
+    [q, group, sort],
+  );
+
+  // ====== Data ======
   const {
     data: registrations = [],
     isFetching,
@@ -91,6 +168,7 @@ function FeedbackPage() {
     [cancelMutation],
   );
 
+  // Phân loại theo trạng thái phản hồi
   const categorized = useMemo(() => {
     const all = registrations.filter((item) => Boolean(item.activity));
     const awarded = all.filter((item) => item.activity?.state === 'feedback_accepted');
@@ -99,20 +177,33 @@ function FeedbackPage() {
     return { all, awarded, submitted, denied };
   }, [registrations]);
 
-  const buildCards = useCallback(
-    (items) =>
-      items.map((registration) => (
-        <CardActivity
-          key={registration.id}
-          {...registration.activity}
-          variant="vertical"
-          state={registration.activity?.state}
-          onSendFeedback={handleFeedback}
-          onRegistered={handleRegister}
-          onCancelRegister={handleCancel}
-        />
-      )),
-    [handleFeedback, handleRegister, handleCancel],
+  const ListOrEmpty = useCallback(
+    ({ items, emptyText }) => {
+      const list = applySearch(items);
+      return list.length ? (
+        <div className={cx('feedback__list')}>
+          {list.map((registration) => (
+            <CardActivity
+              key={registration.id}
+              {...registration.activity}
+              variant="vertical"
+              state={registration.activity?.state}
+              onSendFeedback={handleFeedback}
+              onRegistered={handleRegister}
+              onCancelRegister={handleCancel}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('feedback__empty')}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={isFetching ? 'Đang tải dữ liệu…' : emptyText || 'Không có hoạt động nào'}
+          />
+        </div>
+      );
+    },
+    [applySearch, handleFeedback, handleRegister, handleCancel, isFetching],
   );
 
   const tabItems = useMemo(
@@ -124,7 +215,7 @@ function FeedbackPage() {
             <span>Tất cả</span>
           </div>
         ),
-        children: <div className={cx('feedback__list')}>{buildCards(categorized.all)}</div>,
+        children: <ListOrEmpty items={categorized.all} emptyText="Chưa có hoạt động nào" />,
       },
       {
         key: 'approved',
@@ -133,7 +224,7 @@ function FeedbackPage() {
             <span>Đã được cộng điểm</span>
           </div>
         ),
-        children: <div className={cx('feedback__list')}>{buildCards(categorized.awarded)}</div>,
+        children: <ListOrEmpty items={categorized.awarded} emptyText="Chưa có hoạt động được cộng điểm" />,
       },
       {
         key: 'submitted',
@@ -142,7 +233,7 @@ function FeedbackPage() {
             <span>Đã gửi phản hồi</span>
           </div>
         ),
-        children: <div className={cx('feedback__list')}>{buildCards(categorized.submitted)}</div>,
+        children: <ListOrEmpty items={categorized.submitted} emptyText="Chưa có phản hồi nào được gửi" />,
       },
       {
         key: 'denied',
@@ -151,27 +242,31 @@ function FeedbackPage() {
             <span>Từ chối</span>
           </div>
         ),
-        children: <div className={cx('feedback__list')}>{buildCards(categorized.denied)}</div>,
+        children: <ListOrEmpty items={categorized.denied} emptyText="Chưa có phản hồi nào bị từ chối" />,
       },
     ],
-    [categorized, buildCards],
+    [categorized, ListOrEmpty],
   );
+
+  const handleReset = () => {
+    setQ('');
+    setGroup('all');
+    setSort('latest');
+    refetch();
+  };
 
   return (
     <section className={cx('feedback')}>
       {contextHolder}
 
       <div className={cx('feedback__container')}>
-        {/* Header */}
         <header className={cx('feedback__header')}>
           <nav className={cx('feedback__breadcrumb')} aria-label="Breadcrumb">
             <Link to="/">Trang chủ</Link> / <span>Phản hồi</span>
           </nav>
-
           <Label title="Phản hồi" highlight="điểm" leftDivider={false} rightDivider showSubtitle={false} />
         </header>
 
-        {/* Tabs */}
         <div className={cx('feedback__tabs')}>
           <Tabs
             defaultActiveKey="all"
@@ -185,19 +280,29 @@ function FeedbackPage() {
 
                 {/* Thanh tìm kiếm */}
                 <div className={cx('feedback__search')}>
-                  <Input placeholder="Nhập từ khóa" size="large" className={cx('feedback__search-input')} allowClear />
+                  <Input
+                    placeholder="Nhập từ khóa"
+                    size="large"
+                    className={cx('feedback__search-input')}
+                    allowClear
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    onPressEnter={() => {}}
+                  />
 
-                  <Select defaultValue="all" size="large" className={cx('feedback__search-select')}>
-                    <Select.Option value="all">Nhóm hoạt động</Select.Option>
-                    <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
-                    <Select.Option value="hien-mau">Hiến máu</Select.Option>
-                    <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
+                  <Select value={group} size="large" className={cx('feedback__search-select')} onChange={setGroup}>
+                    <Option value="all">Nhóm hoạt động</Option>
+                    <Option value="mua-he-xanh">Mùa hè xanh</Option>
+                    <Option value="hien-mau">Hiến máu</Option>
+                    <Option value="dia-chi-do">Địa chỉ đỏ</Option>
+                    <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
+                    <Option value="ho-tro">Hỗ trợ</Option>
                   </Select>
 
-                  <Select defaultValue="all" size="large" className={cx('feedback__search-select')}>
-                    <Select.Option value="all">Mới nhất</Select.Option>
-                    <Select.Option value="oldest">Cũ nhất</Select.Option>
-                    <Select.Option value="popular">Phổ biến nhất</Select.Option>
+                  <Select value={sort} size="large" className={cx('feedback__search-select')} onChange={setSort}>
+                    <Option value="latest">Mới nhất</Option>
+                    <Option value="oldest">Cũ nhất</Option>
+                    <Option value="popular">Phổ biến nhất</Option>
                   </Select>
 
                   <Button
@@ -205,7 +310,7 @@ function FeedbackPage() {
                     size="large"
                     className={cx('feedback__reset-button')}
                     icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                    onClick={() => refetch()}
+                    onClick={handleReset}
                     loading={isFetching}
                   >
                     Đặt lại

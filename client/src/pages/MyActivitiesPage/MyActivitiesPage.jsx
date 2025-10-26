@@ -295,7 +295,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Đang chờ</div>
-                  <div className={cx('my-activities__stat-card-value')}>3</div>
+                  <div className={cx('my-activities__stat-card-value')}>0</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faClock} className={cx('my-activities__stat-card-icon-mark')} />

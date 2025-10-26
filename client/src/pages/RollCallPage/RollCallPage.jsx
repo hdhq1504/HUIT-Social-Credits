@@ -1,9 +1,9 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input, Select, Tabs } from 'antd';
+import { Button, Input, Select, Tabs, Empty } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
@@ -12,12 +12,88 @@ import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
+const { Option } = Select;
 
 function RollCallPage() {
   const { contextHolder, open: toast } = useToast();
-
   const queryClient = useQueryClient();
 
+  // ====== Search/Filter/Sort states ======
+  const [q, setQ] = useState('');
+  const [group, setGroup] = useState('all');
+  const [sort, setSort] = useState('latest');
+
+  // Helpers
+  const normalize = (s) =>
+    (s || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const matchGroup = (activity) => {
+    if (group === 'all') return true;
+    const map = {
+      'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
+      'hien-mau': ['hiến máu', 'hien mau'],
+      'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
+      'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
+      'ho-tro': ['hỗ trợ', 'ho tro'],
+    };
+    const keys = map[group] || [];
+    const haystack = normalize(
+      [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
+    );
+    return keys.some((k) => haystack.includes(k));
+  };
+
+  const matchKeyword = (activity) => {
+    const key = q.trim();
+    if (!key) return true;
+    const haystack = normalize(
+      [
+        activity?.title,
+        activity?.code,
+        activity?.categoryName,
+        activity?.groupName,
+        activity?.location,
+        activity?.description,
+      ].join(' '),
+    );
+    return haystack.includes(normalize(key));
+  };
+
+  const sortItems = (arr) => {
+    const items = [...arr];
+    if (sort === 'latest') {
+      items.sort((a, b) => {
+        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+        return tb - ta;
+      });
+    } else if (sort === 'oldest') {
+      items.sort((a, b) => {
+        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+        return ta - tb;
+      });
+    } else if (sort === 'popular') {
+      items.sort((a, b) => (b.activity?.registeredCount || 0) - (a.activity?.registeredCount || 0));
+    }
+    return items;
+  };
+
+  const applySearch = useCallback(
+    (items) => {
+      const filtered = (items || []).filter(
+        (reg) => reg?.activity && matchGroup(reg.activity) && matchKeyword(reg.activity),
+      );
+      return sortItems(filtered);
+    },
+    [q, group, sort],
+  );
+
+  // ====== Data ======
   const {
     data: registrations = [],
     isFetching,
@@ -114,6 +190,7 @@ function RollCallPage() {
     [feedbackMutation],
   );
 
+  // Phân loại theo state tab
   const categorized = useMemo(() => {
     const groups = { ongoing: [], upcoming: [], ended: [] };
     registrations.forEach((registration) => {
@@ -135,21 +212,35 @@ function RollCallPage() {
     return groups;
   }, [registrations]);
 
-  const buildCards = useCallback(
-    (items) =>
-      items.map((registration) => (
-        <CardActivity
-          key={registration.id}
-          {...registration.activity}
-          variant="vertical"
-          state={registration.activity?.state}
-          onRegistered={handleRegister}
-          onCancelRegister={handleCancel}
-          onConfirmPresent={handleAttendance}
-          onSendFeedback={handleFeedback}
-        />
-      )),
-    [handleRegister, handleCancel, handleAttendance, handleFeedback],
+  // UI list/empty (áp bộ lọc + sort)
+  const ListOrEmpty = useCallback(
+    ({ items, emptyText }) => {
+      const list = applySearch(items);
+      return list.length ? (
+        <div className={cx('roll-call__list')}>
+          {list.map((registration) => (
+            <CardActivity
+              key={registration.id}
+              {...registration.activity}
+              variant="vertical"
+              state={registration.activity?.state}
+              onRegistered={handleRegister}
+              onCancelRegister={handleCancel}
+              onConfirmPresent={handleAttendance}
+              onSendFeedback={handleFeedback}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('roll-call__empty')}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={isFetching ? 'Đang tải dữ liệu…' : emptyText || 'Không có hoạt động nào'}
+          />
+        </div>
+      );
+    },
+    [applySearch, handleRegister, handleCancel, handleAttendance, handleFeedback, isFetching],
   );
 
   const tabItems = useMemo(
@@ -161,7 +252,7 @@ function RollCallPage() {
             <span>Đang diễn ra</span>
           </div>
         ),
-        children: <div className={cx('roll-call__list')}>{buildCards(categorized.ongoing)}</div>,
+        children: <ListOrEmpty items={categorized.ongoing} emptyText="Chưa có hoạt động đang diễn ra" />,
       },
       {
         key: 'upcoming',
@@ -170,7 +261,7 @@ function RollCallPage() {
             <span>Sắp diễn ra</span>
           </div>
         ),
-        children: <div className={cx('roll-call__list')}>{buildCards(categorized.upcoming)}</div>,
+        children: <ListOrEmpty items={categorized.upcoming} emptyText="Chưa có hoạt động sắp diễn ra" />,
       },
       {
         key: 'ended',
@@ -179,27 +270,32 @@ function RollCallPage() {
             <span>Đã kết thúc</span>
           </div>
         ),
-        children: <div className={cx('roll-call__list')}>{buildCards(categorized.ended)}</div>,
+        children: <ListOrEmpty items={categorized.ended} emptyText="Chưa có hoạt động đã kết thúc" />,
       },
     ],
-    [categorized, buildCards],
+    [categorized, ListOrEmpty],
   );
+
+  // Reset
+  const handleReset = () => {
+    setQ('');
+    setGroup('all');
+    setSort('latest');
+    refetch();
+  };
 
   return (
     <section className={cx('roll-call')}>
       {contextHolder}
 
       <div className={cx('roll-call__container')}>
-        {/* Header */}
         <header className={cx('roll-call__header')}>
           <nav className={cx('roll-call__header-breadcrumb')} aria-label="Breadcrumb">
             <Link to="/">Trang chủ</Link> / <span>Điểm danh</span>
           </nav>
-
           <Label title="Điểm danh" highlight="hoạt động" leftDivider={false} rightDivider showSubtitle={false} />
         </header>
 
-        {/* Tabs */}
         <div className={cx('roll-call__tabs')}>
           <Tabs
             defaultActiveKey="ongoing"
@@ -213,19 +309,29 @@ function RollCallPage() {
 
                 {/* Thanh tìm kiếm */}
                 <div className={cx('roll-call__search')}>
-                  <Input placeholder="Nhập từ khóa" size="large" className={cx('roll-call__search-input')} allowClear />
+                  <Input
+                    placeholder="Nhập từ khóa"
+                    size="large"
+                    className={cx('roll-call__search-input')}
+                    allowClear
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    onPressEnter={() => {}}
+                  />
 
-                  <Select defaultValue="all" size="large" className={cx('roll-call__search-select')}>
-                    <Select.Option value="all">Nhóm hoạt động</Select.Option>
-                    <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
-                    <Select.Option value="hien-mau">Hiến máu</Select.Option>
-                    <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
+                  <Select value={group} size="large" className={cx('roll-call__search-select')} onChange={setGroup}>
+                    <Option value="all">Nhóm hoạt động</Option>
+                    <Option value="mua-he-xanh">Mùa hè xanh</Option>
+                    <Option value="hien-mau">Hiến máu</Option>
+                    <Option value="dia-chi-do">Địa chỉ đỏ</Option>
+                    <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
+                    <Option value="ho-tro">Hỗ trợ</Option>
                   </Select>
 
-                  <Select defaultValue="all" size="large" className={cx('roll-call__search-select')}>
-                    <Select.Option value="all">Mới nhất</Select.Option>
-                    <Select.Option value="oldest">Cũ nhất</Select.Option>
-                    <Select.Option value="popular">Phổ biến nhất</Select.Option>
+                  <Select value={sort} size="large" className={cx('roll-call__search-select')} onChange={setSort}>
+                    <Option value="latest">Mới nhất</Option>
+                    <Option value="oldest">Cũ nhất</Option>
+                    <Option value="popular">Phổ biến nhất</Option>
                   </Select>
 
                   <Button
@@ -233,7 +339,7 @@ function RollCallPage() {
                     size="large"
                     className={cx('roll-call__reset-button')}
                     icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                    onClick={() => refetch()}
+                    onClick={handleReset}
                     loading={isFetching}
                   >
                     Đặt lại

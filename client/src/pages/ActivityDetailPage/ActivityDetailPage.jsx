@@ -17,6 +17,7 @@ import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckModal from '@components/CheckModal/CheckModal';
 import RegisterModal from '@components/RegisterModal/RegisterModal';
+import FeedbackModal from '@components/FeedbackModal/FeedbackModal';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
 import Loading from '@pages/Loading/Loading';
@@ -27,6 +28,12 @@ const cx = classNames.bind(styles);
 
 const formatDate = (value, format = 'DD/MM/YYYY') => (value ? dayjs(value).format(format) : '--');
 const formatDateTime = (value) => (value ? dayjs(value).format('HH:mm DD/MM/YYYY') : '--');
+const formatTimeRange = (start, end) => {
+  if (!start && !end) return '--';
+  const s = start ? dayjs(start).format('HH:mm') : '--';
+  const e = end ? dayjs(end).format('HH:mm') : '--';
+  return `${s} - ${e}`;
+};
 
 function ActivityDetailPage() {
   const { id } = useParams();
@@ -34,6 +41,7 @@ function ActivityDetailPage() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
   // Query for activity details
@@ -281,11 +289,13 @@ function ActivityDetailPage() {
         );
       case 'feedback_pending':
         return (
-          <Link to="/feedback">
-            <Button className={cx('activity-detail__sidebar-button')} variant="orange">
-              Gửi phản hồi
-            </Button>
-          </Link>
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="orange"
+            onClick={() => setIsFeedbackOpen(true)}
+          >
+            Gửi phản hồi
+          </Button>
         );
       case 'feedback_reviewing':
         return (
@@ -359,7 +369,7 @@ function ActivityDetailPage() {
                     <span>{activity.category || 'Hoạt động CTXH'}</span>
                   </div>
                   {activity.pointGroupLabel && (
-                    <div className={cx('activity-detail__group-badge', 'activity-detail__group-badge--highlight')}>
+                    <div className={cx('activity-detail__group-badge')}>
                       <span>{activity.pointGroupLabel}</span>
                     </div>
                   )}
@@ -371,11 +381,11 @@ function ActivityDetailPage() {
                   <div className={cx('activity-detail__content', 'activity-detail__content--description')}>
                     <h2 className={cx('activity-detail__content-title')}>Mô tả</h2>
                     <div className={cx('activity-detail__content-body')}>
-                      {descriptionParagraphs.map((paragraph) => (
-                        <p key={paragraph} className={cx('activity-detail__paragraph')}>
-                          {paragraph}
-                        </p>
-                      ))}
+                      {activity?.description ? (
+                        <p className={cx('activity-detail__paragraph')}>{activity.description}</p>
+                      ) : (
+                        <span>Không có mô tả</span>
+                      )}
                     </div>
 
                     <section className={cx('activity-detail__benefit')}>
@@ -431,11 +441,19 @@ function ActivityDetailPage() {
                       </div>
                       <div className={cx('activity-detail__info-row')}>
                         <span className={cx('activity-detail__info-label')}>Thời gian</span>
-                        <span className={cx('activity-detail__info-value')}>{activity.dateTime}</span>
-                      </div>
-                      <div className={cx('activity-detail__info-row')}>
-                        <span className={cx('activity-detail__info-label')}>Địa điểm</span>
                         <span className={cx('activity-detail__info-value')}>
+                          {formatTimeRange(activity.startTime, activity.endTime)}
+                        </span>
+                      </div>
+                      <div
+                        className={cx('activity-detail__info-row')}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}
+                      >
+                        <span className={cx('activity-detail__info-label')}>Địa điểm</span>
+                        <span
+                          className={cx('activity-detail__info-value')}
+                          style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', width: '100%', textAlign: 'left' }}
+                        >
                           {activity.location || 'Đang cập nhật'}
                         </span>
                       </div>
@@ -594,6 +612,28 @@ function ActivityDetailPage() {
         open={isCheckOpen}
         onCancel={() => setIsCheckOpen(false)}
         onSubmit={handleAttendanceSubmit}
+        campaignName={activity?.title}
+        groupLabel={activity?.pointGroupLabel}
+        pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
+        dateTime={activity?.dateTime}
+        location={activity?.location}
+      />
+
+      <FeedbackModal
+        open={isFeedbackOpen}
+        onCancel={() => setIsFeedbackOpen(false)}
+        onSubmit={async ({ content, files }) => {
+          try {
+            const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+            await activitiesApi.feedback(id, { content, attachments });
+            queryClient.invalidateQueries(['activity', id]);
+            setIsFeedbackOpen(false);
+            toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
+          } catch (error) {
+            const message = error.response?.data?.error || 'Gửi phản hồi thất bại. Vui lòng thử lại.';
+            toast({ message, variant: 'danger' });
+          }
+        }}
         campaignName={activity?.title}
         groupLabel={activity?.pointGroupLabel}
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}

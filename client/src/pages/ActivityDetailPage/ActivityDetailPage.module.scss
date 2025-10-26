@@ -271,7 +271,7 @@
     padding: 4px 8px;
     background-color: #f4f4f4;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--black-color);
     font-weight: 400;
 
@@ -280,12 +280,6 @@
       padding: 3px 6px;
       font-size: 10px;
     }
-  }
-
-  &__group-badge--highlight {
-    background-color: rgba(255, 92, 0, 0.14);
-    color: #ff5c00;
-    border: 1px solid rgba(255, 92, 0, 0.28);
   }
 
   &__content {
@@ -439,6 +433,7 @@
     font-size: 16px;
     font-weight: 400;
     text-align: justify;
+    line-height: 1.6;
 
     // md: 768px
     @media (max-width: 768px) {
@@ -1098,6 +1093,27 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+
+    // sm: 576px
+    @media (max-width: 576px) {
+      gap: 10px;
+    }
+
+    // xs: 480px
+    @media (max-width: 480px) {
+      gap: 8px;
+    }
+  }
+
+  &__info-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    &__info-value {
+      text-align: left;
+    }
 
     // sm: 576px
     @media (max-width: 576px) {
