@@ -78,8 +78,7 @@ const seed = async () => {
         sucChuaToiDa: 30,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HO_TRO",
-        isFeatured: true,
-        nhomDiem: "NHOM_2_3"
+        isFeatured: true
       },
       {
         maHoatDong: "HD003",
@@ -92,22 +91,20 @@ const seed = async () => {
         sucChuaToiDa: null,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "MUA_HE_XANH",
-        isFeatured: true,
-        nhomDiem: "NHOM_2_3"
+        isFeatured: true
       },
       {
         maHoatDong: "HD004",
         tieuDe: "Test",
         moTa: "Đây là mô tả",
         diemCong: 50,
-        batDauLuc: new Date("2025-10-26T21:25:00+07:00"),
+        batDauLuc: new Date("2025-10-27T12:45:00+07:00"),
         ketThucLuc: null,
         diaDiem: null,
         sucChuaToiDa: null,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HO_TRO",
-        isFeatured: false,
-        nhomDiem: "NHOM_1"
+        isFeatured: false
       },
     ];
 
