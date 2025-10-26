@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,10 +14,11 @@ import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import updateLocale from 'dayjs/plugin/updateLocale';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
-import activitiesApi from '@api/activities.api';
+import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -27,26 +28,72 @@ dayjs.locale('vi');
 dayjs.updateLocale('vi', { weekStart: 1 });
 
 function MyActivitiesPage() {
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
-  const fetchRegistrations = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await activitiesApi.listMine();
-      setRegistrations(data);
-    } catch (error) {
+  const queryClient = useQueryClient();
+
+  const {
+    data: registrations = [],
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
+    queryFn: () => activitiesApi.listMine(),
+    staleTime: 30 * 1000,
+    retry: 1,
+    onError: (error) => {
       const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động của bạn';
       toast({ message, variant: 'danger' });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+    },
+  });
 
-  useEffect(() => {
-    fetchRegistrations();
-  }, [fetchRegistrations]);
+  const registerMutation = useMutation({
+    mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+      toast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể đăng ký hoạt động. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason, note }) => activitiesApi.cancel(id, { reason, note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+      toast({ message: 'Hủy đăng ký hoạt động thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể hủy đăng ký hoạt động. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const attendanceMutation = useMutation({
+    mutationFn: (id) => activitiesApi.attendance(id, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: ({ id, content, attachments }) => activitiesApi.feedback(id, { content, attachments }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+      toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể gửi phản hồi. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
 
   const stats = useMemo(() => {
     const registered = registrations.filter((item) => item.status === 'DANG_KY');
@@ -104,38 +151,34 @@ function MyActivitiesPage() {
   const handleRegister = useCallback(
     async ({ activity, note }) => {
       if (!activity?.id) return;
-      await activitiesApi.register(activity.id, { note });
-      await fetchRegistrations();
+      await registerMutation.mutateAsync({ id: activity.id, note });
     },
-    [fetchRegistrations],
+    [registerMutation],
   );
 
   const handleCancel = useCallback(
     async ({ activity, reason, note }) => {
       if (!activity?.id) return;
-      await activitiesApi.cancel(activity.id, { reason, note });
-      await fetchRegistrations();
+      await cancelMutation.mutateAsync({ id: activity.id, reason, note });
     },
-    [fetchRegistrations],
+    [cancelMutation],
   );
 
   const handleAttendance = useCallback(
     async ({ activity }) => {
       if (!activity?.id) return;
-      await activitiesApi.attendance(activity.id, {});
-      await fetchRegistrations();
+      await attendanceMutation.mutateAsync(activity.id);
     },
-    [fetchRegistrations],
+    [attendanceMutation],
   );
 
   const handleFeedback = useCallback(
     async ({ activity, content, files }) => {
       if (!activity?.id) return;
       const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-      await activitiesApi.feedback(activity.id, { content, attachments });
-      await fetchRegistrations();
+      await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
     },
-    [fetchRegistrations],
+    [feedbackMutation],
   );
 
   const buildCards = useCallback(
@@ -326,8 +369,8 @@ function MyActivitiesPage() {
                       size="large"
                       className={cx('my-activities__reset-button')}
                       icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                      onClick={fetchRegistrations}
-                      loading={loading}
+                      onClick={() => refetch()}
+                      loading={isFetching}
                     >
                       Đặt lại
                     </Button>

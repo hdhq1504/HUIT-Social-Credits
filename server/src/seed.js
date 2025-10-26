@@ -132,33 +132,32 @@ const seed = async () => {
         categoryCode: "HO_TRO",
         isFeatured: false
       },
-      // {
-      //   maHoatDong: "HD007",
-      //   tieuDe: "Ngày hội việc làm sinh viên 2025",
-      //   moTa: "Giao lưu trực tiếp với hơn 30 doanh nghiệp và cơ hội tuyển dụng thực tập.",
-      //   diemCong: 18,
-      //   batDauLuc: new Date("2025-03-05T08:30:00+07:00"),
-      //   ketThucLuc: new Date("2025-03-05T16:00:00+07:00"),
-      //   diaDiem: "Sảnh chính cơ sở Điện Biên Phủ",
-      //   sucChuaToiDa: 500,
-      //   hinhAnh: "https://placehold.co/600x360?text=Job+Fair",
-      //   danhMuc: "Ngày hội",
-      //   isFeatured: true
-      // },
-      // {
-      //   maHoatDong: "HD008",
-      //   tieuDe: "Talkshow khởi nghiệp cùng cựu sinh viên",
-      //   moTa: "Lắng nghe kinh nghiệm khởi nghiệp và hành trình xây dựng doanh nghiệp.",
-      //   diemCong: 9,
-      //   batDauLuc: new Date("2025-02-15T18:00:00+07:00"),
-      //   ketThucLuc: new Date("2025-02-15T20:30:00+07:00"),
-      //   diaDiem: "Hội trường B-02.01, cơ sở Thủ Đức",
-      //   sucChuaToiDa: 120,
-      //   hinhAnh: "https://placehold.co/600x360?text=Talkshow+Startup",
-      //   danhMuc: "Khởi nghiệp",
-      //   isFeatured: false
-      // },
-      // {
+      {
+        maHoatDong: "HD007",
+        tieuDe: "Workshop Kỹ năng thuyết trình",
+        moTa: "Hội thảo chia sẻ kỹ năng thuyết trình chuyên nghiệp.",
+        diemCong: 12,
+        batDauLuc: new Date("2025-10-25T09:00:00+07:00"),
+        ketThucLuc: new Date("2025-10-25T11:00:00+07:00"),
+        diaDiem: "Hội trường A.801, cơ sở Điện Biên Phủ",
+        sucChuaToiDa: 100,
+        hinhAnh: "/images/activity-cover.png",
+        categoryCode: "HO_TRO",
+        isFeatured: false
+      },
+      {
+        maHoatDong: "HD008",
+        tieuDe: "Hội thảo Công nghệ AI",
+        moTa: "Chia sẻ về xu hướng và ứng dụng AI trong công nghiệp.",
+        diemCong: 10,
+        batDauLuc: new Date("2025-10-24T14:00:00+07:00"),
+        ketThucLuc: new Date("2025-10-24T16:30:00+07:00"),
+        diaDiem: "Hội trường B.505, cơ sở Ung Văn Khiêm",
+        sucChuaToiDa: 150,
+        hinhAnh: "/images/activity-cover.png",
+        categoryCode: "HO_TRO",
+        isFeatured: false
+      },
     ];
 
     const activityMap = {};
@@ -202,6 +201,18 @@ const seed = async () => {
         trangThai: "DA_THAM_GIA",
         dangKyLuc: new Date("2025-12-10T08:00:00+07:00"),
         diemDanhLuc: new Date("2025-12-15T11:45:00+07:00")
+      },
+      {
+        maHoatDong: "HD007",
+        trangThai: "DANG_KY",
+        dangKyLuc: new Date("2025-10-23T10:00:00+07:00")
+        // No diemDanhLuc yet - activity is currently happening
+      },
+      {
+        maHoatDong: "HD008",
+        trangThai: "VANG_MAT",
+        dangKyLuc: new Date("2025-10-22T15:30:00+07:00"),
+        // No diemDanhLuc - user was absent
       }
     ];
 

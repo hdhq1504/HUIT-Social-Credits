@@ -1,65 +1,94 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Tabs } from 'antd';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
-import activitiesApi from '@api/activities.api';
+import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import styles from './FeedbackPage.module.scss';
 
 const cx = classNames.bind(styles);
 
 function FeedbackPage() {
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(false);
   const { contextHolder, open: toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchActivities = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await activitiesApi.listMine();
-      setRegistrations(data);
-    } catch (error) {
+  const {
+    data: registrations = [],
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
+    queryFn: () => activitiesApi.listMine(),
+    staleTime: 30 * 1000,
+    retry: 1,
+    onError: (error) => {
       const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động.';
       toast({ message, variant: 'danger' });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+    },
+  });
 
-  useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+  const registerMutation = useMutation({
+    mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể đăng ký hoạt động. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason, note }) => activitiesApi.cancel(id, { reason, note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể hủy đăng ký hoạt động. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: ({ id, content, attachments }) => activitiesApi.feedback(id, { content, attachments }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+      toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể gửi phản hồi. Vui lòng thử lại.';
+      toast({ message, variant: 'danger' });
+    },
+  });
 
   const handleFeedback = useCallback(
     async ({ activity, content, files }) => {
       if (!activity?.id) return;
       const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-      await activitiesApi.feedback(activity.id, { content, attachments });
-      await fetchActivities();
+      await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
     },
-    [fetchActivities],
+    [feedbackMutation],
   );
 
   const handleRegister = useCallback(
     async ({ activity, note }) => {
       if (!activity?.id) return;
-      await activitiesApi.register(activity.id, { note });
-      await fetchActivities();
+      await registerMutation.mutateAsync({ id: activity.id, note });
     },
-    [fetchActivities],
+    [registerMutation],
   );
 
   const handleCancel = useCallback(
     async ({ activity, reason, note }) => {
       if (!activity?.id) return;
-      await activitiesApi.cancel(activity.id, { reason, note });
-      await fetchActivities();
+      await cancelMutation.mutateAsync({ id: activity.id, reason, note });
     },
-    [fetchActivities],
+    [cancelMutation],
   );
 
   const categorized = useMemo(() => {
@@ -176,8 +205,8 @@ function FeedbackPage() {
                     size="large"
                     className={cx('feedback__reset-button')}
                     icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                    onClick={fetchActivities}
-                    loading={loading}
+                    onClick={() => refetch()}
+                    loading={isFetching}
                   >
                     Đặt lại
                   </Button>

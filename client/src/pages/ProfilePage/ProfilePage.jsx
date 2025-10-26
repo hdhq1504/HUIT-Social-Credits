@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField } from '@mui/material';
 import ChangePasswordModal from '@components/ChangePasswordModal/ChangePasswordModal';
@@ -16,7 +16,6 @@ function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
 
   // Lấy thông tin người dùng từ Zustand
-  const user = useAuthStore((state) => state.user);
   const updateUserStore = useAuthStore((state) => state.updateUser);
 
   // State để quản lý thông tin người dùng (cho phép chỉnh sửa)
@@ -37,6 +36,22 @@ function ProfilePage() {
       return data?.user ?? null;
     },
   });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ currentPassword, newPassword }) => {
+      const { data } = await http.post('/auth/change-password', { currentPassword, newPassword });
+      return data;
+    },
+  });
+
+  const handleChangePassword = async ({ currentPassword, newPassword }) => {
+    try {
+      await changePasswordMutation.mutateAsync({ currentPassword, newPassword });
+    } catch (error) {
+      const message = error?.response?.data?.error || 'Không thể đổi mật khẩu. Vui lòng thử lại.';
+      throw new Error(message);
+    }
+  };
 
   // Khi nhận dữ liệu từ API -> đổ vào form và đồng bộ Zustand
   useEffect(() => {
@@ -69,6 +84,7 @@ function ProfilePage() {
   // Callback sau khi đổi mật khẩu thành công
   const handleChangePasswordSuccess = () => {
     openToast({ message: 'Đổi mật khẩu thành công', variant: 'success' });
+    setOpenModal(false);
     // nếu cần đăng nhập lại bằng thông tin mới:
     // if (userInfo) loginUser(userInfo);
   };
@@ -212,13 +228,7 @@ function ProfilePage() {
       <ChangePasswordModal
         open={openModal}
         onClose={handleCloseModal}
-        email={email}
-        userId={user?.uid}
-        //  verifyCurrentPassword={({ userId, password }) => verifyCurrentPasswordMutation.mutateAsync({ userId, password })}
-        //  requestOtp={(email) => requestOtpMutation.mutateAsync(email)}
-        //  verifyOtp={({ email, otp }) => verifyOtpMutation.mutateAsync({ email, otp })}
-        //  resetPassword={({ email, newPassword }) => resetPasswordMutation.mutateAsync({ email, newPassword })}
-        //  loginAfterReset={({ email, password }) => loginAfterResetMutation.mutateAsync({ email, password })}
+        changePassword={handleChangePassword}
         onSuccess={handleChangePasswordSuccess}
       />
     </main>
