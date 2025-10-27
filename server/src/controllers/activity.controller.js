@@ -33,6 +33,9 @@ const REGISTRATION_INCLUDE = {
       hoTen: true,
       email: true
     }
+  },
+  lichSuDiemDanh: {
+    orderBy: { taoLuc: "desc" }
   }
 };
 
@@ -88,6 +91,51 @@ const normalizeAttachments = (value) => {
   return [value];
 };
 
+const MAX_ATTENDANCE_EVIDENCE_SIZE = 5_000_000;
+
+const sanitizeOptionalText = (value, maxLength = 500) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+};
+
+const sanitizeAttendanceEvidence = (value) => {
+  if (!value || typeof value !== "object") {
+    return { data: null, mimeType: null, fileName: null };
+  }
+
+  const rawData =
+    typeof value.data === "string"
+      ? value.data
+      : typeof value.dataUrl === "string"
+        ? value.dataUrl
+        : null;
+  const data = rawData?.trim();
+
+  if (!data || data.length > MAX_ATTENDANCE_EVIDENCE_SIZE || !data.startsWith("data:")) {
+    return { data: null, mimeType: null, fileName: null };
+  }
+
+  const mimeType = typeof value.mimeType === "string" ? value.mimeType.slice(0, 100) : null;
+  const fileName = typeof value.fileName === "string" ? value.fileName.slice(0, 255) : null;
+
+  return { data, mimeType, fileName };
+};
+
+const mapAttendanceEntry = (entry) => {
+  if (!entry) return null;
+  return {
+    id: entry.id,
+    status: entry.trangThai,
+    note: entry.ghiChu ?? null,
+    capturedAt: entry.taoLuc?.toISOString() ?? null,
+    attachment: entry.anhDinhKem ?? null,
+    attachmentMimeType: entry.anhMimeType ?? null,
+    attachmentFileName: entry.anhTen ?? null
+  };
+};
+
 const mapFeedback = (feedback) => {
   if (!feedback) return null;
   return {
@@ -121,6 +169,9 @@ const mapRegistration = (registration) => {
         name: registration.diemDanhBoi.hoTen ?? registration.diemDanhBoi.email ?? "Người dùng"
       }
       : null,
+    attendanceHistory: (registration.lichSuDiemDanh ?? [])
+      .map((entry) => mapAttendanceEntry(entry))
+      .filter(Boolean),
     feedback: mapFeedback(registration.phanHoi)
   };
 };
@@ -350,7 +401,7 @@ export const cancelActivityRegistration = async (req, res) => {
 export const markAttendance = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
-  const { note, status } = req.body || {};
+  const { note, status, evidence } = req.body || {};
 
   const registration = await prisma.dangKyHoatDong.findUnique({
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
@@ -385,16 +436,33 @@ export const markAttendance = async (req, res) => {
   }
 
   const nextStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";
+  const normalizedNote = sanitizeOptionalText(note);
+  const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
+  const attendanceTime = new Date();
 
-  await prisma.dangKyHoatDong.update({
-    where: { id: registration.id },
-    data: {
-      trangThai: nextStatus,
-      diemDanhLuc: new Date(),
-      diemDanhGhiChu: note ?? null,
-      diemDanhBoiId: userId
-    }
-  });
+  await prisma.$transaction([
+    prisma.dangKyHoatDong.update({
+      where: { id: registration.id },
+      data: {
+        trangThai: nextStatus,
+        diemDanhLuc: attendanceTime,
+        diemDanhGhiChu: normalizedNote,
+        diemDanhBoiId: userId
+      }
+    }),
+    prisma.diemDanhNguoiDung.create({
+      data: {
+        dangKyId: registration.id,
+        nguoiDungId: userId,
+        hoatDongId: activityId,
+        trangThai: nextStatus,
+        ghiChu: normalizedNote,
+        anhDinhKem: sanitizedEvidence.data,
+        anhMimeType: sanitizedEvidence.mimeType,
+        anhTen: sanitizedEvidence.fileName
+      }
+    })
+  ]);
 
   const updated = await buildActivityResponse(activityId, userId);
   res.json({

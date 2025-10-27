@@ -98,12 +98,25 @@ const seed = async () => {
         tieuDe: "Test",
         moTa: "Đây là mô tả",
         diemCong: 50,
-        batDauLuc: new Date("2025-10-27T12:45:00+07:00"),
+        batDauLuc: new Date("2025-10-26T11:45:00+07:00"),
         ketThucLuc: null,
         diaDiem: null,
         sucChuaToiDa: null,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HO_TRO",
+        isFeatured: false
+      },
+      {
+        maHoatDong: "HD005",
+        tieuDe: "Test",
+        moTa: "Đây là mô tả",
+        diemCong: 60,
+        batDauLuc: new Date("2025-10-26T11:45:00+07:00"),
+        ketThucLuc: null,
+        diaDiem: null,
+        sucChuaToiDa: null,
+        hinhAnh: "/images/activity-cover.png",
+        categoryCode: "DIA_CHI_DO",
         isFeatured: false
       },
     ];

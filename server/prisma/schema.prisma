@@ -16,29 +16,30 @@ datasource db {
 }
 
 model NguoiDung {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  matKhau     String
-  hoTen       String
-  vaiTro      VaiTro    @default(SINHVIEN)
-  gioiTinh    GioiTinh?
-  maSV        String?   @db.VarChar(50)
-  maCB        String?   @db.VarChar(50)
-  maLop       String?   @db.VarChar(50)
-  maKhoa      String?   @db.VarChar(255)
-  soDT        String?   @db.VarChar(30)
-  ngaySinh    DateTime?
-  avatarUrl   String?   @db.VarChar(255)
-  isActive    Boolean   @default(true)
+  id                          String              @id @default(cuid())
+  email                       String              @unique
+  matKhau                     String
+  hoTen                       String
+  vaiTro                      VaiTro              @default(SINHVIEN)
+  gioiTinh                    GioiTinh?
+  maSV                        String?             @db.VarChar(50)
+  maCB                        String?             @db.VarChar(50)
+  maLop                       String?             @db.VarChar(50)
+  maKhoa                      String?             @db.VarChar(255)
+  soDT                        String?             @db.VarChar(30)
+  ngaySinh                    DateTime?
+  avatarUrl                   String?             @db.VarChar(255)
+  isActive                    Boolean             @default(true)
   resetPasswordToken          String?
   resetPasswordTokenExpiresAt DateTime?
-  lastLoginAt DateTime?
-  ghiChu      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  dangKy      DangKyHoatDong[]
-  diemDanh    DangKyHoatDong[] @relation("NguoiDungDiemDanh")
-  phanHoi     PhanHoiHoatDong[]
+  lastLoginAt                 DateTime?
+  ghiChu                      String?
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+  dangKy                      DangKyHoatDong[]
+  diemDanh                    DangKyHoatDong[]    @relation("NguoiDungDiemDanh")
+  phanHoi                     PhanHoiHoatDong[]
+  DiemDanhNguoiDung           DiemDanhNguoiDung[]
 
   @@index([email])
   @@index([maSV])
@@ -48,88 +49,111 @@ model NguoiDung {
 }
 
 model DanhMucHoatDong {
-  id        String    @id @default(cuid())
-  ma        String    @unique
+  id        String     @id @default(cuid())
+  ma        String     @unique
   ten       String
   moTa      String?
-  nhomDiem  NhomDiem @default(NHOM_2_3)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  nhomDiem  NhomDiem   @default(NHOM_2_3)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   hoatDong  HoatDong[]
 
   @@index([isActive, nhomDiem])
 }
 
 model HoatDong {
-  id            String             @id @default(cuid())
-  maHoatDong    String?            @unique
-  tieuDe        String
-  moTa          String?
-  diemCong      Int                @default(0)
-  batDauLuc     DateTime?
-  ketThucLuc    DateTime?
-  diaDiem       String?
-  sucChuaToiDa  Int?
-  hinhAnh       String?            @db.VarChar(255)
-  isFeatured    Boolean            @default(false)
-  isPublished   Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  dangKy        DangKyHoatDong[]
-  phanHoi       PhanHoiHoatDong[]
-  danhMucId     String?
-  nhomDiem      NhomDiem          @default(NHOM_2_3)
-  danhMucRef    DanhMucHoatDong?  @relation(fields: [danhMucId], references: [id])
+  id                String              @id @default(cuid())
+  maHoatDong        String?             @unique
+  tieuDe            String
+  moTa              String?
+  diemCong          Int                 @default(0)
+  batDauLuc         DateTime?
+  ketThucLuc        DateTime?
+  diaDiem           String?
+  sucChuaToiDa      Int?
+  hinhAnh           String?             @db.VarChar(255)
+  isFeatured        Boolean             @default(false)
+  isPublished       Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  dangKy            DangKyHoatDong[]
+  phanHoi           PhanHoiHoatDong[]
+  danhMucId         String?
+  nhomDiem          NhomDiem            @default(NHOM_2_3)
+  danhMucRef        DanhMucHoatDong?    @relation(fields: [danhMucId], references: [id])
+  DiemDanhNguoiDung DiemDanhNguoiDung[]
 
   @@index([isPublished, batDauLuc])
   @@index([danhMucId])
 }
 
 model DangKyHoatDong {
-  id           String            @id @default(cuid())
-  nguoiDungId  String
-  hoatDongId   String
-  trangThai    TrangThaiDangKy   @default(DANG_KY)
-  lyDoHuy      String?
-  ghiChu       String?
-  dangKyLuc    DateTime          @default(now())
-  duyetLuc     DateTime?
-  updatedAt    DateTime          @updatedAt
-  diemDanhLuc  DateTime?
-  diemDanhBoiId String?
+  id             String          @id @default(cuid())
+  nguoiDungId    String
+  hoatDongId     String
+  trangThai      TrangThaiDangKy @default(DANG_KY)
+  lyDoHuy        String?
+  ghiChu         String?
+  dangKyLuc      DateTime        @default(now())
+  duyetLuc       DateTime?
+  updatedAt      DateTime        @updatedAt
+  diemDanhLuc    DateTime?
+  diemDanhBoiId  String?
   diemDanhGhiChu String?
 
-  nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
-  hoatDong     HoatDong          @relation(fields: [hoatDongId], references: [id])
-  diemDanhBoi  NguoiDung?        @relation("NguoiDungDiemDanh", fields: [diemDanhBoiId], references: [id])
-  phanHoi      PhanHoiHoatDong?
+  nguoiDung      NguoiDung           @relation(fields: [nguoiDungId], references: [id])
+  hoatDong       HoatDong            @relation(fields: [hoatDongId], references: [id])
+  diemDanhBoi    NguoiDung?          @relation("NguoiDungDiemDanh", fields: [diemDanhBoiId], references: [id])
+  phanHoi        PhanHoiHoatDong?
+  lichSuDiemDanh DiemDanhNguoiDung[]
 
+  @@unique([nguoiDungId, hoatDongId])
   @@index([hoatDongId, trangThai])
   @@index([nguoiDungId, trangThai])
   @@index([hoatDongId, diemDanhLuc])
-  @@unique([nguoiDungId, hoatDongId])
+}
+
+model DiemDanhNguoiDung {
+  id          String          @id @default(cuid())
+  dangKyId    String
+  nguoiDungId String
+  hoatDongId  String
+  trangThai   TrangThaiDangKy
+  ghiChu      String?
+  anhDinhKem  String?         @db.Text
+  anhMimeType String?         @db.VarChar(100)
+  anhTen      String?         @db.VarChar(255)
+  taoLuc      DateTime        @default(now())
+
+  dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
+  nguoiDung NguoiDung      @relation(fields: [nguoiDungId], references: [id])
+  hoatDong  HoatDong       @relation(fields: [hoatDongId], references: [id])
+
+  @@index([dangKyId])
+  @@index([nguoiDungId])
+  @@index([hoatDongId])
 }
 
 model PhanHoiHoatDong {
-  id           String            @id @default(cuid())
-  dangKyId     String            @unique
-  nguoiDungId  String
-  hoatDongId   String
-  noiDung      String
-  danhGia      Int?
-  minhChung    Json?
-  trangThai    TrangThaiPhanHoi  @default(CHO_DUYET)
-  taoLuc       DateTime          @default(now())
-  capNhatLuc   DateTime          @updatedAt
+  id          String           @id @default(cuid())
+  dangKyId    String           @unique
+  nguoiDungId String
+  hoatDongId  String
+  noiDung     String
+  danhGia     Int?
+  minhChung   Json?
+  trangThai   TrangThaiPhanHoi @default(CHO_DUYET)
+  taoLuc      DateTime         @default(now())
+  capNhatLuc  DateTime         @updatedAt
 
-  dangKy       DangKyHoatDong    @relation(fields: [dangKyId], references: [id])
-  nguoiDung    NguoiDung         @relation(fields: [nguoiDungId], references: [id])
-  hoatDong     HoatDong          @relation(fields: [hoatDongId], references: [id])
+  dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
+  nguoiDung NguoiDung      @relation(fields: [nguoiDungId], references: [id])
+  hoatDong  HoatDong       @relation(fields: [hoatDongId], references: [id])
 
+  @@unique([nguoiDungId, hoatDongId])
   @@index([hoatDongId])
   @@index([nguoiDungId])
-  @@unique([nguoiDungId, hoatDongId])
 }
 
 enum VaiTro {

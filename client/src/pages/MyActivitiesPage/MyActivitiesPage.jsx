@@ -19,6 +19,7 @@ import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import { fileToDataUrl } from '@utils/file';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -72,7 +73,7 @@ function MyActivitiesPage() {
   });
 
   const attendanceMutation = useMutation({
-    mutationFn: (id) => activitiesApi.attendance(id, {}),
+    mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
       toast({ message: 'Điểm danh thành công!', variant: 'success' });
@@ -165,11 +166,28 @@ function MyActivitiesPage() {
   );
 
   const handleAttendance = useCallback(
-    async ({ activity }) => {
+    async ({ activity, dataUrl, file }) => {
       if (!activity?.id) return;
-      await attendanceMutation.mutateAsync(activity.id);
+
+      let evidenceDataUrl = dataUrl ?? null;
+      if (!evidenceDataUrl && file) {
+        try {
+          evidenceDataUrl = await fileToDataUrl(file);
+        } catch (error) {
+          toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+          return;
+        }
+      }
+
+      await attendanceMutation.mutateAsync({
+        id: activity.id,
+        payload: {
+          status: 'present',
+          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+        },
+      });
     },
-    [attendanceMutation],
+    [attendanceMutation, toast],
   );
 
   const handleFeedback = useCallback(

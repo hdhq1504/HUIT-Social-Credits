@@ -11,6 +11,7 @@ import RegisterModal from '../RegisterModal/RegisterModal';
 import CheckModal from '../CheckModal/CheckModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
+import { fileToDataUrl } from '@utils/file';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -74,7 +75,7 @@ function CardActivity(props) {
   const [modalVariant, setModalVariant] = useState('confirm');
 
   const [openCheck, setOpenCheck] = useState(false);
-  const [, setCaptured] = useState(null);
+  const [captured, setCaptured] = useState(null);
 
   const [openFeedback, setOpenFeedback] = useState(false);
 
@@ -154,14 +155,45 @@ function CardActivity(props) {
     setCaptured(null);
   };
 
-  const handleCaptured = ({ file, previewUrl }) => setCaptured({ file, previewUrl });
+  const handleCaptured = ({ file, previewUrl, dataUrl }) => setCaptured({ file, previewUrl, dataUrl });
 
-  const handleSubmitAttendance = async ({ file, previewUrl }) => {
-    await onConfirmPresent?.({ activity, file, previewUrl });
-    setOpenCheck(false);
-    openToast({ message: 'Gửi điểm danh thành công!', variant: 'success' });
-    // Sau khi điểm danh có thể chuyển sang feedback_pending tùy nghiệp vụ
-    // setUiState('feedback_pending'); onStateChange?.('feedback_pending');
+  const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
+    const payload = {
+      file: file ?? captured?.file ?? null,
+      previewUrl: previewUrl ?? captured?.previewUrl ?? null,
+      dataUrl: dataUrl ?? captured?.dataUrl ?? null,
+    };
+
+    if (!payload.file) {
+      openToast({ message: 'Không tìm thấy ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+      return;
+    }
+
+    let evidenceDataUrl = payload.dataUrl;
+    if (!evidenceDataUrl) {
+      try {
+        evidenceDataUrl = await fileToDataUrl(payload.file);
+      } catch {
+        openToast({ message: 'Không thể đọc dữ liệu ảnh. Vui lòng thử lại.', variant: 'danger' });
+        return;
+      }
+    }
+
+    try {
+      await onConfirmPresent?.({
+        activity,
+        file: payload.file,
+        previewUrl: payload.previewUrl,
+        dataUrl: evidenceDataUrl,
+      });
+      setOpenCheck(false);
+      setCaptured(null);
+      openToast({ message: 'Gửi điểm danh thành công!', variant: 'success' });
+      // Sau khi điểm danh có thể chuyển sang feedback_pending tùy nghiệp vụ
+      // setUiState('feedback_pending'); onStateChange?.('feedback_pending');
+    } catch {
+      openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
+    }
   };
 
   // ==== Feedback handlers ====

@@ -23,17 +23,19 @@ function CheckModal({
 }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
+  const [dataUrl, setDataUrl] = useState(null);
   const [phase, setPhase] = useState(variant);
   const wasOpenRef = useRef(false);
   const prevUrlRef = useRef(null);
+  const [isReadingFile, setIsReadingFile] = useState(false);
 
   // Camera state
   const webcamRef = useRef(null);
-  const activeStreamRef = useRef(null); // giữ stream hiện tại để stop cứng khi đóng
+  const activeStreamRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
 
   // Danh sách camera & camera đang chọn
-  const [videoInputs, setVideoInputs] = useState([]); // [{deviceId, label}, ...]
+  const [videoInputs, setVideoInputs] = useState([]);
   const [deviceId, setDeviceId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasVideoInput, setHasVideoInput] = useState(true);
@@ -44,7 +46,6 @@ function CheckModal({
     prevUrlRef.current = null;
   };
 
-  // Dừng toàn bộ track của stream (fix Safari/IOS không tắt đèn camera)
   const hardStopCamera = () => {
     try {
       const videoEl =
@@ -76,23 +77,28 @@ function CheckModal({
       setPhase(variant || 'checkin');
       setPreviewUrl(null);
       setFile(null);
+      setDataUrl(null);
       setIsCameraOn(false);
       setDeviceId(null);
       setCurrentIndex(0);
+      setIsReadingFile(false);
     }
-    // Khi chuyển từ open=true -> false: tắt camera cứng
+
     if (!open && wasOpenRef.current) {
       hardStopCamera();
       revokePreview();
+      setDataUrl(null);
+      setIsReadingFile(false);
     }
     wasOpenRef.current = open;
   }, [open, variant]);
 
-  // Cleanup khi unmount
   useEffect(() => {
     return () => {
       hardStopCamera();
       revokePreview();
+      setDataUrl(null);
+      setIsReadingFile(false);
     };
   }, []);
 
@@ -116,12 +122,9 @@ function CheckModal({
       setHasVideoInput(false);
     }
   };
-
-  // Xin quyền trước, sau đó liệt kê device và bật khung
   const openCamera = async () => {
     try {
       const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      // stop ngay stream tạm
       tmp.getTracks().forEach((t) => t.stop());
       await enumerateVideoInputs();
       setIsCameraOn(true);
@@ -139,12 +142,10 @@ function CheckModal({
 
   const toggleCamera = async () => {
     if (!videoInputs.length) return;
-    // dừng stream hiện tại trước khi đổi
     hardStopCamera();
     const nextIdx = (currentIndex + 1) % videoInputs.length;
     setCurrentIndex(nextIdx);
     setDeviceId(videoInputs[nextIdx].deviceId);
-    // bật lại khung ở tick tiếp theo
     setTimeout(() => setIsCameraOn(true), 0);
   };
 
@@ -173,45 +174,73 @@ function CheckModal({
 
     setFile(f);
     setPreviewUrl(url);
+    setDataUrl(dataUrl);
     setPhase('checkout');
+    setIsReadingFile(false);
 
     // tắt camera ngay sau khi chụp
     hardStopCamera();
 
-    onCapture?.({ file: f, previewUrl: url });
+    onCapture?.({ file: f, previewUrl: url, dataUrl });
   };
 
   const handleRetake = async () => {
     revokePreview();
     setFile(null);
     setPreviewUrl(null);
+    setDataUrl(dataUrl);
     setPhase('checkin');
-    await openCamera(); // bật lại camera
+    setIsReadingFile(false);
+    await openCamera();
     onRetake?.();
   };
 
   const handleSubmit = () => {
     if (!file) return;
-    onSubmit?.({ file, previewUrl });
+    if (!dataUrl) {
+      message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
+      return;
+    }
+    onSubmit?.({ file, previewUrl, dataUrl });
   };
 
-  // Fallback chọn file (desktop/thiết bị không có camera)
   const fileInputRef = useRef(null);
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    setIsReadingFile(true);
     revokePreview();
     const url = URL.createObjectURL(f);
     prevUrlRef.current = url;
     setFile(f);
     setPreviewUrl(url);
-    setPhase('checkout');
+    setDataUrl(null);
+    setPhase('checkin');
     hardStopCamera();
-    onCapture?.({ file: f, previewUrl: url });
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      if (!result) {
+        message.error('Không thể đọc file. Vui lòng thử lại với ảnh khác.');
+        setIsReadingFile(false);
+        return;
+      }
+      setDataUrl(result);
+      setPhase('checkout');
+      setIsReadingFile(false);
+      onCapture?.({ file: f, previewUrl: url, dataUrl: result });
+    };
+    reader.onerror = () => {
+      message.error('Không thể đọc file. Vui lòng thử lại với ảnh khác.');
+      setIsReadingFile(false);
+    };
+    reader.readAsDataURL(f);
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
-  // constraints: iOS ưa dùng deviceId exact
   const videoConstraints = useMemo(() => {
     return deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -223,9 +252,9 @@ function CheckModal({
   return (
     <Modal
       open={open}
-      destroyOnHidden // unmount nội dung khi đóng modal
+      destroyOnHidden
       onCancel={() => {
-        hardStopCamera(); // luôn tắt stream khi đóng
+        hardStopCamera();
         onCancel?.();
       }}
       footer={null}
@@ -340,7 +369,11 @@ function CheckModal({
                   <FontAwesomeIcon icon={faCamera} style={{ marginRight: 8 }} />
                   Chụp lại
                 </button>
-                <button className={cx('check-modal__confirm-button')} onClick={handleSubmit}>
+                <button
+                  className={cx('check-modal__confirm-button')}
+                  onClick={handleSubmit}
+                  disabled={isReadingFile || !file || !dataUrl}
+                >
                   <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
                   Gửi điểm danh
                 </button>

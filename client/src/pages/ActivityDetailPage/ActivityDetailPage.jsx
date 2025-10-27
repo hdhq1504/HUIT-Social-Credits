@@ -22,6 +22,7 @@ import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
 import Loading from '@pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
+import { fileToDataUrl } from '@utils/file';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -120,7 +121,7 @@ function ActivityDetailPage() {
   });
 
   const attendanceMutation = useMutation({
-    mutationFn: (id) => activitiesApi.attendance(id, {}),
+    mutationFn: ({ id: activityId, payload }) => activitiesApi.attendance(activityId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries(['activity', id]);
       setIsCheckOpen(false);
@@ -137,18 +138,33 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
-  const handleAttendanceSubmit = async () => {
+  const handleAttendanceSubmit = async ({ file, dataUrl }) => {
     if (!id) return;
-    attendanceMutation.mutate(id);
-  };
 
-  const descriptionParagraphs = useMemo(
-    () => [
-      'Chiến dịch "Sạch biển xanh - Tương lai bền vững" là hoạt động tình nguyện ý nghĩa nhằm góp phần bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề ô nhiễm rác thải nhựa.',
-      'Đây là cơ hội tuyệt vời để các bạn sinh viên thể hiện tinh thần trách nhiệm với xã hội và môi trường, cùng nhau tạo ra tác động tích cực cho cộng đồng.',
-    ],
-    [],
-  );
+    let evidenceDataUrl = dataUrl ?? null;
+    if (!evidenceDataUrl && file) {
+      try {
+        evidenceDataUrl = await fileToDataUrl(file);
+      } catch (error) {
+        toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+        return;
+      }
+    }
+
+    attendanceMutation.mutate({
+      id,
+      payload: {
+        status: 'present',
+        evidence: evidenceDataUrl
+          ? {
+              data: evidenceDataUrl,
+              mimeType: file?.type,
+              fileName: file?.name,
+            }
+          : undefined,
+      },
+    });
+  };
 
   const benefitItems = useMemo(
     () => [
@@ -570,8 +586,17 @@ function ActivityDetailPage() {
                       await activitiesApi.cancel(item.id, { reason, note });
                       queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
-                    onConfirmPresent={async () => {
-                      await activitiesApi.attendance(item.id, {});
+                    onConfirmPresent={async ({ dataUrl, file }) => {
+                      let evidenceDataUrl = dataUrl ?? null;
+                      if (!evidenceDataUrl && file) {
+                        evidenceDataUrl = await fileToDataUrl(file);
+                      }
+                      await activitiesApi.attendance(item.id, {
+                        status: 'present',
+                        evidence: evidenceDataUrl
+                          ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
+                          : undefined,
+                      });
                       queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                     onSendFeedback={async ({ content, files }) => {
