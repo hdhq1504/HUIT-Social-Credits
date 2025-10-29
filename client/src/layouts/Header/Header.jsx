@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
@@ -9,7 +9,7 @@ import logo from '@assets/images/logo.svg';
 import avatar from '@assets/images/profile.png';
 import Notification from '@components/Notification/Notification';
 import styles from './Header.module.scss';
-import { mockApi } from '@utils/mockAPI';
+import notificationsApi, { NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY } from '@api/notifications.api';
 import useAuthStore from '@stores/useAuthStore';
 
 const cx = classNames.bind(styles);
@@ -20,13 +20,23 @@ function Header() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [isMobile, setIsMobile] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    data: unreadData,
+    refetch: refetchUnread,
+  } = useQuery({
+    queryKey: NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
+    queryFn: () => notificationsApi.getUnreadCount(),
+    enabled: isLoggedIn,
+    initialData: { count: 0 },
+    staleTime: 20_000,
+  });
 
-  const refreshUnread = useCallback(async () => {
-    const items = await mockApi.getNotifications();
-    const count = items.filter((n) => n.isUnread).length;
-    setUnreadCount(count);
-  }, []);
+  const unreadCount = isLoggedIn ? unreadData?.count ?? 0 : 0;
+
+  const refreshUnread = useCallback(() => {
+    if (!isLoggedIn) return;
+    refetchUnread();
+  }, [isLoggedIn, refetchUnread]);
 
   useEffect(() => {
     const checkScreenSize = () => setIsMobile(window.innerWidth <= 640);
@@ -118,7 +128,7 @@ function Header() {
         </Link>
       </div>
       <div className={cx('header__menu-item')}>
-        <Link to="/">
+        <Link to="/my-points">
           <BadgeCheck size={16} />
           <span>Kết quả</span>
         </Link>
@@ -213,7 +223,7 @@ function Header() {
             hideOnClick
             onShow={refreshUnread}
             onClickOutside={(instance) => instance.hide()}
-            content={<Notification onMarkAllRead={() => setUnreadCount(0)} />}
+            content={<Notification onMarkAllRead={() => refetchUnread()} />}
           >
             <button type="button" className={cx('header__notification')} aria-label="Thông báo">
               <Bell className={cx('header__notification-icon')} />

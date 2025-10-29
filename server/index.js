@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import { env } from "./src/env.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import activityRoutes from "./src/routes/activity.routes.js";
+import notificationRoutes from "./src/routes/notification.routes.js";
 import statsRoutes from "./src/routes/stats.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
@@ -23,6 +24,7 @@ app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 app.use("/api/auth", authRoutes);
 app.use("/api/activities", activityRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/stats", statsRoutes);
 
 app.use(errorHandler);

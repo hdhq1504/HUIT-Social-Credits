@@ -40,6 +40,7 @@ model NguoiDung {
   diemDanh                    DangKyHoatDong[]    @relation("NguoiDungDiemDanh")
   phanHoi                     PhanHoiHoatDong[]
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
+  thongBao                    ThongBao[]
 
   @@index([email])
   @@index([maSV])
@@ -154,6 +155,23 @@ model PhanHoiHoatDong {
   @@unique([nguoiDungId, hoatDongId])
   @@index([hoatDongId])
   @@index([nguoiDungId])
+}
+
+model ThongBao {
+  id          String    @id @default(cuid())
+  nguoiDungId String
+  tieuDe      String
+  noiDung     String
+  loai        String    @db.VarChar(30)
+  duLieu      Json?
+  daDoc       Boolean   @default(false)
+  daDocLuc    DateTime?
+  createdAt   DateTime  @default(now())
+
+  nguoiDung   NguoiDung @relation(fields: [nguoiDungId], references: [id])
+
+  @@index([nguoiDungId, daDoc])
+  @@index([nguoiDungId, createdAt])
 }
 
 enum VaiTro {

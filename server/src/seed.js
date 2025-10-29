@@ -55,70 +55,18 @@ const seed = async () => {
 
     const activitiesData = [
       {
-        maHoatDong: "HD001",
+        maHoatDong: "HIENMAU291025",
         tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",
         moTa: "🩸Muốn cứu vớt thế giới thì không cần phải là siêu anh hùng đội mũ bảo hiểm xanh đâu, bạn có thể là một nhà anh hùng trong mắt những người cần giúp đỡ bằng cách trở thành một tình nguyện viên hiến máu! Đây không chỉ là một hành động nhân ái, mà còn là cơ hội để bạn thể hiện tình yêu thương và sẻ chia với cộng đồng.",
         diemCong: 25,
-        batDauLuc: new Date("2025-12-31T06:30:00+07:00"),
-        ketThucLuc: new Date("2025-12-31T11:30:00+07:00"),
+        batDauLuc: new Date("2025-10-29T10:10:00+07:00"),
+        ketThucLuc: new Date("2025-10-29T10:30:00+07:00"),
         diaDiem: "Nhà hàng tiệc cưới Đồng Xanh, 1320 Lê Đức Thọ, phường 13, quận Gò Vấp",
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
         categoryCode: "HIEN_MAU",
         isFeatured: false
-      },
-      {
-        maHoatDong: "HD002",
-        tieuDe: "THAM GIA CÙNG HSS - MÙA HÈ XANH 2024!",
-        moTa: null,
-        diemCong: 30,
-        batDauLuc: new Date("2025-10-15T16:30:00+07:00"),
-        ketThucLuc: null,
-        diaDiem: "Phòng B301",
-        sucChuaToiDa: 30,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
-        isFeatured: true
-      },
-      {
-        maHoatDong: "HD003",
-        tieuDe: "HỖ TRỢ TTQLCL",
-        moTa: "💥 Chiến dịch Mùa Hè Xanh 2024 hứa hẹn mang đến những trải nghiệm đặc biệt và kích thích sự sáng tạo. Tại đây, bạn sẽ được thử sức, khám phá và hòa mình vào những hoạt động đầy thử thách và ý nghĩa, góp phần thay đổi tích cực cho xã hội và để lại dấu ấn đậm nét trong lòng mọi người.",
-        diemCong: 50,
-        batDauLuc: new Date("2024-07-15"),
-        ketThucLuc: new Date("2024-07-25"),
-        diaDiem: "Xã Long Chữ huyện Bến Cầu tỉnh Tây Ninh",
-        sucChuaToiDa: null,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "MUA_HE_XANH",
-        isFeatured: true
-      },
-      {
-        maHoatDong: "HD004",
-        tieuDe: "Test",
-        moTa: "Đây là mô tả",
-        diemCong: 50,
-        batDauLuc: new Date("2025-10-26T11:45:00+07:00"),
-        ketThucLuc: null,
-        diaDiem: null,
-        sucChuaToiDa: null,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
-        isFeatured: false
-      },
-      {
-        maHoatDong: "HD005",
-        tieuDe: "Test",
-        moTa: "Đây là mô tả",
-        diemCong: 60,
-        batDauLuc: new Date("2025-10-26T11:45:00+07:00"),
-        ketThucLuc: null,
-        diaDiem: null,
-        sucChuaToiDa: null,
-        hinhAnh: "/images/activity-cover.png",
-        categoryCode: "DIA_CHI_DO",
-        isFeatured: false
-      },
+      }
     ];
 
     const activityMap = {};

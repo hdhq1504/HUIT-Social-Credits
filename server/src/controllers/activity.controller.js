@@ -1,4 +1,5 @@
 import prisma from "../prisma.js";
+import { notifyUser } from "../utils/notification.service.js";
 import { getPointGroupLabel, normalizePointGroup } from "../utils/points.js";
 
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
@@ -317,6 +318,12 @@ export const registerForActivity = async (req, res) => {
   const { id: activityId } = req.params;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true }
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
+
   const activity = await prisma.hoatDong.findUnique({ where: { id: activityId, isPublished: true } });
   if (!activity) return res.status(404).json({ error: "Hoạt động không tồn tại" });
 
@@ -363,6 +370,27 @@ export const registerForActivity = async (req, res) => {
   }
 
   const updated = await buildActivityResponse(activityId, userId);
+
+  const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
+  const detailLines = [
+    scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
+    activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null
+  ];
+
+  await notifyUser({
+    userId,
+    user,
+    title: "Đăng ký hoạt động thành công",
+    message: `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
+    type: "success",
+    data: { activityId, action: "REGISTERED" },
+    emailSubject: `[HUIT Social Credits] Xác nhận đăng ký hoạt động "${activity.tieuDe}"`,
+    emailMessageLines: [
+      `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
+      ...detailLines
+    ]
+  });
+
   res.status(201).json({
     message: "Đăng ký hoạt động thành công",
     activity: updated
@@ -374,13 +402,22 @@ export const cancelActivityRegistration = async (req, res) => {
   const { id: activityId } = req.params;
   const { reason, note } = req.body || {};
 
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true }
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
+
   const existing = await prisma.dangKyHoatDong.findUnique({
-    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } }
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+    include: { hoatDong: true }
   });
 
   if (!existing || existing.trangThai === "DA_HUY") {
     return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
   }
+
+  const activity = existing.hoatDong;
 
   await prisma.dangKyHoatDong.update({
     where: { id: existing.id },
@@ -392,6 +429,30 @@ export const cancelActivityRegistration = async (req, res) => {
   });
 
   const updated = await buildActivityResponse(activityId, userId);
+
+  if (activity) {
+    const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
+    const detailLines = [
+      scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
+      activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null,
+      reason ? `Lý do hủy: ${String(reason).trim()}` : null
+    ];
+
+    await notifyUser({
+      userId,
+      user,
+      title: "Bạn đã hủy đăng ký hoạt động",
+      message: `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
+      type: "warning",
+      data: { activityId, action: "CANCELED" },
+      emailSubject: `[HUIT Social Credits] Xác nhận hủy đăng ký hoạt động "${activity.tieuDe}"`,
+      emailMessageLines: [
+        `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
+        ...detailLines
+      ]
+    });
+  }
+
   res.json({
     message: "Hủy đăng ký thành công",
     activity: updated
@@ -402,6 +463,12 @@ export const markAttendance = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
   const { note, status, evidence } = req.body || {};
+
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true }
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
 
   const registration = await prisma.dangKyHoatDong.findUnique({
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
@@ -465,8 +532,30 @@ export const markAttendance = async (req, res) => {
   ]);
 
   const updated = await buildActivityResponse(activityId, userId);
+  const success = nextStatus === "DA_THAM_GIA";
+
+  await notifyUser({
+    userId,
+    user,
+    title: success ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
+    message: success
+      ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`
+      : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
+    type: success ? "success" : "danger",
+    data: { activityId, action: success ? "ATTENDED" : "ABSENT" },
+    emailSubject: success
+      ? `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`
+      : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`,
+    emailMessageLines: [
+      success
+        ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
+        : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
+      normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+    ]
+  });
+
   res.json({
-    message: nextStatus === "DA_THAM_GIA" ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
+    message: success ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
     activity: updated
   });
 };
@@ -480,9 +569,15 @@ export const submitActivityFeedback = async (req, res) => {
     return res.status(400).json({ error: "Nội dung phản hồi không được bỏ trống" });
   }
 
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true }
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
+
   const registration = await prisma.dangKyHoatDong.findUnique({
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
-    include: REGISTRATION_INCLUDE
+    include: { ...REGISTRATION_INCLUDE, hoatDong: true }
   });
 
   if (!registration || registration.trangThai === "DA_HUY") {
@@ -523,6 +618,22 @@ export const submitActivityFeedback = async (req, res) => {
   }
 
   const activity = await buildActivityResponse(activityId, userId);
+  const activityTitle = activity?.title ?? registration.hoatDong?.tieuDe ?? "hoạt động";
+
+  await notifyUser({
+    userId,
+    user,
+    title: "Đã gửi phản hồi hoạt động",
+    message: `Phản hồi của bạn cho hoạt động "${activityTitle}" đã được gửi thành công.`,
+    type: "info",
+    data: { activityId, action: "FEEDBACK_SUBMITTED", feedbackId: feedback.id },
+    emailSubject: `[HUIT Social Credits] Xác nhận gửi phản hồi hoạt động "${activityTitle}"`,
+    emailMessageLines: [
+      `Phản hồi của bạn cho hoạt động "${activityTitle}" đã được gửi thành công.`,
+      normalizedRating ? `Đánh giá: ${normalizedRating}/5` : null,
+      normalizedAttachments.length ? `Số lượng minh chứng: ${normalizedAttachments.length}` : null
+    ]
+  });
 
   res.status(201).json({
     message: "Đã gửi phản hồi",
