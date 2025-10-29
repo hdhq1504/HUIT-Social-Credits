@@ -136,9 +136,10 @@ function RollCallPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+      const message = data?.message || 'Điểm danh thành công!';
+      toast({ message, variant: 'success' });
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
@@ -175,7 +176,7 @@ function RollCallPage() {
   );
 
   const handleAttendance = useCallback(
-    async ({ activity, dataUrl, file }) => {
+    async ({ activity, dataUrl, file, phase }) => {
       if (!activity?.id) return;
 
       let evidenceDataUrl = dataUrl ?? null;
@@ -192,6 +193,7 @@ function RollCallPage() {
         id: activity.id,
         payload: {
           status: 'present',
+          phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
         },
       });
@@ -246,6 +248,7 @@ function RollCallPage() {
               onCancelRegister={handleCancel}
               onConfirmPresent={handleAttendance}
               onSendFeedback={handleFeedback}
+              attendanceLoading={attendanceMutation.isPending}
             />
           ))}
         </div>
@@ -258,7 +261,15 @@ function RollCallPage() {
         </div>
       );
     },
-    [applySearch, handleRegister, handleCancel, handleAttendance, handleFeedback, isFetching],
+    [
+      applySearch,
+      handleRegister,
+      handleCancel,
+      handleAttendance,
+      handleFeedback,
+      isFetching,
+      attendanceMutation.isPending,
+    ],
   );
 
   const tabItems = useMemo(
@@ -321,52 +332,55 @@ function RollCallPage() {
             type="line"
             size="large"
             tabBarGutter={12}
-            renderTabBar={(props, DefaultTabBar) => (
-              <>
-                <DefaultTabBar {...props} />
+            renderTabBar={(props, TabBar) => {
+              const RenderedTabBar = TabBar;
+              return (
+                <>
+                  <RenderedTabBar {...props} />
 
-                {/* Thanh tìm kiếm */}
-                <div className={cx('roll-call__search')}>
-                  <Input
-                    placeholder="Nhập từ khóa"
-                    size="large"
-                    className={cx('roll-call__search-input')}
-                    allowClear
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    onPressEnter={() => {}}
-                  />
+                  {/* Thanh tìm kiếm */}
+                  <div className={cx('roll-call__search')}>
+                    <Input
+                      placeholder="Nhập từ khóa"
+                      size="large"
+                      className={cx('roll-call__search-input')}
+                      allowClear
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      onPressEnter={() => {}}
+                    />
 
-                  <Select value={group} size="large" className={cx('roll-call__search-select')} onChange={setGroup}>
-                    <Option value="all">Nhóm hoạt động</Option>
-                    <Option value="mua-he-xanh">Mùa hè xanh</Option>
-                    <Option value="hien-mau">Hiến máu</Option>
-                    <Option value="dia-chi-do">Địa chỉ đỏ</Option>
-                    <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
-                    <Option value="ho-tro">Hỗ trợ</Option>
-                  </Select>
+                    <Select value={group} size="large" className={cx('roll-call__search-select')} onChange={setGroup}>
+                      <Option value="all">Nhóm hoạt động</Option>
+                      <Option value="mua-he-xanh">Mùa hè xanh</Option>
+                      <Option value="hien-mau">Hiến máu</Option>
+                      <Option value="dia-chi-do">Địa chỉ đỏ</Option>
+                      <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
+                      <Option value="ho-tro">Hỗ trợ</Option>
+                    </Select>
 
-                  <Select value={sort} size="large" className={cx('roll-call__search-select')} onChange={setSort}>
-                    <Option value="latest">Mới nhất</Option>
-                    <Option value="oldest">Cũ nhất</Option>
-                    <Option value="popular">Phổ biến nhất</Option>
-                  </Select>
+                    <Select value={sort} size="large" className={cx('roll-call__search-select')} onChange={setSort}>
+                      <Option value="latest">Mới nhất</Option>
+                      <Option value="oldest">Cũ nhất</Option>
+                      <Option value="popular">Phổ biến nhất</Option>
+                    </Select>
 
-                  <Button
-                    type="primary"
-                    size="large"
-                    className={cx('roll-call__reset-button')}
-                    icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                    onClick={handleReset}
-                    loading={isFetching}
-                  >
-                    Đặt lại
-                  </Button>
-                </div>
+                    <Button
+                      type="primary"
+                      size="large"
+                      className={cx('roll-call__reset-button')}
+                      icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+                      onClick={handleReset}
+                      loading={isFetching}
+                    >
+                      Đặt lại
+                    </Button>
+                  </div>
 
-                <div className={cx('roll-call__title')}>Danh sách hoạt động</div>
-              </>
-            )}
+                  <div className={cx('roll-call__title')}>Danh sách hoạt động</div>
+                </>
+              );
+            }}
           />
         </div>
       </div>

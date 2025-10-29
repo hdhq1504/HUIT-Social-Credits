@@ -21,6 +21,7 @@ function RegisterModal({
   location,
   reasons = ['Bận lịch đột xuất', 'Trùng lịch thi/học', 'Lý do sức khỏe', 'Khác'],
   showConflictAlert = false,
+  confirmLoading = false,
 }) {
   const isCancel = variant === 'cancel';
   const modalTitle = isCancel ? 'Xác nhận hủy hoạt động' : 'Xác nhận đăng ký hoạt động';
@@ -123,9 +124,9 @@ function RegisterModal({
         <button
           className={cx('register-confirm__confirm-button', isCancel && 'register-confirm__confirm-button--danger')}
           onClick={handleConfirm}
-          disabled={isCancel && !reason}
+          disabled={confirmLoading || (isCancel && !reason)}
         >
-          {isCancel ? 'Xác nhận hủy' : 'Xác nhận đăng ký'}
+          {confirmLoading ? 'Đang xử lý...' : isCancel ? 'Xác nhận hủy' : 'Xác nhận đăng ký'}
         </button>
         <button className={cx('register-confirm__cancel-button')} onClick={onCancel}>
           Hủy bỏ

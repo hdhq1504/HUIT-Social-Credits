@@ -42,6 +42,7 @@ function ActivityDetailPage() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
+  const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
@@ -122,10 +123,12 @@ function ActivityDetailPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id: activityId, payload }) => activitiesApi.attendance(activityId, payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(['activity', id]);
       setIsCheckOpen(false);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+      setAttendancePhase('checkin');
+      const message = data?.message || 'Điểm danh thành công!';
+      toast({ message, variant: 'success' });
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
@@ -145,7 +148,7 @@ function ActivityDetailPage() {
     if (!evidenceDataUrl && file) {
       try {
         evidenceDataUrl = await fileToDataUrl(file);
-      } catch (error) {
+      } catch {
         toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
         return;
       }
@@ -155,6 +158,7 @@ function ActivityDetailPage() {
       id,
       payload: {
         status: 'present',
+        phase: attendancePhase,
         evidence: evidenceDataUrl
           ? {
               data: evidenceDataUrl,
@@ -264,6 +268,13 @@ function ActivityDetailPage() {
 
   const renderActionButton = () => {
     if (!activity) return null;
+
+    const nextPhase = activity?.registration?.attendanceSummary?.nextPhase ?? 'checkin';
+    const openAttendance = (phase = nextPhase) => {
+      setAttendancePhase(phase);
+      setIsCheckOpen(true);
+    };
+
     switch (viewState) {
       case 'guest':
         return (
@@ -287,9 +298,32 @@ function ActivityDetailPage() {
           <Button
             className={cx('activity-detail__sidebar-button')}
             variant="primary"
-            onClick={() => setIsCheckOpen(true)}
+            onClick={() => openAttendance(nextPhase)}
+            disabled={attendanceMutation.isPending}
           >
             Điểm danh
+          </Button>
+        );
+      case 'confirm_in':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="primary"
+            onClick={() => openAttendance('checkin')}
+            disabled={attendanceMutation.isPending}
+          >
+            Tham gia
+          </Button>
+        );
+      case 'confirm_out':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="orange"
+            onClick={() => openAttendance('checkout')}
+            disabled={attendanceMutation.isPending}
+          >
+            Hoàn tất
           </Button>
         );
       case 'attendance_closed':
@@ -586,13 +620,14 @@ function ActivityDetailPage() {
                       await activitiesApi.cancel(item.id, { reason, note });
                       queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
-                    onConfirmPresent={async ({ dataUrl, file }) => {
+                    onConfirmPresent={async ({ dataUrl, file, phase }) => {
                       let evidenceDataUrl = dataUrl ?? null;
                       if (!evidenceDataUrl && file) {
                         evidenceDataUrl = await fileToDataUrl(file);
                       }
                       await activitiesApi.attendance(item.id, {
                         status: 'present',
+                        phase,
                         evidence: evidenceDataUrl
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
@@ -642,6 +677,8 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
+        confirmLoading={attendanceMutation.isPending}
+        phase={attendancePhase}
       />
 
       <FeedbackModal

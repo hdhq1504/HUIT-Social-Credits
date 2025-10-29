@@ -129,6 +129,7 @@ const mapAttendanceEntry = (entry) => {
   return {
     id: entry.id,
     status: entry.trangThai,
+    phase: entry.loai === "CHECKOUT" ? "checkout" : "checkin",
     note: entry.ghiChu ?? null,
     capturedAt: entry.taoLuc?.toISOString() ?? null,
     attachment: entry.anhDinhKem ?? null,
@@ -152,6 +153,11 @@ const mapFeedback = (feedback) => {
 
 const mapRegistration = (registration) => {
   if (!registration) return null;
+  const attendanceHistory = (registration.lichSuDiemDanh ?? [])
+    .map((entry) => mapAttendanceEntry(entry))
+    .filter(Boolean);
+  const hasCheckin = attendanceHistory.some((entry) => entry.phase === "checkin");
+  const hasCheckout = attendanceHistory.some((entry) => entry.phase === "checkout");
   return {
     id: registration.id,
     activityId: registration.hoatDongId,
@@ -170,9 +176,12 @@ const mapRegistration = (registration) => {
         name: registration.diemDanhBoi.hoTen ?? registration.diemDanhBoi.email ?? "Người dùng"
       }
       : null,
-    attendanceHistory: (registration.lichSuDiemDanh ?? [])
-      .map((entry) => mapAttendanceEntry(entry))
-      .filter(Boolean),
+    attendanceHistory,
+    attendanceSummary: {
+      hasCheckin,
+      hasCheckout,
+      nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null
+    },
     feedback: mapFeedback(registration.phanHoi)
   };
 };
@@ -189,8 +198,15 @@ const determineState = (activity, registration) => {
 
   switch (registration.trangThai) {
     case "DANG_KY": {
+      const history = registration.lichSuDiemDanh ?? [];
+      const hasCheckin = history.some((entry) => entry.loai === "CHECKIN");
+      const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
       if (end && end < now) return "ended";
-      if (start && start <= now && (!end || end >= now)) return "attendance_open";
+      if (start && start <= now && (!end || end >= now)) {
+        if (!hasCheckin) return "confirm_in";
+        if (!hasCheckout) return "confirm_out";
+        return "attendance_open";
+      }
       if (start && start > now) return "attendance_closed";
       return "registered";
     }
@@ -462,7 +478,7 @@ export const cancelActivityRegistration = async (req, res) => {
 export const markAttendance = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
-  const { note, status, evidence } = req.body || {};
+  const { note, status, evidence, phase } = req.body || {};
 
   const user = await prisma.nguoiDung.findUnique({
     where: { id: userId },
@@ -473,7 +489,8 @@ export const markAttendance = async (req, res) => {
   const registration = await prisma.dangKyHoatDong.findUnique({
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
     include: {
-      hoatDong: true
+      hoatDong: true,
+      lichSuDiemDanh: true
     }
   });
 
@@ -502,27 +519,51 @@ export const markAttendance = async (req, res) => {
     return res.status(400).json({ error: "Hoạt động đã kết thúc, bạn không thể điểm danh" });
   }
 
-  const nextStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";
+  const normalizedPhase = typeof phase === "string" && phase.toLowerCase() === "checkout" ? "checkout" : "checkin";
+  const isCheckout = normalizedPhase === "checkout";
+
+  const history = registration.lichSuDiemDanh ?? [];
+  const hasCheckin = history.some((entry) => entry.loai === "CHECKIN");
+  const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
+
+  if (!isCheckout && hasCheckin) {
+    return res.status(409).json({ error: "Bạn đã điểm danh đầu giờ cho hoạt động này" });
+  }
+
+  if (isCheckout && !hasCheckin) {
+    return res.status(400).json({ error: "Bạn cần điểm danh đầu giờ trước khi điểm danh cuối giờ" });
+  }
+
+  if (isCheckout && hasCheckout) {
+    return res.status(409).json({ error: "Bạn đã điểm danh cuối giờ cho hoạt động này" });
+  }
+
+  const nextStatus = status === "absent" && isCheckout ? "VANG_MAT" : "DA_THAM_GIA";
   const normalizedNote = sanitizeOptionalText(note);
   const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
   const attendanceTime = new Date();
 
+  const registrationUpdate = {
+    diemDanhLuc: attendanceTime,
+    diemDanhGhiChu: normalizedNote,
+    diemDanhBoiId: userId
+  };
+  if (isCheckout) {
+    registrationUpdate.trangThai = nextStatus;
+  }
+
   await prisma.$transaction([
     prisma.dangKyHoatDong.update({
       where: { id: registration.id },
-      data: {
-        trangThai: nextStatus,
-        diemDanhLuc: attendanceTime,
-        diemDanhGhiChu: normalizedNote,
-        diemDanhBoiId: userId
-      }
+      data: registrationUpdate
     }),
     prisma.diemDanhNguoiDung.create({
       data: {
         dangKyId: registration.id,
         nguoiDungId: userId,
         hoatDongId: activityId,
-        trangThai: nextStatus,
+        trangThai: isCheckout ? nextStatus : "DANG_KY",
+        loai: isCheckout ? "CHECKOUT" : "CHECKIN",
         ghiChu: normalizedNote,
         anhDinhKem: sanitizedEvidence.data,
         anhMimeType: sanitizedEvidence.mimeType,
@@ -532,30 +573,54 @@ export const markAttendance = async (req, res) => {
   ]);
 
   const updated = await buildActivityResponse(activityId, userId);
-  const success = nextStatus === "DA_THAM_GIA";
+  const success = isCheckout && nextStatus === "DA_THAM_GIA";
 
-  await notifyUser({
-    userId,
-    user,
-    title: success ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
-    message: success
+  const notificationTitle = isCheckout
+    ? success
+      ? "Điểm danh thành công"
+      : "Đã ghi nhận vắng mặt"
+    : "Đã ghi nhận điểm danh đầu giờ";
+  const notificationMessage = isCheckout
+    ? success
       ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`
-      : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
-    type: success ? "success" : "danger",
-    data: { activityId, action: success ? "ATTENDED" : "ABSENT" },
-    emailSubject: success
+      : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`
+    : `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
+  const notificationType = isCheckout ? (success ? "success" : "danger") : "info";
+  const notificationAction = isCheckout ? (success ? "ATTENDED" : "ABSENT") : "CHECKIN";
+  const emailSubject = isCheckout
+    ? success
       ? `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`
-      : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`,
-    emailMessageLines: [
+      : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`
+    : `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
+  const emailMessageLines = isCheckout
+    ? [
       success
         ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
         : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
       normalizedNote ? `Ghi chú: ${normalizedNote}` : null
     ]
+    : [
+      `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`,
+      normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+    ];
+
+  await notifyUser({
+    userId,
+    user,
+    title: notificationTitle,
+    message: notificationMessage,
+    type: notificationType,
+    data: { activityId, action: notificationAction },
+    emailSubject,
+    emailMessageLines
   });
 
   res.json({
-    message: success ? "Điểm danh thành công" : "Đã ghi nhận vắng mặt",
+    message: isCheckout
+      ? success
+        ? "Điểm danh cuối giờ thành công"
+        : "Đã ghi nhận vắng mặt"
+      : "Điểm danh đầu giờ thành công",
     activity: updated
   });
 };

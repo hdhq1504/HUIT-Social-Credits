@@ -20,11 +20,13 @@ function CheckModal({
   pointsLabel,
   dateTime,
   location,
+  confirmLoading = false,
+  phase = 'checkin',
 }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
   const [dataUrl, setDataUrl] = useState(null);
-  const [phase, setPhase] = useState(variant);
+  const [captureStage, setCaptureStage] = useState(variant);
   const wasOpenRef = useRef(false);
   const prevUrlRef = useRef(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
@@ -74,7 +76,7 @@ function CheckModal({
   // ========= Effects =========
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      setPhase(variant || 'checkin');
+      setCaptureStage(variant || 'checkin');
       setPreviewUrl(null);
       setFile(null);
       setDataUrl(null);
@@ -175,10 +177,9 @@ function CheckModal({
     setFile(f);
     setPreviewUrl(url);
     setDataUrl(dataUrl);
-    setPhase('checkout');
+    setCaptureStage('checkout');
     setIsReadingFile(false);
 
-    // tắt camera ngay sau khi chụp
     hardStopCamera();
 
     onCapture?.({ file: f, previewUrl: url, dataUrl });
@@ -189,14 +190,14 @@ function CheckModal({
     setFile(null);
     setPreviewUrl(null);
     setDataUrl(dataUrl);
-    setPhase('checkin');
+    setCaptureStage('checkin');
     setIsReadingFile(false);
     await openCamera();
     onRetake?.();
   };
 
   const handleSubmit = () => {
-    if (!file) return;
+    if (confirmLoading || !file) return;
     if (!dataUrl) {
       message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
       return;
@@ -216,7 +217,7 @@ function CheckModal({
     setFile(f);
     setPreviewUrl(url);
     setDataUrl(null);
-    setPhase('checkin');
+    setCaptureStage('checkin');
     hardStopCamera();
     const reader = new FileReader();
     reader.onload = () => {
@@ -227,7 +228,7 @@ function CheckModal({
         return;
       }
       setDataUrl(result);
-      setPhase('checkout');
+      setCaptureStage('checkout');
       setIsReadingFile(false);
       onCapture?.({ file: f, previewUrl: url, dataUrl: result });
     };
@@ -302,7 +303,6 @@ function CheckModal({
                 mirrored={false}
                 playsInline
                 onUserMedia={() => {
-                  // lưu stream thực tế để stop cứng khi cần
                   const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
                   const stream = videoEl?.srcObject || webcamRef.current?.stream;
                   if (stream) activeStreamRef.current = stream;
@@ -330,15 +330,14 @@ function CheckModal({
 
           {/* Actions */}
           <div className={cx('check-modal__actions')}>
-            {phase !== 'checkout' ? (
+            {captureStage !== 'checkout' ? (
               <>
                 {hasVideoInput && (
                   <button
                     className={cx('check-modal__confirm-button')}
                     onClick={() => {
-                      if (!isCameraOn)
-                        openCamera(); // xin quyền + bật camera
-                      else handleCapture(); // đang bật: chụp ảnh
+                      if (!isCameraOn) openCamera();
+                      else handleCapture();
                     }}
                   >
                     <FontAwesomeIcon icon={faCamera} style={{ marginRight: 8 }} />
@@ -372,10 +371,10 @@ function CheckModal({
                 <button
                   className={cx('check-modal__confirm-button')}
                   onClick={handleSubmit}
-                  disabled={isReadingFile || !file || !dataUrl}
+                  disabled={isReadingFile || !file || !dataUrl || confirmLoading}
                 >
                   <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
-                  Gửi điểm danh
+                  {confirmLoading ? 'Đang gửi...' : 'Gửi điểm danh'}
                 </button>
               </>
             )}

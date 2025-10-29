@@ -74,9 +74,10 @@ function MyActivitiesPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+      const message = data?.message || 'Điểm danh thành công!';
+      toast({ message, variant: 'success' });
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
@@ -166,14 +167,14 @@ function MyActivitiesPage() {
   );
 
   const handleAttendance = useCallback(
-    async ({ activity, dataUrl, file }) => {
+    async ({ activity, dataUrl, file, phase }) => {
       if (!activity?.id) return;
 
       let evidenceDataUrl = dataUrl ?? null;
       if (!evidenceDataUrl && file) {
         try {
           evidenceDataUrl = await fileToDataUrl(file);
-        } catch (error) {
+        } catch {
           toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
           return;
         }
@@ -183,6 +184,7 @@ function MyActivitiesPage() {
         id: activity.id,
         payload: {
           status: 'present',
+          phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
         },
       });
@@ -211,9 +213,10 @@ function MyActivitiesPage() {
           onCancelRegister={handleCancel}
           onConfirmPresent={handleAttendance}
           onSendFeedback={handleFeedback}
+          attendanceLoading={attendanceMutation.isPending}
         />
       )),
-    [handleRegister, handleCancel, handleAttendance, handleFeedback],
+    [handleRegister, handleCancel, handleAttendance, handleFeedback, attendanceMutation.isPending],
   );
 
   const tabItems = useMemo(() => {

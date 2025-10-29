@@ -84,9 +84,7 @@ function PersonalActivitiesSection() {
       });
   }, [registrations]);
 
-  const emptyText = isLoggedIn
-    ? 'Bạn chưa có hoạt động sắp tới'
-    : 'Đăng nhập để xem hoạt động sắp tới của bạn';
+  const emptyText = isLoggedIn ? 'Bạn chưa có hoạt động sắp tới' : 'Đăng nhập để xem hoạt động sắp tới của bạn';
 
   const getVariant = (variant) => variant || 'orange';
 

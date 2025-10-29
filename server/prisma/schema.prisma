@@ -121,6 +121,7 @@ model DiemDanhNguoiDung {
   nguoiDungId String
   hoatDongId  String
   trangThai   TrangThaiDangKy
+  loai        AttendancePhase @default(CHECKIN)
   ghiChu      String?
   anhDinhKem  String?         @db.Text
   anhMimeType String?         @db.VarChar(100)
@@ -198,6 +199,11 @@ enum TrangThaiPhanHoi {
   CHO_DUYET
   DA_DUYET
   BI_TU_CHOI
+}
+
+enum AttendancePhase {
+  CHECKIN
+  CHECKOUT
 }
 
 enum NhomDiem {

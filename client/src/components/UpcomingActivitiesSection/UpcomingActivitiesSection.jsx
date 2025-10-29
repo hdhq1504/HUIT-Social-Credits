@@ -80,34 +80,37 @@ function UpcomingActivitiesSection() {
         </div>
 
         <div className={cx('upcoming-activities__list')}>
-          {filteredActivities.map((a) => !a.isFeatured && (
-            <CardActivity
-              key={a.id}
-              {...a}
-              variant="vertical"
-              onRegister={(activity) => console.log('Open modal for:', activity)}
-              onRegistered={async ({ activity, note }) => {
-                try {
-                  const updated = await activitiesApi.register(activity.id, note ? { note } : {});
-                  setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                } catch (e) {
-                  console.error('Register failed', e);
-                  throw e;
-                }
-              }}
-              onCancelRegister={async ({ activity, reason, note }) => {
-                try {
-                  const updated = await activitiesApi.cancel(activity.id, { reason, note });
-                  setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                } catch (e) {
-                  console.error('Cancel registration failed', e);
-                  throw e;
-                }
-              }}
-              state={a.state || 'guest'}
-              buttonLabels={{ register: 'Đăng ký ngay' }}
-            />
-          ))}
+          {filteredActivities.map(
+            (a) =>
+              !a.isFeatured && (
+                <CardActivity
+                  key={a.id}
+                  {...a}
+                  variant="vertical"
+                  onRegister={(activity) => console.log('Open modal for:', activity)}
+                  onRegistered={async ({ activity, note }) => {
+                    try {
+                      const updated = await activitiesApi.register(activity.id, note ? { note } : {});
+                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                    } catch (e) {
+                      console.error('Register failed', e);
+                      throw e;
+                    }
+                  }}
+                  onCancelRegister={async ({ activity, reason, note }) => {
+                    try {
+                      const updated = await activitiesApi.cancel(activity.id, { reason, note });
+                      setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                    } catch (e) {
+                      console.error('Cancel registration failed', e);
+                      throw e;
+                    }
+                  }}
+                  state={a.state || 'guest'}
+                  buttonLabels={{ register: 'Đăng ký ngay' }}
+                />
+              ),
+          )}
         </div>
 
         <div className={cx('upcoming-activities__actions')}>

@@ -22,7 +22,7 @@ export const activitiesApi = {
   },
   async attendance(activityId, payload = {}) {
     const { data } = await http.post(`/activities/${activityId}/attendance`, payload);
-    return data.activity;
+    return data;
   },
   async feedback(activityId, payload = {}) {
     const { data } = await http.post(`/activities/${activityId}/feedback`, payload);

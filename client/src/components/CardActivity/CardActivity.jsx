@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import routes from '../../config/routes';
@@ -66,6 +66,8 @@ function CardActivity(props) {
     showConflictAlert = false,
     checkinTime = '08:00, 15/11/2024',
     checkoutTime = '17:00, 15/11/2024',
+    attendanceLoading = false,
+    registration,
   } = props;
 
   const [openReg, setOpenReg] = useState(false);
@@ -78,6 +80,13 @@ function CardActivity(props) {
   const [captured, setCaptured] = useState(null);
 
   const [openFeedback, setOpenFeedback] = useState(false);
+  const [isRegisterProcessing, setIsRegisterProcessing] = useState(false);
+  const [isAttendanceSubmitting, setIsAttendanceSubmitting] = useState(false);
+  const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
+
+  const attendanceSummary = registration?.attendanceSummary;
+  const derivedNextAttendancePhase = attendanceSummary?.nextPhase ?? 'checkin';
+  const [attendanceStep, setAttendanceStep] = useState(derivedNextAttendancePhase);
 
   const activity = {
     id,
@@ -96,6 +105,16 @@ function CardActivity(props) {
     modalGroupLabelProp ??
     pointGroupLabel ??
     (pointGroup === 'NHOM_1' ? 'Nhóm 1' : pointGroup === 'NHOM_2_3' ? 'Nhóm 2,3' : undefined);
+
+  useEffect(() => {
+    setUiState(state);
+  }, [state]);
+
+  useEffect(() => {
+    setAttendanceStep(derivedNextAttendancePhase);
+  }, [derivedNextAttendancePhase]);
+
+  const isAttendanceBusy = isAttendanceSubmitting || attendanceLoading;
 
   const openDetails = () => {
     if (typeof onDetails === 'function') onDetails(activity);
@@ -121,6 +140,7 @@ function CardActivity(props) {
   const handleCloseRegister = () => setOpenReg(false);
 
   const handleConfirmRegister = async (payload) => {
+    setIsRegisterProcessing(true);
     try {
       if (modalVariant === 'cancel') {
         await onCancelRegister?.({ activity, ...payload });
@@ -142,11 +162,14 @@ function CardActivity(props) {
         message: modalVariant === 'cancel' ? cancelErrorMessage : errorMessage,
         variant: 'danger',
       });
+    } finally {
+      setIsRegisterProcessing(false);
     }
   };
 
-  const handleOpenAttendance = () => {
+  const handleOpenAttendance = (phase = attendanceStep ?? 'checkin') => {
     setCaptured(null);
+    setAttendanceStep(phase);
     setOpenCheck(true);
   };
 
@@ -179,20 +202,29 @@ function CardActivity(props) {
       }
     }
 
+    const phaseToSend = attendanceStep || 'checkin';
+
     try {
+      setIsAttendanceSubmitting(true);
       await onConfirmPresent?.({
         activity,
         file: payload.file,
         previewUrl: payload.previewUrl,
         dataUrl: evidenceDataUrl,
+        phase: phaseToSend,
       });
       setOpenCheck(false);
       setCaptured(null);
-      openToast({ message: 'Gửi điểm danh thành công!', variant: 'success' });
-      // Sau khi điểm danh có thể chuyển sang feedback_pending tùy nghiệp vụ
-      // setUiState('feedback_pending'); onStateChange?.('feedback_pending');
+      openToast({
+        message:
+          phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!',
+        variant: 'success',
+      });
+      setAttendanceStep(phaseToSend === 'checkin' ? 'checkout' : 'checkin');
     } catch {
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
+    } finally {
+      setIsAttendanceSubmitting(false);
     }
   };
 
@@ -204,6 +236,7 @@ function CardActivity(props) {
   const handleCloseFeedback = () => setOpenFeedback(false);
 
   const handleSubmitFeedback = async ({ content, files, confirm }) => {
+    setIsFeedbackSubmitting(true);
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
       setOpenFeedback(false);
@@ -212,6 +245,8 @@ function CardActivity(props) {
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
     } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
+    } finally {
+      setIsFeedbackSubmitting(false);
     }
   };
 
@@ -265,7 +300,13 @@ function CardActivity(props) {
         };
       case 'attendance_open':
         return {
-          buttons: [btn(L.details, openDetails), btn(L.checkin, handleOpenAttendance, { variant: 'primary' })],
+          buttons: [
+            btn(L.details, openDetails),
+            btn(L.checkin, () => handleOpenAttendance(attendanceStep ?? 'checkin'), {
+              variant: 'primary',
+              disabled: isAttendanceBusy,
+            }),
+          ],
         };
       case 'attendance_closed':
         return {
@@ -282,14 +323,20 @@ function CardActivity(props) {
         return {
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.confirmIn, handleOpenAttendance, { variant: 'primary' }),
+            btn(L.confirmIn, () => handleOpenAttendance('checkin'), {
+              variant: 'primary',
+              disabled: isAttendanceBusy,
+            }),
           ],
         };
       case 'confirm_out':
         return {
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.confirmOut, handleCloseAttendance, { variant: 'orange' }),
+            btn(L.confirmOut, () => handleOpenAttendance('checkout'), {
+              variant: 'orange',
+              disabled: isAttendanceBusy,
+            }),
           ],
         };
       case 'details_only':
@@ -346,7 +393,7 @@ function CardActivity(props) {
         };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiState, actions, statusPill, id, title, points, dateTime, location, capacity]);
+  }, [uiState, actions, statusPill, id, title, points, dateTime, location, capacity, attendanceStep, isAttendanceBusy]);
 
   return (
     <div
@@ -460,6 +507,7 @@ function CardActivity(props) {
         dateTime={dateTime}
         location={location}
         showConflictAlert={showConflictAlert}
+        confirmLoading={isRegisterProcessing}
         {...registerModalProps}
       />
 
@@ -475,6 +523,8 @@ function CardActivity(props) {
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
         location={location}
+        confirmLoading={isAttendanceBusy}
+        phase={attendanceStep}
       />
 
       {/* FeedbackModal chỉ mở khi state là feedback_pending */}
@@ -487,6 +537,7 @@ function CardActivity(props) {
         pointsLabel="Chưa được cộng điểm"
         checkinTime={checkinTime}
         checkoutTime={checkoutTime}
+        submitLoading={isFeedbackSubmitting}
       />
     </div>
   );

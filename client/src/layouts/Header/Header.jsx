@@ -20,10 +20,7 @@ function Header() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [isMobile, setIsMobile] = useState(false);
-  const {
-    data: unreadData,
-    refetch: refetchUnread,
-  } = useQuery({
+  const { data: unreadData, refetch: refetchUnread } = useQuery({
     queryKey: NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
     queryFn: () => notificationsApi.getUnreadCount(),
     enabled: isLoggedIn,
@@ -31,7 +28,7 @@ function Header() {
     staleTime: 20_000,
   });
 
-  const unreadCount = isLoggedIn ? unreadData?.count ?? 0 : 0;
+  const unreadCount = isLoggedIn ? (unreadData?.count ?? 0) : 0;
 
   const refreshUnread = useCallback(() => {
     if (!isLoggedIn) return;
