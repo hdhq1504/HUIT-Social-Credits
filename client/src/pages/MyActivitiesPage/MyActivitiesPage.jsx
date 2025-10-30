@@ -29,11 +29,21 @@ dayjs.extend(updateLocale);
 dayjs.locale('vi');
 dayjs.updateLocale('vi', { weekStart: 1 });
 
+const normalize = (s) =>
+  (s || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
 
   const queryClient = useQueryClient();
   const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
+  const [keyword, setKeyword] = useState('');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
 
   const {
     data: registrations = [],
@@ -49,6 +59,20 @@ function MyActivitiesPage() {
       toast({ message, variant: 'danger' });
     },
   });
+
+  const { academicYears, semesters } = useMemo(() => {
+    const yearSet = new Set();
+    const semesterSet = new Set();
+    registrations.forEach((registration) => {
+      const year = registration.activity?.academicYear;
+      const semester = registration.activity?.semester;
+      if (year) yearSet.add(year);
+      if (semester) semesterSet.add(semester);
+    });
+    const sortedYears = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+    const sortedSemesters = Array.from(semesterSet).sort((a, b) => a.localeCompare(b));
+    return { academicYears: sortedYears, semesters: sortedSemesters };
+  }, [registrations]);
 
   const registerMutation = useMutation({
     mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
@@ -99,27 +123,48 @@ function MyActivitiesPage() {
     },
   });
 
+  const normalizedKeyword = normalize(keyword);
+
+  const filteredRegistrations = useMemo(
+    () =>
+      registrations.filter((registration) => {
+        const activity = registration.activity || {};
+        if (selectedYear !== 'all' && activity.academicYear !== selectedYear) return false;
+        if (selectedSemester !== 'all' && activity.semester !== selectedSemester) return false;
+        if (normalizedKeyword) {
+          const haystack = normalize(
+            [activity.title, activity.code, activity.location, activity.category, activity.pointGroupLabel]
+              .filter(Boolean)
+              .join(' '),
+          );
+          if (!haystack.includes(normalizedKeyword)) return false;
+        }
+        return true;
+      }),
+    [registrations, selectedYear, selectedSemester, normalizedKeyword],
+  );
+
   useEffect(() => {
     setPages({ registered: 1, attended: 1, canceled: 1 });
-  }, [registrations]);
+  }, [selectedYear, selectedSemester, normalizedKeyword, registrations.length]);
 
   const stats = useMemo(() => {
-    const registered = registrations.filter((item) => item.status === 'DANG_KY');
-    const attended = registrations.filter((item) => item.status === 'DA_THAM_GIA');
-    const canceled = registrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
+    const registered = filteredRegistrations.filter((item) => item.status === 'DANG_KY');
+    const attended = filteredRegistrations.filter((item) => item.status === 'DA_THAM_GIA');
+    const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
     const totalPoints = attended.reduce((sum, item) => sum + (item.activity?.points ?? 0), 0);
     const pendingFeedback = attended.filter((item) => item.feedback?.status !== 'DA_DUYET').length;
 
     return {
       totalPoints,
-      totalActivities: registrations.length,
+      totalActivities: filteredRegistrations.length,
       completed: attended.length,
       pending: pendingFeedback,
       registered,
       attended,
       canceled,
     };
-  }, [registrations]);
+  }, [filteredRegistrations]);
 
   const handlePageChange = useCallback((tabKey, page) => {
     setPages((prev) => ({ ...prev, [tabKey]: page }));
@@ -143,7 +188,7 @@ function MyActivitiesPage() {
 
   const calendarEvents = useMemo(() => {
     const map = {};
-    registrations.forEach((registration) => {
+    filteredRegistrations.forEach((registration) => {
       const activity = registration.activity;
       if (!activity?.startTime) return;
       const key = dayjs(activity.startTime).format('YYYY-MM-DD');
@@ -154,7 +199,7 @@ function MyActivitiesPage() {
       map[key] = { type, label: activity.title };
     });
     return map;
-  }, [registrations]);
+  }, [filteredRegistrations]);
 
   const fullCellRender = (current, info) => {
     const key = dayjs(current).format('YYYY-MM-DD');
@@ -249,6 +294,16 @@ function MyActivitiesPage() {
     (tabKey, items, emptyText) => {
       const { total, current, pageItems } = paginate(items, tabKey);
 
+      if (isFetching && registrations.length === 0) {
+        return (
+          <div className={cx('my-activities__list')}>
+            {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <CardActivity key={`skeleton-${tabKey}-${index}`} loading variant="vertical" />
+            ))}
+          </div>
+        );
+      }
+
       if (!total) {
         return (
           <div className={cx('my-activities__empty')}>
@@ -272,7 +327,7 @@ function MyActivitiesPage() {
         </>
       );
     },
-    [buildCards, handlePageChange, paginate],
+    [buildCards, handlePageChange, paginate, isFetching, registrations.length],
   );
 
   const tabItems = useMemo(() => {
@@ -428,19 +483,36 @@ function MyActivitiesPage() {
                         size="large"
                         className={cx('my-activities__search-input')}
                         allowClear
+                        value={keyword}
+                        onChange={(event) => setKeyword(event.target.value)}
                       />
 
-                      <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                        <Select.Option value="all">Nhóm hoạt động</Select.Option>
-                        <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
-                        <Select.Option value="hien-mau">Hiến máu</Select.Option>
-                        <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
+                      <Select
+                        value={selectedYear}
+                        size="large"
+                        className={cx('my-activities__search-select')}
+                        onChange={setSelectedYear}
+                      >
+                        <Select.Option value="all">Tất cả năm học</Select.Option>
+                        {academicYears.map((year) => (
+                          <Select.Option key={year} value={year}>
+                            {year}
+                          </Select.Option>
+                        ))}
                       </Select>
 
-                      <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                        <Select.Option value="all">Mới nhất</Select.Option>
-                        <Select.Option value="oldest">Cũ nhất</Select.Option>
-                        <Select.Option value="popular">Phổ biến nhất</Select.Option>
+                      <Select
+                        value={selectedSemester}
+                        size="large"
+                        className={cx('my-activities__search-select')}
+                        onChange={setSelectedSemester}
+                      >
+                        <Select.Option value="all">Tất cả học kỳ</Select.Option>
+                        {semesters.map((semester) => (
+                          <Select.Option key={semester} value={semester}>
+                            {semester}
+                          </Select.Option>
+                        ))}
                       </Select>
 
                       <Button
@@ -448,7 +520,12 @@ function MyActivitiesPage() {
                         size="large"
                         className={cx('my-activities__reset-button')}
                         icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                        onClick={() => refetch()}
+                        onClick={() => {
+                          setKeyword('');
+                          setSelectedYear('all');
+                          setSelectedSemester('all');
+                          refetch();
+                        }}
                         loading={isFetching}
                       >
                         Đặt lại

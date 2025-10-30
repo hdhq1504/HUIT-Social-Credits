@@ -11,7 +11,7 @@ import {
   faPhone,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
-import { Col, Row, Tabs } from 'antd';
+import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
@@ -35,6 +35,57 @@ const formatTimeRange = (start, end) => {
   const e = end ? dayjs(end).format('HH:mm') : '--';
   return `${s} - ${e}`;
 };
+
+const toStringItems = (value) =>
+  (Array.isArray(value) ? value : [])
+    .map((item) => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return trimmed || null;
+      }
+      if (item && typeof item === 'object') {
+        const text =
+          typeof item.text === 'string'
+            ? item.text
+            : typeof item.description === 'string'
+              ? item.description
+              : typeof item.content === 'string'
+                ? item.content
+                : typeof item.title === 'string'
+                  ? item.title
+                  : null;
+        return text ? text.trim() : null;
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+const toGuideItems = (value) =>
+  (Array.isArray(value) ? value : [])
+    .map((item) => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return trimmed ? { title: null, content: trimmed } : null;
+      }
+      if (item && typeof item === 'object') {
+        const titleCandidate =
+          typeof item.title === 'string' ? item.title : typeof item.heading === 'string' ? item.heading : null;
+        const contentCandidate =
+          typeof item.content === 'string'
+            ? item.content
+            : typeof item.description === 'string'
+              ? item.description
+              : typeof item.text === 'string'
+                ? item.text
+                : null;
+        const content = contentCandidate ? contentCandidate.trim() : null;
+        if (!content) return null;
+        const title = titleCandidate ? titleCandidate.trim() : null;
+        return { title, content };
+      }
+      return null;
+    })
+    .filter(Boolean);
 
 function ActivityDetailPage() {
   const { id } = useParams();
@@ -170,53 +221,13 @@ function ActivityDetailPage() {
     });
   };
 
-  const benefitItems = useMemo(
-    () => [
-      'Nhận điểm hoạt động CTXH tương ứng',
-      'Được cấp giấy chứng nhận tham gia từ Ban tổ chức',
-      'Hỗ trợ chi phí ăn uống và di chuyển theo quy định',
-      'Nhận áo đồng phục và các vật phẩm kỷ niệm',
-      'Cơ hội giao lưu, kết nối với sinh viên các trường',
-    ],
-    [],
-  );
+  const benefitItems = useMemo(() => toStringItems(activity?.benefits), [activity?.benefits]);
 
-  const responsibilityItems = useMemo(
-    () => ['Tham gia đầy đủ các hoạt động theo lịch trình', 'Tuân thủ nghiêm túc các quy định an toàn'],
-    [],
-  );
+  const responsibilityItems = useMemo(() => toStringItems(activity?.responsibilities), [activity?.responsibilities]);
 
-  const requirementItems = useMemo(
-    () => [
-      { icon: 'faUserGraduate', text: 'Là sinh viên đang học tại các trường đại học, cao đẳng' },
-      { icon: 'faHeartPulse', text: 'Không có các bệnh lý ảnh hưởng đến hoạt động ngoài trời' },
-      { icon: 'faClock', text: 'Cam kết tham gia đầy đủ hoạt động theo kế hoạch' },
-      { icon: 'faShieldHeart', text: 'Có bảo hiểm y tế và cam kết tuân thủ các quy định an toàn' },
-    ],
-    [],
-  );
+  const requirementItems = useMemo(() => toStringItems(activity?.requirements), [activity?.requirements]);
 
-  const guideSteps = useMemo(
-    () => [
-      {
-        title: 'Bước 1: Đăng ký tham gia',
-        content: 'Điền đầy đủ thông tin vào form đăng ký trực tuyến trước thời hạn quy định.',
-      },
-      {
-        title: 'Bước 2: Xác nhận thông tin',
-        content: 'Ban tổ chức sẽ gửi email xác nhận trong vòng 24 giờ. Kiểm tra email và xác nhận tham gia.',
-      },
-      {
-        title: 'Bước 3: Tham gia briefing',
-        content: 'Tham dự buổi họp trực tuyến để nắm rõ lịch trình và quy định khi tham gia hoạt động.',
-      },
-      {
-        title: 'Bước 4: Chuẩn bị cá nhân',
-        content: 'Chuẩn bị đầy đủ đồ dùng cá nhân và phương tiện theo hướng dẫn của ban tổ chức.',
-      },
-    ],
-    [],
-  );
+  const guideSteps = useMemo(() => toGuideItems(activity?.guidelines), [activity?.guidelines]);
 
   const tabItems = useMemo(
     () => [
@@ -230,14 +241,18 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Yêu cầu tham gia</h4>
-            <ul className={cx('activity-detail__requirement-list')}>
-              {requirementItems.map((item, index) => (
-                <li key={index} className={cx('activity-detail__requirement-item')}>
-                  <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
-                  <span className={cx('activity-detail__requirement-text')}>{item.text}</span>
-                </li>
-              ))}
-            </ul>
+            {requirementItems.length ? (
+              <ul className={cx('activity-detail__requirement-list')}>
+                {requirementItems.map((item, index) => (
+                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
+                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
+                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
           </div>
         ),
       },
@@ -251,14 +266,18 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Quy trình tham gia</h4>
-            <div className={cx('activity-detail__guide-list')}>
-              {guideSteps.map((step, index) => (
-                <div key={index} className={cx('activity-detail__guide-item')}>
-                  <h5 className={cx('activity-detail__guide-title')}>{step.title}</h5>
-                  <p className={cx('activity-detail__guide-content')}>{step.content}</p>
-                </div>
-              ))}
-            </div>
+            {requirementItems.length ? (
+              <ul className={cx('activity-detail__requirement-list')}>
+                {requirementItems.map((item, index) => (
+                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
+                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
+                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
           </div>
         ),
       },
@@ -440,29 +459,37 @@ function ActivityDetailPage() {
 
                     <section className={cx('activity-detail__benefit')}>
                       <h3 className={cx('activity-detail__benefit-title')}>Quyền lợi khi tham gia:</h3>
-                      <ul className={cx('activity-detail__benefit-list')}>
-                        {benefitItems.map((item) => (
-                          <li key={item} className={cx('activity-detail__benefit-item')}>
-                            <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {benefitItems.length ? (
+                        <ul className={cx('activity-detail__benefit-list')}>
+                          {benefitItems.map((item, index) => (
+                            <li key={`${item}-${index}`} className={cx('activity-detail__benefit-item')}>
+                              <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Empty description="Chưa có thông tin quyền lợi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      )}
                     </section>
 
                     <section className={cx('activity-detail__responsibility')}>
                       <h3 className={cx('activity-detail__responsibility-title')}>Trách nhiệm của người tham gia:</h3>
-                      <ul className={cx('activity-detail__responsibility-list')}>
-                        {responsibilityItems.map((item) => (
-                          <li key={item} className={cx('activity-detail__responsibility-item')}>
-                            <FontAwesomeIcon
-                              icon={faTriangleExclamation}
-                              className={cx('activity-detail__responsibility-icon')}
-                            />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {responsibilityItems.length ? (
+                        <ul className={cx('activity-detail__responsibility-list')}>
+                          {responsibilityItems.map((item, index) => (
+                            <li key={`${item}-${index}`} className={cx('activity-detail__responsibility-item')}>
+                              <FontAwesomeIcon
+                                icon={faTriangleExclamation}
+                                className={cx('activity-detail__responsibility-icon')}
+                              />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Empty description="Chưa có thông tin trách nhiệm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      )}
                     </section>
                   </div>
 

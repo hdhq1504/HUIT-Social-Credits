@@ -151,13 +151,32 @@ const mapFeedback = (feedback) => {
   };
 };
 
-const mapRegistration = (registration) => {
+const computeCheckoutAvailableAt = (activity) => {
+  if (!activity) return null;
+  const end = toDate(activity.ketThucLuc);
+  if (!end) return null;
+  const threshold = new Date(end.getTime() - 10 * 60 * 1000);
+  return threshold.toISOString();
+};
+
+const computeFeedbackAvailableAt = (activity, registration) => {
+  const end = toDate(activity?.ketThucLuc);
+  const participationTime = registration?.diemDanhLuc
+    ? new Date(registration.diemDanhLuc)
+    : end || toDate(activity?.batDauLuc) || new Date();
+  const available = new Date(participationTime.getTime() + 48 * 60 * 60 * 1000);
+  return available.toISOString();
+};
+
+const mapRegistration = (registration, activity) => {
   if (!registration) return null;
   const attendanceHistory = (registration.lichSuDiemDanh ?? [])
     .map((entry) => mapAttendanceEntry(entry))
     .filter(Boolean);
   const hasCheckin = attendanceHistory.some((entry) => entry.phase === "checkin");
   const hasCheckout = attendanceHistory.some((entry) => entry.phase === "checkout");
+  const checkoutAvailableAt = computeCheckoutAvailableAt(activity);
+  const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
   return {
     id: registration.id,
     activityId: registration.hoatDongId,
@@ -180,7 +199,9 @@ const mapRegistration = (registration) => {
     attendanceSummary: {
       hasCheckin,
       hasCheckout,
-      nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null
+      nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
+      checkoutAvailableAt,
+      feedbackAvailableAt
     },
     feedback: mapFeedback(registration.phanHoi)
   };
@@ -213,10 +234,17 @@ const determineState = (activity, registration) => {
     case "DA_HUY":
       return "canceled";
     case "VANG_MAT":
-      return "ended";
+      return "absent";
     case "DA_THAM_GIA": {
       const feedback = registration.phanHoi;
-      if (!feedback) return "feedback_pending";
+      if (!feedback) {
+        const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
+        const availableAt = feedbackAvailableAt ? new Date(feedbackAvailableAt) : null;
+        if (availableAt && now < availableAt) {
+          return "feedback_waiting";
+        }
+        return "feedback_pending";
+      }
       switch (feedback.trangThai) {
         case "DA_DUYET":
           return "feedback_accepted";
@@ -252,6 +280,10 @@ const mapActivity = (activity, registration) => {
     code: activity.maHoatDong,
     title: activity.tieuDe,
     description: activity.moTa,
+    benefits: Array.isArray(activity.quyenLoi) ? activity.quyenLoi : [],
+    responsibilities: Array.isArray(activity.trachNhiem) ? activity.trachNhiem : [],
+    requirements: Array.isArray(activity.yeuCau) ? activity.yeuCau : [],
+    guidelines: Array.isArray(activity.huongDan) ? activity.huongDan : [],
     points: activity.diemCong,
     startTime: start?.toISOString() ?? null,
     endTime: end?.toISOString() ?? null,
@@ -269,8 +301,10 @@ const mapActivity = (activity, registration) => {
     pointGroupLabel,
     isFeatured: activity.isFeatured,
     isPublished: activity.isPublished,
+    semester: activity.hocKy ?? null,
+    academicYear: activity.namHoc ?? null,
     state: determineState(activity, registration),
-    registration: mapRegistration(registration)
+    registration: mapRegistration(registration, activity)
   };
 };
 
@@ -734,6 +768,33 @@ export const listMyActivities = async (req, res) => {
     orderBy: [{ dangKyLuc: "desc" }]
   });
 
+  const now = new Date();
+  const absentRegistrationIds = registrations
+    .filter((registration) => {
+      if (registration.trangThai !== "DANG_KY") return false;
+      const end = registration.hoatDong?.ketThucLuc ? new Date(registration.hoatDong.ketThucLuc) : null;
+      if (!end || now <= end) return false;
+      const history = registration.lichSuDiemDanh ?? [];
+      const hasCheckin = history.some((entry) => entry.loai === "CHECKIN");
+      const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
+      return !hasCheckin && !hasCheckout;
+    })
+    .map((registration) => registration.id);
+
+  if (absentRegistrationIds.length) {
+    await prisma.dangKyHoatDong.updateMany({
+      where: { id: { in: absentRegistrationIds } },
+      data: { trangThai: "VANG_MAT" }
+    });
+    const absentSet = new Set(absentRegistrationIds);
+    registrations.forEach((registration) => {
+      if (absentSet.has(registration.id)) {
+        // eslint-disable-next-line no-param-reassign
+        registration.trangThai = "VANG_MAT";
+      }
+    });
+  }
+
   const filtered = normalizedFeedback
     ? registrations.filter((registration) => {
       if (normalizedFeedback === "NONE") return !registration.phanHoi;
@@ -743,7 +804,7 @@ export const listMyActivities = async (req, res) => {
 
   res.json({
     registrations: filtered.map((registration) => ({
-      ...mapRegistration(registration),
+      ...mapRegistration(registration, registration.hoatDong),
       activity: mapActivity(registration.hoatDong, registration)
     }))
   });

@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import routes from '../../config/routes';
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Skeleton, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
@@ -26,12 +26,21 @@ const initials = (name = '') =>
       .join('') || 'U'
   ).toUpperCase();
 
+const toTimestamp = (value) => {
+  if (!value) return null;
+  const ts = new Date(value).getTime();
+  return Number.isNaN(ts) ? null : ts;
+};
+
+const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
+
 function CardActivity(props) {
   const {
     id,
     title,
     points,
     dateTime,
+    endTime,
     location,
     participants = [],
     capacity,
@@ -68,6 +77,7 @@ function CardActivity(props) {
     checkoutTime = '17:00, 15/11/2024',
     attendanceLoading = false,
     registration,
+    loading = false,
   } = props;
 
   const [openReg, setOpenReg] = useState(false);
@@ -87,6 +97,24 @@ function CardActivity(props) {
   const attendanceSummary = registration?.attendanceSummary;
   const derivedNextAttendancePhase = attendanceSummary?.nextPhase ?? 'checkin';
   const [attendanceStep, setAttendanceStep] = useState(derivedNextAttendancePhase);
+  const checkoutTimerRef = useRef(null);
+  const checkoutReminderShownRef = useRef(false);
+  const checkoutAvailableTimestamp = useMemo(() => {
+    if (attendanceSummary?.checkoutAvailableAt) {
+      const ts = toTimestamp(attendanceSummary.checkoutAvailableAt);
+      if (ts) return ts;
+    }
+    const endTimestamp = toTimestamp(endTime);
+    if (endTimestamp) {
+      return endTimestamp - CHECKOUT_OFFSET_MS;
+    }
+    return null;
+  }, [attendanceSummary?.checkoutAvailableAt, endTime]);
+  const [checkoutAvailable, setCheckoutAvailable] = useState(() => {
+    if (attendanceSummary?.hasCheckout) return true;
+    if (!checkoutAvailableTimestamp) return true;
+    return Date.now() >= checkoutAvailableTimestamp;
+  });
 
   const activity = {
     id,
@@ -106,6 +134,30 @@ function CardActivity(props) {
     pointGroupLabel ??
     (pointGroup === 'NHOM_1' ? 'Nhóm 1' : pointGroup === 'NHOM_2_3' ? 'Nhóm 2,3' : undefined);
 
+  const skeletonContent = (
+    <div
+      className={cx(
+        'activity-card',
+        {
+          'activity-card--vertical': variant === 'vertical',
+          'activity-card--horizontal': variant === 'horizontal',
+        },
+        className,
+      )}
+    >
+      <div className={cx('activity-card__cover', 'activity-card__cover--skeleton')}>
+        <Skeleton.Image active className={cx('activity-card__skeleton-image')} />
+      </div>
+      <div className={cx('activity-card__content', 'activity-card__content--skeleton')}>
+        <Skeleton active title paragraph={{ rows: 4 }} />
+        <div className={cx('activity-card__skeleton-actions')}>
+          <Skeleton.Button active size="default" />
+          <Skeleton.Button active size="default" />
+        </div>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     setUiState(state);
   }, [state]);
@@ -114,7 +166,71 @@ function CardActivity(props) {
     setAttendanceStep(derivedNextAttendancePhase);
   }, [derivedNextAttendancePhase]);
 
+  useEffect(() => {
+    if (checkoutTimerRef.current) {
+      clearTimeout(checkoutTimerRef.current);
+      checkoutTimerRef.current = null;
+    }
+
+    if (attendanceSummary?.hasCheckout) {
+      setCheckoutAvailable(true);
+      checkoutReminderShownRef.current = true;
+      return undefined;
+    }
+
+    if (uiState !== 'confirm_out') {
+      setCheckoutAvailable(true);
+      checkoutReminderShownRef.current = false;
+      return undefined;
+    }
+
+    if (!checkoutAvailableTimestamp) {
+      setCheckoutAvailable(true);
+      return undefined;
+    }
+
+    const now = Date.now();
+    if (now >= checkoutAvailableTimestamp) {
+      setCheckoutAvailable(true);
+      if (!checkoutReminderShownRef.current) {
+        openToast({ message: 'Điểm danh cuối giờ đã mở, đừng quên hoàn tất nhé!', variant: 'info' });
+        checkoutReminderShownRef.current = true;
+      }
+      return undefined;
+    }
+
+    setCheckoutAvailable(false);
+    checkoutTimerRef.current = setTimeout(() => {
+      setCheckoutAvailable(true);
+      if (!checkoutReminderShownRef.current) {
+        openToast({ message: 'Điểm danh cuối giờ đã mở, đừng quên hoàn tất nhé!', variant: 'info' });
+        checkoutReminderShownRef.current = true;
+      }
+    }, checkoutAvailableTimestamp - now);
+
+    return () => {
+      if (checkoutTimerRef.current) {
+        clearTimeout(checkoutTimerRef.current);
+        checkoutTimerRef.current = null;
+      }
+    };
+  }, [attendanceSummary?.hasCheckout, checkoutAvailableTimestamp, openToast, uiState]);
+
+  useEffect(
+    () => () => {
+      if (checkoutTimerRef.current) {
+        clearTimeout(checkoutTimerRef.current);
+        checkoutTimerRef.current = null;
+      }
+    },
+    [],
+  );
+
   const isAttendanceBusy = isAttendanceSubmitting || attendanceLoading;
+  const hasCheckin = attendanceSummary?.hasCheckin;
+  const hasCheckout = attendanceSummary?.hasCheckout;
+  const isCheckoutReady = checkoutAvailable || hasCheckout;
+  const isCheckoutPending = uiState === 'confirm_out' && hasCheckin && !isCheckoutReady;
 
   const openDetails = () => {
     if (typeof onDetails === 'function') onDetails(activity);
@@ -221,6 +337,17 @@ function CardActivity(props) {
         variant: 'success',
       });
       setAttendanceStep(phaseToSend === 'checkin' ? 'checkout' : 'checkin');
+      if (phaseToSend === 'checkin') {
+        checkoutReminderShownRef.current = false;
+        setCheckoutAvailable(() => {
+          if (!checkoutAvailableTimestamp) return true;
+          return Date.now() >= checkoutAvailableTimestamp;
+        });
+        setUiState('confirm_out');
+        onStateChange?.('confirm_out');
+      } else {
+        checkoutReminderShownRef.current = true;
+      }
     } catch {
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
@@ -268,6 +395,10 @@ function CardActivity(props) {
     accepted: 'Hoàn thành',
     denied: 'Đã từ chối',
     canceled: 'Đã hủy',
+    checkoutLocked: '• Điểm danh cuối giờ chưa mở',
+    processing: 'Đang xử lý',
+    waitingFeedback: '• Đang chờ cộng điểm',
+    absent: '• Vắng mặt',
     ...buttonLabels,
   };
 
@@ -331,16 +462,22 @@ function CardActivity(props) {
         };
       case 'confirm_out':
         return {
+          status: isCheckoutPending ? pill(L.checkoutLocked, 'warning') : undefined,
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
             btn(L.confirmOut, () => handleOpenAttendance('checkout'), {
               variant: 'orange',
-              disabled: isAttendanceBusy,
+              disabled: isAttendanceBusy || !isCheckoutReady,
             }),
           ],
         };
       case 'details_only':
         return { buttons: [btn(L.viewDetail, openDetails, { variant: 'success', fullWidth: true })] };
+      case 'feedback_waiting':
+        return {
+          status: pill(L.waitingFeedback, 'warning'),
+          buttons: [btn(L.details, openDetails), btn(L.processing, () => {}, { variant: 'muted', disabled: true })],
+        };
       case 'feedback_pending':
         return {
           status: pill('• Chưa được cộng điểm', 'danger'),
@@ -384,6 +521,11 @@ function CardActivity(props) {
             }),
           ],
         };
+      case 'absent':
+        return {
+          status: pill(L.absent, 'danger'),
+          buttons: [btn(L.details, openDetails, { variant: 'outline' })],
+        };
       default:
         return {
           buttons: [
@@ -393,7 +535,25 @@ function CardActivity(props) {
         };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiState, actions, statusPill, id, title, points, dateTime, location, capacity, attendanceStep, isAttendanceBusy]);
+  }, [
+    uiState,
+    actions,
+    statusPill,
+    id,
+    title,
+    points,
+    dateTime,
+    location,
+    capacity,
+    attendanceStep,
+    isAttendanceBusy,
+    isCheckoutPending,
+    isCheckoutReady,
+  ]);
+
+  if (loading) {
+    return skeletonContent;
+  }
 
   return (
     <div

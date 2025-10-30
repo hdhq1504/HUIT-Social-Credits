@@ -26,11 +26,32 @@
     }
   }
 
+  &__cover--skeleton {
+    background-color: #f5f5f5;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    @media (max-width: 768px) {
+      min-height: 135px;
+    }
+
+    @media (max-width: 480px) {
+      min-height: 165px;
+    }
+  }
+
   &__img {
     width: 100%;
     height: 100%;
     border-bottom-right-radius: 35px;
     object-fit: cover;
+  }
+
+  &__skeleton-image {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   &__badge {
@@ -52,6 +73,11 @@
   &__content {
     display: flex;
     flex-direction: column;
+  }
+
+  &__content--skeleton {
+    padding: 16px;
+    gap: 12px;
   }
 
   &__title {
@@ -376,6 +402,22 @@
         font-size: 11px;
         padding: 6px 8px;
       }
+    }
+  }
+
+  &__skeleton-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+
+    @media (max-width: 768px) {
+      gap: 8px;
+    }
+
+    .ant-skeleton-button {
+      flex: 1;
+      height: 36px;
+      border-radius: 8px;
     }
   }
 

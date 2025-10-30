@@ -68,6 +68,10 @@ model HoatDong {
   maHoatDong        String?             @unique
   tieuDe            String
   moTa              String?
+  quyenLoi          Json?
+  trachNhiem        Json?
+  yeuCau            Json?
+  huongDan          Json?
   diemCong          Int                 @default(0)
   batDauLuc         DateTime?
   ketThucLuc        DateTime?
@@ -76,6 +80,8 @@ model HoatDong {
   hinhAnh           String?             @db.VarChar(255)
   isFeatured        Boolean             @default(false)
   isPublished       Boolean             @default(true)
+  hocKy             String?             @db.VarChar(20)
+  namHoc            String?             @db.VarChar(20)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   dangKy            DangKyHoatDong[]

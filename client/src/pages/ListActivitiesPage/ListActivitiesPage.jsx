@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { ConfigProvider, Row, Col, Typography, Select, Pagination, Drawer, Button as AntButton, Grid } from 'antd';
+import {
+  ConfigProvider,
+  Row,
+  Col,
+  Typography,
+  Select,
+  Pagination,
+  Drawer,
+  Button as AntButton,
+  Grid,
+  Empty,
+} from 'antd';
 import CardActivity from '@components/CardActivity/CardActivity';
 import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
 import SearchBar from '@layouts/SearchBar/SearchBar';
@@ -12,12 +23,15 @@ import activitiesApi from '@api/activities.api';
 
 const cx = classNames.bind(styles);
 const { Text } = Typography;
+const PAGE_SIZE = 10;
 
 function ListActivitiesPage() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [sortBy, setSortBy] = useState('latest');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Search/filter states
   const location = useLocation();
@@ -41,11 +55,14 @@ function ListActivitiesPage() {
 
   useEffect(() => {
     const fetchActivities = async () => {
+      setLoading(true);
       try {
         const res = await activitiesApi.list();
         setActivities(res);
       } catch (err) {
         console.error('Lỗi load activities:', err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchActivities();
@@ -142,7 +159,41 @@ function ListActivitiesPage() {
     return result;
   }, [activities, groupMatches, keywordMatches, normalizedSelectedCategories, sortBy, statusMatches]);
 
+  const unregisteredActivities = useMemo(
+    () =>
+      visibleActivities.filter((activity) => {
+        const stateValue = activity?.state || 'guest';
+        return stateValue === 'guest';
+      }),
+    [visibleActivities],
+  );
+
+  const totalActivities = unregisteredActivities.length;
+  const totalPages = totalActivities ? Math.ceil(totalActivities / PAGE_SIZE) : 0;
+  const safePage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
+
+  const paginatedActivities = useMemo(() => {
+    if (!totalActivities) return [];
+    const start = (safePage - 1) * PAGE_SIZE;
+    return unregisteredActivities.slice(start, start + PAGE_SIZE);
+  }, [safePage, totalActivities, unregisteredActivities]);
+
+  const resultsCount = loading ? '--' : totalActivities;
+
+  useEffect(() => {
+    if (totalPages === 0 && currentPage !== 1) {
+      setCurrentPage(1);
+    } else if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy, filterGroup, filterStatus, query, selectedItems]);
+
   const handleSearchSubmit = (q) => {
+    setCurrentPage(1);
     setQuery(q);
     const search = q ? `?q=${encodeURIComponent(q)}` : '';
     navigate(`/list-activities${search}`, { replace: true });
@@ -151,6 +202,7 @@ function ListActivitiesPage() {
   const handleFilterChange = ({ group, status }) => {
     if (group !== undefined) setFilterGroup(group);
     if (status !== undefined) setFilterStatus(status);
+    setCurrentPage(1);
   };
 
   return (
@@ -179,8 +231,8 @@ function ListActivitiesPage() {
                 <header className={cx('activities-page__results-header')}>
                   <div className={cx('activities-page__results-count')}>
                     <span className={cx('activities-page__results-count-text')}>
-                      Có <span className={cx('activities-page__results-count-number')}>{visibleActivities.length}</span>{' '}
-                      kết quả phù hợp
+                      Có <span className={cx('activities-page__results-count-number')}>{resultsCount}</span> kết quả phù
+                      hợp
                       {query ? (
                         <>
                           {' '}
@@ -216,52 +268,74 @@ function ListActivitiesPage() {
                 </header>
 
                 <div className={cx('activities-page__cards')}>
-                  {visibleActivities.map((activity) => (
-                    <CardActivity
-                      key={activity.id}
-                      {...activity}
-                      variant={screens.md ? 'horizontal' : 'vertical'}
-                      state={activity.state || 'guest'}
-                      onRegistered={async ({ activity: current, note }) => {
-                        try {
-                          const updated = await activitiesApi.register(current.id, note ? { note } : {});
-                          setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                        } catch (error) {
-                          console.error('Register failed', error);
-                          throw error;
-                        }
-                      }}
-                      onCancelRegister={async ({ activity: current, reason, note }) => {
-                        try {
-                          const updated = await activitiesApi.cancel(current.id, { reason, note });
-                          setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-                        } catch (error) {
-                          console.error('Cancel registration failed', error);
-                          throw error;
-                        }
-                      }}
-                    />
-                  ))}
+                  {loading
+                    ? Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                        <CardActivity
+                          key={`activity-skeleton-${index}`}
+                          loading
+                          variant={screens.md ? 'horizontal' : 'vertical'}
+                        />
+                      ))
+                    : paginatedActivities.map((activity) => (
+                        <CardActivity
+                          key={activity.id}
+                          {...activity}
+                          variant={screens.md ? 'horizontal' : 'vertical'}
+                          state={activity.state || 'guest'}
+                          onRegistered={async ({ activity: current, note }) => {
+                            try {
+                              const updated = await activitiesApi.register(current.id, note ? { note } : {});
+                              setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                            } catch (error) {
+                              console.error('Register failed', error);
+                              throw error;
+                            }
+                          }}
+                          onCancelRegister={async ({ activity: current, reason, note }) => {
+                            try {
+                              const updated = await activitiesApi.cancel(current.id, { reason, note });
+                              setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                            } catch (error) {
+                              console.error('Cancel registration failed', error);
+                              throw error;
+                            }
+                          }}
+                        />
+                      ))}
+
+                  {!loading && !paginatedActivities.length && (
+                    <div className={cx('activities-page__empty-state')}>
+                      <Empty description="Không có hoạt động phù hợp" />
+                    </div>
+                  )}
                 </div>
 
-                <footer className={cx('activities-page__pagination')}>
-                  <ConfigProvider
-                    theme={{
-                      token: {
-                        colorPrimary: '#FFFFFF',
-                        fontFamily: 'Montserrat',
-                      },
-                      components: {
-                        Pagination: {
-                          itemActiveBg: '#FF5C00',
+                {!loading && totalActivities > 0 && (
+                  <footer className={cx('activities-page__pagination')}>
+                    <ConfigProvider
+                      theme={{
+                        token: {
+                          colorPrimary: '#FFFFFF',
+                          fontFamily: 'Montserrat',
                         },
-                      },
-                    }}
-                  >
-                    {/* ⬇️ Dùng đúng tổng số kết quả */}
-                    <Pagination defaultCurrent={1} total={visibleActivities.length} showSizeChanger={false} />
-                  </ConfigProvider>
-                </footer>
+                        components: {
+                          Pagination: {
+                            itemActiveBg: '#FF5C00',
+                          },
+                        },
+                      }}
+                    >
+                      <Pagination
+                        current={safePage}
+                        pageSize={PAGE_SIZE}
+                        total={totalActivities}
+                        onChange={(page) => setCurrentPage(page)}
+                        showSizeChanger={false}
+                        hideOnSinglePage
+                      />
+                    </ConfigProvider>
+                  </footer>
+                )}
               </section>
             </Col>
 
