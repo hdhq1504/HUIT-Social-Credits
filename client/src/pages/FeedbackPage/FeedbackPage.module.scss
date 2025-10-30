@@ -421,6 +421,21 @@
     }
   }
 
+  &__pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 24px 24px;
+
+    @media (max-width: 992px) {
+      padding: 0 20px 20px;
+    }
+
+    @media (max-width: 576px) {
+      padding: 0 16px 16px;
+      justify-content: center;
+    }
+  }
+
   &__empty {
     width: 100%;
     padding: 40px 24px;

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,7 +9,7 @@ import {
   faClock,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Calendar, ConfigProvider, Input, Select, Tabs } from 'antd';
+import { Button, Calendar, ConfigProvider, Empty, Input, Pagination, Select, Tabs } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -23,6 +23,7 @@ import { fileToDataUrl } from '@utils/file';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
+const PAGE_SIZE = 6;
 
 dayjs.extend(updateLocale);
 dayjs.locale('vi');
@@ -32,6 +33,7 @@ function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
 
   const queryClient = useQueryClient();
+  const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
 
   const {
     data: registrations = [],
@@ -97,6 +99,10 @@ function MyActivitiesPage() {
     },
   });
 
+  useEffect(() => {
+    setPages({ registered: 1, attended: 1, canceled: 1 });
+  }, [registrations]);
+
   const stats = useMemo(() => {
     const registered = registrations.filter((item) => item.status === 'DANG_KY');
     const attended = registrations.filter((item) => item.status === 'DA_THAM_GIA');
@@ -114,6 +120,26 @@ function MyActivitiesPage() {
       canceled,
     };
   }, [registrations]);
+
+  const handlePageChange = useCallback((tabKey, page) => {
+    setPages((prev) => ({ ...prev, [tabKey]: page }));
+  }, []);
+
+  const paginate = useCallback(
+    (items, tabKey) => {
+      const total = items.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const current = Math.max(1, Math.min(pages[tabKey] ?? 1, totalPages));
+      const start = (current - 1) * PAGE_SIZE;
+
+      return {
+        total,
+        current,
+        pageItems: items.slice(start, start + PAGE_SIZE),
+      };
+    },
+    [pages],
+  );
 
   const calendarEvents = useMemo(() => {
     const map = {};
@@ -219,6 +245,36 @@ function MyActivitiesPage() {
     [handleRegister, handleCancel, handleAttendance, handleFeedback, attendanceMutation.isPending],
   );
 
+  const renderTabContent = useCallback(
+    (tabKey, items, emptyText) => {
+      const { total, current, pageItems } = paginate(items, tabKey);
+
+      if (!total) {
+        return (
+          <div className={cx('my-activities__empty')}>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText || 'Không có hoạt động nào'} />
+          </div>
+        );
+      }
+
+      return (
+        <>
+          <div className={cx('my-activities__list')}>{buildCards(pageItems)}</div>
+          <Pagination
+            className={cx('my-activities__pagination')}
+            current={current}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onChange={(page) => handlePageChange(tabKey, page)}
+            showSizeChanger={false}
+            hideOnSinglePage
+          />
+        </>
+      );
+    },
+    [buildCards, handlePageChange, paginate],
+  );
+
   const tabItems = useMemo(() => {
     const { registered, attended, canceled } = stats;
 
@@ -232,7 +288,7 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{registered.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(registered)}</div>,
+        children: renderTabContent('registered', registered, 'Chưa có hoạt động nào được đăng ký'),
       },
       {
         key: 'attended',
@@ -243,7 +299,7 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{attended.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(attended)}</div>,
+        children: renderTabContent('attended', attended, 'Chưa có hoạt động nào đã tham gia'),
       },
       {
         key: 'canceled',
@@ -254,10 +310,10 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{canceled.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(canceled)}</div>,
+        children: renderTabContent('canceled', canceled, 'Chưa có hoạt động nào bị hủy'),
       },
     ];
-  }, [stats, buildCards]);
+  }, [renderTabContent, stats]);
 
   return (
     <ConfigProvider locale={viVN}>
@@ -316,7 +372,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Đang chờ</div>
-                  <div className={cx('my-activities__stat-card-value')}>0</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.pending}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faClock} className={cx('my-activities__stat-card-icon-mark')} />
@@ -338,15 +394,15 @@ function MyActivitiesPage() {
             <div className={cx('my-activities__legend')}>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--primary')} />
-                <span>Sắp diễn ra</span>
-              </div>
-              <div className={cx('my-activities__legend-item')}>
-                <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
-                <span>Đang diễn ra</span>
+                <span>Đã đăng ký</span>
               </div>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--success')} />
-                <span>Đã hủy</span>
+                <span>Đã tham gia</span>
+              </div>
+              <div className={cx('my-activities__legend-item')}>
+                <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
+                <span>Đã hủy/Vắng mặt</span>
               </div>
             </div>
           </div>
@@ -359,47 +415,50 @@ function MyActivitiesPage() {
               type="line"
               size="large"
               tabBarGutter={12}
-              renderTabBar={(props, DefaultTabBar) => (
-                <>
-                  <DefaultTabBar {...props} />
+              renderTabBar={(props, TabBar) => {
+                const RenderedTabBar = TabBar;
+                return (
+                  <>
+                    <RenderedTabBar {...props} />
 
-                  {/* Thanh tìm kiếm */}
-                  <div className={cx('my-activities__search')}>
-                    <Input
-                      placeholder="Nhập từ khóa"
-                      size="large"
-                      className={cx('my-activities__search-input')}
-                      allowClear
-                    />
+                    {/* Thanh tìm kiếm */}
+                    <div className={cx('my-activities__search')}>
+                      <Input
+                        placeholder="Nhập từ khóa"
+                        size="large"
+                        className={cx('my-activities__search-input')}
+                        allowClear
+                      />
 
-                    <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                      <Select.Option value="all">Nhóm hoạt động</Select.Option>
-                      <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
-                      <Select.Option value="hien-mau">Hiến máu</Select.Option>
-                      <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
-                    </Select>
+                      <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
+                        <Select.Option value="all">Nhóm hoạt động</Select.Option>
+                        <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
+                        <Select.Option value="hien-mau">Hiến máu</Select.Option>
+                        <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
+                      </Select>
 
-                    <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                      <Select.Option value="all">Mới nhất</Select.Option>
-                      <Select.Option value="oldest">Cũ nhất</Select.Option>
-                      <Select.Option value="popular">Phổ biến nhất</Select.Option>
-                    </Select>
+                      <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
+                        <Select.Option value="all">Mới nhất</Select.Option>
+                        <Select.Option value="oldest">Cũ nhất</Select.Option>
+                        <Select.Option value="popular">Phổ biến nhất</Select.Option>
+                      </Select>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      className={cx('my-activities__reset-button')}
-                      icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                      onClick={() => refetch()}
-                      loading={isFetching}
-                    >
-                      Đặt lại
-                    </Button>
-                  </div>
+                      <Button
+                        type="primary"
+                        size="large"
+                        className={cx('my-activities__reset-button')}
+                        icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+                        onClick={() => refetch()}
+                        loading={isFetching}
+                      >
+                        Đặt lại
+                      </Button>
+                    </div>
 
-                  <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
-                </>
-              )}
+                    <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
+                  </>
+                );
+              }}
             />
           </div>
         </div>

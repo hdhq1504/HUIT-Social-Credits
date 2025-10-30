@@ -1,22 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faClock } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faCircleXmark, faClock } from '@fortawesome/free-solid-svg-icons';
 import classNames from 'classnames/bind';
 import { Table, Tag, Select } from 'antd';
 import dayjs from 'dayjs';
 import Label from '@components/Label/Label';
 import ProgressSection from '@components/ProgressSection/ProgressSection';
-import { mockApi } from '@utils/mockAPI';
 import { useQuery } from '@tanstack/react-query';
 import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';
+import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import useToast from '@components/Toast/Toast';
 import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
 import styles from './MyPointsPage.module.scss';
 
 const cx = classNames.bind(styles);
 
 function MyPointsPage() {
+  const { contextHolder, open: toast } = useToast();
   const [semester, setSemester] = useState('all');
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
@@ -32,11 +34,61 @@ function MyPointsPage() {
     [isLoggedIn, progressSummary],
   );
 
-  const { data: records = [], isFetching: loadingRecords } = useQuery({
-    queryKey: ['stats', 'score-records'],
-    queryFn: () => mockApi.getScoreRecords(),
-    staleTime: 5 * 60 * 1000,
+  const { data: participated = [], isFetching: loadingRecords } = useQuery({
+    queryKey: [...MY_ACTIVITIES_QUERY_KEY, 'scores'],
+    queryFn: () => activitiesApi.listMine({ status: 'DA_THAM_GIA' }),
+    enabled: isLoggedIn,
+    staleTime: 30 * 1000,
+    retry: 1,
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động đã tham gia.';
+      toast({ message, variant: 'danger' });
+    },
   });
+
+  const records = useMemo(() => {
+    if (!isLoggedIn) return [];
+
+    const determineStatus = (state) => {
+      switch (state) {
+        case 'feedback_accepted':
+          return { key: 'confirmed', label: 'Đã xác nhận' };
+        case 'feedback_denied':
+          return { key: 'denied', label: 'Từ chối' };
+        case 'feedback_pending':
+          return { key: 'pending', label: 'Chưa gửi minh chứng' };
+        case 'feedback_reviewing':
+          return { key: 'pending', label: 'Đang phản hồi' };
+        default:
+          return { key: 'pending', label: 'Đang cập nhật' };
+      }
+    };
+
+    return (participated || [])
+      .filter((registration) => registration?.activity)
+      .map((registration) => {
+        const activity = registration.activity || {};
+        const statusInfo = determineStatus(activity.state);
+        const dateValue =
+          registration.approvedAt ||
+          activity.endTime ||
+          activity.startTime ||
+          registration.checkInAt ||
+          registration.registeredAt;
+
+        return {
+          id: registration.id,
+          activityName: activity.title || 'Hoạt động của bạn',
+          location: activity.location || 'Đang cập nhật',
+          group: activity.pointGroupLabel || activity.pointGroup || 'Khác',
+          points: activity.points ?? 0,
+          date: dateValue,
+          status: statusInfo.key,
+          statusLabel: statusInfo.label,
+        };
+      })
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  }, [isLoggedIn, participated]);
 
   const columns = useMemo(
     () => [
@@ -44,7 +96,7 @@ function MyPointsPage() {
         title: 'Tên hoạt động',
         dataIndex: 'activityName',
         key: 'activityName',
-        className: cx('my-pointss__col', 'my-pointss__col--name'),
+        className: cx('my-points__col', 'my-points__col--name'),
         render: (_, record) => (
           <div className={cx('my-points__name-wrap')}>
             <div className={cx('my-points__name')}>{record.activityName}</div>
@@ -92,22 +144,31 @@ function MyPointsPage() {
         align: 'center',
         width: 150,
         className: cx('my-points__col', 'my-points__col-status'),
-        render: (status) => {
-          const isConfirmed = status === 'confirmed';
+        render: (_, record) => {
+          const status = record.status;
+          const label = record.statusLabel;
+          let tagClass = 'pending';
+          let icon = faClock;
+
+          if (status === 'confirmed') {
+            tagClass = 'confirmed';
+            icon = faCheck;
+          } else if (status === 'denied') {
+            tagClass = 'denied';
+            icon = faCircleXmark;
+          }
+
           return (
             <Tag
               bordered={false}
               className={cx('my-points__tag', {
-                'my-points__tag--confirmed': isConfirmed,
-                'my-points__tag--pending': !isConfirmed,
+                'my-points__tag--confirmed': tagClass === 'confirmed',
+                'my-points__tag--pending': tagClass === 'pending',
+                'my-points__tag--denied': tagClass === 'denied',
               })}
             >
-              <FontAwesomeIcon
-                icon={isConfirmed ? faCheck : faClock}
-                className={cx('my-points__tag-icon')}
-                aria-hidden
-              />
-              <span>{isConfirmed ? 'Đã xác nhận' : 'Đang phản hồi'}</span>
+              <FontAwesomeIcon icon={icon} className={cx('my-points__tag-icon')} aria-hidden />
+              <span>{label}</span>
             </Tag>
           );
         },
@@ -123,6 +184,7 @@ function MyPointsPage() {
 
   return (
     <section className={cx('my-points')}>
+      {contextHolder}
       <div className={cx('my-points__container')}>
         {/* Header */}
         <header className={cx('my-points__header')}>

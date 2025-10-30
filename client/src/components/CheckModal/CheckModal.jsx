@@ -21,7 +21,6 @@ function CheckModal({
   dateTime,
   location,
   confirmLoading = false,
-  phase = 'checkin',
 }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);

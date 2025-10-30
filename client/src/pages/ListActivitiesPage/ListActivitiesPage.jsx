@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination, Drawer, Button as AntButton, Grid } from 'antd';
@@ -51,7 +51,6 @@ function ListActivitiesPage() {
     fetchActivities();
   }, []);
 
-  // Đồng bộ ô tìm kiếm khi query string thay đổi (nếu cần)
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     setQuery(p.get('q') || '');
@@ -65,6 +64,11 @@ function ListActivitiesPage() {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
+  const normalizedSelectedCategories = useMemo(() => {
+    if (!selectedItems.length || selectedItems.includes('Tất cả')) return [];
+    return selectedItems.map((value) => normalize(value));
+  }, [selectedItems]);
+
   const computeStatus = (a) => {
     const now = Date.now();
     const start = a.startTime ? new Date(a.startTime).getTime() : null;
@@ -75,37 +79,53 @@ function ListActivitiesPage() {
     return 'upcoming';
   };
 
-  const groupMatches = (a) => {
-    if (filterGroup === 'all') return true;
-    const groupKey =
-      {
-        'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
-        'hien-mau': ['hiến máu', 'hien mau'],
-        'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
-        'ho-tro': ['hỗ trợ', 'ho tro'],
-        'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
-      }[filterGroup] || [];
-    const haystack = normalize([a.title, a.code, a.categoryName, a.description].join(' '));
-    return groupKey.some((k) => haystack.includes(k));
-  };
+  const groupMatches = useCallback(
+    (a) => {
+      if (filterGroup === 'all') return true;
+      const groupKey =
+        {
+          'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
+          'hien-mau': ['hiến máu', 'hien mau'],
+          'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
+          'ho-tro': ['hỗ trợ', 'ho tro'],
+          'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
+        }[filterGroup] || [];
+      const haystack = normalize([a.title, a.code, a.categoryName, a.description].join(' '));
+      return groupKey.some((k) => haystack.includes(k));
+    },
+    [filterGroup],
+  );
 
-  const statusMatches = (a) => {
-    if (filterStatus === 'all') return true;
-    return computeStatus(a) === filterStatus;
-  };
+  const statusMatches = useCallback(
+    (a) => {
+      if (filterStatus === 'all') return true;
+      return computeStatus(a) === filterStatus;
+    },
+    [filterStatus],
+  );
 
-  const keywordMatches = (a) => {
-    if (!query.trim()) return true;
-    const q = normalize(query);
-    const haystack = normalize([a.title, a.code, a.categoryName, a.description, a.location].join(' '));
-    return haystack.includes(q);
-  };
+  const keywordMatches = useCallback(
+    (a) => {
+      if (!query.trim()) return true;
+      const q = normalize(query);
+      const haystack = normalize([a.title, a.code, a.categoryName, a.description, a.location].join(' '));
+      return haystack.includes(q);
+    },
+    [query],
+  );
 
   const visibleActivities = useMemo(() => {
-    // ⬇️ Hiển thị TẤT CẢ hoạt động rồi mới áp bộ lọc & sắp xếp
     let result = [...activities];
 
-    result = result.filter((a) => keywordMatches(a) && groupMatches(a) && statusMatches(a));
+    const matchesSelectedCategories = (a) => {
+      if (!normalizedSelectedCategories.length) return true;
+      const categoryText = normalize([a.category, a.categoryName].filter(Boolean).join(' '));
+      return normalizedSelectedCategories.some((category) => categoryText.includes(category));
+    };
+
+    result = result.filter(
+      (a) => keywordMatches(a) && groupMatches(a) && statusMatches(a) && matchesSelectedCategories(a),
+    );
 
     if (sortBy === 'latest') {
       result = result.sort((a, b) => {
@@ -120,7 +140,7 @@ function ListActivitiesPage() {
     }
 
     return result;
-  }, [activities, query, filterGroup, filterStatus, sortBy]);
+  }, [activities, groupMatches, keywordMatches, normalizedSelectedCategories, sortBy, statusMatches]);
 
   const handleSearchSubmit = (q) => {
     setQuery(q);

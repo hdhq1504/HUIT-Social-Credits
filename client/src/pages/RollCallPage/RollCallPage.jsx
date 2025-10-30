@@ -1,9 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input, Select, Tabs, Empty } from 'antd';
+import { Button, Empty, Input, Pagination, Select, Tabs } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
@@ -14,6 +14,7 @@ import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
 const { Option } = Select;
+const PAGE_SIZE = 6;
 
 function RollCallPage() {
   const { contextHolder, open: toast } = useToast();
@@ -23,6 +24,7 @@ function RollCallPage() {
   const [q, setQ] = useState('');
   const [group, setGroup] = useState('all');
   const [sort, setSort] = useState('latest');
+  const [pages, setPages] = useState({ ongoing: 1, upcoming: 1, ended: 1 });
 
   // Helpers
   const normalize = (s) =>
@@ -32,57 +34,66 @@ function RollCallPage() {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
-  const matchGroup = (activity) => {
-    if (group === 'all') return true;
-    const map = {
-      'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
-      'hien-mau': ['hiến máu', 'hien mau'],
-      'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
-      'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
-      'ho-tro': ['hỗ trợ', 'ho tro'],
-    };
-    const keys = map[group] || [];
-    const haystack = normalize(
-      [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
-    );
-    return keys.some((k) => haystack.includes(k));
-  };
+  const matchGroup = useCallback(
+    (activity) => {
+      if (group === 'all') return true;
+      const map = {
+        'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
+        'hien-mau': ['hiến máu', 'hien mau'],
+        'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
+        'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
+        'ho-tro': ['hỗ trợ', 'ho tro'],
+      };
+      const keys = map[group] || [];
+      const haystack = normalize(
+        [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
+      );
+      return keys.some((k) => haystack.includes(k));
+    },
+    [group],
+  );
 
-  const matchKeyword = (activity) => {
-    const key = q.trim();
-    if (!key) return true;
-    const haystack = normalize(
-      [
-        activity?.title,
-        activity?.code,
-        activity?.categoryName,
-        activity?.groupName,
-        activity?.location,
-        activity?.description,
-      ].join(' '),
-    );
-    return haystack.includes(normalize(key));
-  };
+  const matchKeyword = useCallback(
+    (activity) => {
+      const key = q.trim();
+      if (!key) return true;
+      const haystack = normalize(
+        [
+          activity?.title,
+          activity?.code,
+          activity?.categoryName,
+          activity?.groupName,
+          activity?.location,
+          activity?.description,
+        ].join(' '),
+      );
+      return haystack.includes(normalize(key));
+    },
+    [q],
+  );
 
-  const sortItems = (arr) => {
-    const items = [...arr];
-    if (sort === 'latest') {
-      items.sort((a, b) => {
-        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
-        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
-        return tb - ta;
-      });
-    } else if (sort === 'oldest') {
-      items.sort((a, b) => {
-        const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
-        const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
-        return ta - tb;
-      });
-    } else if (sort === 'popular') {
-      items.sort((a, b) => (b.activity?.registeredCount || 0) - (a.activity?.registeredCount || 0));
-    }
-    return items;
-  };
+  const sortItems = useCallback(
+    (arr) => {
+      const items = [...arr];
+      if (sort === 'latest') {
+        items.sort((a, b) => {
+          const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+          const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+          return tb - ta;
+        });
+      } else if (sort === 'oldest') {
+        items.sort((a, b) => {
+          const ta = new Date(a.activity?.updatedAt || a.activity?.startTime || 0).getTime();
+          const tb = new Date(b.activity?.updatedAt || b.activity?.startTime || 0).getTime();
+          return ta - tb;
+        });
+      } else if (sort === 'popular') {
+        items.sort((a, b) => (b.activity?.registeredCount || 0) - (a.activity?.registeredCount || 0));
+      }
+      return items;
+    },
+    [sort],
+  );
 
   const applySearch = useCallback(
     (items) => {
@@ -91,8 +102,12 @@ function RollCallPage() {
       );
       return sortItems(filtered);
     },
-    [q, group, sort],
+    [matchGroup, matchKeyword, sortItems],
   );
+
+  const handlePageChange = useCallback((tabKey, page) => {
+    setPages((prev) => ({ ...prev, [tabKey]: page }));
+  }, []);
 
   // ====== Data ======
   const {
@@ -234,31 +249,52 @@ function RollCallPage() {
 
   // UI list/empty (áp bộ lọc + sort)
   const ListOrEmpty = useCallback(
-    ({ items, emptyText }) => {
+    ({ items, emptyText, tabKey }) => {
       const list = applySearch(items);
-      return list.length ? (
-        <div className={cx('roll-call__list')}>
-          {list.map((registration) => (
-            <CardActivity
-              key={registration.id}
-              {...registration.activity}
-              variant="vertical"
-              state={registration.activity?.state}
-              onRegistered={handleRegister}
-              onCancelRegister={handleCancel}
-              onConfirmPresent={handleAttendance}
-              onSendFeedback={handleFeedback}
-              attendanceLoading={attendanceMutation.isPending}
+      const total = list.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const current = Math.max(1, Math.min(pages[tabKey] ?? 1, totalPages));
+      const start = (current - 1) * PAGE_SIZE;
+      const pageItems = list.slice(start, start + PAGE_SIZE);
+
+      if (!total) {
+        return (
+          <div className={cx('roll-call__empty')}>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={isFetching ? 'Đang tải dữ liệu…' : emptyText || 'Không có hoạt động nào'}
             />
-          ))}
-        </div>
-      ) : (
-        <div className={cx('roll-call__empty')}>
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={isFetching ? 'Đang tải dữ liệu…' : emptyText || 'Không có hoạt động nào'}
+          </div>
+        );
+      }
+
+      return (
+        <>
+          <div className={cx('roll-call__list')}>
+            {pageItems.map((registration) => (
+              <CardActivity
+                key={registration.id}
+                {...registration.activity}
+                variant="vertical"
+                state={registration.activity?.state}
+                onRegistered={handleRegister}
+                onCancelRegister={handleCancel}
+                onConfirmPresent={handleAttendance}
+                onSendFeedback={handleFeedback}
+                attendanceLoading={attendanceMutation.isPending}
+              />
+            ))}
+          </div>
+          <Pagination
+            className={cx('roll-call__pagination')}
+            current={current}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onChange={(page) => handlePageChange(tabKey, page)}
+            showSizeChanger={false}
+            hideOnSinglePage
           />
-        </div>
+        </>
       );
     },
     [
@@ -269,6 +305,8 @@ function RollCallPage() {
       handleFeedback,
       isFetching,
       attendanceMutation.isPending,
+      pages,
+      handlePageChange,
     ],
   );
 
@@ -281,7 +319,9 @@ function RollCallPage() {
             <span>Đang diễn ra</span>
           </div>
         ),
-        children: <ListOrEmpty items={categorized.ongoing} emptyText="Chưa có hoạt động đang diễn ra" />,
+        children: (
+          <ListOrEmpty tabKey="ongoing" items={categorized.ongoing} emptyText="Chưa có hoạt động đang diễn ra" />
+        ),
       },
       {
         key: 'upcoming',
@@ -290,7 +330,9 @@ function RollCallPage() {
             <span>Sắp diễn ra</span>
           </div>
         ),
-        children: <ListOrEmpty items={categorized.upcoming} emptyText="Chưa có hoạt động sắp diễn ra" />,
+        children: (
+          <ListOrEmpty tabKey="upcoming" items={categorized.upcoming} emptyText="Chưa có hoạt động sắp diễn ra" />
+        ),
       },
       {
         key: 'ended',
@@ -299,11 +341,15 @@ function RollCallPage() {
             <span>Đã kết thúc</span>
           </div>
         ),
-        children: <ListOrEmpty items={categorized.ended} emptyText="Chưa có hoạt động đã kết thúc" />,
+        children: <ListOrEmpty tabKey="ended" items={categorized.ended} emptyText="Chưa có hoạt động đã kết thúc" />,
       },
     ],
-    [categorized, ListOrEmpty],
+    [categorized],
   );
+
+  useEffect(() => {
+    setPages({ ongoing: 1, upcoming: 1, ended: 1 });
+  }, [q, group, sort, registrations]);
 
   // Reset
   const handleReset = () => {
