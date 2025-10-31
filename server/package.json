@@ -27,6 +27,7 @@
     "helmet": "^8.1.0",
     "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.10",
     "yup": "^1.7.1"
   },
   "devDependencies": {

@@ -12,9 +12,6 @@ import FeedbackPage from '../pages/FeedbackPage/FeedbackPage';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 import Loading from '../pages/Loading/Loading';
 
-import AdminLayout from '../layouts/Admin/AdminLayout';
-import AdminDashboard from '../pages/Admin/AdminDashboard';
-
 // Sử dụng cho những route không cần đăng nhập nhưng vẫn xem được
 const publicRoutes = [
   { path: config.routes.home, component: HomePage },
@@ -29,8 +26,6 @@ const publicRoutes = [
   { path: config.routes.rollCall, component: RollCallPage },
   { path: config.routes.feedback, component: FeedbackPage },
   { path: config.routes.loading, component: Loading },
-  //Admin
-  { path: config.routes.admin, component: AdminDashboard, layout: AdminLayout },
 ];
 
 // Sử dụng cho route bắt buộc đăng nhập mới xem được

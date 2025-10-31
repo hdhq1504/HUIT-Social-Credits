@@ -41,7 +41,7 @@ function Footer() {
                   Trang chủ
                 </Link>
 
-                <Link to="/activities" className={cx('footer__link')}>
+                <Link to="/list-activities" className={cx('footer__link')}>
                   Hoạt động
                 </Link>
 
@@ -54,7 +54,7 @@ function Footer() {
                 </Link>
               </div>
               <div>
-                <Link to="/account" className={cx('footer__link')}>
+                <Link to="/profile" className={cx('footer__link')}>
                   Tài khoản
                 </Link>
 

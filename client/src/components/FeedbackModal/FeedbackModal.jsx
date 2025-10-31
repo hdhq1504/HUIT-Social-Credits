@@ -18,6 +18,7 @@ function FeedbackModal({
   pointsLabel,
   checkinTime,
   checkoutTime,
+  submitLoading = false,
 }) {
   const getBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -162,9 +163,9 @@ function FeedbackModal({
         <button
           className={cx('feedback__submit', disabled && 'feedback__submit--disabled')}
           onClick={handleSubmit}
-          disabled={disabled}
+          disabled={disabled || submitLoading}
         >
-          Gửi phản hồi
+          {submitLoading ? 'Đang gửi...' : 'Gửi phản hồi'}
         </button>
         <button className={cx('feedback__cancel')} onClick={onCancel}>
           Hủy bỏ
