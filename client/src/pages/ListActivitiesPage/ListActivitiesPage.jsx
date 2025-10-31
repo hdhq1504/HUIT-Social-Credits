@@ -163,7 +163,7 @@ function ListActivitiesPage() {
     () =>
       visibleActivities.filter((activity) => {
         const stateValue = activity?.state || 'guest';
-        return stateValue === 'guest';
+        return stateValue === 'guest' || stateValue === 'ended';
       }),
     [visibleActivities],
   );

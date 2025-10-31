@@ -129,10 +129,17 @@ function CardActivity(props) {
     pointGroupLabel,
   };
 
-  const normalizedGroupLabel =
-    modalGroupLabelProp ??
-    pointGroupLabel ??
-    (pointGroup === 'NHOM_1' ? 'Nhóm 1' : pointGroup === 'NHOM_2_3' ? 'Nhóm 2,3' : undefined);
+  const groupLabelMap = useMemo(
+    () => ({
+      NHOM_1: 'Nhóm 1',
+      NHOM_2: 'Nhóm 2',
+      NHOM_3: 'Nhóm 3',
+      NHOM_2_3: 'Nhóm 2,3',
+    }),
+    [],
+  );
+
+  const normalizedGroupLabel = modalGroupLabelProp ?? pointGroupLabel ?? groupLabelMap[pointGroup];
 
   const skeletonContent = (
     <div

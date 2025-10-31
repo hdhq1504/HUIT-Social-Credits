@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faCircleXmark, faClock } from '@fortawesome/free-solid-svg-icons';
@@ -19,7 +19,8 @@ const cx = classNames.bind(styles);
 
 function MyPointsPage() {
   const { contextHolder, open: toast } = useToast();
-  const [semester, setSemester] = useState('all');
+  const [semesterFilter, setSemesterFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   const { data: progressSummary } = useQuery({
@@ -85,6 +86,8 @@ function MyPointsPage() {
           date: dateValue,
           status: statusInfo.key,
           statusLabel: statusInfo.label,
+          semester: activity.semester || null,
+          academicYear: activity.academicYear || null,
         };
       })
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -109,12 +112,21 @@ function MyPointsPage() {
         dataIndex: 'group',
         key: 'group',
         className: cx('my-points__col', 'my-points__col--group'),
-        render: (group) =>
-          group === 'Nhóm 1' ? (
-            <Tag className={cx('my-points__group', 'my-points__group--danger')}>Nhóm 1</Tag>
-          ) : (
-            <Tag className={cx('my-points__group', 'my-points__group--success')}>Nhóm 2, 3</Tag>
-          ),
+        render: (group) => {
+          const label = group || 'Khác';
+          const normalized = typeof label === 'string' ? label.trim() : String(label);
+          const isGroupOne = normalized.toLowerCase().includes('1');
+          return (
+            <Tag
+              className={cx('my-points__group', {
+                'my-points__group--danger': isGroupOne,
+                'my-points__group--success': !isGroupOne,
+              })}
+            >
+              {normalized}
+            </Tag>
+          );
+        },
         width: 180,
         responsive: ['md'],
       },
@@ -177,10 +189,53 @@ function MyPointsPage() {
     [],
   );
 
-  const filteredData = useMemo(() => {
-    if (semester === 'all') return records;
-    return records;
-  }, [records, semester]);
+  const semesterOptions = useMemo(() => {
+    const values = new Set();
+    records.forEach((record) => {
+      if (record.semester) values.add(record.semester);
+    });
+    return [
+      { value: 'all', label: 'Tất cả học kỳ' },
+      ...Array.from(values)
+        .sort((a, b) => String(a).localeCompare(String(b)))
+        .map((value) => ({ value, label: String(value) })),
+    ];
+  }, [records]);
+
+  const yearOptions = useMemo(() => {
+    const values = new Set();
+    records.forEach((record) => {
+      if (record.academicYear) values.add(record.academicYear);
+    });
+    return [
+      { value: 'all', label: 'Tất cả năm học' },
+      ...Array.from(values)
+        .sort((a, b) => String(b).localeCompare(String(a)))
+        .map((value) => ({ value, label: String(value) })),
+    ];
+  }, [records]);
+
+  useEffect(() => {
+    if (semesterFilter !== 'all' && !semesterOptions.some((option) => option.value === semesterFilter)) {
+      setSemesterFilter('all');
+    }
+  }, [semesterFilter, semesterOptions]);
+
+  useEffect(() => {
+    if (yearFilter !== 'all' && !yearOptions.some((option) => option.value === yearFilter)) {
+      setYearFilter('all');
+    }
+  }, [yearFilter, yearOptions]);
+
+  const filteredData = useMemo(
+    () =>
+      records.filter((record) => {
+        const semesterMatches = semesterFilter === 'all' || record.semester === semesterFilter;
+        const yearMatches = yearFilter === 'all' || record.academicYear === yearFilter;
+        return semesterMatches && yearMatches;
+      }),
+    [records, semesterFilter, yearFilter],
+  );
 
   return (
     <section className={cx('my-points')}>
@@ -218,15 +273,18 @@ function MyPointsPage() {
 
             <div className={cx('my-points__filters')}>
               <Select
-                value={semester}
-                onChange={setSemester}
+                value={semesterFilter}
+                onChange={setSemesterFilter}
                 size="large"
                 className={cx('my-points__select')}
-                options={[
-                  { value: 'all', label: 'Tất cả học kỳ' },
-                  { value: '2024-hk1', label: 'HK1 2024-2025' },
-                  { value: '2024-hk2', label: 'HK2 2024-2025' },
-                ]}
+                options={semesterOptions}
+              />
+              <Select
+                value={yearFilter}
+                onChange={setYearFilter}
+                size="large"
+                className={cx('my-points__select')}
+                options={yearOptions}
               />
             </div>
           </div>

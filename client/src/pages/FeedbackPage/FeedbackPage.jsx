@@ -251,7 +251,7 @@ function FeedbackPage() {
             <span>Tất cả</span>
           </div>
         ),
-        children: <ListOrEmpty tabKey="all" emptyText="Chưa có hoạt động nào" />,
+        children: <ListOrEmpty tabKey="all" items={categorized.all} emptyText="Chưa có hoạt động nào" />,
       },
       {
         key: 'approved',

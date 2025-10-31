@@ -105,7 +105,7 @@ function ProofStatusSection() {
       <Label
         className={cx('proof-status__label')}
         title="Trạng thái"
-        highlight="minh chứng"
+        highlight="phản hồi"
         subtitle="Phản hồi điểm nếu có xảy ra sai sót"
         leftDivider
         rightDivider

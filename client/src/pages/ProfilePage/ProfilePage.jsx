@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField } from '@mui/material';
+import dayjs from 'dayjs';
 import ChangePasswordModal from '@components/ChangePasswordModal/ChangePasswordModal';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
+import Loading from '@pages/Loading/Loading';
 import styles from './ProfilePage.module.scss';
 import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';
@@ -25,11 +27,13 @@ function ProfilePage() {
   const [birthDate, setBirthDate] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('');
+  const [faculty, setFaculty] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('/images/no-image.jpg');
   const { contextHolder, open: openToast } = useToast();
 
   // Lấy profile từ API /auth/me
-  const { data: meData } = useQuery({
+  const { data: meData, isLoading: loadingProfile } = useQuery({
     queryKey: ['me'],
     queryFn: async () => {
       const { data } = await http.get('/auth/me');
@@ -59,10 +63,20 @@ function ProfilePage() {
     setMssv(meData.studentCode || '');
     setFullName(meData.fullName || '');
     setClassCode(meData.classCode || '');
-    const dob = meData.dateOfBirth ? String(meData.dateOfBirth).slice(0, 10) : '';
+    const dob = meData.dateOfBirth ? dayjs(meData.dateOfBirth).format('DD/MM/YYYY') : '';
     setBirthDate(dob);
     setPhone(meData.phoneNumber || '');
     setEmail(meData.email || '');
+    const genderValue = (() => {
+      const raw = meData.gender;
+      if (!raw) return '';
+      const normalized = String(raw).trim().toLowerCase();
+      if (['male', 'nam', 'm'].includes(normalized)) return 'Nam';
+      if (['female', 'nữ', 'nu', 'f'].includes(normalized)) return 'Nữ';
+      return String(raw);
+    })();
+    setGender(genderValue);
+    setFaculty(meData.departmentCode || '');
     setAvatarPreview(meData.avatarUrl || '/images/no-image.jpg');
 
     updateUserStore({
@@ -74,6 +88,8 @@ function ProfilePage() {
       NgaySinh: meData.dateOfBirth,
       Sdt: meData.phoneNumber,
       AnhDaiDien: meData.avatarUrl,
+      GioiTinh: genderValue,
+      Khoa: meData.departmentCode,
     });
   }, [meData, updateUserStore]);
 
@@ -88,6 +104,15 @@ function ProfilePage() {
     // nếu cần đăng nhập lại bằng thông tin mới:
     // if (userInfo) loginUser(userInfo);
   };
+
+  if (loadingProfile) {
+    return (
+      <main className={cx('profile-page')}>
+        {contextHolder}
+        <Loading message="Đang tải thông tin sinh viên" />
+      </main>
+    );
+  }
 
   return (
     <main className={cx('profile-page')}>
@@ -160,6 +185,40 @@ function ProfilePage() {
               value={classCode}
               InputProps={{ readOnly: true }}
               onChange={(e) => setClassCode(e.target.value)}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#00008b',
+                    borderWidth: '2px',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Giới tính"
+              placeholder="Nhập giới tính"
+              variant="outlined"
+              value={gender || 'Đang cập nhật'}
+              InputProps={{ readOnly: true }}
+              onChange={(e) => setGender(e.target.value)}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#00008b',
+                    borderWidth: '2px',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Khoa"
+              placeholder="Nhập khoa"
+              variant="outlined"
+              value={faculty || 'Đang cập nhật'}
+              InputProps={{ readOnly: true }}
+              onChange={(e) => setFaculty(e.target.value)}
               fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {

@@ -54,7 +54,7 @@ model DanhMucHoatDong {
   ma        String     @unique
   ten       String
   moTa      String?
-  nhomDiem  NhomDiem   @default(NHOM_2_3)
+  nhomDiem  NhomDiem   @default(NHOM_2)
   isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -87,7 +87,7 @@ model HoatDong {
   dangKy            DangKyHoatDong[]
   phanHoi           PhanHoiHoatDong[]
   danhMucId         String?
-  nhomDiem          NhomDiem            @default(NHOM_2_3)
+  nhomDiem          NhomDiem            @default(NHOM_2)
   danhMucRef        DanhMucHoatDong?    @relation(fields: [danhMucId], references: [id])
   DiemDanhNguoiDung DiemDanhNguoiDung[]
 
@@ -214,5 +214,6 @@ enum AttendancePhase {
 
 enum NhomDiem {
   NHOM_1
-  NHOM_2_3
+  NHOM_2
+  NHOM_3
 }

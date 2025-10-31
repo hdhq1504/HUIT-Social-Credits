@@ -29,10 +29,10 @@ const seed = async () => {
 
     const categoriesData = [
       { ma: "DIA_CHI_DO", ten: "Địa chỉ đỏ", moTa: "Hoạt động bắt buộc", nhomDiem: "NHOM_1" },
-      { ma: "HIEN_MAU", ten: "Hiến máu", moTa: "Cứu người, cứu đời", nhomDiem: "NHOM_2_3" },
-      { ma: "MUA_HE_XANH", ten: "Mùa hè xanh", moTa: "Bảo vệ môi trường", nhomDiem: "NHOM_2_3" },
-      { ma: "XUAN_TINH_NGUYEN", ten: "Xuân tình nguyện", moTa: "Hoạt động mùa xuân", nhomDiem: "NHOM_2_3" },
-      { ma: "HO_TRO", ten: "Hỗ trợ", moTa: "Hỗ trợ cộng đồng", nhomDiem: "NHOM_2_3" }
+      { ma: "HIEN_MAU", ten: "Hiến máu", moTa: "Cứu người, cứu đời", nhomDiem: "NHOM_3" },
+      { ma: "MUA_HE_XANH", ten: "Mùa hè xanh", moTa: "Bảo vệ môi trường", nhomDiem: "NHOM_2" },
+      { ma: "XUAN_TINH_NGUYEN", ten: "Xuân tình nguyện", moTa: "Hoạt động mùa xuân", nhomDiem: "NHOM_2" },
+      { ma: "HO_TRO", ten: "Hỗ trợ", moTa: "Hỗ trợ cộng đồng", nhomDiem: "NHOM_3" }
     ];
 
     const categoryMap = {};
@@ -53,8 +53,49 @@ const seed = async () => {
       categoryMap[category.ma] = created;
     }
 
+    const BENEFITS_PRESET = [
+      "Cộng điểm rèn luyện",
+      "Giấy chứng nhận (nếu đủ điều kiện)",
+      "Kỹ năng làm việc nhóm",
+      "Kỹ năng tổ chức sự kiện",
+      "Trải nghiệm hoạt động cộng đồng"
+    ];
+
+    const REQUIREMENTS_PRESET = [
+      "Đúng giờ, mang thẻ SV",
+      "Trang phục gọn gàng",
+      "Tuân thủ phân công",
+      "Giữ vệ sinh khu vực",
+      "Ứng xử văn minh"
+    ];
+
+    const GUIDES_PRESET = [
+      "Tập trung tại điểm danh trước 15 phút",
+      "Theo dõi thông báo trên dashboard",
+      "Nhóm trưởng nhận dụng cụ tại phòng CTSV",
+      "Báo cáo nhanh cuối buổi cho phụ trách"
+    ];
+
+    const RESPONSIBILITIES_PRESET = [
+      "Hỗ trợ hậu cần",
+      "Dẫn đường – hướng dẫn",
+      "Dọn vệ sinh – thu gom",
+      "Truyền thông – chụp ảnh",
+      "Điều phối hàng ghế"
+    ];
+
+    const pickSome = (arr, n = 3) => {
+      const copy = [...arr];
+      // xáo trộn đơn giản
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy.slice(0, Math.min(n, copy.length));
+    };
+
     const activitiesData = [
-      // ===== ĐANG DIỄN RA (bắt đầu trước 11:00 và kết thúc sau 11:00, 30/10/2025) =====
+      // ===== ĐANG DIỄN RA =====
       {
         maHoatDong: "HD20251030-ONGO-01",
         tieuDe: "Vệ sinh khuôn viên khoa CNTT",
@@ -108,14 +149,14 @@ const seed = async () => {
         isFeatured: true
       },
 
-      // ===== SẮP DIỄN RA (bắt đầu sau 11:00, 30/10/2025) =====
+      // ===== SẮP DIỄN RA =====
       {
         maHoatDong: "HD20251030-UP-01",
         tieuDe: "Tập huấn an toàn khi hiến máu",
         moTa: "Hướng dẫn kiến thức an toàn và dinh dưỡng trước – sau hiến máu.",
-        diemCong: 6,
-        batDauLuc: new Date("2025-10-30T12:30:00+07:00"),
-        ketThucLuc: new Date("2025-10-30T12:40:00+07:00"),
+        diemCong: 15,
+        batDauLuc: new Date("2025-10-30T20:09:00+07:00"),
+        ketThucLuc: new Date("2025-10-30T20:19:00+07:00"),
         diaDiem: "Hội trường lớn",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
@@ -353,6 +394,10 @@ const seed = async () => {
       const payload = {
         tieuDe: activity.tieuDe,
         moTa: activity.moTa,
+        quyenLoi: activity.quyenLoi ?? pickSome(BENEFITS_PRESET, 3),
+        trachNhiem: activity.trachNhiem ?? pickSome(RESPONSIBILITIES_PRESET, 3),
+        yeuCau: activity.yeuCau ?? pickSome(REQUIREMENTS_PRESET, 3),
+        huongDan: activity.huongDan ?? pickSome(GUIDES_PRESET, 3),
         diemCong: activity.diemCong,
         batDauLuc: activity.batDauLuc,
         ketThucLuc: activity.ketThucLuc,
@@ -360,6 +405,8 @@ const seed = async () => {
         sucChuaToiDa: activity.sucChuaToiDa,
         hinhAnh: activity.hinhAnh,
         isFeatured: activity.isFeatured,
+        hocKy: activity.hocKy ?? "HK1",
+        namHoc: activity.namHoc ?? "2025-2026",
         isPublished: true,
         danhMucId: category?.id ?? null,
         nhomDiem: category?.nhomDiem
