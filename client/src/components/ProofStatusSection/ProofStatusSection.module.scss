@@ -21,6 +21,17 @@
   }
 }
 
+.proof-status__empty {
+  width: 100%;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  background-color: var(--white-color);
+  box-shadow:
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
 .proof-status__card {
   width: 100%;
   padding: 24px;
@@ -374,6 +385,30 @@
 
     li {
       list-style: disc;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+
+    @media (max-width: 768px) {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 480px) {
+      margin-top: 16px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    button {
+      @media (max-width: 480px) {
+        width: 100%;
+      }
     }
   }
 }

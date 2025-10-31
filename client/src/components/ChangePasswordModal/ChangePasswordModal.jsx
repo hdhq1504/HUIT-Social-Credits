@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 const cx = classNames.bind(styles);
 
-function ChangePasswordModal({ open, onClose, changePassword, onSuccess, userId }) {
+function ChangePasswordModal({ open, onClose, changePassword, onSuccess }) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

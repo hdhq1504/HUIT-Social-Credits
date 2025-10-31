@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Progress } from 'antd';
@@ -17,6 +17,23 @@ function ProgressSection({
   onViewDetail,
   imageUrl = '/images/profile.png',
 }) {
+  const [avatarSrc, setAvatarSrc] = useState(imageUrl || '/images/profile.png');
+
+  useEffect(() => {
+    setAvatarSrc(imageUrl || '/images/profile.png');
+  }, [imageUrl]);
+
+  const { displayPercent, progressPercent, safeMissingPoints } = useMemo(() => {
+    const normalizedPercent = Number.isFinite(percent) ? percent : 0;
+    const clampedPercent = Math.min(Math.max(normalizedPercent, 0), 100);
+    const normalizedMissing = Number.isFinite(missingPoints) ? Math.max(missingPoints, 0) : 0;
+    return {
+      displayPercent: normalizedPercent,
+      progressPercent: clampedPercent,
+      safeMissingPoints: normalizedMissing,
+    };
+  }, [percent, missingPoints]);
+
   return (
     <div className={cx('progress-section')}>
       <div className={cx('progress-section__wrapper')}>
@@ -41,10 +58,10 @@ function ProgressSection({
           <div className={cx('progress-section__progress')}>
             <div className={cx('progress-section__progress-header')}>
               <span>Tiến độ tổng thể</span>
-              <span>{percent}%</span>
+              <span>{displayPercent}%</span>
             </div>
             <Progress
-              percent={percent}
+              percent={progressPercent}
               showInfo={false}
               strokeColor="#FFFFFF"
               trailColor="#FF5C00"
@@ -79,7 +96,7 @@ function ProgressSection({
           </div>
 
           <div className={cx('progress-section__summary')}>
-            Bạn còn thiếu <strong>{missingPoints} điểm</strong> để đạt chứng chỉ hoàn thành.
+            Bạn còn thiếu <strong>{safeMissingPoints} điểm</strong> để đạt chứng chỉ hoàn thành.
           </div>
 
           <div className={cx('progress-section__actions')} onClick={onViewDetail}>
@@ -90,7 +107,7 @@ function ProgressSection({
         </div>
 
         <div className={cx('progress-section__image')}>
-          <img src={imageUrl} alt="Progress" />
+          <img src={avatarSrc} alt="Ảnh đại diện" onError={() => setAvatarSrc('/images/profile.png')} />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,7 +9,7 @@ import {
   faClock,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Calendar, ConfigProvider, Input, Select, Tabs } from 'antd';
+import { Button, Calendar, ConfigProvider, Empty, Input, Pagination, Select, Tabs } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -19,18 +19,31 @@ import CardActivity from '@components/CardActivity/CardActivity';
 import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import { fileToDataUrl } from '@utils/file';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
+const PAGE_SIZE = 6;
 
 dayjs.extend(updateLocale);
 dayjs.locale('vi');
 dayjs.updateLocale('vi', { weekStart: 1 });
 
+const normalize = (s) =>
+  (s || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
 
   const queryClient = useQueryClient();
+  const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
+  const [keyword, setKeyword] = useState('');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
 
   const {
     data: registrations = [],
@@ -46,6 +59,20 @@ function MyActivitiesPage() {
       toast({ message, variant: 'danger' });
     },
   });
+
+  const { academicYears, semesters } = useMemo(() => {
+    const yearSet = new Set();
+    const semesterSet = new Set();
+    registrations.forEach((registration) => {
+      const year = registration.activity?.academicYear;
+      const semester = registration.activity?.semester;
+      if (year) yearSet.add(year);
+      if (semester) semesterSet.add(semester);
+    });
+    const sortedYears = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+    const sortedSemesters = Array.from(semesterSet).sort((a, b) => a.localeCompare(b));
+    return { academicYears: sortedYears, semesters: sortedSemesters };
+  }, [registrations]);
 
   const registerMutation = useMutation({
     mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
@@ -72,10 +99,11 @@ function MyActivitiesPage() {
   });
 
   const attendanceMutation = useMutation({
-    mutationFn: (id) => activitiesApi.attendance(id, {}),
-    onSuccess: () => {
+    mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
+    onSuccess: (data) => {
       queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+      const message = data?.message || 'Điểm danh thành công!';
+      toast({ message, variant: 'success' });
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
@@ -95,27 +123,72 @@ function MyActivitiesPage() {
     },
   });
 
+  const normalizedKeyword = normalize(keyword);
+
+  const filteredRegistrations = useMemo(
+    () =>
+      registrations.filter((registration) => {
+        const activity = registration.activity || {};
+        if (selectedYear !== 'all' && activity.academicYear !== selectedYear) return false;
+        if (selectedSemester !== 'all' && activity.semester !== selectedSemester) return false;
+        if (normalizedKeyword) {
+          const haystack = normalize(
+            [activity.title, activity.code, activity.location, activity.category, activity.pointGroupLabel]
+              .filter(Boolean)
+              .join(' '),
+          );
+          if (!haystack.includes(normalizedKeyword)) return false;
+        }
+        return true;
+      }),
+    [registrations, selectedYear, selectedSemester, normalizedKeyword],
+  );
+
+  useEffect(() => {
+    setPages({ registered: 1, attended: 1, canceled: 1 });
+  }, [selectedYear, selectedSemester, normalizedKeyword, registrations.length]);
+
   const stats = useMemo(() => {
-    const registered = registrations.filter((item) => item.status === 'DANG_KY');
-    const attended = registrations.filter((item) => item.status === 'DA_THAM_GIA');
-    const canceled = registrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
+    const registered = filteredRegistrations.filter((item) => item.status === 'DANG_KY');
+    const attended = filteredRegistrations.filter((item) => item.status === 'DA_THAM_GIA');
+    const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
     const totalPoints = attended.reduce((sum, item) => sum + (item.activity?.points ?? 0), 0);
     const pendingFeedback = attended.filter((item) => item.feedback?.status !== 'DA_DUYET').length;
 
     return {
       totalPoints,
-      totalActivities: registrations.length,
+      totalActivities: filteredRegistrations.length,
       completed: attended.length,
       pending: pendingFeedback,
       registered,
       attended,
       canceled,
     };
-  }, [registrations]);
+  }, [filteredRegistrations]);
+
+  const handlePageChange = useCallback((tabKey, page) => {
+    setPages((prev) => ({ ...prev, [tabKey]: page }));
+  }, []);
+
+  const paginate = useCallback(
+    (items, tabKey) => {
+      const total = items.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const current = Math.max(1, Math.min(pages[tabKey] ?? 1, totalPages));
+      const start = (current - 1) * PAGE_SIZE;
+
+      return {
+        total,
+        current,
+        pageItems: items.slice(start, start + PAGE_SIZE),
+      };
+    },
+    [pages],
+  );
 
   const calendarEvents = useMemo(() => {
     const map = {};
-    registrations.forEach((registration) => {
+    filteredRegistrations.forEach((registration) => {
       const activity = registration.activity;
       if (!activity?.startTime) return;
       const key = dayjs(activity.startTime).format('YYYY-MM-DD');
@@ -126,7 +199,7 @@ function MyActivitiesPage() {
       map[key] = { type, label: activity.title };
     });
     return map;
-  }, [registrations]);
+  }, [filteredRegistrations]);
 
   const fullCellRender = (current, info) => {
     const key = dayjs(current).format('YYYY-MM-DD');
@@ -165,11 +238,29 @@ function MyActivitiesPage() {
   );
 
   const handleAttendance = useCallback(
-    async ({ activity }) => {
+    async ({ activity, dataUrl, file, phase }) => {
       if (!activity?.id) return;
-      await attendanceMutation.mutateAsync(activity.id);
+
+      let evidenceDataUrl = dataUrl ?? null;
+      if (!evidenceDataUrl && file) {
+        try {
+          evidenceDataUrl = await fileToDataUrl(file);
+        } catch {
+          toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+          return;
+        }
+      }
+
+      await attendanceMutation.mutateAsync({
+        id: activity.id,
+        payload: {
+          status: 'present',
+          phase,
+          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+        },
+      });
     },
-    [attendanceMutation],
+    [attendanceMutation, toast],
   );
 
   const handleFeedback = useCallback(
@@ -193,9 +284,50 @@ function MyActivitiesPage() {
           onCancelRegister={handleCancel}
           onConfirmPresent={handleAttendance}
           onSendFeedback={handleFeedback}
+          attendanceLoading={attendanceMutation.isPending}
         />
       )),
-    [handleRegister, handleCancel, handleAttendance, handleFeedback],
+    [handleRegister, handleCancel, handleAttendance, handleFeedback, attendanceMutation.isPending],
+  );
+
+  const renderTabContent = useCallback(
+    (tabKey, items, emptyText) => {
+      const { total, current, pageItems } = paginate(items, tabKey);
+
+      if (isFetching && registrations.length === 0) {
+        return (
+          <div className={cx('my-activities__list')}>
+            {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <CardActivity key={`skeleton-${tabKey}-${index}`} loading variant="vertical" />
+            ))}
+          </div>
+        );
+      }
+
+      if (!total) {
+        return (
+          <div className={cx('my-activities__empty')}>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText || 'Không có hoạt động nào'} />
+          </div>
+        );
+      }
+
+      return (
+        <>
+          <div className={cx('my-activities__list')}>{buildCards(pageItems)}</div>
+          <Pagination
+            className={cx('my-activities__pagination')}
+            current={current}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onChange={(page) => handlePageChange(tabKey, page)}
+            showSizeChanger={false}
+            hideOnSinglePage
+          />
+        </>
+      );
+    },
+    [buildCards, handlePageChange, paginate, isFetching, registrations.length],
   );
 
   const tabItems = useMemo(() => {
@@ -211,7 +343,7 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{registered.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(registered)}</div>,
+        children: renderTabContent('registered', registered, 'Chưa có hoạt động nào được đăng ký'),
       },
       {
         key: 'attended',
@@ -222,7 +354,7 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{attended.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(attended)}</div>,
+        children: renderTabContent('attended', attended, 'Chưa có hoạt động nào đã tham gia'),
       },
       {
         key: 'canceled',
@@ -233,10 +365,10 @@ function MyActivitiesPage() {
             <span className={cx('my-activities__tab-badge')}>{canceled.length}</span>
           </div>
         ),
-        children: <div className={cx('my-activities__list')}>{buildCards(canceled)}</div>,
+        children: renderTabContent('canceled', canceled, 'Chưa có hoạt động nào bị hủy'),
       },
     ];
-  }, [stats, buildCards]);
+  }, [renderTabContent, stats]);
 
   return (
     <ConfigProvider locale={viVN}>
@@ -295,7 +427,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Đang chờ</div>
-                  <div className={cx('my-activities__stat-card-value')}>0</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.pending}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faClock} className={cx('my-activities__stat-card-icon-mark')} />
@@ -317,15 +449,15 @@ function MyActivitiesPage() {
             <div className={cx('my-activities__legend')}>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--primary')} />
-                <span>Sắp diễn ra</span>
-              </div>
-              <div className={cx('my-activities__legend-item')}>
-                <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
-                <span>Đang diễn ra</span>
+                <span>Đã đăng ký</span>
               </div>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--success')} />
-                <span>Đã hủy</span>
+                <span>Đã tham gia</span>
+              </div>
+              <div className={cx('my-activities__legend-item')}>
+                <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
+                <span>Đã hủy/Vắng mặt</span>
               </div>
             </div>
           </div>
@@ -338,47 +470,72 @@ function MyActivitiesPage() {
               type="line"
               size="large"
               tabBarGutter={12}
-              renderTabBar={(props, DefaultTabBar) => (
-                <>
-                  <DefaultTabBar {...props} />
+              renderTabBar={(props, TabBar) => {
+                const RenderedTabBar = TabBar;
+                return (
+                  <>
+                    <RenderedTabBar {...props} />
 
-                  {/* Thanh tìm kiếm */}
-                  <div className={cx('my-activities__search')}>
-                    <Input
-                      placeholder="Nhập từ khóa"
-                      size="large"
-                      className={cx('my-activities__search-input')}
-                      allowClear
-                    />
+                    {/* Thanh tìm kiếm */}
+                    <div className={cx('my-activities__search')}>
+                      <Input
+                        placeholder="Nhập từ khóa"
+                        size="large"
+                        className={cx('my-activities__search-input')}
+                        allowClear
+                        value={keyword}
+                        onChange={(event) => setKeyword(event.target.value)}
+                      />
 
-                    <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                      <Select.Option value="all">Nhóm hoạt động</Select.Option>
-                      <Select.Option value="mua-he-xanh">Mùa hè xanh</Select.Option>
-                      <Select.Option value="hien-mau">Hiến máu</Select.Option>
-                      <Select.Option value="dia-chi-do">Địa chỉ đỏ</Select.Option>
-                    </Select>
+                      <Select
+                        value={selectedYear}
+                        size="large"
+                        className={cx('my-activities__search-select')}
+                        onChange={setSelectedYear}
+                      >
+                        <Select.Option value="all">Tất cả năm học</Select.Option>
+                        {academicYears.map((year) => (
+                          <Select.Option key={year} value={year}>
+                            {year}
+                          </Select.Option>
+                        ))}
+                      </Select>
 
-                    <Select defaultValue="all" size="large" className={cx('my-activities__search-select')}>
-                      <Select.Option value="all">Mới nhất</Select.Option>
-                      <Select.Option value="oldest">Cũ nhất</Select.Option>
-                      <Select.Option value="popular">Phổ biến nhất</Select.Option>
-                    </Select>
+                      <Select
+                        value={selectedSemester}
+                        size="large"
+                        className={cx('my-activities__search-select')}
+                        onChange={setSelectedSemester}
+                      >
+                        <Select.Option value="all">Tất cả học kỳ</Select.Option>
+                        {semesters.map((semester) => (
+                          <Select.Option key={semester} value={semester}>
+                            {semester}
+                          </Select.Option>
+                        ))}
+                      </Select>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      className={cx('my-activities__reset-button')}
-                      icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
-                      onClick={() => refetch()}
-                      loading={isFetching}
-                    >
-                      Đặt lại
-                    </Button>
-                  </div>
+                      <Button
+                        type="primary"
+                        size="large"
+                        className={cx('my-activities__reset-button')}
+                        icon={<FontAwesomeIcon icon={faArrowRotateRight} />}
+                        onClick={() => {
+                          setKeyword('');
+                          setSelectedYear('all');
+                          setSelectedSemester('all');
+                          refetch();
+                        }}
+                        loading={isFetching}
+                      >
+                        Đặt lại
+                      </Button>
+                    </div>
 
-                  <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
-                </>
-              )}
+                    <div className={cx('my-activities__title')}>Danh sách hoạt động</div>
+                  </>
+                );
+              }}
             />
           </div>
         </div>

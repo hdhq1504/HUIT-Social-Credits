@@ -1,6 +1,6 @@
 .my-activities {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1224px;
   padding: 0 24px;
   margin: 70px auto 20px;
   display: flex;
@@ -729,6 +729,31 @@
       grid-template-columns: repeat(1, minmax(0, 1fr));
       padding: 0 16px;
       gap: 10px;
+    }
+  }
+
+  &__pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 24px 24px;
+
+    @media (max-width: 992px) {
+      padding: 0 20px 20px;
+    }
+
+    @media (max-width: 576px) {
+      padding: 0 16px 16px;
+      justify-content: center;
+    }
+  }
+
+  &__empty {
+    padding: 32px 24px;
+    display: flex;
+    justify-content: center;
+
+    @media (max-width: 576px) {
+      padding: 24px 16px;
     }
   }
 }

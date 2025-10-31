@@ -11,7 +11,7 @@ import {
   faPhone,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
-import { Col, Row, Tabs } from 'antd';
+import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Button from '@components/Button/Button';
 import CardActivity from '@components/CardActivity/CardActivity';
@@ -22,6 +22,7 @@ import Label from '@components/Label/Label';
 import useToast from '@components/Toast/Toast';
 import Loading from '@pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
+import { fileToDataUrl } from '@utils/file';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -35,12 +36,64 @@ const formatTimeRange = (start, end) => {
   return `${s} - ${e}`;
 };
 
+const toStringItems = (value) =>
+  (Array.isArray(value) ? value : [])
+    .map((item) => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return trimmed || null;
+      }
+      if (item && typeof item === 'object') {
+        const text =
+          typeof item.text === 'string'
+            ? item.text
+            : typeof item.description === 'string'
+              ? item.description
+              : typeof item.content === 'string'
+                ? item.content
+                : typeof item.title === 'string'
+                  ? item.title
+                  : null;
+        return text ? text.trim() : null;
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+const toGuideItems = (value) =>
+  (Array.isArray(value) ? value : [])
+    .map((item) => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return trimmed ? { title: null, content: trimmed } : null;
+      }
+      if (item && typeof item === 'object') {
+        const titleCandidate =
+          typeof item.title === 'string' ? item.title : typeof item.heading === 'string' ? item.heading : null;
+        const contentCandidate =
+          typeof item.content === 'string'
+            ? item.content
+            : typeof item.description === 'string'
+              ? item.description
+              : typeof item.text === 'string'
+                ? item.text
+                : null;
+        const content = contentCandidate ? contentCandidate.trim() : null;
+        if (!content) return null;
+        const title = titleCandidate ? titleCandidate.trim() : null;
+        return { title, content };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
 function ActivityDetailPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
+  const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
@@ -120,11 +173,13 @@ function ActivityDetailPage() {
   });
 
   const attendanceMutation = useMutation({
-    mutationFn: (id) => activitiesApi.attendance(id, {}),
-    onSuccess: () => {
+    mutationFn: ({ id: activityId, payload }) => activitiesApi.attendance(activityId, payload),
+    onSuccess: (data) => {
       queryClient.invalidateQueries(['activity', id]);
       setIsCheckOpen(false);
-      toast({ message: 'Điểm danh thành công!', variant: 'success' });
+      setAttendancePhase('checkin');
+      const message = data?.message || 'Điểm danh thành công!';
+      toast({ message, variant: 'success' });
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
@@ -137,66 +192,42 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
-  const handleAttendanceSubmit = async () => {
+  const handleAttendanceSubmit = async ({ file, dataUrl }) => {
     if (!id) return;
-    attendanceMutation.mutate(id);
+
+    let evidenceDataUrl = dataUrl ?? null;
+    if (!evidenceDataUrl && file) {
+      try {
+        evidenceDataUrl = await fileToDataUrl(file);
+      } catch {
+        toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+        return;
+      }
+    }
+
+    attendanceMutation.mutate({
+      id,
+      payload: {
+        status: 'present',
+        phase: attendancePhase,
+        evidence: evidenceDataUrl
+          ? {
+              data: evidenceDataUrl,
+              mimeType: file?.type,
+              fileName: file?.name,
+            }
+          : undefined,
+      },
+    });
   };
 
-  const descriptionParagraphs = useMemo(
-    () => [
-      'Chiến dịch "Sạch biển xanh - Tương lai bền vững" là hoạt động tình nguyện ý nghĩa nhằm góp phần bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề ô nhiễm rác thải nhựa.',
-      'Đây là cơ hội tuyệt vời để các bạn sinh viên thể hiện tinh thần trách nhiệm với xã hội và môi trường, cùng nhau tạo ra tác động tích cực cho cộng đồng.',
-    ],
-    [],
-  );
+  const benefitItems = useMemo(() => toStringItems(activity?.benefits), [activity?.benefits]);
 
-  const benefitItems = useMemo(
-    () => [
-      'Nhận điểm hoạt động CTXH tương ứng',
-      'Được cấp giấy chứng nhận tham gia từ Ban tổ chức',
-      'Hỗ trợ chi phí ăn uống và di chuyển theo quy định',
-      'Nhận áo đồng phục và các vật phẩm kỷ niệm',
-      'Cơ hội giao lưu, kết nối với sinh viên các trường',
-    ],
-    [],
-  );
+  const responsibilityItems = useMemo(() => toStringItems(activity?.responsibilities), [activity?.responsibilities]);
 
-  const responsibilityItems = useMemo(
-    () => ['Tham gia đầy đủ các hoạt động theo lịch trình', 'Tuân thủ nghiêm túc các quy định an toàn'],
-    [],
-  );
+  const requirementItems = useMemo(() => toStringItems(activity?.requirements), [activity?.requirements]);
 
-  const requirementItems = useMemo(
-    () => [
-      { icon: 'faUserGraduate', text: 'Là sinh viên đang học tại các trường đại học, cao đẳng' },
-      { icon: 'faHeartPulse', text: 'Không có các bệnh lý ảnh hưởng đến hoạt động ngoài trời' },
-      { icon: 'faClock', text: 'Cam kết tham gia đầy đủ hoạt động theo kế hoạch' },
-      { icon: 'faShieldHeart', text: 'Có bảo hiểm y tế và cam kết tuân thủ các quy định an toàn' },
-    ],
-    [],
-  );
-
-  const guideSteps = useMemo(
-    () => [
-      {
-        title: 'Bước 1: Đăng ký tham gia',
-        content: 'Điền đầy đủ thông tin vào form đăng ký trực tuyến trước thời hạn quy định.',
-      },
-      {
-        title: 'Bước 2: Xác nhận thông tin',
-        content: 'Ban tổ chức sẽ gửi email xác nhận trong vòng 24 giờ. Kiểm tra email và xác nhận tham gia.',
-      },
-      {
-        title: 'Bước 3: Tham gia briefing',
-        content: 'Tham dự buổi họp trực tuyến để nắm rõ lịch trình và quy định khi tham gia hoạt động.',
-      },
-      {
-        title: 'Bước 4: Chuẩn bị cá nhân',
-        content: 'Chuẩn bị đầy đủ đồ dùng cá nhân và phương tiện theo hướng dẫn của ban tổ chức.',
-      },
-    ],
-    [],
-  );
+  const guideSteps = useMemo(() => toGuideItems(activity?.guidelines), [activity?.guidelines]);
 
   const tabItems = useMemo(
     () => [
@@ -210,14 +241,18 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Yêu cầu tham gia</h4>
-            <ul className={cx('activity-detail__requirement-list')}>
-              {requirementItems.map((item, index) => (
-                <li key={index} className={cx('activity-detail__requirement-item')}>
-                  <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
-                  <span className={cx('activity-detail__requirement-text')}>{item.text}</span>
-                </li>
-              ))}
-            </ul>
+            {requirementItems.length ? (
+              <ul className={cx('activity-detail__requirement-list')}>
+                {requirementItems.map((item, index) => (
+                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
+                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
+                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
           </div>
         ),
       },
@@ -231,14 +266,18 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Quy trình tham gia</h4>
-            <div className={cx('activity-detail__guide-list')}>
-              {guideSteps.map((step, index) => (
-                <div key={index} className={cx('activity-detail__guide-item')}>
-                  <h5 className={cx('activity-detail__guide-title')}>{step.title}</h5>
-                  <p className={cx('activity-detail__guide-content')}>{step.content}</p>
-                </div>
-              ))}
-            </div>
+            {requirementItems.length ? (
+              <ul className={cx('activity-detail__requirement-list')}>
+                {requirementItems.map((item, index) => (
+                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
+                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
+                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
           </div>
         ),
       },
@@ -248,6 +287,13 @@ function ActivityDetailPage() {
 
   const renderActionButton = () => {
     if (!activity) return null;
+
+    const nextPhase = activity?.registration?.attendanceSummary?.nextPhase ?? 'checkin';
+    const openAttendance = (phase = nextPhase) => {
+      setAttendancePhase(phase);
+      setIsCheckOpen(true);
+    };
+
     switch (viewState) {
       case 'guest':
         return (
@@ -271,9 +317,32 @@ function ActivityDetailPage() {
           <Button
             className={cx('activity-detail__sidebar-button')}
             variant="primary"
-            onClick={() => setIsCheckOpen(true)}
+            onClick={() => openAttendance(nextPhase)}
+            disabled={attendanceMutation.isPending}
           >
             Điểm danh
+          </Button>
+        );
+      case 'confirm_in':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="primary"
+            onClick={() => openAttendance('checkin')}
+            disabled={attendanceMutation.isPending}
+          >
+            Tham gia
+          </Button>
+        );
+      case 'confirm_out':
+        return (
+          <Button
+            className={cx('activity-detail__sidebar-button')}
+            variant="orange"
+            onClick={() => openAttendance('checkout')}
+            disabled={attendanceMutation.isPending}
+          >
+            Hoàn tất
           </Button>
         );
       case 'attendance_closed':
@@ -390,29 +459,37 @@ function ActivityDetailPage() {
 
                     <section className={cx('activity-detail__benefit')}>
                       <h3 className={cx('activity-detail__benefit-title')}>Quyền lợi khi tham gia:</h3>
-                      <ul className={cx('activity-detail__benefit-list')}>
-                        {benefitItems.map((item) => (
-                          <li key={item} className={cx('activity-detail__benefit-item')}>
-                            <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {benefitItems.length ? (
+                        <ul className={cx('activity-detail__benefit-list')}>
+                          {benefitItems.map((item, index) => (
+                            <li key={`${item}-${index}`} className={cx('activity-detail__benefit-item')}>
+                              <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Empty description="Chưa có thông tin quyền lợi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      )}
                     </section>
 
                     <section className={cx('activity-detail__responsibility')}>
                       <h3 className={cx('activity-detail__responsibility-title')}>Trách nhiệm của người tham gia:</h3>
-                      <ul className={cx('activity-detail__responsibility-list')}>
-                        {responsibilityItems.map((item) => (
-                          <li key={item} className={cx('activity-detail__responsibility-item')}>
-                            <FontAwesomeIcon
-                              icon={faTriangleExclamation}
-                              className={cx('activity-detail__responsibility-icon')}
-                            />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {responsibilityItems.length ? (
+                        <ul className={cx('activity-detail__responsibility-list')}>
+                          {responsibilityItems.map((item, index) => (
+                            <li key={`${item}-${index}`} className={cx('activity-detail__responsibility-item')}>
+                              <FontAwesomeIcon
+                                icon={faTriangleExclamation}
+                                className={cx('activity-detail__responsibility-icon')}
+                              />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Empty description="Chưa có thông tin trách nhiệm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      )}
                     </section>
                   </div>
 
@@ -570,8 +647,18 @@ function ActivityDetailPage() {
                       await activitiesApi.cancel(item.id, { reason, note });
                       queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
-                    onConfirmPresent={async () => {
-                      await activitiesApi.attendance(item.id, {});
+                    onConfirmPresent={async ({ dataUrl, file, phase }) => {
+                      let evidenceDataUrl = dataUrl ?? null;
+                      if (!evidenceDataUrl && file) {
+                        evidenceDataUrl = await fileToDataUrl(file);
+                      }
+                      await activitiesApi.attendance(item.id, {
+                        status: 'present',
+                        phase,
+                        evidence: evidenceDataUrl
+                          ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
+                          : undefined,
+                      });
                       queryClient.invalidateQueries(['activities', 'related', id]);
                     }}
                     onSendFeedback={async ({ content, files }) => {
@@ -617,6 +704,8 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
+        confirmLoading={attendanceMutation.isPending}
+        phase={attendancePhase}
       />
 
       <FeedbackModal

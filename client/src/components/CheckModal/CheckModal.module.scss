@@ -19,6 +19,8 @@
   }
 
   &__header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
@@ -41,6 +43,37 @@
 
     @media (max-width: 480px) {
       font-size: 16px;
+    }
+  }
+
+  &__phase {
+    align-self: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white-color);
+    background-color: var(--primary-color);
+    margin-left: 16px;
+
+    @media (max-width: 576px) {
+      font-size: 12px;
+      padding: 3px 10px;
+      margin-left: 10px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+      padding: 3px 8px;
+      margin-left: 8px;
+    }
+
+    &--checkout {
+      background-color: var(--orange-color);
+    }
+
+    &--checkin {
+      background-color: var(--primary-color);
     }
   }
 
