@@ -1,0 +1,429 @@
+/* A_Activities_List.module.scss */
+
+// Nhập module màu sắc mới để tránh Deprecation Warning
+@use 'sass:color';
+
+// ------------------------------------
+// Biến màu sắc
+// ------------------------------------
+$color-primary: #00008b; // Xanh Navy (Dùng cho nền Filter, Điểm, Xem)
+$color-secondary: #ff5200; // Cam (Dùng cho nút lọc và Điểm) - Bị đổi thành Navy ở Điểm
+$color-text: #333;
+$color-light-gray: #f4f7f9;
+$color-border: #e0e0e0;
+$color-location-text: #ccc;
+
+// Biến màu mới cho Badge Nhóm và Hành động
+$color-red: #e74c3c; // Đỏ (Nhóm 1, Xóa)
+$color-green: #2ecc71; // Xanh Lá (Nhóm 2, 3, Sửa)
+$color-navy: #00008b; // Xanh Navy (Xem, Điểm)
+
+// ------------------------------------
+// Thanh Lọc (Filter Bar) - NỀN MÀU NAVY
+// ------------------------------------
+.filterBar {
+  background-color: $color-primary; /* Nền màu Navy */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-wrap: wrap;
+}
+
+/* Basic Input/Select/Date styles */
+.searchInput,
+.select,
+.dateInput {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  color: #333;
+  outline: none;
+  min-width: 180px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.searchInput::placeholder,
+.select::placeholder {
+  color: #a0a0a0;
+}
+
+/* Focus effects */
+.searchInput:focus,
+.select:focus,
+.dateInput:focus {
+  border-color: $color-secondary; /* Dùng màu Cam nổi bật khi focus */
+  box-shadow: 0 0 0 3px rgba(255, 82, 0, 0.2);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Select (Dropdown) */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  padding-right: 30px;
+}
+
+/* Date Input (Native) */
+.dateInput {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+  padding-right: 14px;
+  color: #a0a0a0;
+}
+
+.dateInput:valid {
+  color: #333;
+}
+
+.dateInput::-webkit-datetime-edit-text,
+.dateInput::-webkit-datetime-edit-month-field,
+.dateInput::-webkit-datetime-edit-day-field,
+.dateInput::-webkit-datetime-edit-year-field {
+  color: #a0a0a0 !important;
+}
+
+.dateInput:valid::-webkit-datetime-edit-text,
+.dateInput:valid::-webkit-datetime-edit-month-field,
+.dateInput:valid::-webkit-datetime-edit-day-field,
+.dateInput:valid::-webkit-datetime-edit-year-field {
+  color: #333 !important;
+}
+
+/* Filter Button */
+.filterButton {
+  background-color: $color-secondary; /* Màu Cam */
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+}
+
+.filterButton:hover {
+  background-color: color.adjust($color-secondary, $lightness: 10%);
+  transform: translateY(-1px);
+}
+
+.filterButton:active {
+  transform: translateY(0);
+  background-color: color.adjust($color-secondary, $lightness: -10%);
+}
+
+/**
+ * ========================================
+ * REACT-DATEPICKER CUSTOMIZATION
+ * ========================================
+ */
+.select.react-datepicker-ignore-onclickoutside {
+  background-image: none;
+  padding-right: 14px;
+}
+
+.filterBar .react-datepicker-wrapper {
+  min-width: 180px;
+}
+.filterBar .react-datepicker__input-container input {
+  width: 100%;
+  @extend .searchInput;
+}
+
+.react-datepicker {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Montserrat', sans-serif;
+}
+
+.react-datepicker__header {
+  background-color: #f4f7f9;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* --- DATE COLOR FIXES --- */
+.react-datepicker__day {
+  color: #333 !important;
+}
+
+.react-datepicker__day--outside-month {
+  color: #ccc !important;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+  background-color: $color-primary !important; /* Xanh Navy */
+  border-radius: 50%;
+  color: #fff !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: $color-secondary !important; /* Cam */
+  color: #fff !important;
+  border-radius: 50%;
+}
+
+.react-datepicker__day--today:not(.react-datepicker__day--outside-month) {
+  font-weight: bold;
+}
+
+// ------------------------------------
+// Bảng Hoạt động (Activities Table)
+// ------------------------------------
+.contentBox {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  padding: 15px;
+}
+
+.activitiesTable {
+  width: 100%;
+  /* Độ rộng có thể co lại linh hoạt */
+  min-width: 800px; /* Đặt một giá trị min-width vừa phải để đảm bảo cuộn ngang nếu màn hình quá nhỏ */
+  border-collapse: collapse;
+  font-size: 14px;
+
+  thead {
+    background-color: $color-light-gray;
+
+    th {
+      padding: 12px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: $color-text;
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #eee;
+
+      &:hover {
+        background-color: #fafafa;
+      }
+
+      td {
+        padding: 10px;
+        color: #555;
+      }
+    }
+  }
+}
+
+/* ĐÃ XOÁ: .activitiesTable td:nth-child(3) { min-width: 250px; } để cột Tên hoạt động linh hoạt hơn */
+.activitiesTable td:nth-child(3) {
+  /* Cho phép cột Tên hoạt động chiếm hết không gian còn lại */
+  width: 100%;
+}
+
+.activitiesTable td strong {
+  display: block;
+  font-weight: 600;
+  color: $color-text;
+  margin-bottom: 2px;
+}
+.activityLocation {
+  font-size: 12px;
+  color: $color-location-text;
+  margin: 0;
+}
+
+/* Cập nhật màu cho cột Điểm: #00008b (Navy) */
+.pointColumn strong {
+  color: $color-navy; /* Đã đổi từ Cam sang Navy */
+  font-size: 14px;
+}
+
+/* Style cơ sở cho Badge Nhóm hoạt động */
+.groupBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+/* BADGE: NHÓM 1 (MÀU ĐỎ) */
+.groupBadgeRed {
+  background-color: color.adjust($color-red, $lightness: 40%); /* Nền đỏ rất nhạt */
+  color: color.adjust($color-red, $lightness: -15%); /* Chữ đỏ đậm */
+  border-color: color.adjust($color-red, $lightness: -15%); /* Viền đỏ đậm (đồng bộ với chữ) */
+}
+
+/* BADGE: NHÓM 2, 3 (MÀU XANH LÁ) */
+.groupBadgeGreen {
+  background-color: color.adjust($color-green, $lightness: 35%); /* Nền xanh lá rất nhạt */
+  color: color.adjust($color-green, $lightness: -15%); /* Chữ xanh lá đậm */
+  border-color: color.adjust($color-green, $lightness: -15%); /* Viền xanh lá đậm (đồng bộ với chữ) */
+}
+
+// Badge Trạng thái
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.badgeOngoing {
+  background-color: #fff9e6;
+  color: #ffc107;
+  border-color: #ffc107;
+}
+
+.badgeFinished {
+  background-color: #f0f0f0;
+  color: #777;
+  border-color: #d0d0d0;
+}
+
+// Cột Hành động
+.actionsColumn {
+  white-space: nowrap;
+  /* ĐÃ XOÁ min-width: 100px; để cột linh hoạt hơn */
+  display: flex;
+  align-items: center;
+
+  .actionButton {
+    background: none;
+    border: none;
+    margin-left: 5px;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 5px; /* Giúp dễ bấm hơn */
+    display: flex;
+    align-items: center;
+
+    /* Màu mặc định cho tất cả các nút */
+    color: #777;
+
+    &:hover {
+      color: $color-primary; /* Xanh Navy khi hover */
+    }
+  }
+
+  /* Style riêng cho từng nút */
+  .viewButton {
+    color: $color-navy; /* Xanh Navy */
+    &:hover {
+      color: color.adjust($color-navy, $lightness: 15%);
+    }
+  }
+  .editButton {
+    color: $color-green; /* Xanh Lá */
+    &:hover {
+      color: color.adjust($color-green, $lightness: 10%);
+    }
+  }
+  .deleteButton {
+    color: $color-red; /* Đỏ */
+    &:hover {
+      color: color.adjust($color-red, $lightness: 10%);
+    }
+  }
+}
+
+// ------------------------------------
+// Phân trang (Pagination Footer)
+// ------------------------------------
+.footerBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  margin-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.selectionInfo {
+  font-size: 14px;
+  color: #555;
+
+  span {
+    font-weight: 600;
+    color: $color-primary;
+  }
+}
+
+.pagination {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.pageButton {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: $color-text;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(.pageActive) {
+    background: #f0f0f0;
+  }
+
+  &.pageActive {
+    background-color: $color-primary;
+    color: #fff;
+    border-color: $color-primary;
+  }
+
+  &:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+    background: #fff;
+  }
+}
+
+// ------------------------------------
+// Media Queries (Tối ưu hóa hiển thị)
+// ------------------------------------
+@media (max-width: 768px) {
+  .footerBar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+}

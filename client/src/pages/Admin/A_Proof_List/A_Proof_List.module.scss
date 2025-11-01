@@ -1,0 +1,227 @@
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.statCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.statInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .label {
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+  }
+}
+
+.iconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+/* ====== BỘ LỌC ====== */
+.filterBar {
+  background-color: #00008b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  .searchInput,
+  .select {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    color: #333;
+    outline: none;
+    min-width: 180px;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: #00008b;
+      box-shadow: 0 0 0 3px rgba(0, 0, 139, 0.2);
+    }
+  }
+
+  .searchInput {
+    flex: 1;
+    min-width: 200px;
+
+    &::placeholder {
+      color: #a0a0a0;
+    }
+  }
+
+  .select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px;
+    padding-right: 30px;
+  }
+
+  .filterButton {
+    background-color: #ff5200;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      background-color: #ff6a1a;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      background-color: #e04a00;
+    }
+  }
+}
+
+.tableContainer {
+  background: #fff;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.proofTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+
+  thead {
+    background: #e8edff;
+
+    th {
+      color: #00008b;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1.5px solid #c8d5ff;
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #eef1ff;
+
+    &:hover td {
+      background: #f9fbff;
+    }
+
+    td {
+      padding: 10px 8px;
+      color: #333;
+      vertical-align: middle;
+    }
+  }
+}
+
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid #d0d8ff;
+    object-fit: cover;
+  }
+
+  p {
+    font-size: 12px;
+    color: #777;
+    margin: 2px 0 0;
+  }
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  text-align: center;
+  min-width: 80px;
+}
+
+.success {
+  background-color: #c8f7dc;
+  color: #1e8e3e;
+  border-color: #1e8e3e;
+}
+
+.pending {
+  background-color: #ffeccc;
+  color: #e67e00;
+  border-color: #e67e00;
+}
+
+.fail {
+  background-color: #fde6e6;
+  color: #d93025;
+  border-color: #d93025;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #00008b;
+  transition: transform 0.1s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}

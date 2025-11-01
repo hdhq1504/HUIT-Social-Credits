@@ -1,0 +1,405 @@
+@use 'sass:color';
+
+/* ==== Màu sắc ==== */
+$primary: #00008b;
+$secondary: #ff5200;
+$text: #333;
+$light: #f4f7f9;
+$border: #e0e0e0;
+$gray: #ccc;
+$red: #e74c3c;
+$green: #2ecc71;
+
+/* ====== BỘ LỌC ====== */
+.filterBar {
+  background-color: #00008b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  .searchInput,
+  .select {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    color: #333;
+    outline: none;
+    min-width: 180px;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: #00008b;
+      box-shadow: 0 0 0 3px rgba(0, 0, 139, 0.2);
+    }
+  }
+
+  .searchInput {
+    flex: 1;
+    min-width: 200px;
+
+    &::placeholder {
+      color: #a0a0a0;
+    }
+  }
+
+  .select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px;
+    padding-right: 30px;
+  }
+
+  .filterButton {
+    background-color: #ff5200;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      background-color: #ff6a1a;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      background-color: #e04a00;
+    }
+  }
+}
+
+/* ==== Khung bảng ==== */
+.tableContainer {
+  background: #fff;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+/* ==== Bảng ==== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+
+  thead {
+    background: #e8edff;
+
+    th {
+      color: $primary;
+      font-weight: 600;
+      font-size: 12px; /* ✅ nhỏ hơn */
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1.5px solid #c8d5ff;
+      border-right: 1px solid #e2e6ff;
+    }
+
+    th:last-child {
+      border-right: none;
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #eef1ff;
+
+    &:hover td {
+      background: #f9fbff;
+    }
+
+    td {
+      padding: 8px 6px;
+      font-size: 12px; /* ✅ nhỏ hơn */
+      color: #333;
+      border-right: 1px solid #eef1ff;
+      vertical-align: middle;
+    }
+
+    td:last-child {
+      border-right: none;
+    }
+  }
+}
+
+/* ==== Cột thông tin sinh viên ==== */
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.2px solid #d0d8ff;
+    object-fit: cover;
+  }
+
+  h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: $primary;
+    margin: 0;
+  }
+
+  p {
+    font-size: 11px;
+    color: #777;
+    margin: 2px 0 0;
+  }
+}
+
+/* ==== Badge nhóm ==== */
+.groupBadge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.groupBadge.red {
+  background: color.adjust($red, $lightness: 40%);
+  color: color.adjust($red, $lightness: -15%);
+  border-color: color.adjust($red, $lightness: -15%);
+}
+
+.groupBadge.green {
+  background: color.adjust($green, $lightness: 35%);
+  color: color.adjust($green, $lightness: -15%);
+  border-color: color.adjust($green, $lightness: -15%);
+}
+
+/* ====== TRẠNG THÁI ====== */
+.statusBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.3px solid transparent;
+  text-align: center;
+  min-width: 70px;
+}
+
+/* Đạt — Xanh lá */
+.statusBadge.success {
+  background-color: #c8f7dc;
+  color: #1e8e3e;
+  border-color: #1e8e3e;
+}
+
+/* Chờ duyệt — Cam */
+.statusBadge.pending {
+  background-color: #ffeccc;
+  color: #e67e00;
+  border-color: #e67e00;
+}
+
+/* Không đạt — Đỏ */
+.statusBadge.fail {
+  background-color: #fde6e6;
+  color: #d93025;
+  border-color: #d93025;
+}
+
+/* ==== Check-in / Check-out ==== */
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  .checkDetails {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+
+    strong {
+      font-size: 12px;
+      color: #000;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 11px;
+      margin: 2px 0 0;
+      font-weight: 500;
+    }
+
+    .onTime {
+      color: #1e8e3e;
+    }
+    .late {
+      color: #e67e00;
+    }
+    .absent {
+      color: #d93025;
+    }
+  }
+}
+
+/* ==== Cột hành động ==== */
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $primary;
+  transition: transform 0.1s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+/* ==== Phân trang ==== */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f5f8ff;
+  border-top: 1px solid #dbe2ff;
+
+  .info {
+    font-size: 12.5px;
+    color: #555;
+  }
+
+  button {
+    border: 1px solid #ccd5ff;
+    background: #fff;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12.5px;
+    color: $primary;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background: #e8edff;
+    }
+
+    &.active {
+      background: $primary;
+      color: #fff;
+      border-color: $primary;
+    }
+  }
+}
+
+/* ==== Responsive ==== */
+@media (max-width: 992px) {
+  table {
+    font-size: 11.5px;
+  }
+  .studentInfo img {
+    width: 30px;
+    height: 30px;
+  }
+  .checkItem .checkDetails strong {
+    font-size: 11.5px;
+  }
+  .checkItem .checkDetails p {
+    font-size: 10.5px;
+  }
+}
+
+/* === Thanh hiển thị số sinh viên đã chọn === */
+.selectionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 10px 16px;
+  border-top: 1px solid #eee;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selectedCount {
+  background: #f0f2ff;
+  color: #00008b;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: #e67e00;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: 0.2s;
+
+  &:hover {
+    color: #ff8c1a;
+  }
+}
+
+.selectionActions {
+  display: flex;
+  gap: 8px;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.action.approve {
+  background-color: #1e8e3e;
+
+  &:hover {
+    background-color: #177c35;
+  }
+}
+
+.action.reject {
+  background-color: #d93025;
+
+  &:hover {
+    background-color: #c1221a;
+  }
+}

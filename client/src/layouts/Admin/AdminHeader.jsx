@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './AdminHeader.module.css';
+import styles from './styles/AdminHeader.module.css';
 
 export default function AdminHeader({ onToggleSidebar, isOpen }) {
   return (
@@ -10,14 +10,12 @@ export default function AdminHeader({ onToggleSidebar, isOpen }) {
         <span></span>
       </button>
 
-      <h3 className={styles.pageTitle}>Trang Quản trị</h3>
-
       <div className={styles.dropdownAdmin}>
         <div className={styles.dropdownBox}>
           <div className={styles.avatar}></div>
           <div className={styles.textBox}>
             <span className={styles.adminName}>Admin</span>
-            <span className={styles.adminEmail}>admin@huit.com</span>
+            <span className={styles.adminEmail}>admin@huit.edu.vn</span>
           </div>
         </div>
       </div>

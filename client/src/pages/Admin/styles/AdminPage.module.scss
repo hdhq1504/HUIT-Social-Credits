@@ -1,0 +1,126 @@
+.wrapper {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.addButton {
+  background-color: #00008b;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: background 0.2s;
+
+  display: flex;
+  align-items: center; // Căn giữa theo chiều dọc
+  gap: 6px; // Khoảng cách giữa icon và văn bản
+}
+
+.addButton:hover {
+  background-color: #0000cc;
+}
+
+.plusIcon {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid #7d4cfc;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-family: Montserrat;
+  font-weight: 600;
+  font-style: SemiBold;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  vertical-align: middle;
+  color: var(--Primary, #00008b);
+}
+
+.addButton {
+  background-color: #00008b;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: background 0.2s;
+}
+
+.addButton:hover {
+  background-color: #0000cc;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.actionButton {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.cancelButton {
+  background-color: #fff;
+  color: #555;
+  border: 1px solid #ccc;
+}
+
+.cancelButton:hover {
+  background-color: #f0f0f0;
+  border-color: #aaa;
+}
+
+.saveButton {
+  background-color: #ff5722;
+  color: #fff;
+  border: 1px solid #ff5722;
+}
+
+.saveButton:hover {
+  background-color: #e64a19;
+  border-color: #e64a19;
+}

@@ -1,11 +1,12 @@
 import React, { Fragment } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import NotFound from './components/NotFound';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AuthProvider from './context/AuthProvider';
-import DefaultLayout from './layouts/DefaultLayout/DefaultLayout';
-import { publicRoutes } from './routes/routes';
+
+import { publicRoutes, adminRoutes } from './routes/routes';
 
 const queryClient = new QueryClient();
 
@@ -14,21 +15,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider />
+
         <Routes>
+          {/* Public routes */}
           {publicRoutes.map((route, index) => {
             const Page = route.component;
-
-            let Layout = DefaultLayout;
-
-            if (route.layout) {
-              Layout = route.layout;
-            } else if (route.layout === null) {
-              Layout = Fragment;
-            }
+            let Layout = route.layout ?? Fragment;
 
             return (
               <Route
-                key={index}
+                key={`public-${index}`}
                 path={route.path}
                 element={
                   <Layout>
@@ -39,19 +35,36 @@ function App() {
             );
           })}
 
+          {/* Admin routes */}
+          {adminRoutes.map((route, index) => {
+            const Page = route.component;
+            let Layout = route.layout ?? Fragment;
+
+            return (
+              <Route
+                key={`admin-${index}`}
+                path={route.path}
+                element={
+                  <Layout>
+                    <Page />
+                  </Layout>
+                }
+              />
+            );
+          })}
+
+          {/* Route 404 */}
           <Route
             path="*"
             element={
-              <DefaultLayout>
+              <Fragment>
                 <NotFound />
-              </DefaultLayout>
+              </Fragment>
             }
           />
         </Routes>
 
-        <div>
-          <ScrollToTop />
-        </div>
+        <ScrollToTop />
       </Router>
     </QueryClientProvider>
   );

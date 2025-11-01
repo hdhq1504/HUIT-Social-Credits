@@ -20,7 +20,7 @@ function LoginForm() {
   const loginMutation = useMutation({
     mutationFn: async ({ email: emailValue, password: passwordValue }) => {
       // ✅ Nếu là tài khoản admin thì không cần gọi API, đăng nhập trực tiếp
-      if ((emailValue === 'admin@huit.com' || emailValue === 'Admin') && passwordValue === '123') {
+      if (emailValue === 'admin@huit.edu.vn' && passwordValue === '123') {
         return {
           name: 'Admin',
           email: emailValue,

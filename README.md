@@ -1,6 +1,7 @@
 # HUIT Social Credits
 
 ### Bước 1 — Clone
+
 ```bash
 git clone https://github.com/hdhq1504/HUIT-Social-Credits.git
 cd HUIT-Social-Credits
@@ -31,3 +32,9 @@ cd client
 npm run build
 npm run dev
 ```
+
+### Đưa code lên GitHub
+
+git add .
+git commit -m "Cập nhật hôm nay"
+git push

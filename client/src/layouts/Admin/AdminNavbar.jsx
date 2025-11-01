@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './AdminNavbar.module.css';
+import styles from './styles/AdminNavbar.module.css';
 
 export default function AdminNavbar({ currentPage }) {
   return (

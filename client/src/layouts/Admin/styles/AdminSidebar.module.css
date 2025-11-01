@@ -1,0 +1,85 @@
+.sidebar {
+  width: 245px;
+  height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  box-sizing: border-box;
+  border-right: 1px solid #eaeaea;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
+
+/* Logo + chữ ADMIN */
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.logoImage {
+  width: 60px;
+  height: 60px;
+}
+
+.adminText {
+  font-family: 'Iceland', sans-serif;
+  font-size: 32px;
+  color: #00008b;
+  font-weight: 400;
+}
+
+/* Danh sách menu */
+.menuList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: auto;
+}
+
+/* Mục menu */
+.menuItem {
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: Montserrat, sans-serif;
+  font-size: 14px;
+  color: #000;
+  background: #f4f4f4;
+  transition: all 0.25s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+.menuIcon {
+  margin-right: 10px;
+  min-width: 18px;
+  color: #00008b;
+}
+
+.menuItem:hover {
+  background: #00008b;
+  color: #fff;
+  transform: translateX(4px);
+}
+.menuItem:hover .menuIcon {
+  color: #ffffff !important;
+}
+
+/* Mục đang chọn */
+.menuItem.active {
+  background: #00008b;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.menuItem.active .menuIcon {
+  color: #ffffff !important;
+}

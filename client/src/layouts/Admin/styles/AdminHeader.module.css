@@ -12,12 +12,7 @@
   z-index: 100;
 }
 
-.infoPage {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+/* Nút menu (hamburger) */
 .menuButton {
   display: flex;
   flex-direction: column;
@@ -39,16 +34,20 @@
   transition: 0.3s;
 }
 
+/* Animation khi mở sidebar */
 .menuButton.open span:nth-child(1) {
   transform: rotate(45deg) translate(5px, 5px);
 }
+
 .menuButton.open span:nth-child(2) {
   opacity: 0;
 }
+
 .menuButton.open span:nth-child(3) {
   transform: rotate(-45deg) translate(5px, -5px);
 }
 
+/* Tiêu đề */
 .pageTitle {
   font-family: Montserrat;
   font-size: 18px;
@@ -56,6 +55,7 @@
   color: #00008b;
 }
 
+/* Phần tài khoản admin */
 .dropdownAdmin {
   display: flex;
   align-items: center;
@@ -70,7 +70,8 @@
 .avatar {
   width: 42px;
   height: 42px;
-  border-radius: 5px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00008b, #0044cc);
 }
 
 .textBox {
@@ -81,7 +82,7 @@
 .adminName {
   font-family: Montserrat;
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
   color: #00008b;
 }
 

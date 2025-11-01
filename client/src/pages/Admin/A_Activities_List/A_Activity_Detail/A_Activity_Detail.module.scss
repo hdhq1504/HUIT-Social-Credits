@@ -1,0 +1,372 @@
+/* ================= HEADER ================= */
+.headerLeft {
+  display: flex;
+  align-items: center;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #00008b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #0f172a;
+  }
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover svg {
+    transform: translateX(-3px);
+  }
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.deleteButton,
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 14px;
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover svg {
+    transform: scale(1.15);
+  }
+}
+
+/* Nút Xóa */
+.deleteButton {
+  background-color: #ffe9e9;
+  color: #c0392b;
+
+  &:hover {
+    background-color: #ffd6d6;
+    box-shadow: 0 2px 6px rgba(192, 57, 43, 0.2);
+  }
+}
+
+/* Nút Chỉnh sửa */
+.editButton {
+  background-color: #fff4e6;
+  color: #e67e22;
+
+  &:hover {
+    background-color: #ffe0b3;
+    color: #d35400;
+    box-shadow: 0 2px 6px rgba(230, 126, 34, 0.2);
+  }
+}
+
+/* ================= ACTIVITY CARD ================= */
+.activityCard {
+  display: flex;
+  gap: 24px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px 32px;
+  margin-top: 20px;
+  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.08);
+  align-items: flex-start;
+  transition: box-shadow 0.25s ease;
+
+  &:hover {
+    box-shadow: 0 6px 14px rgba(30, 58, 138, 0.12);
+  }
+}
+
+.imageBox img {
+  width: 220px;
+  height: 220px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid #e0e7ff;
+}
+
+.infoBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activityTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.activityType {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+
+  .typeBadge {
+    background-color: #e0e7ff;
+    color: #1e3a8a;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+
+  .points {
+    color: #475569;
+    font-size: 14px;
+  }
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 22px;
+  margin-top: 10px;
+
+  .infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    strong {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    p {
+      font-size: 14.5px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    svg {
+      color: #475569;
+    }
+  }
+}
+
+.statusBadge {
+  background-color: #fff7db;
+  color: #d97706;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13.5px;
+}
+
+/* ================= TABS MENU ================= */
+.tabsMenu {
+  display: flex;
+  justify-content: space-between; /* chia đều 3 tab */
+  align-items: center;
+  margin-top: 26px;
+  border-bottom: 2px solid #e2e8f0;
+  background-color: #00008b;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+
+.tabButton,
+.activeTab {
+  flex: 1; /* chia đều 3 phần */
+  text-align: center;
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.tabButton:hover {
+  background-color: #f1f5ff;
+  color: #1e3a8a;
+}
+
+.activeTab {
+  background-color: #e0e7ff;
+  color: #1e3a8a;
+  font-weight: 600;
+  border-bottom: 3px solid #1e3a8a;
+}
+
+/* ================= TAB CONTENT ================= */
+.tabContentContainer {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-top: 12px;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.05);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.description {
+  color: #334155;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+ul {
+  margin-left: 16px;
+  color: #334155;
+  line-height: 1.6;
+
+  li {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.iconCheck {
+  color: #16a34a;
+}
+
+.iconWarning {
+  color: #f59e0b;
+}
+
+.iconDoc {
+  color: #2563eb;
+}
+
+.separator {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 20px 0;
+}
+
+.placeholderContent {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 40px 0;
+}
+
+.studentTableContainer {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.studentTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+
+  th {
+    background-color: #f1f5f9;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  td {
+    padding: 10px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  tr:hover {
+    background-color: #f8fafc;
+  }
+}
+
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.studentDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.studentName {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.studentEmail {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.statusBadge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statusActive {
+  background-color: #2563eb; /* xanh dương */
+}
+
+.statusPending {
+  background-color: #f59e0b; /* cam */
+}
+
+.statusSuccess {
+  background-color: #16a34a; /* xanh lá */
+}
+
+.statusAbsent {
+  background-color: #dc2626; /* đỏ */
+}
+
+.viewButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2563eb;
+  transition: 0.2s;
+
+  &:hover {
+    color: #1d4ed8;
+  }
+}

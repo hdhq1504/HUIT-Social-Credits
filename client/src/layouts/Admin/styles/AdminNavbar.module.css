@@ -6,20 +6,28 @@
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 0; /* sát header */
+  margin: 16px 20px 0 20px;
+  height: 60px;
 }
 
+/* Breadcrumb */
 .breadcrumbSection {
   display: flex;
   align-items: center;
   gap: 6px;
   font-family: Montserrat;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .home {
   color: #00008b;
   font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.home:hover {
+  color: #0044cc;
 }
 
 .slash {
@@ -44,6 +52,7 @@
   }
 }
 
+/* Nút thêm mới (nếu cần) */
 .addButton {
   background: #ebb143;
   border: none;
