@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import dayjs from 'dayjs';
@@ -23,69 +23,11 @@ import useToast from '@components/Toast/Toast';
 import Loading from '@pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
+import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
+import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
-
-const formatDate = (value, format = 'DD/MM/YYYY') => (value ? dayjs(value).format(format) : '--');
-const formatDateTime = (value) => (value ? dayjs(value).format('HH:mm DD/MM/YYYY') : '--');
-const formatTimeRange = (start, end) => {
-  if (!start && !end) return '--';
-  const s = start ? dayjs(start).format('HH:mm') : '--';
-  const e = end ? dayjs(end).format('HH:mm') : '--';
-  return `${s} - ${e}`;
-};
-
-const toStringItems = (value) =>
-  (Array.isArray(value) ? value : [])
-    .map((item) => {
-      if (typeof item === 'string') {
-        const trimmed = item.trim();
-        return trimmed || null;
-      }
-      if (item && typeof item === 'object') {
-        const text =
-          typeof item.text === 'string'
-            ? item.text
-            : typeof item.description === 'string'
-              ? item.description
-              : typeof item.content === 'string'
-                ? item.content
-                : typeof item.title === 'string'
-                  ? item.title
-                  : null;
-        return text ? text.trim() : null;
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-const toGuideItems = (value) =>
-  (Array.isArray(value) ? value : [])
-    .map((item) => {
-      if (typeof item === 'string') {
-        const trimmed = item.trim();
-        return trimmed ? { title: null, content: trimmed } : null;
-      }
-      if (item && typeof item === 'object') {
-        const titleCandidate =
-          typeof item.title === 'string' ? item.title : typeof item.heading === 'string' ? item.heading : null;
-        const contentCandidate =
-          typeof item.content === 'string'
-            ? item.content
-            : typeof item.description === 'string'
-              ? item.description
-              : typeof item.text === 'string'
-                ? item.text
-                : null;
-        const content = contentCandidate ? contentCandidate.trim() : null;
-        if (!content) return null;
-        const title = titleCandidate ? titleCandidate.trim() : null;
-        return { title, content };
-      }
-      return null;
-    })
-    .filter(Boolean);
 
 function ActivityDetailPage() {
   const { id } = useParams();
@@ -97,7 +39,7 @@ function ActivityDetailPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
-  // Query for activity details
+  // Lấy chi tiết hoạt động từ API và tận dụng cache của React Query để giảm số lần tải lại.
   const {
     data: activity,
     isLoading: loading,
@@ -112,7 +54,7 @@ function ActivityDetailPage() {
     cacheTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
   });
 
-  // Query for related activities
+  // Gợi ý thêm hoạt động liên quan
   const { data: relatedActivities = [] } = useQuery({
     queryKey: ['activities', 'related', id],
     queryFn: async () => {
@@ -149,7 +91,7 @@ function ActivityDetailPage() {
     setIsRegisterOpen(true);
   };
 
-  // Mutations for activity actions
+  // Các mutation xử lý đăng ký và huỷ giúp đồng bộ lại giao diện ngay sau khi thao tác.
   const registerMutation = useMutation({
     mutationFn: ({ variant, id, reason, note }) => {
       if (variant === 'cancel') {
@@ -221,13 +163,41 @@ function ActivityDetailPage() {
     });
   };
 
-  const benefitItems = useMemo(() => toStringItems(activity?.benefits), [activity?.benefits]);
+  // Chuẩn hoá các trường JSON dạng danh sách để đảm bảo giao diện gọn gàng.
+  const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
 
-  const responsibilityItems = useMemo(() => toStringItems(activity?.responsibilities), [activity?.responsibilities]);
+  const responsibilityItems = useMemo(
+    () => normalizeStringItems(activity?.responsibilities),
+    [activity?.responsibilities],
+  );
 
-  const requirementItems = useMemo(() => toStringItems(activity?.requirements), [activity?.requirements]);
+  const requirementItems = useMemo(() => normalizeStringItems(activity?.requirements), [activity?.requirements]);
 
-  const guideSteps = useMemo(() => toGuideItems(activity?.guidelines), [activity?.guidelines]);
+  const guideSteps = useMemo(() => normalizeGuideItems(activity?.guidelines), [activity?.guidelines]);
+
+  // Hàm tạo key ổn định để React không phải re-render toàn bộ danh sách khi dữ liệu thay đổi nhẹ.
+  const buildListItemKey = useCallback((item, index) => {
+    const rawKey = typeof item === 'string' ? item : item?.content || item?.title || index;
+    return `${index}-${String(rawKey).slice(0, 30)}`;
+  }, []);
+
+  // Tái sử dụng cùng một logic render danh sách có icon ở nhiều tab khác nhau.
+  const renderListSection = useCallback(
+    (items, emptyDescription, renderContent) =>
+      items.length ? (
+        <ul className={cx('activity-detail__requirement-list')}>
+          {items.map((item, index) => (
+            <li key={buildListItemKey(item, index)} className={cx('activity-detail__requirement-item')}>
+              <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
+              {renderContent(item, index)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ),
+    [buildListItemKey],
+  );
 
   const tabItems = useMemo(
     () => [
@@ -241,18 +211,9 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Yêu cầu tham gia</h4>
-            {requirementItems.length ? (
-              <ul className={cx('activity-detail__requirement-list')}>
-                {requirementItems.map((item, index) => (
-                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
-                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
-                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
+            {renderListSection(requirementItems, 'Chưa có yêu cầu tham gia', (item) => (
+              <span className={cx('activity-detail__requirement-text')}>{item}</span>
+            ))}
           </div>
         ),
       },
@@ -266,23 +227,17 @@ function ActivityDetailPage() {
         children: (
           <div className={cx('activity-detail__tab-panel')}>
             <h4 className={cx('activity-detail__section-title')}>Quy trình tham gia</h4>
-            {requirementItems.length ? (
-              <ul className={cx('activity-detail__requirement-list')}>
-                {requirementItems.map((item, index) => (
-                  <li key={`${item}-${index}`} className={cx('activity-detail__requirement-item')}>
-                    <FontAwesomeIcon icon={faClipboardList} className={cx('activity-detail__requirement-icon')} />
-                    <span className={cx('activity-detail__requirement-text')}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Empty description="Chưa có yêu cầu tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
+            {renderListSection(guideSteps, 'Chưa có hướng dẫn tham gia', (item) => (
+              <div className={cx('activity-detail__requirement-text')}>
+                {item.title && <strong className={cx('activity-detail__requirement-title')}>{item.title}</strong>}
+                <span>{item.content}</span>
+              </div>
+            ))}
           </div>
         ),
       },
     ],
-    [guideSteps, requirementItems],
+    [guideSteps, renderListSection, requirementItems],
   );
 
   const renderActionButton = () => {

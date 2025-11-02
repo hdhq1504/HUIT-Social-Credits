@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import classNames from 'classnames/bind';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
@@ -6,26 +6,35 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import styles from './FeaturedActivitySection.module.scss';
 import activitiesApi from '@api/activities.api';
 import { isUnregisteredOrParticipated } from '@utils/activityState';
+import styles from './FeaturedActivitySection.module.scss';
 
 const cx = classNames.bind(styles);
 
 function FeaturedActivitySection() {
   const [activities, setActivities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchActivities = async () => {
+      setIsLoading(true);
       try {
         const res = await activitiesApi.list();
         setActivities(res);
       } catch (err) {
         console.error('Lỗi load activities:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchActivities();
   }, []);
+
+  const featuredActivities = useMemo(
+    () => activities.filter((activity) => activity.isFeatured && isUnregisteredOrParticipated(activity)),
+    [activities],
+  );
 
   return (
     <>
@@ -57,9 +66,17 @@ function FeaturedActivitySection() {
               1280: { slidesPerView: 4, slidesPerGroup: 1, spaceBetween: 20 },
             }}
           >
-            {activities
-              .filter((a) => a.isFeatured && isUnregisteredOrParticipated(a))
-              .map((a) => (
+            {/* Loading: dùng chính CardActivity loading để đồng bộ với ListActivitiesPage */}
+            {isLoading &&
+              Array.from({ length: 4 }).map((_, idx) => (
+                <SwiperSlide key={`sk-${idx}`}>
+                  <CardActivity loading variant="vertical" />
+                </SwiperSlide>
+              ))}
+
+            {/* Loaded */}
+            {!isLoading &&
+              featuredActivities.map((a) => (
                 <SwiperSlide key={a.id}>
                   <CardActivity
                     {...a}
@@ -84,11 +101,15 @@ function FeaturedActivitySection() {
                       }
                     }}
                     showConflictAlert={false}
+                    variant="vertical"
                   />
                 </SwiperSlide>
               ))}
           </Swiper>
         </div>
+
+        {/* Empty state khi không có hoạt động nổi bật */}
+        {!isLoading && featuredActivities.length === 0 && <div className={cx('empty')}>Chưa có hoạt động nổi bật.</div>}
       </div>
     </>
   );

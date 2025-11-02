@@ -1,16 +1,16 @@
 import config from '../config';
+import ActivityDetailPage from '../pages/ActivityDetailPage/ActivityDetailPage';
+import FeedbackPage from '../pages/FeedbackPage/FeedbackPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage/ForgotPasswordPage';
+import ListActivitiesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
+import Loading from '../pages/Loading/Loading';
 import HomePage from '../pages/HomePage/HomePage';
 import LoginPage from '../pages/LoginPage/LoginPage';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage/ForgotPasswordPage';
-import ProfilePage from '../pages/ProfilePage/ProfilePage';
-import ListActivitiesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
-import ActivityDetailPage from '../pages/ActivityDetailPage/ActivityDetailPage';
 import MyActivitiesPage from '../pages/MyActivitiesPage/MyActivitiesPage';
 import MyPointsPage from '../pages/MyPointsPage/MyPointsPage';
+import ProfilePage from '../pages/ProfilePage/ProfilePage';
 import RollCallPage from '../pages/RollCallPage/RollCallPage';
-import FeedbackPage from '../pages/FeedbackPage/FeedbackPage';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
-import Loading from '../pages/Loading/Loading';
 
 // Sử dụng cho những route không cần đăng nhập nhưng vẫn xem được
 const publicRoutes = [

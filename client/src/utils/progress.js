@@ -46,9 +46,7 @@ const parseMetrics = (group, fallbackTarget) => {
 
   const [fractionCurrent, fractionTarget] = parseFraction(group.value);
   const current = Number.isFinite(group.current) ? group.current : (fractionCurrent ?? 0);
-  const target = Number.isFinite(group.target)
-    ? group.target
-    : (fractionTarget ?? fallbackTarget ?? 0);
+  const target = Number.isFinite(group.target) ? group.target : (fractionTarget ?? fallbackTarget ?? 0);
 
   return { current, target, source: group };
 };
@@ -72,7 +70,9 @@ const computeNormalizedGroups = (groups = []) => {
   const normalizedGroup1Current = Math.min(group1Current, group1Target);
 
   const computedGroup23Target =
-    ((group2Metrics.target || 0) + (group3Metrics.target || 0)) || aggregatedMetrics.target || GROUP_CONFIG.NHOM_2_3.target;
+    (group2Metrics.target || 0) + (group3Metrics.target || 0) ||
+    aggregatedMetrics.target ||
+    GROUP_CONFIG.NHOM_2_3.target;
   const computedGroup23Current = overflow + (group2Metrics.current || 0) + (group3Metrics.current || 0);
   const normalizedGroup23Current = Math.max(computedGroup23Current, aggregatedMetrics.current || 0);
   const normalizedGroup23Target = aggregatedMetrics.target || computedGroup23Target;

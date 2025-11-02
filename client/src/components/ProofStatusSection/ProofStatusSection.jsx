@@ -98,6 +98,8 @@ function ProofStatusSection() {
       .slice(0, 3);
   }, [isLoggedIn, registrations]);
 
+  const canShowViewAll = Array.isArray(proofItems) && proofItems.length > 3 && !isFetching;
+
   return (
     <>
       {contextHolder}
@@ -188,14 +190,16 @@ function ProofStatusSection() {
           )}
         </div>
 
-        <div className={cx('proof-status__actions')}>
-          <Link to="/feedback">
-            <Button variant="primary">
-              <span style={{marginRight: '5px'}}>Xem tất cả</span>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button>
-          </Link>
-        </div>
+        {canShowViewAll && (
+          <div className={cx('proof-status__actions')}>
+            <Link to="/feedback">
+              <Button variant="primary">
+                <span style={{ marginRight: '5px' }}>Xem tất cả</span>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button>
+            </Link>
+          </div>
+        )}
 
         <div className={cx('proof-status__guidelines')}>
           <div className={cx('proof-status__guidelines-header')}>
