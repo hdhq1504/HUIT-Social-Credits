@@ -22,6 +22,7 @@ function CheckModal({
   location,
   confirmLoading = false,
 }) {
+  // Local state for preview / file / dataUrl
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
   const [dataUrl, setDataUrl] = useState(null);
@@ -47,6 +48,7 @@ function CheckModal({
     prevUrlRef.current = null;
   };
 
+  // Dừng tất cả tracks và set lại trạng thái camera
   const hardStopCamera = () => {
     try {
       const videoEl =
@@ -74,6 +76,7 @@ function CheckModal({
 
   // ========= Effects =========
   useEffect(() => {
+    // Khi mở modal lần đầu: reset các trạng thái liên quan đến capture
     if (open && !wasOpenRef.current) {
       setCaptureStage(variant || 'checkin');
       setPreviewUrl(null);
@@ -85,6 +88,7 @@ function CheckModal({
       setIsReadingFile(false);
     }
 
+    // Khi đóng modal: dọn dẹp camera + revoke object URL
     if (!open && wasOpenRef.current) {
       hardStopCamera();
       revokePreview();
@@ -96,6 +100,7 @@ function CheckModal({
 
   useEffect(() => {
     return () => {
+      // Unmount: chắc chắn dừng camera và dọn URL
       hardStopCamera();
       revokePreview();
       setDataUrl(null);
@@ -103,6 +108,7 @@ function CheckModal({
     };
   }, []);
 
+  // Lấy danh sách thiết bị video (nếu có)
   const enumerateVideoInputs = async () => {
     try {
       const devices = await navigator.mediaDevices?.enumerateDevices?.();
@@ -111,6 +117,7 @@ function CheckModal({
       setHasVideoInput(vids.length > 0);
 
       if (vids.length) {
+        // ưu tiên camera sau (back) nếu có
         const backIdx = vids.findIndex((d) => /back|rear|environment/i.test(d.label));
         const idx = backIdx >= 0 ? backIdx : 0;
         setCurrentIndex(idx);
@@ -125,11 +132,13 @@ function CheckModal({
   };
   const openCamera = async () => {
     try {
+      // Thử getUserMedia để xin quyền, nhưng stop ngay để chỉ enumerate devices
       const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       tmp.getTracks().forEach((t) => t.stop());
       await enumerateVideoInputs();
       setIsCameraOn(true);
     } catch (err) {
+      // Xử lý lỗi phổ biến: user từ chối quyền, không có camera
       if (err?.name === 'NotAllowedError') {
         message.error('Bạn đã từ chối quyền camera. Hãy cấp quyền trong cài đặt trình duyệt và thử lại.');
       } else if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
@@ -141,12 +150,14 @@ function CheckModal({
     }
   };
 
+  // Chuyển camera (nếu có nhiều hơn 1)
   const toggleCamera = async () => {
     if (!videoInputs.length) return;
     hardStopCamera();
     const nextIdx = (currentIndex + 1) % videoInputs.length;
     setCurrentIndex(nextIdx);
     setDeviceId(videoInputs[nextIdx].deviceId);
+    // setIsCameraOn true sau khi deviceId cập nhật => Webcam sẽ mount lại
     setTimeout(() => setIsCameraOn(true), 0);
   };
 
@@ -179,12 +190,15 @@ function CheckModal({
     setCaptureStage('checkout');
     setIsReadingFile(false);
 
+    // Dừng camera để giảm resource usage (người dùng đã chụp)
     hardStopCamera();
 
+    // Báo parent rằng đã có capture (nếu cần)
     onCapture?.({ file: f, previewUrl: url, dataUrl });
   };
 
   const handleRetake = async () => {
+    // Xóa preview cũ, mở camera lại
     revokePreview();
     setFile(null);
     setPreviewUrl(null);
@@ -196,6 +210,7 @@ function CheckModal({
   };
 
   const handleSubmit = () => {
+    // Nếu đang confirmLoading hoặc chưa có file thì ignore
     if (confirmLoading || !file) return;
     if (!dataUrl) {
       message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
@@ -204,6 +219,7 @@ function CheckModal({
     onSubmit?.({ file, previewUrl, dataUrl });
   };
 
+  // File picker fallback: user có thể upload file từ máy
   const fileInputRef = useRef(null);
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
@@ -241,6 +257,7 @@ function CheckModal({
     }
   };
 
+  // Set constraints video dựa vào deviceId
   const videoConstraints = useMemo(() => {
     return deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -287,9 +304,9 @@ function CheckModal({
           </div>
         </div>
 
-        {/* Khung chụp / xem trước */}
+        {/* Camera / preview area */}
         <div className={cx('check-modal__camera-box', !previewUrl && 'camera-box--idle')}>
-          {/* Khi camera ON */}
+          {/* Khi camera ON và có thiết bị video */}
           {!previewUrl && isCameraOn && hasVideoInput && (
             <div className={cx('check-modal__webcam-wrap')}>
               <Webcam
@@ -313,7 +330,7 @@ function CheckModal({
             </div>
           )}
 
-          {/* Idle */}
+          {/* Idle state (chưa mở camera) */}
           {!previewUrl && (!isCameraOn || !hasVideoInput) && (
             <div className={cx('check-modal__camera-box-empty')}>
               <div className={cx('check-modal__camera-box-icon')}>
@@ -324,10 +341,10 @@ function CheckModal({
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview image */}
           {previewUrl && <img className={cx('check-modal__camera-box-preview')} src={previewUrl} alt="preview" />}
 
-          {/* Actions */}
+          {/* Actions (chụp / đổi camera / upload / gửi) */}
           <div className={cx('check-modal__actions')}>
             {captureStage !== 'checkout' ? (
               <>

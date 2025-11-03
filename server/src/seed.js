@@ -155,8 +155,8 @@ const seed = async () => {
         tieuDe: "Tập huấn an toàn khi hiến máu",
         moTa: "Hướng dẫn kiến thức an toàn và dinh dưỡng trước – sau hiến máu.",
         diemCong: 15,
-        batDauLuc: new Date("2025-10-30T20:09:00+07:00"),
-        ketThucLuc: new Date("2025-10-30T20:19:00+07:00"),
+        batDauLuc: new Date("2025-11-03T23:45:00+07:00"),
+        ketThucLuc: new Date("2025-11-04T12:00:00+07:00"),
         diaDiem: "Hội trường lớn",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
@@ -168,8 +168,8 @@ const seed = async () => {
         tieuDe: "Tham quan Địa chỉ đỏ: Bảo tàng Chứng tích Chiến tranh",
         moTa: "Chuyến tham quan học tập truyền thống cách mạng.",
         diemCong: 60,
-        batDauLuc: new Date("2025-10-30T12:15:00+07:00"),
-        ketThucLuc: new Date("2025-10-30T12:20:00+07:00"),
+        batDauLuc: new Date("2025-11-03T23:45:00+07:00"),
+        ketThucLuc: new Date("2025-11-04T12:00:00+07:00"),
         diaDiem: "28 Võ Văn Tần, Q.3",
         sucChuaToiDa: 90,
         hinhAnh: "/images/activity-cover.png",
@@ -242,7 +242,7 @@ const seed = async () => {
         isFeatured: false
       },
 
-      // ===== ĐÃ KẾT THÚC (kết thúc trước 11:00, 30/10/2025) =====
+      // ===== ĐÃ KẾT THÚC =====
       {
         maHoatDong: "HIENMAU291025",
         tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",

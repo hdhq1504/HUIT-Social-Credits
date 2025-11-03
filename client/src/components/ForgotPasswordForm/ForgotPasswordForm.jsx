@@ -13,7 +13,7 @@ const cx = classNames.bind(styles);
 const getErrorMessage = (error, fallback) => error?.response?.data?.error || error?.message || fallback;
 
 function ForgotPasswordForm() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: enter email, 2: enter OTP, 3: set new password, 4: success
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -41,13 +41,13 @@ function ForgotPasswordForm() {
     mutationFn: ({ email: emailValue, password: passwordValue }) => authApi.login(emailValue, passwordValue),
   });
 
-  // Kiểm tra email hợp lệ
+  // Kiểm tra email hợp lệ (simple regex)
   const validateEmail = (value) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value);
   };
 
-  // Xử lý gửi email và OTP
+  // Xử lý gửi email để nhận OTP
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -97,7 +97,7 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Xử lý đặt lại mật khẩu
+  // Xử lý đổi mật khẩu
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -144,7 +144,7 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Chuyển hướng sau khi đặt lại thành công
+  // Redirect khi success (step === 4)
   useEffect(() => {
     if (step === 4) {
       const redirectTimer = setTimeout(() => {
@@ -172,11 +172,12 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Chuyển đổi hiển thị mật khẩu
+  // Toggle show/hide password
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
 
+  // Render theo từng step
   const renderFormContent = () => {
     switch (step) {
       case 1:

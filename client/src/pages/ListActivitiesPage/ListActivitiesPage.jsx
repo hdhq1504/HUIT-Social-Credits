@@ -13,8 +13,7 @@ import {
   Grid,
   Empty,
 } from 'antd';
-import CardActivity from '@components/CardActivity/CardActivity';
-import CheckboxGroup from '@components/CheckboxGroup/CheckboxGroup';
+import { CardActivity, CheckboxGroup } from '@components/index';
 import SearchBar from '@layouts/SearchBar/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
 import activitiesApi from '@api/activities.api';

@@ -2,12 +2,14 @@ import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
 import { useNavigate } from 'react-router-dom';
 import SearchBar from '@layouts/SearchBar/SearchBar';
-import FeaturedActivitySection from '@components/FeaturedActivitySection';
-import ActivityCategoriesSection from '@components/ActivityCategoriesSection';
-import UpcomingActivitiesSection from '@components/UpcomingActivitiesSection/UpcomingActivitiesSection';
-import ProgressSection from '@components/ProgressSection';
-import PersonalActivitiesSection from '@components/PersonalActivitiesSection/PersonalActivitiesSection';
-import ProofStatusSection from '@components/ProofStatusSection/ProofStatusSection';
+import {
+  FeaturedActivitySection,
+  ActivityCategoriesSection,
+  PersonalActivitiesSection,
+  ProgressSection,
+  ProofStatusSection,
+  UpcomingActivitiesSection,
+} from '@components/index';
 import { useQuery } from '@tanstack/react-query';
 import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';

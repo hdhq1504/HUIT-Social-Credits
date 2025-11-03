@@ -13,13 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Button from '@components/Button/Button';
-import CardActivity from '@components/CardActivity/CardActivity';
-import CheckModal from '@components/CheckModal/CheckModal';
-import RegisterModal from '@components/RegisterModal/RegisterModal';
-import FeedbackModal from '@components/FeedbackModal/FeedbackModal';
-import Label from '@components/Label/Label';
-import useToast from '@components/Toast/Toast';
+import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label, useToast } from '@components/index';
 import Loading from '@pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';

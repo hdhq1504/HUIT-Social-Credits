@@ -5,13 +5,11 @@ import { faCheck, faCircleXmark, faClock } from '@fortawesome/free-solid-svg-ico
 import classNames from 'classnames/bind';
 import { Table, Tag, Select } from 'antd';
 import dayjs from 'dayjs';
-import Label from '@components/Label/Label';
-import ProgressSection from '@components/ProgressSection/ProgressSection';
+import { Label, ProgressSection, useToast } from '@components/index';
 import { useQuery } from '@tanstack/react-query';
 import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
-import useToast from '@components/Toast/Toast';
 import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
 import styles from './MyPointsPage.module.scss';
 

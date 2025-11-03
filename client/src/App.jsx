@@ -1,8 +1,7 @@
 import React, { Fragment } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import NotFound from './components/NotFound';
-import ScrollToTop from './components/ScrollToTop/ScrollToTop';
+import { NotFound, ScrollToTop } from '@components/index';
 import AuthProvider from './context/AuthProvider';
 import DefaultLayout from './layouts/DefaultLayout/DefaultLayout';
 import { publicRoutes } from './routes/routes';

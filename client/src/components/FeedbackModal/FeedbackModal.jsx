@@ -20,6 +20,7 @@ function FeedbackModal({
   checkoutTime,
   submitLoading = false,
 }) {
+  // Helper to convert File -> base64 for preview
   const getBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -35,14 +36,16 @@ function FeedbackModal({
   const [confirm, setConfirm] = useState(false);
   const [fileList, setFileList] = useState([]);
 
+  // Disabled nếu chưa confirm, content empty hoặc chưa có file đính kèm
   const disabled = !confirm || !content.trim() || fileList.length === 0;
 
   const handleChangeUpload = ({ fileList: list }) => {
-    // Do not auto-upload; keep in state to submit later
+    // Không auto-upload, giữ list ở state để submit cùng form
     setFileList(list);
   };
 
   const handlePreview = async (file) => {
+    // Nếu chưa có preview, chuyển originFileObj sang base64
     if (!file.url && !file.preview && file.originFileObj) {
       file.preview = await getBase64(file.originFileObj);
     }
@@ -54,6 +57,7 @@ function FeedbackModal({
   };
 
   const handleSubmit = () => {
+    // Gọi parent với content, files (File objects), confirm flag
     onSubmit?.({
       content: content.trim(),
       files: fileList.map((f) => f.originFileObj || f),
@@ -119,7 +123,7 @@ function FeedbackModal({
               name="files"
               multiple
               listType="picture-card"
-              beforeUpload={() => false}
+              beforeUpload={() => false} // important: prevent auto upload
               onChange={handleChangeUpload}
               onPreview={handlePreview}
               fileList={fileList}

@@ -9,12 +9,16 @@ import styles from './CheckboxGroup.module.scss';
 const cx = classNames.bind(styles);
 
 function CheckboxGroup({ options, selectedValues, onChange, title = 'Lọc kết quả nhanh', sectionLabel = 'Loại' }) {
+  // Tìm option "Tất cả" nếu có
   const allOpt = options.find((o) => String(o.value) === 'Tất cả') || null;
+  // Các option con (không bao gồm "Tất cả")
   const childOptions = allOpt ? options.filter((o) => o !== allOpt) : options;
   const selectedChildren = selectedValues.filter((v) => String(v) !== 'Tất cả');
+  // allChecked true khi tất cả child được chọn
   const allChecked = childOptions.length > 0 && selectedChildren.length === childOptions.length;
   const indeterminate = selectedChildren.length > 0 && selectedChildren.length < childOptions.length;
 
+  // Nếu check all -> chọn hết các giá trị child; nếu uncheck -> clear
   const handleAllChange = (checked) => {
     if (checked) {
       const allValues = childOptions.map((o) => o.value);
@@ -24,6 +28,7 @@ function CheckboxGroup({ options, selectedValues, onChange, title = 'Lọc kết
     }
   };
 
+  // Khi change child list: nếu có allOpt và tất cả child đã chọn -> include "Tất cả"
   const handleChildChange = (list) => {
     if (allOpt) {
       if (list.length === childOptions.length) {

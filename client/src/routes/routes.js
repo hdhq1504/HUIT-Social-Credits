@@ -1,15 +1,17 @@
 import config from '../config';
-import ActivityDetailPage from '../pages/ActivityDetailPage/ActivityDetailPage';
-import FeedbackPage from '../pages/FeedbackPage/FeedbackPage';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage/ForgotPasswordPage';
-import ListActivitiesPage from '../pages/ListActivitiesPage/ListActivitiesPage';
-import Loading from '../pages/Loading/Loading';
-import HomePage from '../pages/HomePage/HomePage';
-import LoginPage from '../pages/LoginPage/LoginPage';
-import MyActivitiesPage from '../pages/MyActivitiesPage/MyActivitiesPage';
-import MyPointsPage from '../pages/MyPointsPage/MyPointsPage';
-import ProfilePage from '../pages/ProfilePage/ProfilePage';
-import RollCallPage from '../pages/RollCallPage/RollCallPage';
+import {
+  ActivityDetailPage,
+  FeedbackPage,
+  ForgotPasswordPage,
+  HomePage,
+  ListActivitiesPage,
+  Loading,
+  LoginPage,
+  MyActivitiesPage,
+  MyPointsPage,
+  ProfilePage,
+  RollCallPage,
+} from '@pages/index';
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 
 // Sử dụng cho những route không cần đăng nhập nhưng vẫn xem được
