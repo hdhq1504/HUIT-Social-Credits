@@ -1,47 +1,35 @@
 import React, { useState } from 'react';
 import layoutStyles from '../styles/AdminPage.module.scss';
 import styles from './A_Activities_List.module.scss';
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { registerLocale } from 'react-datepicker';
 import vi from 'date-fns/locale/vi';
-import { Edit3, Trash2, ChevronLeft, ChevronRight, Search, Eye, ArrowLeft } from 'lucide-react';
 
+import { Edit3, Trash2, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react';
 import ActivitiesAddEditPage from './A_Activities_AddEdit/A_Activities_AddEdit.jsx';
 import A_ActivityDetailPage from './A_Activity_Detail/A_Activity_Detail.jsx';
 import { activitiesList } from './A_Activities_ListData.jsx';
 
 registerLocale('vi', vi);
 
-// ===== Hiển thị trạng thái hoạt động =====
+/* ---------------- Status Badge ---------------- */
 const StatusBadge = ({ status }) => {
-  let className = styles.badge;
-  switch (status) {
-    case 'Đang diễn ra':
-      className += ` ${styles.badgeOngoing}`;
-      break;
-    case 'Đã kết thúc':
-      className += ` ${styles.badgeFinished}`;
-      break;
-    default:
-      className += ` ${styles.badgeDraft}`;
-  }
-  return <span className={className}>{status}</span>;
+  let badgeClass = `${styles['activities-list__status-badge']}`;
+  if (status === 'Đang diễn ra') badgeClass += ` ${styles['activities-list__status-badge--ongoing']}`;
+  else if (status === 'Đã kết thúc') badgeClass += ` ${styles['activities-list__status-badge--finished']}`;
+  return <span className={badgeClass}>{status}</span>;
 };
 
-// ===== Hiển thị màu nhóm hoạt động =====
+/* ---------------- Group Badge ---------------- */
 const getGroupBadgeClass = (groupName) => {
-  switch (groupName) {
-    case 'Nhóm 1':
-      return styles.groupBadgeRed;
-    case 'Nhóm 2, 3':
-      return styles.groupBadgeGreen;
-    default:
-      return styles.groupBadge;
-  }
+  if (groupName === 'Nhóm 1')
+    return `${styles['activities-list__group-badge']} ${styles['activities-list__group-badge--red']}`;
+  if (groupName === 'Nhóm 2, 3')
+    return `${styles['activities-list__group-badge']} ${styles['activities-list__group-badge--green']}`;
+  return styles['activities-list__group-badge'];
 };
 
-// ===== Component danh sách hoạt động =====
+/* ---------------- Content Component ---------------- */
 const ActivitiesListContent = ({
   totalItems,
   currentPage,
@@ -62,17 +50,17 @@ const ActivitiesListContent = ({
         </button>
       </div>
 
-      {/* Thanh lọc & tìm kiếm */}
-      <div className={styles.filterBar}>
-        <input type="text" placeholder="Tìm kiếm hoạt động..." className={styles.searchInput} />
+      {/* Filter Bar */}
+      <div className={styles['activities-list__filter-bar']}>
+        <input type="text" placeholder="Tìm kiếm hoạt động..." className={styles['activities-list__search-input']} />
 
-        <select className={styles.select}>
+        <select className={styles['activities-list__select']}>
           <option value="">Nhóm hoạt động</option>
           <option>Nhóm 1</option>
           <option>Nhóm 2, 3</option>
         </select>
 
-        <select className={styles.select}>
+        <select className={styles['activities-list__select']}>
           <option value="">Trạng thái</option>
           <option>Đang diễn ra</option>
           <option>Đã kết thúc</option>
@@ -83,21 +71,21 @@ const ActivitiesListContent = ({
           onChange={(date) => setStartDate(date)}
           dateFormat="dd/MM/yyyy"
           placeholderText="Thời gian"
-          className={styles.dateInput}
-          wrapperClassName={styles.dateInput}
+          className={styles['activities-list__date-input']}
+          wrapperClassName={styles['activities-list__date-input']}
           isClearable
           locale="vi"
         />
 
-        <button className={styles.filterButton}>
+        <button className={styles['activities-list__filter-button']}>
           <Search size={16} /> Lọc
         </button>
       </div>
 
-      {/* Bảng danh sách */}
-      <div className={styles.contentBox}>
+      {/* Table */}
+      <div className={styles['activities-list__content-box']}>
         <h1 className={layoutStyles.title}>Danh sách hoạt động</h1>
-        <table className={styles.activitiesTable}>
+        <table className={styles['activities-list__table']}>
           <thead>
             <tr>
               <th></th>
@@ -121,18 +109,16 @@ const ActivitiesListContent = ({
                 <td>{activity.stt}</td>
                 <td>
                   <strong>{activity.tenHoatDong}</strong>
-                  <p className={styles.activityLocation}>{activity.diaDiem}</p>
+                  <p className={styles['activities-list__activity-location']}>{activity.diaDiem}</p>
                 </td>
                 <td>
-                  <span className={`${styles.groupBadge} ${getGroupBadgeClass(activity.nhomHoatDong)}`}>
-                    {activity.nhomHoatDong}
-                  </span>
+                  <span className={getGroupBadgeClass(activity.nhomHoatDong)}>{activity.nhomHoatDong}</span>
                 </td>
-                <td className={styles.pointColumn}>
+                <td className={styles['activities-list__point']}>
                   <strong>{activity.diem}</strong>
                 </td>
                 <td>
-                  <span className={styles.registered}>
+                  <span>
                     {activity.soLuongDaDangKy}/{activity.soLuongToiDa}
                   </span>
                 </td>
@@ -141,17 +127,21 @@ const ActivitiesListContent = ({
                 <td>
                   <StatusBadge status={activity.trangThai} />
                 </td>
-                <td className={styles.actionsColumn}>
+                <td className={styles['activities-list__actions']}>
                   <button
-                    className={`${styles.actionButton} ${styles.viewButton}`}
+                    className={`${styles['activities-list__actions-button']} ${styles['activities-list__actions-button--view']}`}
                     onClick={() => onViewActivity(activity)}
                   >
                     <Eye size={16} />
                   </button>
-                  <button className={`${styles.actionButton} ${styles.editButton}`}>
+                  <button
+                    className={`${styles['activities-list__actions-button']} ${styles['activities-list__actions-button--edit']}`}
+                  >
                     <Edit3 size={16} />
                   </button>
-                  <button className={`${styles.actionButton} ${styles.deleteButton}`}>
+                  <button
+                    className={`${styles['activities-list__actions-button']} ${styles['activities-list__actions-button--delete']}`}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -161,21 +151,22 @@ const ActivitiesListContent = ({
         </table>
       </div>
 
-      {/* Phân trang */}
-      <div className={styles.footerBar}>
-        <div className={styles.selectionInfo}>
+      {/* Pagination */}
+      <div className={styles['activities-list__footer']}>
+        <div className={styles['activities-list__footer-info']}>
           <p>
             Đã chọn <span>0</span> trong {totalItems} kết quả
           </p>
         </div>
-        <div className={styles.pagination}>
-          <button className={styles.pageButton} disabled={currentPage === 1}>
+
+        <div className={styles['activities-list__footer-pagination']}>
+          <button className={styles['activities-list__footer-page']} disabled={currentPage === 1}>
             <ChevronLeft size={16} /> Trước
           </button>
 
           {renderPageButtons()}
 
-          <button className={styles.pageButton} disabled={currentPage === totalPages}>
+          <button className={styles['activities-list__footer-page']} disabled={currentPage === totalPages}>
             Tiếp <ChevronRight size={16} />
           </button>
         </div>
@@ -184,7 +175,7 @@ const ActivitiesListContent = ({
   );
 };
 
-// ===== Trang chính =====
+/* ---------------- Main Page ---------------- */
 export default function ActivitiesPage() {
   const [viewMode, setViewMode] = useState('list'); // list | add | detail
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -198,11 +189,17 @@ export default function ActivitiesPage() {
   const renderPageButtons = () => {
     const visiblePages = Math.min(totalPages, 3);
     const pages = Array.from({ length: visiblePages }, (_, i) => i + 1);
-
     return (
       <>
         {pages.map((page) => (
-          <button key={page} className={page === currentPage ? styles.pageActive : styles.pageButton}>
+          <button
+            key={page}
+            className={
+              page === currentPage
+                ? `${styles['activities-list__footer-page']} ${styles['activities-list__footer-page--active']}`
+                : styles['activities-list__footer-page']
+            }
+          >
             {page}
           </button>
         ))}

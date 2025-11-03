@@ -1,149 +1,160 @@
-/* ================= HEADER ================= */
-.headerLeft {
-  display: flex;
-  align-items: center;
-}
-
-.backButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #00008b;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: #0f172a;
+.activity-detail {
+  /* ===============================
+     HEADER
+  =============================== */
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1.5px solid var(--border-color);
   }
 
-  svg {
-    transition: transform 0.2s ease;
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  &:hover svg {
-    transform: translateX(-3px);
-  }
-}
+  &__back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
 
-.actionButtons {
-  display: flex;
-  gap: 12px;
-}
+    &:hover {
+      color: #0f172a;
+    }
 
-.deleteButton,
-.editButton {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  font-size: 14px;
+    svg {
+      transition: transform 0.2s ease;
+    }
 
-  svg {
-    transition: transform 0.2s ease;
+    &:hover svg {
+      transform: translateX(-3px);
+    }
   }
 
-  &:hover svg {
-    transform: scale(1.15);
+  &__actions {
+    display: flex;
+    gap: 12px;
   }
-}
 
-/* Nút Xóa */
-.deleteButton {
-  background-color: #ffe9e9;
-  color: #c0392b;
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.25s ease;
 
-  &:hover {
-    background-color: #ffd6d6;
-    box-shadow: 0 2px 6px rgba(192, 57, 43, 0.2);
+    svg {
+      transition: transform 0.2s ease;
+    }
+
+    &:hover svg {
+      transform: scale(1.15);
+    }
+
+    &--delete {
+      background-color: color-mix(in srgb, var(--danger-color) 12%, white);
+      color: var(--danger-color);
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--danger-color) 22%, white);
+        box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+      }
+    }
+
+    &--edit {
+      background-color: color-mix(in srgb, var(--warning-color) 10%, white);
+      color: var(--warning-color);
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--warning-color) 20%, white);
+        box-shadow: 0 2px 6px rgba(220, 119, 0, 0.25);
+      }
+    }
   }
-}
 
-/* Nút Chỉnh sửa */
-.editButton {
-  background-color: #fff4e6;
-  color: #e67e22;
+  /* ===============================
+     THÔNG TIN HOẠT ĐỘNG (CARD)
+  =============================== */
+  &__card {
+    display: flex;
+    gap: 24px;
+    background: var(--white-color);
+    border-radius: 14px;
+    padding: 24px 32px;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.08);
+    align-items: flex-start;
+    transition: box-shadow 0.25s ease;
 
-  &:hover {
-    background-color: #ffe0b3;
-    color: #d35400;
-    box-shadow: 0 2px 6px rgba(230, 126, 34, 0.2);
+    &:hover {
+      box-shadow: 0 6px 14px rgba(30, 58, 138, 0.12);
+    }
   }
-}
 
-/* ================= ACTIVITY CARD ================= */
-.activityCard {
-  display: flex;
-  gap: 24px;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px 32px;
-  margin-top: 20px;
-  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.08);
-  align-items: flex-start;
-  transition: box-shadow 0.25s ease;
-
-  &:hover {
-    box-shadow: 0 6px 14px rgba(30, 58, 138, 0.12);
+  &__image-box img {
+    width: 220px;
+    height: 220px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 2px solid var(--secondary-color);
   }
-}
 
-.imageBox img {
-  width: 220px;
-  height: 220px;
-  border-radius: 14px;
-  object-fit: cover;
-  border: 2px solid #e0e7ff;
-}
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.infoBox {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+  &__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
 
-.activityTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
-}
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
 
-.activityType {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-
-  .typeBadge {
-    background-color: #e0e7ff;
-    color: #1e3a8a;
+  &__badge {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
     padding: 5px 12px;
     border-radius: 8px;
     font-size: 13.5px;
     font-weight: 500;
   }
 
-  .points {
-    color: #475569;
+  &__points {
+    color: var(--muted-color);
     font-size: 14px;
   }
-}
 
-.infoGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px 22px;
-  margin-top: 10px;
+  &__info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 22px;
+    margin-top: 10px;
+  }
 
-  .infoItem {
+  &__info-item {
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -155,218 +166,208 @@
 
     p {
       font-size: 14.5px;
-      color: #1e293b;
+      color: var(--black-color);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     svg {
-      color: #475569;
+      color: var(--muted-color);
     }
   }
-}
 
-.statusBadge {
-  background-color: #fff7db;
-  color: #d97706;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 13.5px;
-}
+  &__status-badge {
+    background-color: color-mix(in srgb, var(--yellow-color) 25%, white);
+    color: var(--warning-color);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13.5px;
+  }
 
-/* ================= TABS MENU ================= */
-.tabsMenu {
-  display: flex;
-  justify-content: space-between; /* chia đều 3 tab */
-  align-items: center;
-  margin-top: 26px;
-  border-bottom: 2px solid #e2e8f0;
-  background-color: #00008b;
-  border-radius: 10px 10px 0 0;
-  overflow: hidden;
-}
-
-.tabButton,
-.activeTab {
-  flex: 1; /* chia đều 3 phần */
-  text-align: center;
-  background: none;
-  border: none;
-  padding: 12px 0;
-  font-size: 15px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  border-bottom: 3px solid transparent;
-}
-
-.tabButton:hover {
-  background-color: #f1f5ff;
-  color: #1e3a8a;
-}
-
-.activeTab {
-  background-color: #e0e7ff;
-  color: #1e3a8a;
-  font-weight: 600;
-  border-bottom: 3px solid #1e3a8a;
-}
-
-/* ================= TAB CONTENT ================= */
-.tabContentContainer {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px 28px;
-  margin-top: 12px;
-  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.05);
-}
-
-.sectionTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e3a8a;
-  margin-bottom: 8px;
-  margin-top: 16px;
-}
-
-.description {
-  color: #334155;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-
-ul {
-  margin-left: 16px;
-  color: #334155;
-  line-height: 1.6;
-
-  li {
-    margin-bottom: 6px;
+  /* ===============================
+     TABS
+  =============================== */
+  &__tabs {
     display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
-
-.iconCheck {
-  color: #16a34a;
-}
-
-.iconWarning {
-  color: #f59e0b;
-}
-
-.iconDoc {
-  color: #2563eb;
-}
-
-.separator {
-  border: none;
-  border-top: 1px solid #e2e8f0;
-  margin: 20px 0;
-}
-
-.placeholderContent {
-  text-align: center;
-  color: #64748b;
-  font-style: italic;
-  padding: 40px 0;
-}
-
-.studentTableContainer {
-  margin-top: 20px;
-  overflow-x: auto;
-}
-
-.studentTable {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-  font-size: 14px;
-
-  th {
-    background-color: #f1f5f9;
-    padding: 12px 10px;
-    text-align: left;
-    font-weight: 600;
-    color: #334155;
+    margin-top: 26px;
+    border-bottom: 2px solid var(--border-color);
+    background-color: var(--primary-color);
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
   }
 
-  td {
-    padding: 10px;
-    border-top: 1px solid #e2e8f0;
+  &__tab {
+    flex: 1;
+    text-align: center;
+    background: none;
+    border: none;
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--white-color);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-bottom: 3px solid transparent;
+
+    &:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+
+    &--active {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+      border-bottom: 3px solid var(--primary-color);
+    }
   }
 
-  tr:hover {
-    background-color: #f8fafc;
+  &__tab-content {
+    background: var(--white-color);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 12px;
+    box-shadow: 0 2px 8px rgba(30, 58, 138, 0.05);
   }
-}
 
-.studentInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+  /* ===============================
+     SINH VIÊN THAM GIA
+  =============================== */
+  &__students {
+    width: 100%;
+    margin-top: 20px;
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
+    &-table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      background: var(--white-color);
+      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
+    }
 
-.studentDetails {
-  display: flex;
-  flex-direction: column;
-}
+    &-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
 
-.studentName {
-  font-weight: 600;
-  color: #1e293b;
-}
+      thead {
+        background-color: var(--primary-color);
+        color: var(--white-color);
 
-.studentEmail {
-  font-size: 13px;
-  color: #64748b;
-}
+        th {
+          text-align: left;
+          font-weight: 600;
+          padding: 12px 16px;
+          color: var(--white-color);
+        }
+      }
 
-.statusBadge {
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-}
+      tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.25s ease;
 
-.statusActive {
-  background-color: #2563eb; /* xanh dương */
-}
+        &:hover {
+          background-color: color-mix(in srgb, var(--secondary-color) 8%, white);
+        }
+      }
 
-.statusPending {
-  background-color: #f59e0b; /* cam */
-}
+      td {
+        padding: 12px 16px;
+        vertical-align: middle;
+      }
+    }
 
-.statusSuccess {
-  background-color: #16a34a; /* xanh lá */
-}
+    /* ===== Bố cục thông tin sinh viên ===== */
+    &-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-.statusAbsent {
-  background-color: #dc2626; /* đỏ */
-}
+    &-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid var(--secondary-color);
+      transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
 
-.viewButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #2563eb;
-  transition: 0.2s;
+      &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 8px rgba(30, 64, 175, 0.3);
+      }
+    }
 
-  &:hover {
-    color: #1d4ed8;
+    &-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1.4;
+    }
+
+    &-name {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 15px;
+    }
+
+    &-email {
+      font-size: 13px;
+      color: var(--muted-color);
+    }
+
+    /* ===== Trạng thái ===== */
+    &-status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 13px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    &-status--active {
+      background-color: color-mix(in srgb, var(--primary-color) 12%, white);
+      color: var(--primary-color);
+    }
+
+    &-status--pending {
+      background-color: color-mix(in srgb, var(--orange-color) 12%, white);
+      color: var(--orange-color);
+    }
+
+    &-status--success {
+      background-color: color-mix(in srgb, var(--success-color) 12%, white);
+      color: var(--success-color);
+    }
+
+    &-status--absent {
+      background-color: color-mix(in srgb, var(--danger-color) 12%, white);
+      color: var(--danger-color);
+    }
+
+    /* ===== Nút xem chi tiết ===== */
+    &-view-btn {
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--secondary-color) 15%, white);
+        transform: scale(1.05);
+      }
+    }
   }
 }

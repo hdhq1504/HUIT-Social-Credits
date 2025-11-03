@@ -7,7 +7,6 @@ import { Check, AlertTriangle, X, CalendarDays, Eye } from 'lucide-react';
 export default function ScoringPage() {
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // === Icon cho check-in/out ===
   const getIcon = (type) => {
     switch (type) {
       case 'tick':
@@ -21,40 +20,29 @@ export default function ScoringPage() {
     }
   };
 
-  // === Class trạng thái ===
   const getStatusClass = (status) => {
     switch (status) {
       case 'Đạt':
-        return styles.success;
+        return styles['scoring-list__status-badge--success'];
       case 'Chờ duyệt':
-        return styles.pending;
+        return styles['scoring-list__status-badge--pending'];
       case 'Không đạt':
-        return styles.fail;
+        return styles['scoring-list__status-badge--fail'];
       default:
         return '';
     }
   };
 
-  // === Chọn 1 hàng ===
   const handleSelectRow = (index) => {
     setSelectedRows((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
   };
 
-  // === Chọn tất cả / bỏ chọn tất cả ===
   const handleSelectAll = () => {
-    if (selectedRows.length === scoringListData.length) {
-      setSelectedRows([]);
-    } else {
-      setSelectedRows(scoringListData.map((_, index) => index));
-    }
+    setSelectedRows(selectedRows.length === scoringListData.length ? [] : scoringListData.map((_, i) => i));
   };
 
-  // === Bỏ chọn toàn bộ ===
-  const handleClearSelection = () => {
-    setSelectedRows([]);
-  };
+  const handleClearSelection = () => setSelectedRows([]);
 
-  // === Kiểm tra có chọn hết chưa ===
   const allSelected = selectedRows.length === scoringListData.length;
 
   return (
@@ -63,28 +51,26 @@ export default function ScoringPage() {
         <h1 className={layoutStyles.title}>Danh sách chấm điểm CTXH</h1>
       </div>
 
-      {/* === Thanh bộ lọc === */}
-      <div className={styles.filterBar}>
-        <input type="text" placeholder="Tìm kiếm hoạt động..." className={styles.searchInput} />
-        <select className={styles.select}>
+      <div className={styles['scoring-list__filter-bar']}>
+        <input type="text" placeholder="Tìm kiếm hoạt động..." className={styles['scoring-list__filter-input']} />
+        <select className={styles['scoring-list__filter-select']}>
           <option>Khoa</option>
         </select>
-        <select className={styles.select}>
+        <select className={styles['scoring-list__filter-select']}>
           <option>Lớp</option>
         </select>
-        <select className={styles.select}>
+        <select className={styles['scoring-list__filter-select']}>
           <option>Hoạt động</option>
         </select>
-        <select className={styles.select}>
+        <select className={styles['scoring-list__filter-select']}>
           <option>Trạng thái</option>
         </select>
-        <button className={styles.filterButton}>🔍 Lọc</button>
+        <button className={styles['scoring-list__filter-button']}>🔍 Lọc</button>
       </div>
 
-      {/* === Bảng minh chứng === */}
-      <div className={styles.tableContainer}>
+      <div className={styles['scoring-list__table-container']}>
         <h1 className={layoutStyles.title}>Danh sách minh chứng</h1>
-        <table>
+        <table className={styles['scoring-list__table']}>
           <thead>
             <tr>
               <th>
@@ -103,24 +89,19 @@ export default function ScoringPage() {
               <th>Hành động</th>
             </tr>
           </thead>
-
           <tbody>
-            {scoringListData.map((item, index) => (
-              <tr key={index}>
+            {scoringListData.map((item, i) => (
+              <tr key={i}>
                 <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.includes(index)}
-                    onChange={() => handleSelectRow(index)}
-                  />
+                  <input type="checkbox" checked={selectedRows.includes(i)} onChange={() => handleSelectRow(i)} />
                 </td>
                 <td>{item.stt}</td>
                 <td>
-                  <div className={styles.studentInfo}>
-                    <img src={item.avatar} alt={item.tenSinhVien} />
+                  <div className={styles['scoring-list__student-info']}>
+                    <img src={item.avatar} alt={item.tenSinhVien} className={styles['scoring-list__student-avatar']} />
                     <div>
-                      <strong>{item.tenSinhVien}</strong>
-                      <p>{item.email}</p>
+                      <strong className={styles['scoring-list__student-name']}>{item.tenSinhVien}</strong>
+                      <p className={styles['scoring-list__student-email']}>{item.email}</p>
                     </div>
                   </div>
                 </td>
@@ -128,7 +109,7 @@ export default function ScoringPage() {
                 <td>{item.khoa}</td>
                 <td>{item.lop}</td>
                 <td>
-                  <div className={styles.activityInfo}>
+                  <div className={styles['scoring-list__activity-info']}>
                     <strong>{item.hoatDong}</strong>
                     <p>
                       <CalendarDays size={14} /> {item.ngayHoatDong}
@@ -137,17 +118,15 @@ export default function ScoringPage() {
                 </td>
                 <td style={{ color: '#00008b', fontWeight: '600' }}>+{item.diem}</td>
                 <td>
-                  <div className={styles.checkItem}>
+                  <div className={styles['scoring-list__check-item']}>
                     {getIcon(item.checkIn.icon)}
-                    <div className={styles.checkDetails}>
+                    <div className={styles['scoring-list__check-details']}>
                       <strong>{item.checkIn.time}</strong>
                       <p
                         className={
-                          item.checkIn.status === 'Đúng giờ'
-                            ? styles.onTime
-                            : item.checkIn.status === 'Trễ giờ'
-                              ? styles.late
-                              : styles.absent
+                          styles[
+                            `scoring-list__check-status--${item.checkIn.status === 'Đúng giờ' ? 'on-time' : item.checkIn.status === 'Trễ giờ' ? 'late' : 'absent'}`
+                          ]
                         }
                       >
                         {item.checkIn.status}
@@ -156,17 +135,15 @@ export default function ScoringPage() {
                   </div>
                 </td>
                 <td>
-                  <div className={styles.checkItem}>
+                  <div className={styles['scoring-list__check-item']}>
                     {getIcon(item.checkOut.icon)}
-                    <div className={styles.checkDetails}>
+                    <div className={styles['scoring-list__check-details']}>
                       <strong>{item.checkOut.time}</strong>
                       <p
                         className={
-                          item.checkOut.status === 'Đúng giờ'
-                            ? styles.onTime
-                            : item.checkOut.status === 'Trễ giờ'
-                              ? styles.late
-                              : styles.absent
+                          styles[
+                            `scoring-list__check-status--${item.checkOut.status === 'Đúng giờ' ? 'on-time' : item.checkOut.status === 'Trễ giờ' ? 'late' : 'absent'}`
+                          ]
                         }
                       >
                         {item.checkOut.status}
@@ -175,10 +152,12 @@ export default function ScoringPage() {
                   </div>
                 </td>
                 <td>
-                  <span className={`${styles.statusBadge} ${getStatusClass(item.trangThai)}`}>{item.trangThai}</span>
+                  <span className={`${styles['scoring-list__status-badge']} ${getStatusClass(item.trangThai)}`}>
+                    {item.trangThai}
+                  </span>
                 </td>
                 <td>
-                  <button className={styles.actionBtn}>
+                  <button className={styles['scoring-list__action-btn']}>
                     <Eye size={16} color="#00008b" />
                   </button>
                 </td>
@@ -187,37 +166,39 @@ export default function ScoringPage() {
           </tbody>
         </table>
 
-        {/* === Hàng hiển thị số sinh viên đã chọn === */}
         {selectedRows.length > 0 && (
-          <div className={styles.selectionBar}>
-            <span className={styles.selectedCount}>{selectedRows.length} sinh viên đã chọn</span>
-            <button className={styles.clearBtn} onClick={handleClearSelection}>
+          <div className={styles['scoring-list__selection-bar']}>
+            <span className={styles['scoring-list__selected-count']}>{selectedRows.length} sinh viên đã chọn</span>
+            <button className={styles['scoring-list__clear-btn']} onClick={handleClearSelection}>
               <X size={14} color="orange" /> Bỏ chọn tất cả
             </button>
-            <div className={styles.selectionActions}>
-              <button className={`${styles.action} ${styles.approve}`}>
+            <div className={styles['scoring-list__selection-actions']}>
+              <button className={`${styles['scoring-list__action']} ${styles['scoring-list__action--approve']}`}>
                 <Check size={14} /> Duyệt đạt
               </button>
-              <button className={`${styles.action} ${styles.reject}`}>
+              <button className={`${styles['scoring-list__action']} ${styles['scoring-list__action--reject']}`}>
                 <X size={14} /> Không đạt
               </button>
             </div>
           </div>
         )}
 
-        {/* === Phân trang === */}
-        <div className={styles.pagination}>
-          <span className={styles.info}>
+        <div className={styles['scoring-list__pagination']}>
+          <span className={styles['scoring-list__pagination-info']}>
             Đã chọn {selectedRows.length} trong {scoringListData.length} kết quả
           </span>
-          <div className={styles.pageNav}>
-            <button>‹ Trước</button>
-            <button className={styles.active}>1</button>
-            <button>2</button>
-            <button>3</button>
-            <button>…</button>
-            <button>16</button>
-            <button>Tiếp ›</button>
+          <div className={styles['scoring-list__page-nav']}>
+            <button className={styles['scoring-list__pagination-button']}>‹ Trước</button>
+            <button
+              className={`${styles['scoring-list__pagination-button']} ${styles['scoring-list__pagination-button--active']}`}
+            >
+              1
+            </button>
+            <button className={styles['scoring-list__pagination-button']}>2</button>
+            <button className={styles['scoring-list__pagination-button']}>3</button>
+            <button className={styles['scoring-list__pagination-button']}>…</button>
+            <button className={styles['scoring-list__pagination-button']}>16</button>
+            <button className={styles['scoring-list__pagination-button']}>Tiếp ›</button>
           </div>
         </div>
       </div>

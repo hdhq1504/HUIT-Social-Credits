@@ -1,9 +1,10 @@
 import React from 'react';
-import styles from './A_Activity_Detail.module.scss';
 import { Eye } from 'lucide-react';
+import layoutStyles from '../../styles/AdminPage.module.scss';
+import styles from './A_Activity_Detail.module.scss';
 
 const A_Activity_DetailData = ({ activeTab }) => {
-  // ================== DỮ LIỆU GIẢ MẪU ==================
+  // ================== DỮ LIỆU GIẢ ==================
   const studentList = [
     {
       id: 1,
@@ -30,7 +31,7 @@ const A_Activity_DetailData = ({ activeTab }) => {
     {
       id: 3,
       name: 'Phạm Thu Thảo',
-      email: 'thuthao@huit.ed.vn',
+      email: 'thuthao@huit.edu.vn',
       mssv: 'SV003',
       faculty: 'Công nghệ thông tin',
       class: '13DHTH03',
@@ -51,19 +52,20 @@ const A_Activity_DetailData = ({ activeTab }) => {
     },
   ];
 
-  // ================== COMPONENT HIỂN THỊ ==================
+  // ================== HIỂN THỊ THEO TAB ==================
   switch (activeTab) {
+    // ===== THÔNG TIN HOẠT ĐỘNG =====
     case 'info':
       return (
-        <div className={styles.detailInfoContent}>
-          <h3 className={styles.sectionTitle}>Mô tả</h3>
-          <p className={styles.description}>
+        <div className={styles['activity-detail__info-content']}>
+          <h3 className={styles['activity-detail__section-title']}>Mô tả</h3>
+          <p className={styles['activity-detail__description']}>
             Chiến dịch <b>"Sạch biển xanh - Tương lai bền vững"</b> là hoạt động tình nguyện nhằm nâng cao ý thức cộng
-            đồng về ô nhiễm rác thải nhựa, diễn ra tại bãi biển Cửa Lò, Nghệ An.
+            đồng về ô nhiễm rác thải nhựa.
           </p>
 
-          <h3 className={styles.sectionTitle}>Quyền lợi khi tham gia</h3>
-          <ul className={styles.benefitsList}>
+          <h3 className={styles['activity-detail__section-title']}>Quyền lợi khi tham gia</h3>
+          <ul className={styles['activity-detail__list']}>
             <li>✔ Nhận 60 điểm hoạt động CTXH</li>
             <li>✔ Giấy chứng nhận từ Ban tổ chức</li>
             <li>✔ Hỗ trợ ăn uống, di chuyển 100%</li>
@@ -71,14 +73,14 @@ const A_Activity_DetailData = ({ activeTab }) => {
             <li>✔ Giao lưu với sinh viên các trường</li>
           </ul>
 
-          <h3 className={styles.sectionTitle}>Trách nhiệm người tham gia</h3>
-          <ul className={styles.responsibilitiesList}>
+          <h3 className={styles['activity-detail__section-title']}>Trách nhiệm người tham gia</h3>
+          <ul className={styles['activity-detail__list']}>
             <li>⚠ Tham gia đầy đủ hoạt động theo lịch</li>
             <li>⚠ Tuân thủ quy định an toàn</li>
           </ul>
 
-          <h3 className={styles.sectionTitle}>Yêu cầu tham gia</h3>
-          <ul className={styles.requirementsList}>
+          <h3 className={styles['activity-detail__section-title']}>Yêu cầu tham gia</h3>
+          <ul className={styles['activity-detail__list']}>
             <li>📄 Là sinh viên đang học đại học, cao đẳng</li>
             <li>📄 Có bảo hiểm y tế và sức khỏe tốt</li>
             <li>📄 Cam kết tham gia đủ 2 ngày (T7 - CN)</li>
@@ -86,65 +88,87 @@ const A_Activity_DetailData = ({ activeTab }) => {
         </div>
       );
 
+    // ===== DANH SÁCH SINH VIÊN THAM GIA =====
     case 'students':
       return (
-        <div className={styles.studentTableContainer}>
-          <table className={styles.studentTable}>
-            <thead>
-              <tr>
-                <th>
-                  <input type="checkbox" />
-                </th>
-                <th>STT</th>
-                <th>Tên sinh viên</th>
-                <th>MSSV</th>
-                <th>Khoa</th>
-                <th>Lớp</th>
-                <th>Thời gian đăng ký</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {studentList.map((student, index) => (
-                <tr key={student.id}>
-                  <td>
+        <div className={styles['activity-detail__students']}>
+          <h1 className={layoutStyles.title}>Danh sách sinh viên</h1>
+          <div className={styles['activity-detail__students-table-container']}>
+            <table className={styles['activity-detail__students-table']}>
+              <thead>
+                <tr>
+                  <th>
                     <input type="checkbox" />
-                  </td>
-                  <td>{index + 1}</td>
-                  <td>
-                    <div className={styles.studentInfo}>
-                      <img src={student.avatar} alt={student.name} className={styles.avatar} />
-                      <div className={styles.studentDetails}>
-                        <p className={styles.studentName}>{student.name}</p>
-                        <p className={styles.studentEmail}>{student.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{student.mssv}</td>
-                  <td>{student.faculty}</td>
-                  <td>{student.class}</td>
-                  <td>{student.registerTime}</td>
-                  <td>
-                    <span className={`${styles.statusBadge} ${styles[getStatusClass(student.status)]}`}>
-                      {student.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button className={styles.viewButton}>
-                      <Eye size={16} />
-                    </button>
-                  </td>
+                  </th>
+                  <th>STT</th>
+                  <th>Sinh viên</th>
+                  <th>MSSV</th>
+                  <th>Khoa</th>
+                  <th>Lớp</th>
+                  <th>Thời gian đăng ký</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {studentList.map((student, index) => (
+                  <tr key={student.id}>
+                    <td>
+                      <input type="checkbox" />
+                    </td>
+
+                    <td>{index + 1}</td>
+
+                    {/* Thông tin sinh viên */}
+                    <td>
+                      <div className={styles['activity-detail__students-info']}>
+                        <img
+                          src={student.avatar}
+                          alt={student.name}
+                          className={styles['activity-detail__students-avatar']}
+                        />
+                        <div className={styles['activity-detail__students-details']}>
+                          <p className={styles['activity-detail__students-name']}>{student.name}</p>
+                          <p className={styles['activity-detail__students-email']}>{student.email}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>{student.mssv}</td>
+                    <td>{student.faculty}</td>
+                    <td>{student.class}</td>
+                    <td>{student.registerTime}</td>
+
+                    {/* Trạng thái */}
+                    <td>
+                      <span
+                        className={`${styles['activity-detail__students-status-badge']} ${
+                          styles[`activity-detail__students-status--${getStatusClass(student.status)}`]
+                        }`}
+                      >
+                        {student.status}
+                      </span>
+                    </td>
+
+                    {/* Hành động */}
+                    <td>
+                      <button className={styles['activity-detail__students-view-btn']}>
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       );
 
+    // ===== PHẢN HỒI =====
     case 'feedback':
       return (
-        <div className={styles.placeholderContent}>
+        <div className={styles['activity-detail__placeholder']}>
           Nội dung <b>Nhật ký phản hồi</b> sẽ được hiển thị ở đây.
         </div>
       );
@@ -154,17 +178,17 @@ const A_Activity_DetailData = ({ activeTab }) => {
   }
 };
 
-// ================== HÀM PHỤ TRỢ CHO MÀU TRẠNG THÁI ==================
+// ================== HÀM PHỤ TRỢ ==================
 const getStatusClass = (status) => {
   switch (status) {
     case 'Đang tham gia':
-      return 'statusActive';
+      return 'active';
     case 'Đã đăng ký':
-      return 'statusPending';
+      return 'pending';
     case 'Đã tham gia':
-      return 'statusSuccess';
+      return 'success';
     case 'Vắng mặt':
-      return 'statusAbsent';
+      return 'absent';
     default:
       return '';
   }
