@@ -1,12 +1,20 @@
 import React, { Fragment } from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import NotFound from './components/NotFound';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AuthProvider from './context/AuthProvider';
 
-import { publicRoutes, adminRoutes } from './routes/routes';
+// Import routes
+import { publicRoutes } from './routes/routes';
+
+// Import layout và các trang admin
+import AdminLayout from './layouts/Admin/AdminLayout/AdminLayout.jsx';
+import DashboardPage from './pages/Admin/DashboardPage/DashboardPage';
+import ActivitiesPage from './pages/Admin/ActivitiesPage/ActivitiesPage';
+import ScoringPage from './pages/Admin/ScoringPage/ScoringPage';
+import ProofPage from './pages/Admin/ProofPage/ProofPage';
 
 const queryClient = new QueryClient();
 
@@ -14,13 +22,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
+        {/* Provider cho xác thực */}
         <AuthProvider />
 
         <Routes>
-          {/* Public routes */}
+          {/* ================= PUBLIC ROUTES ================= */}
           {publicRoutes.map((route, index) => {
             const Page = route.component;
-            let Layout = route.layout ?? Fragment;
+            const Layout = route.layout ?? Fragment;
 
             return (
               <Route
@@ -35,25 +44,16 @@ function App() {
             );
           })}
 
-          {/* Admin routes */}
-          {adminRoutes.map((route, index) => {
-            const Page = route.component;
-            let Layout = route.layout ?? Fragment;
+          {/* ================= ADMIN ROUTES ================= */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="activities" element={<ActivitiesPage />} />
+            <Route path="scoring" element={<ScoringPage />} />
+            <Route path="proof" element={<ProofPage />} />
+          </Route>
 
-            return (
-              <Route
-                key={`admin-${index}`}
-                path={route.path}
-                element={
-                  <Layout>
-                    <Page />
-                  </Layout>
-                }
-              />
-            );
-          })}
-
-          {/* Route 404 */}
+          {/* ================= 404 NOT FOUND ================= */}
           <Route
             path="*"
             element={

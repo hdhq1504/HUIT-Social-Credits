@@ -1,0 +1,87 @@
+/* Block: adminHeader */
+.adminHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 72px;
+  padding: 0 20px;
+  background: var(--white-color, #fff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Element: menu button */
+.adminHeader__menuButton {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.adminHeader__menuLine {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: var(--primary-color, #00008b);
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+/* Animation khi mở menu (modifier) */
+.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(2) {
+  opacity: 0;
+}
+
+.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Element: account (avatar + info) */
+.adminHeader__account {
+  display: flex;
+  align-items: center;
+}
+
+.adminHeader__accountBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adminHeader__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-color, #00008b), #0044cc);
+}
+
+.adminHeader__textBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.adminHeader__name {
+  font-family: Montserrat, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--primary-color, #00008b);
+}
+
+.adminHeader__email {
+  font-family: Montserrat, sans-serif;
+  font-weight: 300;
+  font-size: 12px;
+  color: var(--muted-color, #999);
+}

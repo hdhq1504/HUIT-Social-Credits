@@ -32,9 +32,3 @@ cd client
 npm run build
 npm run dev
 ```
-
-### Đưa code lên GitHub
-
-git add .
-git commit -m "Cập nhật hôm nay"
-git push

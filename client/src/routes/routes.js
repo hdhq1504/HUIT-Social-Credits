@@ -16,10 +16,13 @@ import Loading from '../pages/Loading/Loading';
 // Layout
 import HeaderOnly from '../layouts/HeaderOnly/HeaderOnly';
 import DefaultLayout from '../layouts/DefaultLayout/DefaultLayout';
-import AdminLayout from '../layouts/Admin/AdminLayout';
+import AdminLayout from '../layouts/Admin/AdminLayout/AdminLayout.jsx';
 
 // Trang admin
-import DashboardPage from '../pages/Admin/A_Dashboard/A_Dashboard.jsx';
+import DashboardPage from '../pages/Admin/DashboardPage/DashboardPage.jsx';
+import ActivitiesPage from '../pages/Admin/ActivitiesPage/ActivitiesPage.jsx';
+import ScoringPage from '../pages/Admin/ScoringPage/ScoringPage.jsx';
+import ProofPage from '../pages/Admin/ProofPage/ProofPage.jsx';
 
 const publicRoutes = [
   { path: config.routes.home, component: HomePage, layout: DefaultLayout },
@@ -37,8 +40,10 @@ const publicRoutes = [
 ];
 
 const adminRoutes = [
-  { path: '/admin', component: DashboardPage, layout: AdminLayout },
   { path: '/admin/dashboard', component: DashboardPage, layout: AdminLayout },
+  { path: '/admin/activities', component: ActivitiesPage, layout: AdminLayout },
+  { path: '/admin/scoring', component: ScoringPage, layout: AdminLayout },
+  { path: '/admin/proof', component: ProofPage, layout: AdminLayout },
 ];
 
 export { publicRoutes, adminRoutes };

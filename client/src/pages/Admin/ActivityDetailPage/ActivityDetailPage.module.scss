@@ -1,0 +1,241 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.activity-detail {
+  animation: fadeIn 0.3s ease-in-out;
+  background: var(--white-color);
+  padding: 20px 24px;
+  border-radius: 10px;
+
+  /* ===== HEADER ===== */
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  &__back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    font-weight: 600;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--primary-color);
+  }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+
+    &--delete {
+      background: var(--danger-color);
+      color: #fff;
+    }
+    &--edit {
+      background: var(--success-color);
+      color: #fff;
+    }
+  }
+
+  /* ===== CARD ===== */
+  &__card {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  &__image img {
+    width: 220px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+  }
+
+  &__meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+
+    & > span {
+      font-weight: 500;
+    }
+  }
+
+  &__badge {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  &__points {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  &__item {
+    strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    p {
+      font-size: 14px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  &__status {
+    font-weight: 500;
+    font-size: 13.5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+
+  /* ===== TABS ===== */
+  &__tabs {
+    display: flex;
+    margin-bottom: 16px;
+  }
+
+  &__tab {
+    flex: 1; // chia đều chiều rộng
+    text-align: center;
+    padding: 12px 0;
+    border-radius: 8px;
+    background: var(--secondary-color);
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+    color: var(--primary-color); // mặc định màu chữ
+
+    &--active {
+      background: var(--primary-color);
+      color: #fff;
+    }
+  }
+
+  &__content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  /* ===== STUDENTS TABLE ===== */
+  &__table-container {
+    overflow-x: auto;
+    background: var(--white-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+
+    th,
+    td {
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    thead {
+      background: var(--primary-color);
+      color: #fff;
+    }
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    tbody tr:hover {
+      background: #f8fafc; // bỏ hover
+    }
+  }
+
+  &__student-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  &__name {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+  &__email {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  &__view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    border: none;
+    cursor: pointer;
+  }
+
+  &__placeholder {
+    font-size: 15px;
+    color: var(--text-color);
+    text-align: center;
+    padding: 24px;
+    background: #f9fafb;
+    border-radius: 10px;
+  }
+}
