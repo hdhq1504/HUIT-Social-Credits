@@ -14,7 +14,7 @@ import {
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label, useToast } from '@components/index';
-import Loading from '@pages/Loading/Loading';
+import Loading from '@pages/Loading';
 import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';

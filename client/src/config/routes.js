@@ -19,6 +19,10 @@ const routes = {
   adminActivities: '/admin/activities',
   adminScoring: '/admin/scoring',
   adminProof: '/admin/proof',
+  adminFeedback: '/admin/feedback',
+  adminReports: '/admin/reports',
+  adminCouncil: '/admin/council',
+  adminSystem: '/admin/system',
 };
 
 export default routes;

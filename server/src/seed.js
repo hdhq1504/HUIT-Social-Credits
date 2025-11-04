@@ -3,6 +3,31 @@ import prisma from "./prisma.js";
 
 const seed = async () => {
   try {
+    const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@huit.edu.vn";
+    const adminPlainPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
+    const adminHashedPassword = await bcrypt.hash(adminPlainPassword, 10);
+
+    await prisma.nguoiDung.upsert({
+      where: { email: adminEmail },
+      update: {
+        matKhau: adminHashedPassword,
+        hoTen: "Nguyễn Văn A",
+        vaiTro: "ADMIN",
+        maCB: "ADMIN001",
+        isActive: true,
+      },
+      create: {
+        email: adminEmail,
+        matKhau: adminHashedPassword,
+        hoTen: "Nguyễn Văn A",
+        vaiTro: "ADMIN",
+        maCB: "ADMIN001",
+        isActive: true,
+        soDT: "0900000000",
+        avatarUrl: "/images/profile.png",
+      },
+    });
+
     const email = "2001223947@huit.edu.vn";
     const maSV = email.split("@")[0];
     const plainPassword = process.env.SEED_PASSWORD || "1234";
@@ -86,7 +111,6 @@ const seed = async () => {
 
     const pickSome = (arr, n = 3) => {
       const copy = [...arr];
-      // xáo trộn đơn giản
       for (let i = copy.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [copy[i], copy[j]] = [copy[j], copy[i]];
@@ -95,7 +119,6 @@ const seed = async () => {
     };
 
     const activitiesData = [
-      // ===== ĐANG DIỄN RA =====
       {
         maHoatDong: "HD20251030-ONGO-01",
         tieuDe: "Vệ sinh khuôn viên khoa CNTT",
@@ -148,8 +171,6 @@ const seed = async () => {
         categoryCode: "XUAN_TINH_NGUYEN",
         isFeatured: true
       },
-
-      // ===== SẮP DIỄN RA =====
       {
         maHoatDong: "HD20251030-UP-01",
         tieuDe: "Tập huấn an toàn khi hiến máu",
@@ -241,8 +262,6 @@ const seed = async () => {
         categoryCode: "MUA_HE_XANH",
         isFeatured: false
       },
-
-      // ===== ĐÃ KẾT THÚC =====
       {
         maHoatDong: "HIENMAU291025",
         tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",

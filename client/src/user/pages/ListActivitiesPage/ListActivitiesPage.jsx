@@ -14,7 +14,7 @@ import {
   Empty,
 } from 'antd';
 import { CardActivity, CheckboxGroup } from '@components/index';
-import SearchBar from '@layouts/SearchBar/SearchBar';
+import SearchBar from '@layouts/SearchBar';
 import styles from './ListActivitiesPage.module.scss';
 import activitiesApi from '@api/activities.api';
 // ⬇️ Bỏ import lọc theo state đăng ký để hiển thị tất cả

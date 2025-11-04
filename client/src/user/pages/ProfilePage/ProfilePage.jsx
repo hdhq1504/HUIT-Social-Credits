@@ -5,7 +5,7 @@ import classNames from 'classnames/bind';
 import { TextField } from '@mui/material';
 import dayjs from 'dayjs';
 import { ChangePasswordModal, Label, useToast } from '@components/index';
-import Loading from '@pages/Loading/Loading';
+import Loading from '@pages/Loading';
 import styles from './ProfilePage.module.scss';
 import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';

@@ -1,7 +1,7 @@
-.sidebar {
+.admin-sidebar {
   width: 245px;
   height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--white-color);
   display: flex;
   flex-direction: column;
   padding: 12px;
@@ -59,7 +59,7 @@
     font-family: 'Montserrat', sans-serif;
     font-size: 14px;
     font-weight: 500;
-    color: #000;
+    color: var(--black-color);
     background-color: #f4f4f4;
     cursor: pointer;
     transition: all 0.25s ease;
@@ -69,7 +69,7 @@
       color: #ffffff;
       font-weight: 600;
 
-      .sidebar__menu-icon {
+      .admin-sidebar__menu-icon {
         color: #ffffff !important;
       }
     }
@@ -79,7 +79,7 @@
       color: #ffffff;
       transform: translateX(4px);
 
-      .sidebar__menu-icon {
+      .admin-sidebar__menu-icon {
         color: #ffffff !important;
       }
     }
@@ -90,5 +90,10 @@
     margin-right: 10px;
     min-width: 18px;
     color: var(--primary-color);
+  }
+
+  &__menu-text {
+    flex: 1;
+    white-space: nowrap;
   }
 }

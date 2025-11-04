@@ -66,9 +66,7 @@ function ActivityCategoriesSection() {
 
       <div className={cx('activity-categories')}>
         {/* Thông báo khi fetch lỗi nhưng đã trả về fallback */}
-        {isError && !isLoading && (
-          <div className={cx('activity-categories__status')}>Không thể tải danh mục.</div>
-        )}
+        {isError && !isLoading && <div className={cx('activity-categories__status')}>Không thể tải danh mục.</div>}
 
         <div className={cx('activity-categories__list')}>
           {displayCategories.map((category) => {

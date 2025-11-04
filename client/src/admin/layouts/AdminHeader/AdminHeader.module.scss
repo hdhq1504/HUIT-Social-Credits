@@ -1,18 +1,18 @@
-.adminHeader {
+.admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   height: 72px;
   padding: 0 20px;
-  background: var(--white-color, #fff);
+  background: var(--white-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
-.adminHeader__menuButton {
+.admin-header__menu-button {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -24,60 +24,60 @@
   padding: 0;
 }
 
-.adminHeader__menuLine {
+.admin-header__menu-line {
   display: block;
   height: 3px;
   width: 100%;
-  background: var(--primary-color, #00008b);
+  background: var(--primary-color);
   border-radius: 2px;
   transition: 0.3s;
 }
 
-.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(1) {
+.admin-header__menu-button--open .admin-header__menu-line:nth-child(1) {
   transform: rotate(45deg) translate(5px, 5px);
 }
 
-.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(2) {
+.admin-header__menu-button--open .admin-header__menu-line:nth-child(2) {
   opacity: 0;
 }
 
-.adminHeader__menuButton--open .adminHeader__menuLine:nth-child(3) {
+.admin-header__menu-button--open .admin-header__menu-line:nth-child(3) {
   transform: rotate(-45deg) translate(5px, -5px);
 }
 
-.adminHeader__account {
+.admin-header__account {
   display: flex;
   align-items: center;
 }
 
-.adminHeader__accountBox {
+.admin-header__account-box {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.adminHeader__avatar {
+.admin-header__avatar {
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary-color, #00008b), #0044cc);
+  background: linear-gradient(135deg, var(--primary-color), #0044cc);
 }
 
-.adminHeader__textBox {
+.admin-header__text-box {
   display: flex;
   flex-direction: column;
 }
 
-.adminHeader__name {
+.admin-header__name {
   font-family: Montserrat, sans-serif;
   font-weight: 600;
   font-size: 16px;
-  color: var(--primary-color, #00008b);
+  color: var(--primary-color);
 }
 
-.adminHeader__email {
+.admin-header__email {
   font-family: Montserrat, sans-serif;
   font-weight: 300;
   font-size: 12px;
-  color: var(--muted-color, #999);
+  color: var(--muted-color);
 }

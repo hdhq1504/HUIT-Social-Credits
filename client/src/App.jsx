@@ -1,12 +1,12 @@
 import React, { Fragment } from 'react';
 import { Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import NotFound from './components/NotFound';
+import NotFound from './components/NotFound/NotFound';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AuthProvider from './context/AuthProvider';
 import { publicRoutes } from './routes/routes';
+import adminRoutes from './routes/adminRoutes';
 import AdminLayout from '@admin/layouts/AdminLayout/AdminLayout.jsx';
-import { DashboardPage, ActivitiesPage, ScoringPage, ProofPage } from '@admin/pages/index';
 
 const queryClient = new QueryClient();
 
@@ -37,10 +37,10 @@ function App() {
 
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="activities" element={<ActivitiesPage />} />
-            <Route path="scoring" element={<ScoringPage />} />
-            <Route path="proof" element={<ProofPage />} />
+            {adminRoutes.map((route) => {
+              const Page = route.component;
+              return <Route key={route.path} path={route.path} element={<Page />} />;
+            })}
           </Route>
 
           <Route

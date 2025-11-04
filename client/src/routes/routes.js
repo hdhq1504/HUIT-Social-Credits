@@ -13,13 +13,6 @@ import {
   RollCallPage,
 } from '@pages/index';
 import HeaderOnly from '@layouts/index';
-import AdminLayout from '@admin/layouts/AdminLayout/AdminLayout.jsx';
-import {
-  DashboardPage,
-  ActivitiesPage,
-  ScoringPage,
-  ProofPage,
-} from '@admin/pages/index';
 
 // Sử dụng cho những route không cần đăng nhập nhưng vẫn xem được
 const publicRoutes = [
@@ -37,11 +30,4 @@ const publicRoutes = [
   { path: config.routes.loading, component: Loading },
 ];
 
-const adminRoutes = [
-  { path: config.routes.adminDashboard, component: DashboardPage, layout: AdminLayout },
-  { path: config.routes.adminActivities, component: ActivitiesPage, layout: AdminLayout },
-  { path: config.routes.adminScoring, component: ScoringPage, layout: AdminLayout },
-  { path: config.routes.adminProof, component: ProofPage, layout: AdminLayout },
-];
-
-export { publicRoutes, adminRoutes };
+export { publicRoutes };
