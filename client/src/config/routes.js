@@ -1,4 +1,4 @@
-const routes = {
+const userRoutes = {
   home: '/',
   login: '/login',
   forgotPassword: '/forgot-password',
@@ -13,16 +13,28 @@ const routes = {
   rollCall: '/roll-call',
   feedback: '/feedback',
   loading: '/loading',
-
-  // Admin
-  adminDashboard: '/admin/dashboard',
-  adminActivities: '/admin/activities',
-  adminScoring: '/admin/scoring',
-  adminProof: '/admin/proof',
-  adminFeedback: '/admin/feedback',
-  adminReports: '/admin/reports',
-  adminCouncil: '/admin/council',
-  adminSystem: '/admin/system',
 };
 
+const ADMIN_ROOT = '/admin';
+
+const adminRoutes = {
+  root: ADMIN_ROOT,
+  dashboard: `${ADMIN_ROOT}/dashboard`,
+  activities: `${ADMIN_ROOT}/activities`,
+  scoring: `${ADMIN_ROOT}/scoring`,
+  proof: `${ADMIN_ROOT}/proof`,
+  feedback: `${ADMIN_ROOT}/feedback`,
+  reports: `${ADMIN_ROOT}/reports`,
+  council: `${ADMIN_ROOT}/council`,
+  system: `${ADMIN_ROOT}/system`,
+};
+
+const routes = {
+  ...userRoutes,
+  ...adminRoutes,
+  user: userRoutes,
+  admin: adminRoutes,
+};
+
+export { userRoutes, adminRoutes };
 export default routes;

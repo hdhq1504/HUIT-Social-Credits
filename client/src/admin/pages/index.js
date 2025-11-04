@@ -1,0 +1,10 @@
+export { default as ActivitiesAddEditPage } from './ActivitiesAddEditPage/ActivitiesAddEditPage';
+export { default as ActivitiesDetailPage } from './ActivitiesDetailPage/ActivitiesDetailPage';
+export { default as ActivitiesPage } from './ActivitiesPage/ActivitiesPage';
+export { default as CouncilPage } from './CouncilPage/CouncilPage';
+export { default as DashboardPage } from './DashboardPage/DashboardPage';
+export { default as AdminFeedbackPage } from './FeedbackPage/FeedbackPage';
+export { default as ProofPage } from './ProofPage/ProofPage';
+export { default as ReportsPage } from './ReportsPage/ReportsPage';
+export { default as ScoringPage } from './ScoringPage/ScoringPage';
+export { default as SystemPage } from './SystemPage/SystemPage';

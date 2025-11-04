@@ -1,80 +1,60 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { authApi } from '../api/auth.api';
 
-const normalizeUser = (user) => {
-  if (!user || typeof user !== 'object') return null;
-  const { token: _token, ...rest } = user;
-  return {
-    ...rest,
-    TenNguoiDung: rest.TenNguoiDung ?? rest.fullName ?? rest.name ?? rest.email ?? '',
-  };
-};
+const useAuthStore = create(
+  persist(
+    (set) => ({
+      accessToken: null,
+      isLoggedIn: false,
+      user: null,
 
-const persistAuthState = (user, accessToken, isLoggedIn) => {
-  if (isLoggedIn) {
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('user', JSON.stringify(user ?? null));
-    if (accessToken) {
-      localStorage.setItem('accessToken', accessToken);
-    } else {
-      localStorage.removeItem('accessToken');
-    }
-  } else {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-  }
-};
+      login: ({ accessToken, user }) => {
+        set({
+          accessToken,
+          isLoggedIn: true,
+          user: {
+            ...user,
+            role: user.role || 'SINHVIEN'
+          }
+        });
+      },
 
-const useAuthStore = create((set) => ({
-  user: null,
-  accessToken: null,
-  isLoggedIn: false,
-  loading: true,
-  initialize: () => {
-    set({ loading: true });
-    const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const storedUser = localStorage.getItem('user');
-    const storedAccessToken = localStorage.getItem('accessToken');
+      setAccessToken: (token) => set({ accessToken: token }),
 
-    if (storedIsLoggedIn && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        set({ user: parsedUser, accessToken: storedAccessToken || null, isLoggedIn: true, loading: false });
-        return;
-      } catch (error) {
-        console.warn('Không thể khôi phục người dùng từ localStorage:', error);
+      updateUser: (user) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...user } : user
+        })),
+
+      logout: () => {
+        set({ accessToken: null, isLoggedIn: false, user: null });
+      },
+
+      initialize: async () => {
+        try {
+          const user = await authApi.me();
+          set((state) => ({
+            isLoggedIn: !!state.accessToken,
+            user: {
+              ...user,
+              role: user.role || 'SINHVIEN'
+            }
+          }));
+        } catch {
+          set({ isLoggedIn: false, user: null });
+        }
       }
-    }
-
-    persistAuthState(null, null, false);
-    set({ user: null, accessToken: null, isLoggedIn: false, loading: false });
-  },
-  setAccessToken: (token) => {
-    set((state) => {
-      persistAuthState(state.user, token, state.isLoggedIn);
-      return { accessToken: token };
-    });
-  },
-  login: (payload) => {
-    const hasUserObject = payload && typeof payload === 'object' && 'user' in payload;
-    const rawUser = hasUserObject ? payload.user : payload;
-    const { token: rawToken, ...restUser } = rawUser || {};
-    const user = hasUserObject ? rawUser : rawUser ? restUser : null;
-    const accessToken = hasUserObject ? (payload.accessToken ?? null) : (rawToken ?? null);
-    const normalizedUser = normalizeUser(user);
-    persistAuthState(normalizedUser, accessToken, true);
-    set({ user: normalizedUser, accessToken, isLoggedIn: true, loading: false });
-  },
-  updateUser: (updates) =>
-    set((state) => {
-      const nextUser = normalizeUser(state.user ? { ...state.user, ...updates } : { ...updates });
-      persistAuthState(nextUser, state.accessToken, true);
-      return { user: nextUser };
     }),
-  logout: () => {
-    persistAuthState(null, null, false);
-    set({ user: null, accessToken: null, isLoggedIn: false, loading: false });
-  },
-}));
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        isLoggedIn: state.isLoggedIn,
+        user: state.user
+      })
+    }
+  )
+);
 
 export default useAuthStore;

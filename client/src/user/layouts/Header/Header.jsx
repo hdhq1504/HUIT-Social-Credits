@@ -48,7 +48,6 @@ function Header() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Giả lập gọi API đăng xuất
       await new Promise((resolve) => setTimeout(resolve, 400));
     },
     onSuccess: () => {
@@ -110,33 +109,40 @@ function Header() {
   const renderLoggedInMenu = () => (
     <div className={cx('header__menu')}>
       <div className={cx('header__menu-header')}>
-        Xin chào <span>{user?.TenNguoiDung || user?.email || 'Người dùng'}</span>
+        Xin chào <span>{user?.TenNguoiDung}</span>
       </div>
-      <div className={cx('header__menu-item')}>
-        <Link to="/profile">
-          <User size={16} />
-          <span>Thông tin</span>
-        </Link>
-      </div>
-      <div className={cx('header__menu-item')}>
-        <Link to="/my-activities">
-          <ClipboardList size={16} />
-          <span>Hoạt động của tôi</span>
-        </Link>
-      </div>
-      <div className={cx('header__menu-item')}>
-        <Link to="/my-points">
-          <BadgeCheck size={16} />
-          <span>Kết quả</span>
-        </Link>
-      </div>
-      <div className={cx('header__menu-item')}>
-        <Link to="/feedback">
-          <BookAlert size={16} />
-          <span>Phản hồi điểm</span>
-        </Link>
-      </div>
-      {isMobile && (
+
+      {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
+      {user?.role !== 'ADMIN' && (
+        <>
+          <div className={cx('header__menu-item')}>
+            <Link to="/profile">
+              <User size={16} />
+              <span>Thông tin</span>
+            </Link>
+          </div>
+          <div className={cx('header__menu-item')}>
+            <Link to="/my-activities">
+              <ClipboardList size={16} />
+              <span>Hoạt động của tôi</span>
+            </Link>
+          </div>
+          <div className={cx('header__menu-item')}>
+            <Link to="/my-points">
+              <BadgeCheck size={16} />
+              <span>Kết quả</span>
+            </Link>
+          </div>
+          <div className={cx('header__menu-item')}>
+            <Link to="/feedback">
+              <BookAlert size={16} />
+              <span>Phản hồi điểm</span>
+            </Link>
+          </div>
+        </>
+      )}
+
+      {isMobile && user?.role !== 'ADMIN' && (
         <>
           <div className={cx('header__menu-divider')} />
           <div className={cx('header__menu-item')}>
@@ -184,33 +190,37 @@ function Header() {
         </div>
 
         <div className={cx('header__actions')}>
-          <NavLink
-            to="/list-activities"
-            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
-          >
-            Hoạt động
-          </NavLink>
+          {(!isLoggedIn || user?.role !== 'ADMIN') && (
+            <>
+              <NavLink
+                to="/list-activities"
+                className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+              >
+                Hoạt động
+              </NavLink>
 
-          <NavLink
-            to="/my-activities"
-            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
-          >
-            Hoạt động của tôi
-          </NavLink>
+              <NavLink
+                to="/my-activities"
+                className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+              >
+                Hoạt động của tôi
+              </NavLink>
 
-          <NavLink
-            to="/roll-call"
-            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
-          >
-            Điểm danh
-          </NavLink>
+              <NavLink
+                to="/roll-call"
+                className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+              >
+                Điểm danh
+              </NavLink>
 
-          <NavLink
-            to="/feedback"
-            className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
-          >
-            Phản hồi
-          </NavLink>
+              <NavLink
+                to="/feedback"
+                className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
+              >
+                Phản hồi
+              </NavLink>
+            </>
+          )}
 
           <Tippy
             delay={[0, 200]}

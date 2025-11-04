@@ -183,7 +183,7 @@ function ProofStatusSection() {
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
-                  isLoggedIn ? 'Chưa có phản hồi nào cần hiển thị' : 'Đăng nhập để xem trạng thái minh chứng'
+                  isLoggedIn ? 'Chưa có phản hồi nào' : 'Đăng nhập để xem trạng thái phản hồi'
                 }
               />
             </div>

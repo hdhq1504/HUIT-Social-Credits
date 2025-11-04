@@ -1,3 +1,4 @@
+import config from '@/config';
 import {
   Gauge,
   HeartHandshake,
@@ -19,55 +20,63 @@ import {
   SystemPage,
 } from '@admin/pages';
 
-const adminRoutes = [
+const adminRoutePaths = config.routes.admin ?? {};
+
+const baseAdminRoutes = [
   {
-    path: 'dashboard',
+    key: 'dashboard',
     label: 'Bảng điều khiển',
     icon: Gauge,
     component: DashboardPage,
   },
   {
-    path: 'activities',
+    key: 'activities',
     label: 'Hoạt động CTXH',
     icon: HeartHandshake,
     component: ActivitiesPage,
   },
   {
-    path: 'scoring',
+    key: 'scoring',
     label: 'Chấm điểm CTXH',
     icon: CalendarCheck,
     component: ScoringPage,
   },
   {
-    path: 'proof',
+    key: 'proof',
     label: 'Minh chứng CTXH',
     icon: FileText,
     component: ProofPage,
   },
   {
-    path: 'feedback',
+    key: 'feedback',
     label: 'Phản hồi sinh viên',
     icon: MessageSquare,
     component: AdminFeedbackPage,
   },
   {
-    path: 'reports',
+    key: 'reports',
     label: 'Báo cáo & thống kê',
     icon: BarChart2,
     component: ReportsPage,
   },
   {
-    path: 'council',
+    key: 'council',
     label: 'Hội đồng xét điểm',
     icon: Award,
     component: CouncilPage,
   },
   {
-    path: 'system',
+    key: 'system',
     label: 'Quản lý hệ thống',
     icon: Settings,
     component: SystemPage,
   },
 ];
+
+const adminRoutes = baseAdminRoutes.map(({ key, ...route }) => ({
+  path: key,
+  fullPath: adminRoutePaths[key] ?? `/admin/${key}`,
+  ...route,
+}));
 
 export default adminRoutes;

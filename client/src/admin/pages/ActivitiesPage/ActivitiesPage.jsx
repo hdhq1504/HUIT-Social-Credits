@@ -5,7 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { Edit3, Trash2, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react';
 import vi from 'date-fns/locale/vi';
 import ActivitiesAddEditPage from '../ActivitiesAddEditPage/ActivitiesAddEditPage.jsx';
-import ActivityDetailPage from '../ActivityDetailPage/ActivityDetailPage.jsx';
+import ActivityDetailPage from '../ActivitiesDetailPage/ActivitiesDetailPage.jsx';
 import { activitiesList } from './ActivitiesPageData.jsx';
 import styles from './ActivitiesPage.module.scss';
 

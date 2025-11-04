@@ -5,7 +5,8 @@ import { faCheck, faCircleXmark, faClock } from '@fortawesome/free-solid-svg-ico
 import classNames from 'classnames/bind';
 import { Table, Tag, Select } from 'antd';
 import dayjs from 'dayjs';
-import { Label, ProgressSection, useToast } from '@components/index';
+import { Label, ProgressSection } from '@components/index';
+import useToast from '../../../components/Toast/Toast';
 import { useQuery } from '@tanstack/react-query';
 import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';

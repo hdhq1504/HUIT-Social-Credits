@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
 import { useNavigate } from 'react-router-dom';
-import SearchBar from '@layouts/SearchBar';
+import SearchBar from '../../../user/layouts/SearchBar/SearchBar';
 import {
   FeaturedActivitySection,
   ActivityCategoriesSection,

@@ -17,7 +17,7 @@ function AdminLayout() {
   const sidebarItems = useMemo(
     () =>
       adminRoutes.map((route) => ({
-        path: `/admin/${route.path}`,
+        path: route.fullPath,
         label: route.label,
         icon: route.icon,
       })),

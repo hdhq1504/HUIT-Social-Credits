@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import classNames from 'classnames/bind';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
 import { Checkbox } from 'antd';
-import classNames from 'classnames/bind';
 import InputField from '../InputField/InputField';
+import useToast from '../Toast/Toast';
 import { authApi } from '@api/auth.api';
 import styles from './LoginForm.module.scss';
 
@@ -15,35 +16,31 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { contextHolder, open: openToast } = useToast();
   const navigate = useNavigate();
 
   const loginMutation = useMutation({
-    mutationFn: async ({ email: emailValue, password: passwordValue }) => {
-      if (emailValue === 'admin@huit.edu.vn' && passwordValue === '123') {
-        return {
-          name: 'Admin',
-          email: emailValue,
-          role: 'admin',
-        };
+    mutationFn: async ({ email, password }) => {
+      try {
+        const user = await authApi.login(email, password);
+        return user;
+      } catch (error) {
+        const message = error?.response?.data?.error || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        throw new Error(message);
       }
-      return await authApi.login(emailValue, passwordValue);
     },
-
     onSuccess: (user) => {
-      setErrorMessage('');
-
-      if (user?.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      openToast({ message: 'Đăng nhập thành công!', variant: 'success' });
+      setTimeout(() => {
+        if (user?.role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
+      }, 500);
     },
-
     onError: (error) => {
-      const message =
-        error?.response?.data?.error || error?.message || 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại.';
-      setErrorMessage(message);
-      console.error('Lỗi đăng nhập:', error);
+      openToast({ message: error.message, variant: 'danger' });
     },
   });
 
@@ -69,6 +66,8 @@ function LoginForm() {
 
   return (
     <div className={cx('login-form')}>
+      {contextHolder}
+
       <div className={cx('login-form__breadcrumb')}>
         <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Đăng nhập</span>
       </div>
