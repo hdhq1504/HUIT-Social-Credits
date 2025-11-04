@@ -2,8 +2,6 @@ const userRoutes = {
   home: '/',
   login: '/login',
   forgotPassword: '/forgot-password',
-
-  // Sinh viên
   profile: '/profile',
   listActivities: '/list-activities',
   activityDetail: '/activity-detail',

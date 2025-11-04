@@ -2,16 +2,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px;
   background: var(--white-color, #fff);
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin: 16px 20px 0 20px;
-  height: 60px;
+  height: 68px;
   font-family: 'Montserrat', sans-serif;
+
+  &__title {
+    font-size: 20px;
+    font-weight: 600;
+  }
 }
 
-/* Element: breadcrumb */
 .admin-navbar__breadcrumb {
   display: flex;
   align-items: center;
@@ -19,7 +22,6 @@
   font-size: 14px;
 }
 
-/* Breadcrumb items */
 .admin-navbar__breadcrumb-home {
   color: var(--primary-color);
   font-weight: 500;
@@ -54,8 +56,8 @@
   }
 }
 
-.admin-navbar__addButton {
-  background: var(--yellow-color);
+.admin-navbar__add-button {
+  background: var(--primary-color);
   border: none;
   border-radius: 8px;
   padding: 8px 16px;

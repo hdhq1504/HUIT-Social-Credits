@@ -47,14 +47,6 @@ const ActivitiesListContent = ({
 
   return (
     <div className={cx('activities-page')}>
-      {/* Header */}
-      <div className={cx('activities-page__header')}>
-        <h1 className={cx('activities-page__title')}>Danh sách hoạt động</h1>
-        <button className={cx('activities-page__add-btn')} onClick={onAddNewActivity}>
-          <span className={cx('activities-page__add-btn-icon')}>+</span> Thêm hoạt động mới
-        </button>
-      </div>
-
       {/* Filter Bar */}
       <div className={cx('activities-list__filter-bar')}>
         <input type="text" placeholder="Tìm kiếm hoạt động..." className={cx('activities-list__search-input')} />
@@ -147,23 +139,23 @@ const ActivitiesListContent = ({
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Pagination */}
-      <div className={cx('activities-list__footer')}>
-        <div className={cx('activities-list__footer-info')}>
-          <p>
-            Đã chọn <span>{selectedRows.length}</span> trong {totalItems} kết quả
-          </p>
-        </div>
-        <div className={cx('activities-list__footer-pagination')}>
-          <button className={cx('activities-list__footer-page')} disabled={currentPage === 1}>
-            <ChevronLeft size={16} /> Trước
-          </button>
-          {renderPageButtons()}
-          <button className={cx('activities-list__footer-page')} disabled={currentPage === totalPages}>
-            Tiếp <ChevronRight size={16} />
-          </button>
+        
+        {/* Pagination */}
+        <div className={cx('activities-list__footer')}>
+          <div className={cx('activities-list__footer-info')}>
+            <p>
+              Đã chọn <span>{selectedRows.length}</span> trong {totalItems} kết quả
+            </p>
+          </div>
+          <div className={cx('activities-list__footer-pagination')}>
+            <button className={cx('activities-list__footer-page')} disabled={currentPage === 1}>
+              <ChevronLeft size={16} /> Trước
+            </button>
+            {renderPageButtons()}
+            <button className={cx('activities-list__footer-page')} disabled={currentPage === totalPages}>
+              Tiếp <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

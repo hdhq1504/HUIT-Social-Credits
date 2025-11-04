@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import classNames from 'classnames/bind';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { CalendarDays, Users, MessageSquare, ArrowRight, Calendar } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight, faCalendar, faCalendarCheck, faComments, faSearch, faUsers } from '@fortawesome/free-solid-svg-icons';
 import styles from './DashboardPage.module.scss';
 import { chartData, recentActivities, upcomingEvents, pendingFeedback } from './DashboardPageData.jsx';
+import { TextAlignCenter } from 'lucide-react';
 
 const cx = classNames.bind(styles);
 
@@ -12,15 +14,7 @@ export default function DashboardPage() {
 
   return (
     <div className={cx('dashboard')}>
-      {/* 1. Header */}
-      <header className={cx('dashboard__header')}>
-        <h1 className={cx('dashboard__title')}>Bảng điều khiển tổng quan</h1>
-        <button className={cx('dashboard__add-btn')}>
-          <span className={cx('dashboard__add-btn-icon')}>+</span> Thêm hoạt động mới
-        </button>
-      </header>
-
-      {/* 2. Filter Bar */}
+      {/* Filter search bar */}
       <section className={cx('dashboard__filter-bar')}>
         <input type="text" placeholder="Tìm kiếm hoạt động..." className={cx('dashboard__search-input')} />
         <select className={cx('dashboard__select')}>
@@ -38,28 +32,28 @@ export default function DashboardPage() {
           <option>CNTT</option>
           <option>Kinh tế</option>
         </select>
-        <button className={cx('dashboard__filter-btn')}>🔍 Lọc</button>
+        <button className={cx('dashboard__filter-btn')}><FontAwesomeIcon icon={faSearch} /> Lọc</button>
       </section>
 
-      {/* 3. Quick Stats */}
+      {/* Quick stats */}
       <section className={cx('dashboard__stats')}>
         {[
           {
-            icon: <CalendarDays size={22} color="#fff" />,
+            icon: <FontAwesomeIcon icon={faCalendarCheck} size={22} color="#fff" />,
             count: 156,
             label: 'Hoạt động CTXH',
             badge: '+12%',
             color: 'blue',
           },
           {
-            icon: <Users size={22} color="#fff" />,
+            icon: <FontAwesomeIcon icon={faUsers} size={22} color="#fff" />,
             count: 1245,
             label: 'Sinh viên tham gia',
             badge: '+8%',
             color: 'green',
           },
           {
-            icon: <MessageSquare size={22} color="#fff" />,
+            icon: <FontAwesomeIcon icon={faComments} size={22} color="#fff" />,
             count: 89,
             label: 'Phản hồi chờ xử lý',
             badge: '-2%',
@@ -85,38 +79,62 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {/* 4. Chart + Recent Activities */}
-      <section className={cx('dashboard__chart-section')}>
-        <div className={cx('dashboard__chart-box')}>
+      {/* Dashboard grid */}
+      <section className={cx('dashboard__grid')}>
+        <div className={cx('dashboard__chart')}>
           <div className={cx('dashboard__chart-header')}>
-            <h3>Hoạt động CTXH theo tháng</h3>
-            <div className={cx('dashboard__year-buttons')}>
+            <h3 className={cx('dashboard__chart-title')}>Hoạt động CTXH theo tháng</h3>
+            <div className={cx('dashboard__chart-year-group')}>
               {[2022, 2023].map((y) => (
                 <button
                   key={y}
                   onClick={() => setYear(y)}
-                  className={cx('dashboard__year-btn', { 'dashboard__year-btn--active': year === y })}
+                  className={cx('dashboard__chart-year-chip', { 'dashboard__chart-year-chip--active': year === y })}
                 >
                   {y}
                 </button>
               ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData[year]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 30]} ticks={[0, 10, 20, 30]} />
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData[year]} barCategoryGap={18} barGap={6}>
+              <CartesianGrid stroke="#B3B3B3" strokeOpacity={0.35} vertical={false} />
+              <XAxis
+                dataKey="name"
+                tickLine={false}
+                axisLine={{ stroke: 'rgba(0,0,0,0.6)' }}
+                tick={{ fontSize: 12, fill: 'var(--black-color)' }}
+                dy={8}
+              />
+              <YAxis
+                domain={[0, 30]}
+                ticks={[0, 10, 20, 30]}
+                tickLine={false}
+                axisLine={{ stroke: 'rgba(0,0,0,0.6)' }}
+                tick={{ fontSize: 12, fill: 'var(--black-color)' }}
+                label={{
+                  value: 'Số lượng hoạt động',
+                  angle: -90,
+                  position: 'middle',
+                  style: { fill: 'rgba(0,0,0,0.6)', fontSize: 13, fontWeight: 500 },
+                }}
+              />
               <Tooltip />
-              <Legend />
-              <Bar dataKey="group1" name="Nhóm 1" fill="#00008b" />
-              <Bar dataKey="group2" name="Nhóm 2,3" fill="#ff5200" />
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                iconType="circle"
+                iconSize={10}
+                wrapperStyle={{ paddingTop: 14 }}
+              />
+              <Bar dataKey="group1" name="Hoạt động nhóm 1" fill="#00008B" barSize={12} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="group2" name="Hoạt động nhóm 2,3" fill="#FF5C00" barSize={12} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className={cx('dashboard__recent-box')}>
-          <h3>Hoạt động gần đây</h3>
+        <div className={cx('dashboard__recent')}>
+          <h3 className={cx('dashboard__recent-title')}>Hoạt động gần đây</h3>
           <ul className={cx('dashboard__recent-list')}>
             {recentActivities.map((item, idx) => (
               <li key={idx} className={cx('dashboard__recent-item')}>
@@ -130,16 +148,12 @@ export default function DashboardPage() {
             ))}
           </ul>
         </div>
-      </section>
 
-      {/* 5. Two Columns: Upcoming & Feedback */}
-      <section className={cx('dashboard__two-column')}>
-        {/* Upcoming Events */}
-        <div className={cx('dashboard__card')}>
-          <div className={cx('dashboard__card-header')}>
+        <div className={cx('dashboard__upcoming')}>
+          <div className={cx('dashboard__upcoming-header')}>
             <h3>Hoạt động sắp diễn ra</h3>
-            <a href="/upcoming" className={cx('dashboard__view-more')}>
-              Xem tất cả <ArrowRight size={14} />
+            <a href="/upcoming" className={cx('dashboard__upcoming-view-more')}>
+              Xem tất cả <FontAwesomeIcon icon={faArrowRight} />
             </a>
           </div>
           <div className={cx('dashboard__upcoming-list')}>
@@ -149,11 +163,11 @@ export default function DashboardPage() {
                 <p className={cx('dashboard__upcoming-location')}>{event.location}</p>
                 <div className={cx('dashboard__upcoming-footer')}>
                   <div className={cx('dashboard__upcoming-date')}>
-                    <Calendar size={14} />
+                    <FontAwesomeIcon icon={faCalendar} />
                     <span>{event.date}</span>
                   </div>
                   <div className={cx('dashboard__upcoming-participants')}>
-                    <Users size={14} />
+                    <FontAwesomeIcon icon={faUsers} />
                     <span>{event.participants} người</span>
                   </div>
                 </div>
@@ -162,12 +176,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Pending Feedback */}
-        <div className={cx('dashboard__card')}>
-          <div className={cx('dashboard__card-header')}>
+        <div className={cx('dashboard__feedback')}>
+          <div className={cx('dashboard__feedback-header')}>
             <h3>Phản hồi chờ xử lý</h3>
-            <a href="/pending" className={cx('dashboard__view-more')}>
-              Xem tất cả <ArrowRight size={14} />
+            <a href="/pending" className={cx('dashboard__feedback-view-more')}>
+              Xem tất cả <FontAwesomeIcon icon={faArrowRight} />
             </a>
           </div>
           <div className={cx('dashboard__feedback-list')}>
@@ -179,10 +192,19 @@ export default function DashboardPage() {
                   className={cx('dashboard__feedback-avatar')}
                 />
                 <div className={cx('dashboard__feedback-content')}>
-                  <strong className={cx('dashboard__feedback-name')}>{feedback.name}</strong>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <strong className={cx('dashboard__feedback-name')}>{feedback.name}</strong>
+                    <span className={cx('dashboard__feedback-time')}>{feedback.time}</span>
+                  </div>
                   <p className={cx('dashboard__feedback-message')}>{feedback.message}</p>
                 </div>
-                <span className={cx('dashboard__feedback-time')}>{feedback.time}</span>
               </div>
             ))}
           </div>

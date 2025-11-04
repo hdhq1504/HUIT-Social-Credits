@@ -16,7 +16,7 @@ import 'dayjs/locale/vi';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CardActivity, Label } from '@components/index';
-import useToast from '../../../components/Toast/Toast';
+import useToast from '@components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import styles from './MyActivitiesPage.module.scss';

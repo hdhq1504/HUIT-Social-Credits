@@ -1,35 +1,63 @@
 import React from 'react';
 import classNames from 'classnames/bind';
-import logoIcon from '@/assets/images/apple-touch-icon.png';
+import { Layout, Menu } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import logo from '@/assets/images/apple-touch-icon.png';
+import {
+  faGaugeHigh,
+  faClipboardCheck,
+  faComments,
+  faChartColumn,
+  faMedal,
+  faGear,
+  faHeart,
+  faCalendar,
+} from '@fortawesome/free-solid-svg-icons';
+import adminRoutes from '../../../routes/adminRoutes';
 import styles from './AdminSidebar.module.scss';
 
 const cx = classNames.bind(styles);
+const { Sider } = Layout;
 
-export default function AdminSidebar({ items, activePath, isOpen, onNavigate }) {
+const iconByKey = {
+  dashboard: faGaugeHigh,
+  activities: faHeart,
+  scoring: faCalendar,
+  proof: faClipboardCheck,
+  feedback: faComments,
+  reports: faChartColumn,
+  council: faMedal,
+  system: faGear,
+};
+
+function AdminSidebar({ activePath, isOpen = true, onNavigate = () => {} }) {
+  const routes = (adminRoutes ?? []).filter((r) => iconByKey[r.path]);
+
+  const menuItems = routes.map((r) => ({
+    key: r.fullPath,
+    label: r.label,
+    className: cx('sidebar__item', activePath === r.fullPath ? 'sidebar__item--active' : 'sidebar__item--neutral'),
+    icon: <FontAwesomeIcon icon={iconByKey[r.path]} fixedWidth />,
+  }));
+
+  const selected = activePath ? [activePath] : routes.length ? [routes[0].fullPath] : [];
+
   return (
-    <aside className={cx('admin-sidebar', { 'admin-sidebar--open': isOpen, 'admin-sidebar--closed': !isOpen })}>
-      <div className={cx('admin-sidebar__logo')}>
-        <img src={logoIcon} alt="HUIT E_L" className={cx('admin-sidebar__logo-image')} />
-        <span className={cx('admin-sidebar__logo-text')}>ADMIN</span>
+    <Sider width={250} collapsible collapsed={!isOpen} trigger={null} className={cx('sidebar__sider')}>
+      <div className={cx('sidebar__logo')}>
+        <img src={logo} alt="" aria-hidden="true" />
+        {isOpen && <div className={cx('sidebar__brand')}>ADMIN</div>}
       </div>
 
-      <ul className={cx('admin-sidebar__menu')}>
-        {items.map((item) => {
-          const IconComponent = item.icon;
-          const isActive = item.path === activePath;
-
-          return (
-            <li
-              key={item.path}
-              className={cx('admin-sidebar__menu-item', { 'admin-sidebar__menu-item--active': isActive })}
-              onClick={() => onNavigate(item.path)}
-            >
-              <IconComponent size={18} className={cx('admin-sidebar__menu-icon')} />
-              <span className={cx('admin-sidebar__menu-text')}>{item.label}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </aside>
+      <Menu
+        mode="inline"
+        selectedKeys={selected}
+        onClick={(e) => onNavigate?.(e.key)}
+        items={menuItems}
+        className={cx('sidebar__menu')}
+      />
+    </Sider>
   );
 }
+
+export default AdminSidebar;
