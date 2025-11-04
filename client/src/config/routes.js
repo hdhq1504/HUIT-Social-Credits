@@ -2,6 +2,8 @@ const routes = {
   home: '/',
   login: '/login',
   forgotPassword: '/forgot-password',
+
+  // Sinh viên
   profile: '/profile',
   listActivities: '/list-activities',
   activityDetail: '/activity-detail',
@@ -11,6 +13,12 @@ const routes = {
   rollCall: '/roll-call',
   feedback: '/feedback',
   loading: '/loading',
+
+  // Admin
+  adminDashboard: '/admin/dashboard',
+  adminActivities: '/admin/activities',
+  adminScoring: '/admin/scoring',
+  adminProof: '/admin/proof',
 };
 
 export default routes;

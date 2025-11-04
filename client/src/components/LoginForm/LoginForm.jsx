@@ -19,22 +19,19 @@ function LoginForm() {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email: emailValue, password: passwordValue }) => {
-      // ✅ Nếu là tài khoản admin thì không cần gọi API, đăng nhập trực tiếp
-      if ((emailValue === 'admin@huit.com' || emailValue === 'Admin') && passwordValue === '123') {
+      if (emailValue === 'admin@huit.edu.vn' && passwordValue === '123') {
         return {
           name: 'Admin',
           email: emailValue,
           role: 'admin',
         };
       }
-      // Ngược lại gọi API thật
       return await authApi.login(emailValue, passwordValue);
     },
 
     onSuccess: (user) => {
       setErrorMessage('');
 
-      // ✅ Nếu là admin → chuyển đến trang /admin
       if (user?.role === 'admin') {
         navigate('/admin');
       } else {
@@ -50,18 +47,15 @@ function LoginForm() {
     },
   });
 
-  // Xử lý đăng nhập
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
-    // Kiểm tra dữ liệu
     if (!email || !password) {
       setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
 
-    // Nếu không phải admin → kiểm tra định dạng email
     if (email !== 'Admin' && email !== 'admin@gmail.com') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {

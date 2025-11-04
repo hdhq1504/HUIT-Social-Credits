@@ -1,11 +1,1 @@
-export { default as ActivityDetailPage } from './ActivityDetailPage/ActivityDetailPage';
-export { default as FeedbackPage } from './FeedbackPage/FeedbackPage';
-export { default as ForgotPasswordPage } from './ForgotPasswordPage/ForgotPasswordPage';
-export { default as HomePage } from './HomePage/HomePage';
-export { default as ListActivitiesPage } from './ListActivitiesPage/ListActivitiesPage';
-export { default as Loading } from './Loading/Loading';
-export { default as LoginPage } from './LoginPage/LoginPage';
-export { default as MyActivitiesPage } from './MyActivitiesPage/MyActivitiesPage';
-export { default as MyPointsPage } from './MyPointsPage/MyPointsPage';
-export { default as ProfilePage } from './ProfilePage/ProfilePage';
-export { default as RollCallPage } from './RollCallPage/RollCallPage';
+export * from '../user/pages';

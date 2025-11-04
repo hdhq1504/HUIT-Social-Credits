@@ -1,10 +1,12 @@
 import React, { Fragment } from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { NotFound, ScrollToTop } from '@components/index';
+import NotFound from './components/NotFound';
+import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AuthProvider from './context/AuthProvider';
-import DefaultLayout from './layouts/DefaultLayout/DefaultLayout';
 import { publicRoutes } from './routes/routes';
+import AdminLayout from '@admin/layouts/AdminLayout/AdminLayout.jsx';
+import { DashboardPage, ActivitiesPage, ScoringPage, ProofPage } from '@admin/pages/index';
 
 const queryClient = new QueryClient();
 
@@ -13,21 +15,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider />
+
         <Routes>
           {publicRoutes.map((route, index) => {
             const Page = route.component;
 
-            let Layout = DefaultLayout;
-
-            if (route.layout) {
-              Layout = route.layout;
-            } else if (route.layout === null) {
-              Layout = Fragment;
-            }
+            const Layout = route.layout ?? Fragment;
 
             return (
               <Route
-                key={index}
+                key={`public-${index}`}
                 path={route.path}
                 element={
                   <Layout>
@@ -38,12 +35,20 @@ function App() {
             );
           })}
 
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="activities" element={<ActivitiesPage />} />
+            <Route path="scoring" element={<ScoringPage />} />
+            <Route path="proof" element={<ProofPage />} />
+          </Route>
+
           <Route
             path="*"
             element={
-              <DefaultLayout>
+              <Fragment>
                 <NotFound />
-              </DefaultLayout>
+              </Fragment>
             }
           />
         </Routes>
@@ -51,6 +56,7 @@ function App() {
         <div>
           <ScrollToTop />
         </div>
+        <ScrollToTop />
       </Router>
     </QueryClientProvider>
   );
