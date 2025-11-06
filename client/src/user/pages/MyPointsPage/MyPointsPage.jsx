@@ -12,6 +12,7 @@ import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './MyPointsPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -243,7 +244,7 @@ function MyPointsPage() {
         {/* Header */}
         <header className={cx('my-points__header')}>
           <nav className={cx('my-points__breadcrumb')} aria-label="Breadcrumb">
-            <Link to="/">Trang chủ</Link> / <span>Kết quả của tôi</span>
+            <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Kết quả của tôi</span>
           </nav>
 
           <Label title="Kết quả" highlight="của tôi" leftDivider={false} rightDivider showSubtitle={false} />

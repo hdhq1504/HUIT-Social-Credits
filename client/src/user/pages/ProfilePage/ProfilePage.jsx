@@ -7,9 +7,10 @@ import dayjs from 'dayjs';
 import { ChangePasswordModal, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import Loading from '../Loading/Loading';
-import styles from './ProfilePage.module.scss';
 import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import styles from './ProfilePage.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -118,7 +119,7 @@ function ProfilePage() {
       {contextHolder}
       <header className={cx('profile-page__header')}>
         <nav className={cx('profile-page__breadcrumb')} aria-label="Breadcrumb">
-          <Link to="/">Trang chủ</Link> / <span>Thông tin</span>
+          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Thông tin</span>
         </nav>
 
         <Label title="Thông tin" highlight="sinh viên" leftDivider={false} rightDivider showSubtitle={false} />

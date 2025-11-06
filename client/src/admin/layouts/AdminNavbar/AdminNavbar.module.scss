@@ -3,6 +3,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
+  margin-bottom: 20px;
   background: var(--white-color, #fff);
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -12,61 +13,84 @@
   &__title {
     font-size: 20px;
     font-weight: 600;
+    font-family: 'Roboto Condensed', sans-serif;
   }
-}
 
-.admin-navbar__breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-}
+  &__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
 
-.admin-navbar__breadcrumb-home {
-  color: var(--primary-color);
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
+    &-home {
+      color: var(--primary-color);
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
 
-.admin-navbar__breadcrumb-home:hover {
-  color: #0044cc;
-}
+    &-home:hover {
+      color: #0044cc;
+    }
 
-.admin-navbar__breadcrumb-slash {
-  color: var(--primary-color);
-}
-
-.admin-navbar__breadcrumb-current {
-  color: var(--border-color);
-  font-weight: 500;
-  transition: all 0.3s ease;
-  animation: admin-navbarFadeIn 0.3s;
-}
-
-/* Fade-in animation */
-@keyframes admin-navbarFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
+    &-slash {
+      color: var(--primary-color);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  &__add-button {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 15px;
+    color: var(--white-color);
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background: #d49f33;
+    }
   }
-}
 
-.admin-navbar__add-button {
-  background: var(--primary-color);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 15px;
-  color: var(--white-color);
-  cursor: pointer;
-  transition: 0.2s;
-}
+  &__btn {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    height: auto;
+    border-radius: 8px;
 
-.admin-navbar__addButton:hover {
-  background: #d49f33;
+    &--orange {
+      background: var(--Text-Orange, #ff5c00);
+      border-color: var(--Text-Orange, #ff5c00);
+      color: white;
+      
+      &:hover {
+        background: #e65100 !important;
+        border-color: #e65100 !important;
+      }
+    }
+
+    &--danger-outline {
+      background: var(--Bg-White, white);
+      border-color: var(--Danger, #dc3545);
+      color: var(--Danger, #dc3545);
+      
+      &:hover {
+        background: #fff5f5 !important;
+        border-color: #ff4d4f !important;
+        color: #ff4d4f !important;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+  }
 }

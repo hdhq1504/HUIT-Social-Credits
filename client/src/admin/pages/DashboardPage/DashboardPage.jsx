@@ -1,39 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight, faCalendar, faCalendarCheck, faComments, faSearch, faUsers } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowRight,
+  faCalendar,
+  faCalendarCheck,
+  faComments,
+  faUsers,
+  faPlus,
+  faSpinner,
+  faCheck,
+} from '@fortawesome/free-solid-svg-icons';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import AdminSearchBar from '../../layouts/AdminSearchBar/AdminSearchBar';
+import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
 import styles from './DashboardPage.module.scss';
-import { chartData, recentActivities, upcomingEvents, pendingFeedback } from './DashboardPageData.jsx';
-import { TextAlignCenter } from 'lucide-react';
 
 const cx = classNames.bind(styles);
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
+
+const chartData = {
+  2022: [
+    { name: 'T1', group1: 10, group2: 5 },
+    { name: 'T2', group1: 12, group2: 7 },
+  ],
+  2023: [
+    { name: 'T1', group1: 15, group2: 10 },
+    { name: 'T2', group1: 18, group2: 12 },
+    { name: 'T3', group1: 20, group2: 15 },
+    { name: 'T4', group1: 17, group2: 11 },
+    { name: 'T5', group1: 22, group2: 18 },
+    { name: 'T6', group1: 25, group2: 20 },
+  ],
+};
+const upcomingEvents = [
+  {
+    title: 'Chiến dịch Mùa Hè Xanh 2024',
+    location: 'Huyện Cần Giờ, TP.HCM',
+    date: '15/07/2024',
+    participants: 120,
+  },
+];
+const pendingFeedback = [
+  {
+    name: 'Nguyễn Văn A',
+    message: 'Xin chào, tôi đã tham gia...',
+    time: '2 giờ trước',
+  },
+];
 
 export default function DashboardPage() {
   const [year, setYear] = useState(2023);
+  const setPageActions = useContext(AdminPageContext);
+  const navigate = useNavigate();
+
+  const { data: recentActivities, isLoading: isLoadingRecent } = useQuery({
+    queryKey: [DASHBOARD_QUERY_KEY, 'recent'],
+    queryFn: activitiesApi.getRecent,
+  });
+
+  useEffect(() => {
+    setPageActions([
+      {
+        key: 'add',
+        label: 'Thêm mới hoạt động mới',
+        icon: <FontAwesomeIcon icon={faPlus} />,
+        type: 'primary',
+        className: 'admin-navbar__add-button',
+        onClick: () => navigate(ROUTE_PATHS.ADMIN.ACTIVITY_CREATE),
+      },
+    ]);
+
+    return () => setPageActions(null);
+  }, [setPageActions, navigate]);
+
+  const renderRecentActivities = () => {
+    if (isLoadingRecent) {
+      return (
+        <li className={cx('dashboard__recent-item')} style={{ justifyContent: 'center' }}>
+          <FontAwesomeIcon icon={faSpinner} spin />
+          <span style={{ marginLeft: 8 }}>Đang tải...</span>
+        </li>
+      );
+    }
+
+    if (!recentActivities || recentActivities.length === 0) {
+      return <li className={cx('dashboard__recent-item')}>Không có hoạt động gần đây.</li>;
+    }
+
+    // -----
+    // TODO: Khi API của bạn trả về một "luồng thông báo" (thay vì chỉ hoạt động)
+    // Bạn cần cập nhật logic map dữ liệu và hàm getIconForActivity() bên dưới
+    // -----
+
+    // Hàm helper để chọn icon và style dựa trên loại
+    const getIconForActivity = (activity) => {
+      const type = activity.type || 'CREATED';
+
+      switch (type) {
+        case 'COMPLETED':
+          return {
+            icon: faCheck,
+            className: '--complete',
+          };
+        case 'REGISTERED':
+          return {
+            icon: faUsers,
+            className: '--register',
+          };
+        case 'CREATED':
+        default:
+          return {
+            icon: faPlus,
+            className: '--create',
+          };
+      }
+    };
+
+    const mappedActivities = recentActivities.map((activity) => {
+      const iconInfo = getIconForActivity(activity);
+      return {
+        id: activity.id,
+        icon: iconInfo.icon,
+        iconClassName: iconInfo.className,
+        title: `Tạo hoạt động mới "${activity.title || 'Hoạt động'}"`,
+        desc: activity.description || `Hoạt động mới với sức chứa ${activity.maxCapacity || '...'} người.`,
+        time: activity.createdAt ? dayjs(activity.createdAt).fromNow() : 'Vừa xong',
+      };
+    });
+
+    return mappedActivities.map((item) => (
+      <li key={item.id} className={cx('dashboard__recent-item')}>
+        <div className={cx('dashboard__recent-icon-wrapper', item.iconClassName)}>
+          <FontAwesomeIcon icon={item.icon} />
+        </div>
+
+        <div className={cx('dashboard__recent-content')}>
+          <div className={cx('dashboard__recent-top')}>
+            <strong className={cx('dashboard__recent-title', 'dashboard__truncate')}>{item.title}</strong>
+            <span className={cx('dashboard__recent-time')}>{item.time}</span>
+          </div>
+          <p className={cx('dashboard__recent-desc', 'dashboard__truncate')}>{item.desc}</p>
+        </div>
+      </li>
+    ));
+  };
 
   return (
     <div className={cx('dashboard')}>
       {/* Filter search bar */}
-      <section className={cx('dashboard__filter-bar')}>
-        <input type="text" placeholder="Tìm kiếm hoạt động..." className={cx('dashboard__search-input')} />
-        <select className={cx('dashboard__select')}>
-          <option>Chọn học kỳ</option>
-          <option>Học kỳ 1</option>
-          <option>Học kỳ 2</option>
-        </select>
-        <select className={cx('dashboard__select')}>
-          <option>Chọn năm học</option>
-          <option>2024 - 2025</option>
-          <option>2025 - 2026</option>
-        </select>
-        <select className={cx('dashboard__select')}>
-          <option>Tất cả khoa</option>
-          <option>CNTT</option>
-          <option>Kinh tế</option>
-        </select>
-        <button className={cx('dashboard__filter-btn')}><FontAwesomeIcon icon={faSearch} /> Lọc</button>
-      </section>
+      <AdminSearchBar
+        facultyOptions={[
+          { value: 'all', label: 'Tất cả khoa' },
+          { value: 'cntt', label: 'Khoa CNTT' },
+          { value: 'kt', label: 'Khoa Kế toán' },
+        ]}
+      />
 
       {/* Quick stats */}
       <section className={cx('dashboard__stats')}>
@@ -135,18 +265,7 @@ export default function DashboardPage() {
 
         <div className={cx('dashboard__recent')}>
           <h3 className={cx('dashboard__recent-title')}>Hoạt động gần đây</h3>
-          <ul className={cx('dashboard__recent-list')}>
-            {recentActivities.map((item, idx) => (
-              <li key={idx} className={cx('dashboard__recent-item')}>
-                <div className={cx('dashboard__recent-icon')}>{item.icon}</div>
-                <div className={cx('dashboard__recent-content')}>
-                  <strong>{item.title}</strong>
-                  <p className={cx('dashboard__recent-desc', 'dashboard__truncate')}>{item.desc}</p>
-                </div>
-                <div className={cx('dashboard__recent-time')}>{item.time}</div>
-              </li>
-            ))}
-          </ul>
+          <ul className={cx('dashboard__recent-list')}>{renderRecentActivities()}</ul>
         </div>
 
         <div className={cx('dashboard__upcoming')}>

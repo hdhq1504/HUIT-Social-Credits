@@ -19,6 +19,7 @@ import { CardActivity, Label } from '@components/index';
 import useToast from '@components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -378,7 +379,7 @@ function MyActivitiesPage() {
           {/* Header */}
           <header className={cx('my-activities__header')}>
             <nav className={cx('my-activities__header-breadcrumb')} aria-label="Breadcrumb">
-              <Link to="/">Trang chủ</Link> / <span>Hoạt động của tôi</span>
+              <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Hoạt động của tôi</span>
             </nav>
 
             <Label title="Hoạt động" highlight="của tôi" leftDivider={false} rightDivider showSubtitle={false} />

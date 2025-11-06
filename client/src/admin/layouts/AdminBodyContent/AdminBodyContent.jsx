@@ -5,12 +5,14 @@ import styles from './AdminBodyContent.module.scss';
 
 const cx = classNames.bind(styles);
 
-function AdminBodyContent({ children, pageTitle }) {
+function AdminBodyContent({ pageTitle, pageActions, children }) {
   return (
-    <div className={cx('admin-body')}>
-      <AdminNavbar currentPage={pageTitle} />
-      <div className={cx('admin-body__content')}>{children}</div>
-    </div>
+    <main className={cx('admin-body')}>
+      <div className={cx('admin-body__content')}>
+        <AdminNavbar currentPage={pageTitle} actions={pageActions} />
+        {children}
+      </div>
+    </main>
   );
 }
 

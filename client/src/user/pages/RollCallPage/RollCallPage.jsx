@@ -9,6 +9,7 @@ import { CardActivity, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -365,7 +366,7 @@ function RollCallPage() {
       <div className={cx('roll-call__container')}>
         <header className={cx('roll-call__header')}>
           <nav className={cx('roll-call__header-breadcrumb')} aria-label="Breadcrumb">
-            <Link to="/">Trang chủ</Link> / <span>Điểm danh</span>
+            <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Điểm danh</span>
           </nav>
           <Label title="Điểm danh" highlight="hoạt động" leftDivider={false} rightDivider showSubtitle={false} />
         </header>

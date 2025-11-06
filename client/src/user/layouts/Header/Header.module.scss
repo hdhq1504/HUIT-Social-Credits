@@ -375,13 +375,3 @@
     }
   }
 }
-
-:global {
-  body {
-    padding-top: 5px;
-
-    @media (max-width: 768px) {
-      padding-top: 60px;
-    }
-  }
-}

@@ -13,7 +13,6 @@ import {
   faHeart,
   faCalendar,
 } from '@fortawesome/free-solid-svg-icons';
-import adminRoutes from '../../../routes/adminRoutes';
 import styles from './AdminSidebar.module.scss';
 
 const cx = classNames.bind(styles);
@@ -30,17 +29,17 @@ const iconByKey = {
   system: faGear,
 };
 
-function AdminSidebar({ activePath, isOpen = true, onNavigate = () => {} }) {
-  const routes = (adminRoutes ?? []).filter((r) => iconByKey[r.path]);
+function AdminSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {} }) {
+  const menuItems = items
+    .filter((item) => iconByKey[item.iconKey])
+    .map((item) => ({
+      key: item.path,
+      label: item.label,
+      className: cx('sidebar__item', activePath === item.path ? 'sidebar__item--active' : 'sidebar__item--neutral'),
+      icon: <FontAwesomeIcon icon={iconByKey[item.iconKey]} fixedWidth />,
+    }));
 
-  const menuItems = routes.map((r) => ({
-    key: r.fullPath,
-    label: r.label,
-    className: cx('sidebar__item', activePath === r.fullPath ? 'sidebar__item--active' : 'sidebar__item--neutral'),
-    icon: <FontAwesomeIcon icon={iconByKey[r.path]} fixedWidth />,
-  }));
-
-  const selected = activePath ? [activePath] : routes.length ? [routes[0].fullPath] : [];
+  const selected = activePath ? [activePath] : items.length ? [items[0].path] : [];
 
   return (
     <Sider width={250} collapsible collapsed={!isOpen} trigger={null} className={cx('sidebar__sider')}>

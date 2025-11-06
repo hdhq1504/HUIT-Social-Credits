@@ -1,128 +1,322 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Trash2, Edit3, CalendarDays, Users, MapPin, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import styles from './ActivityDetailPage.module.scss';
-import TabContent from './ActivityDetailPageData';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Tabs, Row, Col, Tag, Image, Spin, Empty, Modal, ConfigProvider } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faUser,
+  faClock,
+  faMapPin,
+  faCalendarDay,
+  faStar,
+  faUsers,
+  faCircleCheck,
+  faTriangleExclamation,
+  faListCheck,
+  faPenToSquare,
+  faTrashAlt,
+  faCircleDot,
+  faClipboardList,
+} from '@fortawesome/free-solid-svg-icons';
+import dayjs from 'dayjs';
+import viVN from 'antd/locale/vi_VN';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
+import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
+import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
+import useToast from '@/components/Toast/Toast';
+import styles from './ActivitiesDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
+const { TabPane } = Tabs;
 
-const ActivityDetailPage = ({ onBackToList }) => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('info'); // info | students | feedback
+// === Helpers ===
+const formatDateTime = (isoString, format = 'HH:mm [ngày] DD/MM/YYYY') => {
+  if (!isoString) return '--';
+  return dayjs(isoString).format(format);
+};
 
-  const handleBack = () => {
-    if (onBackToList) onBackToList();
-    else navigate('/activities');
-  };
+const getStatusTag = (status) => {
+  switch (status) {
+    case 'ongoing':
+    case 'attendance_open':
+    case 'confirm_in':
+    case 'confirm_out':
+      return (
+        <Tag className={cx('activity-detail__status-tag', '--ongoing')}>
+          <FontAwesomeIcon icon={faCircleDot} />
+          Đang diễn ra
+        </Tag>
+      );
+    case 'upcoming':
+    case 'registered':
+    case 'attendance_closed':
+      return (
+        <Tag className={cx('activity-detail__status-tag', '--upcoming')}>
+          <FontAwesomeIcon icon={faCircleDot} />
+          Sắp diễn ra
+        </Tag>
+      );
+    case 'ended':
+    case 'feedback_pending':
+    case 'feedback_reviewing':
+    case 'feedback_accepted':
+      return (
+        <Tag className={cx('activity-detail__status-tag', '--ended')}>
+          <FontAwesomeIcon icon={faCircleDot} />
+          Đã kết thúc
+        </Tag>
+      );
+    default:
+      return <Tag>{status || 'Không rõ'}</Tag>;
+  }
+};
 
-  const tabs = [
-    { id: 'info', label: 'Thông tin chi tiết' },
-    { id: 'students', label: 'Sinh viên tham gia' },
-    { id: 'feedback', label: 'Nhật ký phản hồi' },
-  ];
+// Component con cho các ô thông tin
+const InfoItem = ({ icon, label, value }) => (
+  <div className={cx('activity-detail__item')}>
+    <div className={cx('activity-detail__item-icon-wrapper')}>
+      <FontAwesomeIcon icon={icon} className={cx('activity-detail__item-icon')} />
+    </div>
+    <div className={cx('activity-detail__item-text')}>
+      <span className={cx('activity-detail__item-label')}>{label}</span>
+      <p className={cx('activity-detail__item-value')}>{value}</p>
+    </div>
+  </div>
+);
+
+const DetailListSection = ({ title, items, icon, iconClass }) => {
+  const listItems = useMemo(() => {
+    if (!items || items.length === 0) {
+      return <li className={cx('activity-detail__list-item', '--empty')}>Không có thông tin.</li>;
+    }
+    return items.map((item, index) => (
+      <li key={index} className={cx('activity-detail__list-item')}>
+        <FontAwesomeIcon icon={icon} className={cx('activity-detail__list-icon', iconClass)} />
+        <span>{item}</span>
+      </li>
+    ));
+  }, [items, icon, iconClass]);
 
   return (
-    <div className={cx('activity-detail')}>
-      {/* ===== HEADER ===== */}
-      <header className={cx('activity-detail__header')}>
-        <button className={cx('activity-detail__back-btn')} onClick={handleBack}>
-          <ArrowLeft size={18} />
-          <span>Chi tiết hoạt động</span>
-        </button>
-
-        <div className={cx('activity-detail__actions')}>
-          <button className={cx('activity-detail__btn', 'activity-detail__btn--delete')}>
-            <Trash2 size={16} />
-            <span>Xóa</span>
-          </button>
-
-          <button className={cx('activity-detail__btn', 'activity-detail__btn--edit')}>
-            <Edit3 size={16} />
-            <span>Chỉnh sửa</span>
-          </button>
-        </div>
-      </header>
-
-      {/* ===== CARD (THÔNG TIN CHUNG) ===== */}
-      <section className={cx('activity-detail__card')}>
-        <div className={cx('activity-detail__image')}>
-          <img src="https://via.placeholder.com/220" alt="Hoạt động tình nguyện" />
-        </div>
-
-        <div className={cx('activity-detail__info')}>
-          <h2 className={cx('activity-detail__title')}>Hoạt động tình nguyện tại viện dưỡng lão Thành phố</h2>
-
-          <div className={cx('activity-detail__meta')}>
-            <span className={cx('activity-detail__badge')}>Tình nguyện xã hội</span>
-            <span className={cx('activity-detail__points')}>🌟 60 điểm</span>
-          </div>
-
-          <div className={cx('activity-detail__grid')}>
-            <div className={cx('activity-detail__item')}>
-              <strong>Người phụ trách:</strong>
-              <p>TS. Nguyễn Văn An</p>
-            </div>
-
-            <div className={cx('activity-detail__item')}>
-              <strong>Hạn đăng ký:</strong>
-              <p>
-                <CalendarDays size={14} /> 23:59, 10/12/2024
-              </p>
-            </div>
-
-            <div className={cx('activity-detail__item')}>
-              <strong>Thời gian:</strong>
-              <p>
-                <Clock size={14} /> 08:00 - 17:00, 15/12/2024
-              </p>
-            </div>
-
-            <div className={cx('activity-detail__item')}>
-              <strong>Số lượng:</strong>
-              <p>
-                <Users size={14} /> 45/50 sinh viên
-              </p>
-            </div>
-
-            <div className={cx('activity-detail__item')}>
-              <strong>Địa điểm:</strong>
-              <p>
-                <MapPin size={14} /> Viện dưỡng lão TP. HCM
-              </p>
-            </div>
-
-            <div className={cx('activity-detail__item')}>
-              <strong>Trạng thái:</strong>
-              <p>
-                <span className={cx('activity-detail__status')}>🟡 Đang diễn ra</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== TABS ===== */}
-      <nav className={cx('activity-detail__tabs')}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={cx('activity-detail__tab', {
-              'activity-detail__tab--active': activeTab === tab.id,
-            })}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      {/* ===== TAB CONTENT ===== */}
-      <div className={cx('activity-detail__content')}>
-        <TabContent activeTab={activeTab} styles={styles} />
-      </div>
+    <div className={cx('activity-detail__list-section')}>
+      <h3 className={cx('activity-detail__list-title')}>{title}</h3>
+      <ul className={cx('activity-detail__list')}>{listItems}</ul>
     </div>
   );
 };
 
-export default ActivityDetailPage;
+function ActivitiesDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const setPageActions = useContext(AdminPageContext);
+  const { contextHolder, open: openToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: activity,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [ACTIVITIES_QUERY_KEY, 'detail', id],
+    queryFn: () => activitiesApi.detail(id),
+    enabled: !!id,
+  });
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: 'Bạn có chắc chắn muốn xóa?',
+      content: `Hoạt động "${activity.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.`,
+      okText: 'Xác nhận Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          // await activitiesApi.delete(id);
+          openToast({ message: 'Xóa hoạt động thành công!', variant: 'success' });
+          queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
+          navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
+        } catch {
+          openToast({ message: 'Xóa thất bại, vui lòng thử lại.', variant: 'danger' });
+        }
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (activity) {
+      setPageActions([
+        {
+          key: 'delete',
+          label: 'Xóa hoạt động',
+          icon: <FontAwesomeIcon icon={faTrashAlt} />,
+          type: 'default',
+          danger: true,
+          className: 'admin-navbar__btn--danger-outline',
+          onClick: handleDelete,
+        },
+        {
+          key: 'edit',
+          label: 'Chỉnh sửa',
+          icon: <FontAwesomeIcon icon={faPenToSquare} />,
+          type: 'primary',
+          className: 'admin-navbar__btn--orange',
+          onClick: () => navigate(buildPath.adminActivityEdit(id)),
+        },
+      ]);
+    }
+    return () => setPageActions(null);
+  }, [setPageActions, navigate, id, activity]);
+
+  const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
+  const responsibilityItems = useMemo(
+    () => normalizeStringItems(activity?.responsibilities),
+    [activity?.responsibilities],
+  );
+  const requirementItems = useMemo(() => normalizeStringItems(activity?.requirements), [activity?.requirements]);
+  const guideSteps = useMemo(() => normalizeGuideItems(activity?.guidelines), [activity?.guidelines]);
+
+  const buildListItemKey = useCallback((item, index) => {
+    const rawKey = typeof item === 'string' ? item : item?.content || item?.title || index;
+    return `${index}-${String(rawKey).slice(0, 30)}`;
+  }, []);
+
+  const renderListSection = useCallback(
+    (items, emptyDescription, icon, iconClass) =>
+      items.length ? (
+        <ul className={cx('activity-detail__list')}>
+          {items.map((item, index) => (
+            <li key={buildListItemKey(item, index)} className={cx('activity-detail__list-item')}>
+              <FontAwesomeIcon icon={icon} className={cx('activity-detail__list-icon', iconClass)} />
+              {typeof item === 'string' ? (
+                <span>{item}</span>
+              ) : (
+                <div>
+                  {item.title && <strong className={cx('activity-detail__list-item-title')}>{item.title}</strong>}
+                  <span>{item.content}</span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ),
+    [buildListItemKey],
+  );
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isError || !activity) {
+    return <Empty description="Không tìm thấy dữ liệu hoạt động" style={{ marginTop: '10vh' }} />;
+  }
+
+  return (
+    <ConfigProvider locale={viVN}>
+      {contextHolder}
+      <div className={cx('activity-detail')}>
+        <section className={cx('activity-detail__card')}>
+          <Row gutter={[20, 20]}>
+            <Col xs={24} md={8} lg={6}>
+              <Image
+                src={activity.coverImage || 'https://placehold.co/250x250/eeee/00008B?text=HUIT'}
+                alt={activity.title}
+                className={cx('activity-detail__image')}
+                preview={false}
+              />
+            </Col>
+            <Col xs={24} md={16} lg={18}>
+              <div className={cx('activity-detail__info')}>
+                <h2 className={cx('activity-detail__title')}>{activity.title}</h2>
+                <div className={cx('activity-detail__meta')}>
+                  <Tag className={cx('activity-detail__badge')}>{activity.category || 'Hoạt động'}</Tag>
+                  <span className={cx('activity-detail__points')}>
+                    <FontAwesomeIcon icon={faStar} /> {activity.points || 0} điểm
+                  </span>
+                </div>
+
+                <Row gutter={[16, 16]} className={cx('activity-detail__grid')}>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faUser} label="Người phụ trách" value={activity.organizer || 'TS. Nguyễn Văn An'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem
+                      icon={faCalendarDay}
+                      label="Hạn đăng ký"
+                      value={formatDateTime(activity.registrationDeadline, 'HH:mm, DD/MM/YYYY') || '--'}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faClock} label="Thời gian" value={activity.dateTime || '--'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faUsers} label="Số lượng tham gia" value={activity.capacity || '0/0'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faMapPin} label="Địa điểm" value={activity.location || '--'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <div className={cx('activity-detail__item')}>
+                      <div className={cx('activity-detail__item-icon-wrapper')}>
+                        <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__item-icon')} />
+                      </div>
+                      <div className={cx('activity-detail__item-text')}>
+                        <span className={cx('activity-detail__item-label')}>Trạng thái</span>
+                        <div className={cx('activity-detail__item-value')}>{getStatusTag(activity.state)}</div>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+            </Col>
+          </Row>
+        </section>
+
+        <section className={cx('activity-detail__content-box')}>
+          <Row gutter={[32, 24]}>
+            <Col xs={24} lg={24}>
+              <DetailListSection title="Mô tả" items={activity.description ? [activity.description] : []} />
+            </Col>
+            <Col xs={24} lg={12}>
+              <DetailListSection
+                title="Quyền lợi khi tham gia"
+                items={benefitItems}
+                icon={faCircleCheck}
+                iconClass="--success"
+              />
+              <DetailListSection
+                title="Trách nhiệm của người tham gia"
+                items={responsibilityItems}
+                icon={faTriangleExclamation}
+                iconClass="--warning"
+              />
+            </Col>
+          </Row>
+        </section>
+
+        <div className={cx('activity-detail__tabs-container')}>
+          <Tabs defaultActiveKey="requirements" className={cx('activity-detail__tabs')}>
+            <TabPane tab="Giới thiệu chi tiết" key="requirements" className={cx('activity-detail__tab-pane')}>
+              <h3 className={cx('activity-detail__list-title')}>Yêu cầu tham gia</h3>
+              {renderListSection(requirementItems, 'Chưa có yêu cầu tham gia', faListCheck, '--primary')}
+            </TabPane>
+
+            <TabPane tab="Hướng dẫn tham gia" key="guide" className={cx('activity-detail__tab-pane')}>
+              <h3 className={cx('activity-detail__list-title')}>Quy trình tham gia</h3>
+              {renderListSection(guideSteps, 'Chưa có hướng dẫn tham gia', faClipboardList, '--primary')}
+            </TabPane>
+          </Tabs>
+        </div>
+      </div>
+    </ConfigProvider>
+  );
+}
+
+export default ActivitiesDetailPage;

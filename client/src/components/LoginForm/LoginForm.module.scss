@@ -1,16 +1,10 @@
 .login-form {
-  width: var(--content-width);
-  margin: 74px auto 0 auto;
-
-  @media (max-width: 1024px) and (min-width: 769px) {
-    width: 85%;
-    margin: 64px auto 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    width: 95%;
-    margin: 20px auto 0 auto;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - var(--header-height, 80px));
+  padding: 40px 20px;
 
   &__breadcrumb {
     font-size: 14px;
@@ -48,21 +42,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+
+    width: 100%;
+    max-width: var(--content-width);
 
     @media (max-width: 1024px) and (min-width: 769px) {
       flex-direction: row;
       align-items: stretch;
+      max-width: 85%;
     }
 
     @media (max-width: 768px) {
       flex-direction: column;
       align-items: stretch;
+      max-width: 95%;
     }
 
     @media (max-width: 480px) {
       border-radius: 8px;
-      margin-bottom: 15px;
     }
   }
 
@@ -134,7 +131,6 @@
       margin-top: 4px;
     }
 
-    // Responsive padding cho tablet
     @media (max-width: 1024px) and (min-width: 769px) {
       padding: 35px 30px;
 
@@ -143,7 +139,6 @@
       }
     }
 
-    // Responsive padding cho mobile
     @media (max-width: 768px) {
       padding: 30px 20px;
 
@@ -207,7 +202,6 @@
       color: var(--black-color);
     }
 
-    // Responsive cho tablet
     @media (max-width: 1024px) and (min-width: 769px) {
       input {
         width: 16px;
@@ -295,7 +289,7 @@
   }
 
   &__error {
-    color: #e74c3c;
+    color: var(--danger-color);
     font-size: 13px;
     margin-top: 8px;
     text-align: center;
@@ -313,8 +307,8 @@
 }
 
 @media (max-width: 1200px) and (min-width: 1025px) {
-  .login-form {
-    width: 90%;
+  .login-form__card {
+    max-width: 90%;
   }
 
   .login-from__card .login-form__banner-title {

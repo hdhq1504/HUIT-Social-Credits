@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, MapPin } from 'lucide-react';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import classNames from 'classnames/bind';
 import styles from './Footer.module.scss';
 
@@ -37,15 +38,15 @@ function Footer() {
             <h3 className={cx('footer__column-title')}>Liên kết nhanh</h3>
             <div className={cx('footer__column-content', 'footer__links', 'footer__links--grid')}>
               <div>
-                <Link to="/" className={cx('footer__link')}>
+                <Link to={ROUTE_PATHS.PUBLIC.HOME} className={cx('footer__link')}>
                   Trang chủ
                 </Link>
 
-                <Link to="/list-activities" className={cx('footer__link')}>
+                <Link to={ROUTE_PATHS.USER.ACTIVITIES} className={cx('footer__link')}>
                   Hoạt động
                 </Link>
 
-                <Link to="/my-activities" className={cx('footer__link')}>
+                <Link to={ROUTE_PATHS.USER.MY_ACTIVITIES} className={cx('footer__link')}>
                   Hoạt động của tôi
                 </Link>
 
@@ -54,11 +55,11 @@ function Footer() {
                 </Link>
               </div>
               <div>
-                <Link to="/profile" className={cx('footer__link')}>
+                <Link to={ROUTE_PATHS.USER.PROFILE} className={cx('footer__link')}>
                   Tài khoản
                 </Link>
 
-                <Link to="/feedback" className={cx('footer__link')}>
+                <Link to={ROUTE_PATHS.USER.FEEDBACK} className={cx('footer__link')}>
                   Phản hồi điểm
                 </Link>
               </div>

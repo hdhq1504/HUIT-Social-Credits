@@ -288,6 +288,7 @@ const mapActivity = (activity, registration) => {
     startTime: start?.toISOString() ?? null,
     endTime: end?.toISOString() ?? null,
     dateTime: formatDateRange(start, end),
+    createdAt: activity.createdAt?.toISOString() ?? null,
     location: activity.diaDiem,
     participants,
     participantsCount: registeredCount,
@@ -330,13 +331,20 @@ const sanitizeStatusFilter = (value, allowed) => (allowed.includes(value) ? valu
 
 export const listActivities = async (req, res) => {
   const currentUserId = req.user?.sub;
+
+  const { limit, sort } = req.query || {};
+  const take = limit ? parseInt(limit, 10) : undefined;
+  let orderBy = [{ batDauLuc: 'asc' }, { tieuDe: 'asc' }];
+
+  if (sort === 'createdAt:desc') {
+    orderBy = [{ createdAt: 'desc' }];
+  }
+
   const activities = await prisma.hoatDong.findMany({
     where: { isPublished: true },
-    orderBy: [
-      { batDauLuc: "asc" },
-      { tieuDe: "asc" }
-    ],
-    include: ACTIVITY_INCLUDE
+    orderBy: orderBy,
+    take: take,
+    include: ACTIVITY_INCLUDE,
   });
 
   let registrationMap = new Map();
@@ -344,15 +352,15 @@ export const listActivities = async (req, res) => {
     const registrations = await prisma.dangKyHoatDong.findMany({
       where: {
         nguoiDungId: currentUserId,
-        hoatDongId: { in: activities.map((activity) => activity.id) }
+        hoatDongId: { in: activities.map((activity) => activity.id) },
       },
-      include: REGISTRATION_INCLUDE
+      include: REGISTRATION_INCLUDE,
     });
     registrationMap = new Map(registrations.map((registration) => [registration.hoatDongId, registration]));
   }
 
   res.json({
-    activities: activities.map((activity) => mapActivity(activity, registrationMap.get(activity.id)))
+    activities: activities.map((activity) => mapActivity(activity, registrationMap.get(activity.id))),
   });
 };
 
@@ -739,6 +747,62 @@ export const submitActivityFeedback = async (req, res) => {
     feedback: mapFeedback(feedback),
     activity
   });
+};
+
+export const createActivity = async (req, res) => {
+  const {
+    tieuDe,
+    nhomDiem,
+    diemCong,
+    diaDiem,
+    sucChuaToiDa,
+    moTa,
+    quyenLoi,
+    trachNhiem,
+    yeuCau,
+    huongDan,
+    batDauLuc,
+    ketThucLuc,
+    // TODO: Thêm các trường còn thiếu nếu cần (hinhAnh, hocKy, namHoc, ...)
+  } = req.body;
+
+  if (!tieuDe) {
+    return res.status(400).json({ error: "Trường 'tieuDe' (Tên hoạt động) là bắt buộc" });
+  }
+  if (!nhomDiem) {
+    return res.status(400).json({ error: "Trường 'nhomDiem' (Nhóm hoạt động) là bắt buộc" });
+  }
+
+  try {
+    const data = {
+      tieuDe,
+      nhomDiem,
+      diemCong,
+      diaDiem,
+      sucChuaToiDa,
+      moTa,
+      quyenLoi: quyenLoi || [],
+      trachNhiem: trachNhiem || [],
+      yeuCau: yeuCau || [],
+      huongDan: huongDan || [],
+      batDauLuc: batDauLuc ? toDate(batDauLuc) : null,
+      ketThucLuc: ketThucLuc ? toDate(ketThucLuc) : null,
+      // TODO: Thêm logic xử lý upload hinhAnh (coverImage)
+      // hinhAnh: ...
+    };
+
+    const newActivity = await prisma.hoatDong.create({
+      data,
+    });
+
+    res.status(201).json({ activity: newActivity });
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    if (error.code === 'P2002' && error.meta?.target?.includes('maHoatDong')) {
+      return res.status(409).json({ error: 'Mã hoạt động đã tồn tại.' });
+    }
+    res.status(500).json({ error: error.message || 'Không thể tạo hoạt động' });
+  }
 };
 
 export const listMyActivities = async (req, res) => {

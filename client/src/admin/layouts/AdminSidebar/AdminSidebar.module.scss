@@ -1,10 +1,13 @@
 .sidebar {
   &__sider {
-    position: sticky;
     top: 0;
     height: 100vh;
     background: var(--white-color);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow: auto;
   }
 
   &__logo {
@@ -93,11 +96,9 @@
     justify-content: center;
 
     :global(.ant-menu-item-icon) {
+      transform: translateY(-70%);
       margin-right: 0;
     }
   }
 }
 
-:global(.ant-menu-light .ant-menu-item-selected) {
-  background: transparent;
-}

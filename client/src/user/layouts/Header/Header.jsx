@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
+import classNames from 'classnames/bind';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Bell, BadgeCheck, BookAlert, ClipboardList, Lock, LogOut, User } from 'lucide-react';
-import classNames from 'classnames/bind';
+
 import logo from '@assets/images/logo.svg';
 import avatar from '@assets/images/profile.png';
 import Notification from '@components/Notification/Notification';
-import styles from './Header.module.scss';
 import notificationsApi, { NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY } from '@api/notifications.api';
 import useAuthStore from '@stores/useAuthStore';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import styles from './Header.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -52,7 +54,7 @@ function Header() {
     },
     onSuccess: () => {
       logout();
-      navigate('/login');
+      navigate(ROUTE_PATHS.PUBLIC.LOGIN);
     },
   });
 
@@ -69,22 +71,22 @@ function Header() {
       {isMobile && (
         <>
           <div className={cx('header__menu-item')}>
-            <Link to="/list-activities">
+            <Link to={ROUTE_PATHS.USER.ACTIVITIES}>
               <span>Hoạt động</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/my-activities">
+            <Link to={ROUTE_PATHS.USER.MY_ACTIVITIES}>
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/roll-call">
+            <Link to={ROUTE_PATHS.USER.ROLL_CALL}>
               <span>Điểm danh</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/feedback">
+            <Link to={ROUTE_PATHS.USER.FEEDBACK}>
               <span>Phản hồi</span>
             </Link>
           </div>
@@ -92,13 +94,13 @@ function Header() {
         </>
       )}
       <div className={cx('header__menu-item')}>
-        <Link to="/login">
+        <Link to={ROUTE_PATHS.PUBLIC.LOGIN}>
           <LogOut size={16} />
           <span>Đăng nhập</span>
         </Link>
       </div>
       <div className={cx('header__menu-item')}>
-        <Link to="/forgot-password">
+        <Link to={ROUTE_PATHS.PUBLIC.FORGOT_PASSWORD}>
           <Lock size={16} />
           <span>Quên mật khẩu</span>
         </Link>
@@ -109,32 +111,32 @@ function Header() {
   const renderLoggedInMenu = () => (
     <div className={cx('header__menu')}>
       <div className={cx('header__menu-header')}>
-        Xin chào <span>{user?.TenNguoiDung}</span>
+        {user?.role !== 'SINHVIEN' && <span>Xin chào {user?.TenNguoiDung}</span>}
       </div>
 
       {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
       {user?.role !== 'ADMIN' && (
         <>
           <div className={cx('header__menu-item')}>
-            <Link to="/profile">
+            <Link to={ROUTE_PATHS.USER.PROFILE}>
               <User size={16} />
               <span>Thông tin</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/my-activities">
+            <Link to={ROUTE_PATHS.USER.MY_ACTIVITIES}>
               <ClipboardList size={16} />
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/my-points">
+            <Link to={ROUTE_PATHS.USER.MY_POINTS}>
               <BadgeCheck size={16} />
               <span>Kết quả</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/feedback">
+            <Link to={ROUTE_PATHS.USER.FEEDBACK}>
               <BookAlert size={16} />
               <span>Phản hồi điểm</span>
             </Link>
@@ -146,22 +148,22 @@ function Header() {
         <>
           <div className={cx('header__menu-divider')} />
           <div className={cx('header__menu-item')}>
-            <Link to="/list-activities">
+            <Link to={ROUTE_PATHS.USER.ACTIVITIES}>
               <span>Hoạt động</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/my-activities">
+            <Link to={ROUTE_PATHS.USER.MY_ACTIVITIES}>
               <span>Hoạt động của tôi</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/roll-call">
+            <Link to={ROUTE_PATHS.USER.ROLL_CALL}>
               <span>Điểm danh</span>
             </Link>
           </div>
           <div className={cx('header__menu-item')}>
-            <Link to="/feedback">
+            <Link to={ROUTE_PATHS.USER.FEEDBACK}>
               <span>Phản hồi</span>
             </Link>
           </div>
@@ -180,7 +182,7 @@ function Header() {
     <header className={cx('header')}>
       <div className={cx('header__inner')}>
         <div className={cx('header__logo')}>
-          <Link to="/" className={cx('header__logo-link')}>
+          <Link to={ROUTE_PATHS.PUBLIC.HOME} className={cx('header__logo-link')}>
             <img src={logo} alt="HUIT Social Credits" className={cx('header__logo-image')} />
             <div className={cx('header__logo-text')}>
               <span className={cx('header__logo-huit')}>HUIT</span>
@@ -193,28 +195,28 @@ function Header() {
           {(!isLoggedIn || user?.role !== 'ADMIN') && (
             <>
               <NavLink
-                to="/list-activities"
+                to={ROUTE_PATHS.USER.ACTIVITIES}
                 className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
               >
                 Hoạt động
               </NavLink>
 
               <NavLink
-                to="/my-activities"
+                to={ROUTE_PATHS.USER.MY_ACTIVITIES}
                 className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
               >
                 Hoạt động của tôi
               </NavLink>
 
               <NavLink
-                to="/roll-call"
+                to={ROUTE_PATHS.USER.ROLL_CALL}
                 className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
               >
                 Điểm danh
               </NavLink>
 
               <NavLink
-                to="/feedback"
+                to={ROUTE_PATHS.USER.FEEDBACK}
                 className={({ isActive }) => cx('header__action-link', { 'header__action-link--active': isActive })}
               >
                 Phản hồi

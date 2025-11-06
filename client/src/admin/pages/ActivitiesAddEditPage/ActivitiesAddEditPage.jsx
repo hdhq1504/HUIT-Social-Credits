@@ -1,307 +1,476 @@
-import React, { useState } from 'react';
-import { X, Save, Info, User, CalendarDays, RefreshCw, Image, Settings, FileText } from 'lucide-react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { vi } from 'date-fns/locale';
-import { format } from 'date-fns';
+import React, { useContext, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
+import { Form, Input, Select, InputNumber, DatePicker, TimePicker, Upload, Row, Col, ConfigProvider, Spin } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCircleInfo,
+  faXmark,
+  faUserPlus,
+  faFileLines,
+  faImage,
+  faFloppyDisk,
+  faPaperclip,
+  faUser,
+  faCalendar,
+  faPenToSquare,
+  faCircleCheck,
+  faWarning,
+} from '@fortawesome/free-solid-svg-icons';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import viVN from 'antd/locale/vi_VN';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import useToast from '@/components/Toast/Toast';
+import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './ActivitiesAddEditPage.module.scss';
 
+dayjs.locale('vi');
 const cx = classNames.bind(styles);
-const today = format(new Date(), 'dd/MM/yyyy');
+const { Option } = Select;
+const { TextArea } = Input;
+const { Dragger } = Upload;
 
-const ActivitiesAddEditPage = ({ onBackToList }) => {
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [startTime, setStartTime] = useState(null);
-  const [endTime, setEndTime] = useState(null);
-  const [registerStart, setRegisterStart] = useState(null);
-  const [registerEnd, setRegisterEnd] = useState(null);
+const now = dayjs();
+const today = dayjs().format('DD/MM/YYYY');
+const todayTime = now.format('HH:mm');
+
+const combineDateAndTime = (date, time) => {
+  if (!date || !time) return null;
+  return date.hour(time.hour()).minute(time.minute()).second(0).toISOString();
+};
+
+const ActivitiesAddEditPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+  const isEditMode = !!id;
+
+  const setPageActions = useContext(AdminPageContext);
+  const { contextHolder, open: openToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleBackToList = () => {
+    navigate(ROUTE_PATHS.ADMIN.ACTIVITIES); // Sử dụng ROUTE_PATHS
+  };
+
+  const createActivityMutation = useMutation({
+    mutationFn: (activityData) => activitiesApi.create(activityData),
+    onSuccess: () => {
+      // 1. Hiển thị Toast
+      openToast({ message: 'Thêm hoạt động mới thành công!', variant: 'success' });
+
+      // 2. Làm mới (invalidate) query của Dashboard
+      queryClient.invalidateQueries([DASHBOARD_QUERY_KEY, 'recent']);
+
+      // 3. Điều hướng về Dashboard
+      navigate(ROUTE_PATHS.ADMIN.DASHBOARD);
+    },
+    onError: (error) => {
+      openToast({
+        message: error.response?.data?.error || 'Tạo hoạt động thất bại, vui lòng kiểm tra lại thông tin.',
+        variant: 'danger',
+      });
+    },
+  });
+
+  const onFinish = (values) => {
+    // TODO: Xử lý logic upload ảnh (nếu có)
+    // Tạm thời chỉ xử lý dữ liệu form
+
+    // Chuyển đổi giá trị text area (nếu có) thành mảng (JSON)
+    const parseJsonField = (value) => {
+      if (!value) return [];
+      return value.split('\n').filter((line) => line.trim() !== '');
+    };
+
+    const payload = {
+      tieuDe: values.title,
+      nhomDiem: values.pointGroup, // Phải là 'NHOM_1', 'NHOM_2', 'NHOM_3'
+      diemCong: values.points,
+      diaDiem: values.location,
+      sucChuaToiDa: values.maxCapacity,
+      moTa: values.description,
+
+      // Chuyển đổi TextAreas thành mảng JSON
+      quyenLoi: parseJsonField(values.benefits),
+      trachNhiem: parseJsonField(values.responsibilities),
+      yeuCau: parseJsonField(values.requirements),
+      huongDan: parseJsonField(values.guidelines),
+
+      // Kết hợp ngày + giờ
+      batDauLuc: combineDateAndTime(values.startDate, values.startTime),
+      ketThucLuc: combineDateAndTime(values.endDate, values.endTime),
+
+      // TODO: Map 2 trường này (Schema của bạn chưa có)
+      // registrationDeadline: values.registrationDeadline,
+      // cancellationDeadline: values.cancellationDeadline,
+    };
+
+    console.log('Payload to API:', payload);
+    createActivityMutation.mutate(payload);
+  };
+
+  useEffect(() => {
+    setPageActions([
+      {
+        key: 'cancel',
+        label: 'Hủy',
+        icon: <FontAwesomeIcon icon={faXmark} />,
+        type: 'default',
+        className: 'activities__btn--cancel',
+        onClick: handleBackToList,
+        disabled: createActivityMutation.isLoading,
+      },
+      {
+        key: 'save',
+        label: createActivityMutation.isLoading ? 'Đang lưu...' : 'Lưu hoạt động',
+        icon: createActivityMutation.isLoading ? <Spin /> : <FontAwesomeIcon icon={faFloppyDisk} />,
+        type: 'primary',
+        className: 'activities__btn--save',
+        onClick: () => form.submit(),
+        disabled: createActivityMutation.isLoading,
+      },
+    ]);
+
+    return () => setPageActions(null);
+  }, [setPageActions, navigate, form, createActivityMutation.isLoading]);
+
+  const normFile = (e) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
 
   return (
-    <div className={cx('activities')}>
-      {/* Header */}
-      <header className={cx('activities__header')}>
-        <h1 className={cx('activities__title')}>Tạo hoạt động mới</h1>
-        <div className={cx('activities__actions')}>
-          <button className={cx('activities__btn', 'activities__btn--cancel')} onClick={onBackToList}>
-            <X size={18} /> Hủy
-          </button>
-          <button className={cx('activities__btn', 'activities__btn--save')}>
-            <Save size={18} /> Lưu hoạt động
-          </button>
-        </div>
-      </header>
-
-      {/* Form container */}
-      <div className={cx('activities__container')}>
-        {/* Left column */}
-        <div className={cx('activities__left')}>
-          {/* Thông tin cơ bản */}
-          <section className={cx('activities__section')}>
-            <div className={cx('activities__section-header')}>
-              <Info size={18} />
-              <h3>Thông tin cơ bản</h3>
-            </div>
-
-            <div className={cx('activities__group')}>
-              <label>
-                Tên hoạt động <span className={cx('activities__required')}>*</span>
-              </label>
-              <input type="text" placeholder="Nhập tên hoạt động..." />
-            </div>
-
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>
-                  Nhóm hoạt động <span className={cx('activities__required')}>*</span>
-                </label>
-                <select>
-                  <option>Chọn nhóm hoạt động</option>
-                  <option>Nhóm 1</option>
-                  <option>Nhóm 2</option>
-                </select>
+    <ConfigProvider locale={viVN}>
+      {contextHolder}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        className={cx('activities')}
+        initialValues={{
+          points: 0,
+          maxCapacity: 0,
+        }}
+      >
+        {/* Form container */}
+        <div className={cx('activities__container')}>
+          {/* Left column */}
+          <div className={cx('activities__left')}>
+            {/* Thông tin cơ bản */}
+            <section className={cx('activities__section')}>
+              <div className={cx('activities__section-header')}>
+                <FontAwesomeIcon className={cx('activities__section-icon')} icon={faCircleInfo} />
+                <h3>Thông tin cơ bản</h3>
               </div>
-              <div className={cx('activities__group')}>
-                <label>
-                  Số điểm <span className={cx('activities__required')}>*</span>
-                </label>
-                <input type="number" placeholder="Nhập số điểm..." />
-              </div>
-            </div>
+              <Row gutter={24}>
+                <Col xs={24} md={24}>
+                  <Form.Item
+                    name="title"
+                    label="Tên hoạt động"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập tên hoạt động!' }]}
+                  >
+                    <Input placeholder="Nhập tên hoạt động..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="pointGroup"
+                    label="Nhóm hoạt động"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn nhóm hoạt động!' }]}
+                  >
+                    <Select placeholder="Chọn nhóm hoạt động">
+                      <Option value="NHOM_1">Nhóm 1</Option>
+                      <Option value="NHOM_2">Nhóm 2</Option>
+                      <Option value="NHOM_3">Nhóm 3</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="points"
+                    label="Số điểm"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập số điểm!' }]}
+                  >
+                    <InputNumber min={0} placeholder="0" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="startDate"
+                    label="Ngày bắt đầu"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu!' }]}
+                  >
+                    <DatePicker placeholder="dd/mm/yyyy" format="DD/MM/YYYY" style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="endDate"
+                    label="Ngày kết thúc"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn ngày kết thúc!' }]}
+                  >
+                    <DatePicker placeholder="dd/mm/yyyy" format="DD/MM/YYYY" style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="startTime"
+                    label="Giờ bắt đầu"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn giờ bắt đầu!' }]}
+                  >
+                    <TimePicker placeholder="--:--" format="HH:mm" style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="endTime"
+                    label="Giờ kết thúc"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn giờ kết thúc!' }]}
+                  >
+                    <TimePicker placeholder="--:--" format="HH:mm" style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={24}>
+                  <Form.Item
+                    name="location"
+                    label="Địa điểm"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập địa điểm!' }]}
+                  >
+                    <Input placeholder="Nhập địa điểm tổ chức..." />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </section>
 
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>
-                  Ngày bắt đầu <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={startDate}
-                  onChange={setStartDate}
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="dd/MM/yyyy"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
+            {/* Cài đặt đăng ký */}
+            <section className={cx('activities__section')}>
+              <div className={cx('activities__section-header')}>
+                <FontAwesomeIcon className={cx('activities__section-icon')} icon={faUserPlus} />
+                <h3>Cài đặt đăng ký</h3>
               </div>
-              <div className={cx('activities__group')}>
-                <label>
-                  Ngày kết thúc <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={endDate}
-                  onChange={setEndDate}
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="dd/MM/yyyy"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
-              </div>
-            </div>
+              <Row gutter={24}>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="maxCapacity"
+                    label="Số lượng tham gia"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+                  >
+                    <InputNumber min={0} placeholder="0" style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="attendanceMethod"
+                    label="Phương thức điểm danh"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn phương thức!' }]}
+                  >
+                    <Select placeholder="Chọn phương thức">
+                      <Option value="qr">QR Code</Option>
+                      <Option value="photo">Ảnh</Option>
+                      <Option value="manual">Thủ công</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="registrationDeadline"
+                    label="Hạn đăng ký"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn hạn đăng ký!' }]}
+                  >
+                    <DatePicker
+                      showTime
+                      placeholder="dd/mm/yyyy --:--"
+                      format="DD/MM/YYYY HH:mm"
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="cancellationDeadline"
+                    label="Hạn hủy đăng ký"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng chọn hạn hủy đăng ký!' }]}
+                  >
+                    <DatePicker
+                      showTime
+                      placeholder="dd/mm/yyyy --:--"
+                      format="DD/MM/YYYY HH:mm"
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </section>
 
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>
-                  Giờ bắt đầu <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={startTime}
-                  onChange={setStartTime}
-                  showTimeSelect
-                  showTimeSelectOnly
-                  timeIntervals={5}
-                  timeFormat="HH:mm"
-                  dateFormat="HH:mm"
-                  placeholderText="--:--"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
+            {/* Thông tin chi tiết */}
+            <section className={cx('activities__section')}>
+              <div className={cx('activities__section-header')}>
+                <FontAwesomeIcon className={cx('activities__section-icon')} icon={faFileLines} />
+                <h3>Thông tin chi tiết</h3>
               </div>
-              <div className={cx('activities__group')}>
-                <label>
-                  Giờ kết thúc <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={endTime}
-                  onChange={setEndTime}
-                  showTimeSelect
-                  showTimeSelectOnly
-                  timeIntervals={5}
-                  timeFormat="HH:mm"
-                  dateFormat="HH:mm"
-                  placeholderText="--:--"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
+              <Row gutter={24}>
+                <Col xs={24}>
+                  <Form.Item
+                    name="description"
+                    label="Mô tả hoạt động"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}
+                  >
+                    <TextArea rows={4} placeholder="Mô tả chi tiết về hoạt động..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="benefits"
+                    label="Quyền lợi"
+                    className={cx('activities__group')}
+                    tooltip="Mỗi quyền lợi 1 dòng"
+                  >
+                    <TextArea rows={4} placeholder="Các quyền lợi mà sinh viên sẽ nhận được..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="responsibilities"
+                    label="Trách nhiệm"
+                    className={cx('activities__group')}
+                    tooltip="Mỗi trách nhiệm 1 dòng"
+                  >
+                    <TextArea rows={4} placeholder="Các trách nhiệm của sinh viên khi tham gia..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="requirements"
+                    label="Yêu cầu tham gia"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập yêu cầu!' }]}
+                    tooltip="Mỗi yêu cầu 1 dòng"
+                  >
+                    <TextArea rows={4} placeholder="Các yêu cầu đối với sinh viên tham gia..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="guidelines"
+                    label="Hướng dẫn tham gia"
+                    className={cx('activities__group')}
+                    rules={[{ required: true, message: 'Vui lòng nhập hướng dẫn!' }]}
+                    tooltip="Mỗi hướng dẫn 1 dòng"
+                  >
+                    <TextArea rows={4} placeholder="Hướng dẫn chi tiết cho sinh viên..." />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </section>
+
+            {/* Upload hình ảnh */}
+            <section className={cx('activities__section')}>
+              <div className={cx('activities__section-header')}>
+                <FontAwesomeIcon className={cx('activities__section-icon')} icon={faImage} />
+                <h3>Hình ảnh đại diện</h3>
               </div>
-            </div>
-
-            <div className={cx('activities__group')}>
-              <label>
-                Địa điểm <span className={cx('activities__required')}>*</span>
-              </label>
-              <input type="text" placeholder="Nhập địa điểm tổ chức..." />
-            </div>
-          </section>
-
-          {/* Cài đặt đăng ký */}
-          <section className={cx('activities__section')}>
-            <div className={cx('activities__section-header')}>
-              <Settings size={18} />
-              <h3>Cài đặt đăng ký</h3>
-            </div>
-
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>
-                  Số lượng tham gia <span className={cx('activities__required')}>*</span>
-                </label>
-                <input type="number" placeholder="0" />
-              </div>
-              <div className={cx('activities__group')}>
-                <label>
-                  Phương thức điểm danh <span className={cx('activities__required')}>*</span>
-                </label>
-                <select>
-                  <option>Chọn phương thức</option>
-                  <option>QR Code</option>
-                  <option>Thủ công</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>
-                  Hạn đăng ký <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={registerStart}
-                  onChange={setRegisterStart}
-                  showTimeSelect
-                  timeIntervals={5}
-                  timeFormat="HH:mm"
-                  dateFormat="dd/MM/yyyy HH:mm"
-                  placeholderText="dd/MM/yyyy --:--"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
-              </div>
-              <div className={cx('activities__group')}>
-                <label>
-                  Hạn hủy đăng ký <span className={cx('activities__required')}>*</span>
-                </label>
-                <DatePicker
-                  selected={registerEnd}
-                  onChange={setRegisterEnd}
-                  showTimeSelect
-                  timeIntervals={5}
-                  timeFormat="HH:mm"
-                  dateFormat="dd/MM/yyyy HH:mm"
-                  placeholderText="dd/MM/yyyy --:--"
-                  className={cx('activities__input')}
-                  locale={vi}
-                  isClearable
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Thông tin chi tiết */}
-          <section className={cx('activities__section')}>
-            <div className={cx('activities__section-header')}>
-              <FileText size={18} />
-              <h3>Thông tin chi tiết</h3>
-            </div>
-
-            <div className={cx('activities__group')}>
-              <label>Mô tả hoạt động</label>
-              <textarea placeholder="Mô tả chi tiết về hoạt động..." />
-            </div>
-
-            <div className={cx('activities__row')}>
-              <div className={cx('activities__group')}>
-                <label>Quyền lợi</label>
-                <textarea placeholder="Các quyền lợi..." />
-              </div>
-              <div className={cx('activities__group')}>
-                <label>Trách nhiệm</label>
-                <textarea placeholder="Các nhiệm vụ cần thực hiện..." />
-              </div>
-            </div>
-          </section>
-
-          {/* Upload hình ảnh */}
-          <section className={cx('activities__section')}>
-            <div className={cx('activities__section-header')}>
-              <Image size={18} />
-              <h3>Hình ảnh đại diện</h3>
-            </div>
-            <div className={cx('activities__upload')}>
-              <p>Kéo thả hoặc chọn file</p>
-              <small>Hỗ trợ JPG, PNG ≤ 10MB</small>
-            </div>
-          </section>
-        </div>
-
-        {/* Right column / status */}
-        <aside className={cx('activities__right')}>
-          <div className={cx('activities__status')}>
-            <div className={cx('activities__status-header')}>
-              <Info size={16} />
-              <h3>Thông tin trạng thái</h3>
-            </div>
-
-            <div className={cx('activities__status-item')}>
-              <div className={cx('activities__status-icon', 'activities__status-icon--blue')}>
-                <User size={16} />
-              </div>
-              <div>
-                <span>Người tạo</span>
-                <p>Admin HUIT</p>
-              </div>
-            </div>
-
-            <div className={cx('activities__status-item')}>
-              <div className={cx('activities__status-icon', 'activities__status-icon--green')}>
-                <CalendarDays size={16} />
-              </div>
-              <div>
-                <span>Ngày tạo</span>
-                <p>{today}</p>
-              </div>
-            </div>
-
-            <div className={cx('activities__status-item')}>
-              <div className={cx('activities__status-icon', 'activities__status-icon--orange')}>
-                <RefreshCw size={16} />
-              </div>
-              <div>
-                <span>Cập nhật lần cuối</span>
-                <p className={cx('activities__status-text--muted')}>Chưa có</p>
-              </div>
-            </div>
-
-            <hr className={cx('activities__divider')} />
-
-            <h4>Gợi ý</h4>
-            <div className={cx('activities__tip', 'activities__tip--green')}>
-              <div className={cx('activities__tip-icon', 'activities__tip-icon--green')}>✓</div>
-              <p>Thêm hình ảnh giúp thu hút sinh viên hơn.</p>
-            </div>
-            <div className={cx('activities__tip', 'activities__tip--yellow')}>
-              <div className={cx('activities__tip-icon', 'activities__tip-icon--yellow')}>⚠</div>
-              <p>Kiểm tra kỹ thời gian và địa điểm trước khi lưu.</p>
-            </div>
+              <Form.Item
+                name="coverImage"
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
+                className={cx('activities__group')}
+              >
+                <Dragger
+                  name="file"
+                  multiple={false}
+                  action="/api/upload" // TODO: Cập nhật API endpoint thật
+                  beforeUpload={() => false} // Ngăn auto-upload, xử lý trong onFinish
+                  className={cx('activities__upload')}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <FontAwesomeIcon icon={faPaperclip} />
+                  </p>
+                  <p className="ant-upload-text">Kéo thả file hoặc chọn file</p>
+                  <p className="ant-upload-hint">Hỗ trợ JPG, PNG ≤ 10MB</p>
+                </Dragger>
+              </Form.Item>
+            </section>
           </div>
-        </aside>
-      </div>
-    </div>
+
+          {/* Right column / status */}
+          <aside className={cx('activities__right')}>
+            <div className={cx('activities__status')}>
+              <div className={cx('activities__status-header')}>
+                <FontAwesomeIcon icon={faCircleInfo} />
+                <h3>Thông tin trạng thái</h3>
+              </div>
+
+              <div className={cx('activities__status-items-wrapper')}>
+                <div className={cx('activities__status-item')}>
+                  <div className={cx('activities__status-icon', 'activities__status-icon--blue')}>
+                    <FontAwesomeIcon icon={faUser} />
+                  </div>
+                  <div className={cx('activities__status-text')}>
+                    <span>Người tạo</span>
+                    <p>Admin HUIT</p>
+                  </div>
+                </div>
+
+                <div className={cx('activities__status-item')}>
+                  <div className={cx('activities__status-icon', 'activities__status-icon--green')}>
+                    <FontAwesomeIcon icon={faCalendar} />
+                  </div>
+                  <div className={cx('activities__status-text')}>
+                    <span>Ngày tạo</span>
+                    <p>Hôm nay, {todayTime}</p>
+                  </div>
+                </div>
+
+                <div className={cx('activities__status-item')}>
+                  <div className={cx('activities__status-icon', 'activities__status-icon--orange')}>
+                    <FontAwesomeIcon icon={faPenToSquare} />
+                  </div>
+                  <div className={cx('activities__status-text')}>
+                    <span>Cập nhật lần cuối</span>
+                    <p className={cx('activities__status-text--muted')}>
+                      {isEditMode ? `${today}, ${todayTime}` : 'Chưa có'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={cx('activities__tips-section')}>
+                <h4 className={cx('activities__tips-title')}>Gợi ý</h4>
+                <div className={cx('activities__tips-wrapper')}>
+                  <div className={cx('activities__tip', 'activities__tip--green')}>
+                    <FontAwesomeIcon icon={faCircleCheck} className={cx('activities__tip-icon')} />
+                    <p>Hình ảnh đại diện sẽ giúp thu hút sinh viên tham gia hơn.</p>
+                  </div>
+                  <div className={cx('activities__tip', 'activities__tip--yellow')}>
+                    <FontAwesomeIcon icon={faWarning} className={cx('activities__tip-icon')} />
+                    <p>Kiểm tra kỹ thời gian và địa điểm trước khi lưu.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </Form>
+    </ConfigProvider>
   );
 };
 

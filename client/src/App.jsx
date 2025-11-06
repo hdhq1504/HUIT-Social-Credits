@@ -1,71 +1,121 @@
-import React, { Fragment } from 'react';
-import { Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
+import { useEffect, Fragment } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConfigProvider } from 'antd';
+import viVN from 'antd/locale/vi_VN';
+import { publicRoutes, protectedUserRoutes } from './routes/userRoutes';
+import { authRoutes } from './routes/authRoutes';
+import adminRoutes from './routes/adminRoutes';
+import ProtectedRoute from './components/guards/ProtectedRoute';
+import GuestRoute from './components/guards/GuestRoute';
 import NotFound from './components/NotFound/NotFound';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
-import AuthProvider from './context/AuthProvider';
-import AdminRoute from './components/AdminRoute/AdminRoute';
-import { publicRoutes } from './routes/routes';
-import adminRoutes from './routes/adminRoutes';
-import AdminLayout from '@admin/layouts/AdminLayout/AdminLayout.jsx';
+import AdminLayout from './admin/layouts/AdminLayout/AdminLayout';
+import useAuthStore from './stores/useAuthStore';
+import { ROUTE_PATHS } from './config/routes.config';
 
-const queryClient = new QueryClient();
+import ActivitiesAddEditPage from './admin/pages/ActivitiesAddEditPage/ActivitiesAddEditPage';
+import ActivitiesDetailPage from './admin/pages/ActivitiesDetailPage/ActivitiesDetailPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 function App() {
+  const initialize = useAuthStore((state) => state.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider />
-
-        <Routes>
-          {publicRoutes.map((route, index) => {
-            const Page = route.component;
-            const Layout = route.layout ?? Fragment;
-
-            return (
-              <Route
-                key={`public-${index}`}
-                path={route.path}
-                element={
-                  <Layout>
-                    <Page />
-                  </Layout>
-                }
-              />
-            );
-          })}
-
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard" replace />} />
-            {adminRoutes.map((route) => {
-              const Page = route.component;
-              return <Route key={route.path} path={route.path} element={<Page />} />;
-            })}
-          </Route>
-
-          <Route
-            path="*"
-            element={
-              <Fragment>
-                <NotFound />
-              </Fragment>
-            }
-          />
-        </Routes>
-
-        <div>
+    <ConfigProvider locale={viVN}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
           <ScrollToTop />
-        </div>
-        <ScrollToTop />
-      </Router>
-    </QueryClientProvider>
+          <Routes>
+            {authRoutes.map((route, index) => {
+              const Page = route.component;
+              return (
+                <Route
+                  key={`auth-${index}`}
+                  path={route.path}
+                  element={
+                    <GuestRoute>
+                      <Page />
+                    </GuestRoute>
+                  }
+                />
+              );
+            })}
+
+            {publicRoutes.map((route, index) => {
+              const Page = route.component;
+              const Layout = route.layout || Fragment;
+
+              return (
+                <Route
+                  key={`public-${index}`}
+                  path={route.path}
+                  element={
+                    <Layout>
+                      <Page />
+                    </Layout>
+                  }
+                />
+              );
+            })}
+
+            {protectedUserRoutes.map((route, index) => {
+              const Page = route.component;
+              const Layout = route.layout || Fragment;
+
+              return (
+                <Route
+                  key={`user-${index}`}
+                  path={route.path}
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Page />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+              );
+            })}
+
+            <Route
+              path={ROUTE_PATHS.ADMIN.ROOT}
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to={ROUTE_PATHS.ADMIN.DASHBOARD} replace />} />
+
+              {adminRoutes.map((route) => {
+                const Page = route.component;
+                return <Route key={route.path} path={route.path} element={<Page />} />;
+              })}
+
+              <Route path="activities/create" element={<ActivitiesAddEditPage />} />
+              <Route path="activities/:id/edit" element={<ActivitiesAddEditPage />} />
+              <Route path="activities/:id" element={<ActivitiesDetailPage />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </QueryClientProvider>
+    </ConfigProvider>
   );
 }
 

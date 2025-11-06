@@ -35,7 +35,7 @@ function LoginForm() {
         if (user?.role === 'ADMIN') {
           navigate('/admin/dashboard');
         } else {
-          navigate('/');
+          navigate('/login');
         }
       }, 500);
     },
@@ -67,10 +67,6 @@ function LoginForm() {
   return (
     <div className={cx('login-form')}>
       {contextHolder}
-
-      <div className={cx('login-form__breadcrumb')}>
-        <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Đăng nhập</span>
-      </div>
 
       <form className={cx('login-form__card')} onSubmit={handleEmailLogin}>
         <div className={cx('login-form__banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>

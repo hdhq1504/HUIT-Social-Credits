@@ -9,6 +9,7 @@ import { CardActivity, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import styles from './FeedbackPage.module.scss';
+import { ROUTE_PATHS } from '@/config/routes.config';
 
 const cx = classNames.bind(styles);
 const { Option } = Select;
@@ -307,7 +308,7 @@ function FeedbackPage() {
       <div className={cx('feedback__container')}>
         <header className={cx('feedback__header')}>
           <nav className={cx('feedback__breadcrumb')} aria-label="Breadcrumb">
-            <Link to="/">Trang chủ</Link> / <span>Phản hồi</span>
+            <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Phản hồi</span>
           </nav>
           <Label title="Phản hồi" highlight="điểm" leftDivider={false} rightDivider showSubtitle={false} />
         </header>

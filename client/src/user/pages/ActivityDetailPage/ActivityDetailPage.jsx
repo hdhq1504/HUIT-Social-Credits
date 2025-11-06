@@ -20,6 +20,7 @@ import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -45,8 +46,8 @@ function ActivityDetailPage() {
     queryFn: () => activitiesApi.detail(id),
     enabled: !!id,
     retry: 1,
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
+    staleTime: 30000,
+    cacheTime: 5 * 60 * 1000,
   });
 
   // Gợi ý thêm hoạt động liên quan
@@ -57,8 +58,8 @@ function ActivityDetailPage() {
       return list.filter((item) => item.id !== id).slice(0, 4);
     },
     enabled: !!id && !loading,
-    staleTime: 60000, // Consider data fresh for 1 minute
-    cacheTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes
+    staleTime: 60000,
+    cacheTime: 5 * 60 * 1000,
   });
 
   const notFound = isError && error?.response?.status === 404;
@@ -158,7 +159,6 @@ function ActivityDetailPage() {
     });
   };
 
-  // Chuẩn hoá các trường JSON dạng danh sách để đảm bảo giao diện gọn gàng.
   const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
 
   const responsibilityItems = useMemo(
@@ -170,13 +170,11 @@ function ActivityDetailPage() {
 
   const guideSteps = useMemo(() => normalizeGuideItems(activity?.guidelines), [activity?.guidelines]);
 
-  // Hàm tạo key ổn định để React không phải re-render toàn bộ danh sách khi dữ liệu thay đổi nhẹ.
   const buildListItemKey = useCallback((item, index) => {
     const rawKey = typeof item === 'string' ? item : item?.content || item?.title || index;
     return `${index}-${String(rawKey).slice(0, 30)}`;
   }, []);
 
-  // Tái sử dụng cùng một logic render danh sách có icon ở nhiều tab khác nhau.
   const renderListSection = useCallback(
     (items, emptyDescription, renderContent) =>
       items.length ? (
@@ -365,7 +363,7 @@ function ActivityDetailPage() {
             <p className={cx('activity-detail__empty-subtitle')}>
               Có thể hoạt động đã bị gỡ hoặc bạn đã nhập sai đường dẫn.
             </p>
-            <Link to="/list-activities" className={cx('activity-detail__empty-link')}>
+            <Link to={ROUTE_PATHS.USER.ACTIVITIES} className={cx('activity-detail__empty-link')}>
               Quay lại danh sách hoạt động
             </Link>
           </div>
@@ -374,8 +372,8 @@ function ActivityDetailPage() {
         {!loading && activity && (
           <>
             <nav className={cx('activity-detail__breadcrumb')}>
-              <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> /{' '}
-              <span>{activity.title}</span>
+              <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> /{' '}
+              <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link> / <span>{activity.title}</span>
             </nav>
 
             <div className={cx('activity-detail__layout')}>
@@ -621,7 +619,7 @@ function ActivityDetailPage() {
               </div>
 
               <div className={cx('activity-detail__related-actions')}>
-                <Link to="/list-activities">
+                <Link to={ROUTE_PATHS.USER.ACTIVITIES}>
                   <Button variant="primary">
                     <span>Xem tất cả</span>
                     <FontAwesomeIcon icon={faArrowRight} />

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import routes from '../../config/routes';
+import { buildPath } from '@/config/routes.config';
 import { Avatar, Skeleton, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -269,7 +269,7 @@ function CardActivity(props) {
     if (typeof onDetails === 'function') onDetails(activity);
 
     if (id) {
-      navigate(routes.activityDetailWithId.replace(':id', id));
+      navigate(buildPath.activityDetail(id));
     } else {
       console.warn('No acitivities found: ', id);
     }

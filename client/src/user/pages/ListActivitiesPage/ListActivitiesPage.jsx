@@ -15,8 +15,9 @@ import {
 } from 'antd';
 import { CardActivity, CheckboxGroup } from '@components/index';
 import SearchBar from '../../../user/layouts/SearchBar/SearchBar';
-import styles from './ListActivitiesPage.module.scss';
 import activitiesApi from '@api/activities.api';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import styles from './ListActivitiesPage.module.scss';
 // ⬇️ Bỏ import lọc theo state đăng ký để hiển thị tất cả
 // import { isUnregisteredOrParticipated } from '@utils/activityState';
 
@@ -195,7 +196,7 @@ function ListActivitiesPage() {
     setCurrentPage(1);
     setQuery(q);
     const search = q ? `?q=${encodeURIComponent(q)}` : '';
-    navigate(`/list-activities${search}`, { replace: true });
+    navigate(`${ROUTE_PATHS.USER.ACTIVITIES}${search}`, { replace: true });
   };
 
   const handleFilterChange = ({ group, status }) => {
@@ -212,7 +213,8 @@ function ListActivitiesPage() {
 
       <div className={cx('activities-page__container')}>
         <nav className={cx('activities-page__breadcrumb')} aria-label="Breadcrumb">
-          <Link to="/">Trang chủ</Link> / <Link to="/list-activities">Hoạt động</Link> /{' '}
+          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link>
+          <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link>
           <span>
             {sortBy === 'latest'
               ? 'Sắp xếp ngày đăng gần nhất'

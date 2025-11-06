@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import statsApi, { PROGRESS_QUERY_KEY } from '@api/stats.api';
 import useAuthStore from '@stores/useAuthStore';
 import { DEFAULT_PROGRESS_SECTION, mapProgressSummaryToSection } from '@utils/progress';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './HomePage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -36,7 +37,7 @@ function HomePage() {
 
   const handleHomeSearch = (q) => {
     const query = q ? `?q=${encodeURIComponent(q)}` : '';
-    navigate(`/list-activities${query}`);
+    navigate(`${ROUTE_PATHS.USER.ACTIVITIES}${query}`);
   };
 
   return (
