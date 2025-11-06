@@ -19,17 +19,22 @@ export const activitiesApi = {
     });
     return data.activities ?? [];
   },
-
   async detail(id) {
     const { data } = await http.get(`/activities/${id}`);
     return data.activity;
   },
-
   async create(activityData) {
     const { data } = await http.post('/activities', activityData);
     return data.activity;
   },
-
+  async update(id, activityData) {
+    const { data } = await http.put(`/activities/${id}`, activityData);
+    return data.activity;
+  },
+  async remove(id) {
+    const { data } = await http.delete(`/activities/${id}`);
+    return data;
+  },
   async register(activityId, payload = {}) {
     const { data } = await http.post(`/activities/${activityId}/registrations`, payload);
     return data.activity;

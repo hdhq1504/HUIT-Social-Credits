@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Tabs, Row, Col, Tag, Image, Spin, Empty, Modal, ConfigProvider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -15,7 +15,7 @@ import {
   faTriangleExclamation,
   faListCheck,
   faPenToSquare,
-  faTrashAlt,
+  faTrash,
   faCircleDot,
   faClipboardList,
 } from '@fortawesome/free-solid-svg-icons';
@@ -110,7 +110,7 @@ const DetailListSection = ({ title, items, icon, iconClass }) => {
 function ActivitiesDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const setPageActions = useContext(AdminPageContext);
+  const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
   const { contextHolder, open: openToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -124,6 +124,18 @@ function ActivitiesDetailPage() {
     enabled: !!id,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => activitiesApi.remove(id),
+    onSuccess: () => {
+      openToast({ message: 'Xóa hoạt động thành công!', variant: 'success' });
+      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
+      navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
+    },
+    onError: (error) => {
+      openToast({ message: error.response?.data?.error || 'Xóa thất bại, vui lòng thử lại.', variant: 'danger' });
+    },
+  });
+
   const handleDelete = () => {
     Modal.confirm({
       title: 'Bạn có chắc chắn muốn xóa?',
@@ -131,30 +143,28 @@ function ActivitiesDetailPage() {
       okText: 'Xác nhận Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          // await activitiesApi.delete(id);
-          openToast({ message: 'Xóa hoạt động thành công!', variant: 'success' });
-          queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
-          navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
-        } catch {
-          openToast({ message: 'Xóa thất bại, vui lòng thử lại.', variant: 'danger' });
-        }
-      },
+      onOk: () => deleteMutation.mutate(),
     });
   };
 
   useEffect(() => {
     if (activity) {
+      setBreadcrumbs([
+        { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
+        { label: 'Danh sách hoạt động', path: ROUTE_PATHS.ADMIN.ACTIVITIES },
+        { label: activity.title },
+      ]);
+
       setPageActions([
         {
           key: 'delete',
-          label: 'Xóa hoạt động',
-          icon: <FontAwesomeIcon icon={faTrashAlt} />,
+          label: deleteMutation.isLoading ? 'Đang xóa...' : 'Xóa hoạt động',
+          icon: <FontAwesomeIcon icon={faTrash} />,
           type: 'default',
           danger: true,
           className: 'admin-navbar__btn--danger-outline',
           onClick: handleDelete,
+          disabled: deleteMutation.isLoading,
         },
         {
           key: 'edit',
@@ -163,11 +173,16 @@ function ActivitiesDetailPage() {
           type: 'primary',
           className: 'admin-navbar__btn--orange',
           onClick: () => navigate(buildPath.adminActivityEdit(id)),
+          disabled: deleteMutation.isLoading,
         },
       ]);
     }
-    return () => setPageActions(null);
-  }, [setPageActions, navigate, id, activity]);
+
+    return () => {
+      setBreadcrumbs(null);
+      setPageActions(null);
+    };
+  }, [setPageActions, setBreadcrumbs, navigate, id, activity, deleteMutation.isLoading]);
 
   const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
   const responsibilityItems = useMemo(

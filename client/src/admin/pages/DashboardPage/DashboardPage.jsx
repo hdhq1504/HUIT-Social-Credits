@@ -59,7 +59,7 @@ const pendingFeedback = [
 
 export default function DashboardPage() {
   const [year, setYear] = useState(2023);
-  const setPageActions = useContext(AdminPageContext);
+  const { setPageActions } = useContext(AdminPageContext);
   const navigate = useNavigate();
 
   const { data: recentActivities, isLoading: isLoadingRecent } = useQuery({

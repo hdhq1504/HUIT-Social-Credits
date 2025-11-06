@@ -20,11 +20,11 @@ import {
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import viVN from 'antd/locale/vi_VN';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import useToast from '@/components/Toast/Toast';
-import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
-import { ROUTE_PATHS } from '@/config/routes.config';
+import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/activities.api';
+import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -42,51 +42,103 @@ const combineDateAndTime = (date, time) => {
   return date.hour(time.hour()).minute(time.minute()).second(0).toISOString();
 };
 
+// Helper chuyển mảng về chuỗi (cho TextAreas)
+const arrayToString = (value) => {
+  if (Array.isArray(value)) {
+    return value.join('\n');
+  }
+  return value || '';
+};
+
+// Helper chuyển chuỗi về mảng (từ TextAreas)
+const stringToArray = (value) => {
+  if (!value) return [];
+  return value.split('\n').filter((line) => line.trim() !== '');
+};
+
 const ActivitiesAddEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const isEditMode = !!id;
 
-  const setPageActions = useContext(AdminPageContext);
+  const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
   const { contextHolder, open: openToast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: activityData, isLoading: isLoadingActivity } = useQuery({
+    queryKey: [ACTIVITIES_QUERY_KEY, 'detail', id],
+    queryFn: () => activitiesApi.detail(id),
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (isEditMode && activityData) {
+      form.setFieldsValue({
+        title: activityData.title,
+        pointGroup: activityData.pointGroup,
+        points: activityData.points,
+        location: activityData.location,
+        maxCapacity: activityData.maxCapacity,
+        // TODO: Map 2 trường này (Schema của bạn chưa có)
+        // attendanceMethod: activityData.attendanceMethod,
+        // registrationDeadline: activityData.registrationDeadline ? dayjs(activityData.registrationDeadline) : null,
+        // cancellationDeadline: activityData.cancellationDeadline ? dayjs(activityData.cancellationDeadline) : null,
+
+        // Map ngày/giờ
+        startDate: activityData.startTime ? dayjs(activityData.startTime) : null,
+        startTime: activityData.startTime ? dayjs(activityData.startTime) : null,
+        endDate: activityData.endTime ? dayjs(activityData.endTime) : null,
+        endTime: activityData.endTime ? dayjs(activityData.endTime) : null,
+
+        // Map các trường JSON (chuyển mảng về string)
+        description: activityData.description, // Mô tả là string, không phải mảng
+        benefits: arrayToString(activityData.benefits),
+        responsibilities: arrayToString(activityData.responsibilities),
+        requirements: arrayToString(activityData.requirements),
+        guidelines: arrayToString(activityData.guidelines),
+        // TODO: Xử lý coverImage
+      });
+    }
+  }, [activityData, isEditMode, form]);
+
   const handleBackToList = () => {
-    navigate(ROUTE_PATHS.ADMIN.ACTIVITIES); // Sử dụng ROUTE_PATHS
+    navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
   };
 
+  // Mutation cho Create
   const createActivityMutation = useMutation({
     mutationFn: (activityData) => activitiesApi.create(activityData),
     onSuccess: () => {
-      // 1. Hiển thị Toast
       openToast({ message: 'Thêm hoạt động mới thành công!', variant: 'success' });
-
-      // 2. Làm mới (invalidate) query của Dashboard
-      queryClient.invalidateQueries([DASHBOARD_QUERY_KEY, 'recent']);
-
-      // 3. Điều hướng về Dashboard
-      navigate(ROUTE_PATHS.ADMIN.DASHBOARD);
+      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang List
+      navigate(ROUTE_PATHS.ADMIN.ACTIVITIES); // Quay về trang List
     },
     onError: (error) => {
-      openToast({
-        message: error.response?.data?.error || 'Tạo hoạt động thất bại, vui lòng kiểm tra lại thông tin.',
-        variant: 'danger',
-      });
+      openToast({ message: error.response?.data?.error || 'Tạo hoạt động thất bại', variant: 'danger' });
+    },
+  });
+
+  const updateActivityMutation = useMutation({
+    mutationFn: (payload) => activitiesApi.update(payload.id, payload.data),
+    onSuccess: () => {
+      openToast({ message: 'Cập nhật hoạt động thành công!', variant: 'success' });
+      queryClient.invalidateQueries([ACTIVITIES_QUERY_KEY, 'detail', id]); // Làm mới trang detail
+      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang list
+      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
+    },
+    onError: (error) => {
+      openToast({ message: error.response?.data?.error || 'Cập nhật thất bại', variant: 'danger' });
     },
   });
 
   const onFinish = (values) => {
     // TODO: Xử lý logic upload ảnh (nếu có)
-    // Tạm thời chỉ xử lý dữ liệu form
-
-    // Chuyển đổi giá trị text area (nếu có) thành mảng (JSON)
-    const parseJsonField = (value) => {
-      if (!value) return [];
-      return value.split('\n').filter((line) => line.trim() !== '');
-    };
 
     const payload = {
+      // Map tên từ form -> schema (để khớp với controller)
       tieuDe: values.title,
       nhomDiem: values.pointGroup, // Phải là 'NHOM_1', 'NHOM_2', 'NHOM_3'
       diemCong: values.points,
@@ -95,25 +147,38 @@ const ActivitiesAddEditPage = () => {
       moTa: values.description,
 
       // Chuyển đổi TextAreas thành mảng JSON
-      quyenLoi: parseJsonField(values.benefits),
-      trachNhiem: parseJsonField(values.responsibilities),
-      yeuCau: parseJsonField(values.requirements),
-      huongDan: parseJsonField(values.guidelines),
+      quyenLoi: stringToArray(values.benefits),
+      trachNih_em: stringToArray(values.responsibilities),
+      yeuCau: stringToArray(values.requirements),
+      huongDan: stringToArray(values.guidelines),
 
       // Kết hợp ngày + giờ
       batDauLuc: combineDateAndTime(values.startDate, values.startTime),
       ketThucLuc: combineDateAndTime(values.endDate, values.endTime),
 
       // TODO: Map 2 trường này (Schema của bạn chưa có)
-      // registrationDeadline: values.registrationDeadline,
-      // cancellationDeadline: values.cancellationDeadline,
+      // registrationDeadline: values.registrationDeadline.toISOString(),
+      // cancellationDeadline: values.cancellationDeadline.toISOString(),
     };
 
     console.log('Payload to API:', payload);
-    createActivityMutation.mutate(payload);
+    if (isEditMode) {
+      updateActivityMutation.mutate({ id, data: payload });
+    } else {
+      createActivityMutation.mutate(payload);
+    }
   };
 
   useEffect(() => {
+    const isMutating = createActivityMutation.isLoading || updateActivityMutation.isLoading;
+    const newTitle = isEditMode ? 'Chỉnh sửa hoạt động' : 'Tạo hoạt động mới';
+
+    setBreadcrumbs([
+      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
+      { label: 'Danh sách hoạt động', path: ROUTE_PATHS.ADMIN.ACTIVITIES },
+      { label: newTitle },
+    ]);
+
     setPageActions([
       {
         key: 'cancel',
@@ -122,21 +187,32 @@ const ActivitiesAddEditPage = () => {
         type: 'default',
         className: 'activities__btn--cancel',
         onClick: handleBackToList,
-        disabled: createActivityMutation.isLoading,
+        disabled: isMutating,
       },
       {
         key: 'save',
-        label: createActivityMutation.isLoading ? 'Đang lưu...' : 'Lưu hoạt động',
-        icon: createActivityMutation.isLoading ? <Spin /> : <FontAwesomeIcon icon={faFloppyDisk} />,
+        label: isMutating ? 'Đang lưu...' : 'Lưu hoạt động',
+        icon: isMutating ? <Spin /> : <FontAwesomeIcon icon={faFloppyDisk} />,
         type: 'primary',
         className: 'activities__btn--save',
         onClick: () => form.submit(),
-        disabled: createActivityMutation.isLoading,
+        loading: isMutating,
       },
     ]);
 
-    return () => setPageActions(null);
-  }, [setPageActions, navigate, form, createActivityMutation.isLoading]);
+    return () => {
+      setPageActions(null);
+      setBreadcrumbs(null);
+    };
+  }, [
+    setPageActions,
+    setBreadcrumbs,
+    navigate,
+    form,
+    isEditMode,
+    createActivityMutation.isLoading,
+    updateActivityMutation.isLoading,
+  ]);
 
   const normFile = (e) => {
     if (Array.isArray(e)) {
@@ -144,6 +220,14 @@ const ActivitiesAddEditPage = () => {
     }
     return e?.fileList;
   };
+
+  if (isLoadingActivity) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <ConfigProvider locale={viVN}>
