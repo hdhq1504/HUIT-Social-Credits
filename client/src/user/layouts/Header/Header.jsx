@@ -117,6 +117,9 @@ function Header() {
       {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
       {user?.role !== 'ADMIN' && (
         <>
+          <div className={cx('header__menu-header')}>
+            Xin chào <span>{user?.TenNguoiDung}</span>
+          </div>
           <div className={cx('header__menu-item')}>
             <Link to={ROUTE_PATHS.USER.PROFILE}>
               <User size={16} />

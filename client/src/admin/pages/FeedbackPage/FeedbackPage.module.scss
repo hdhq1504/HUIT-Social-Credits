@@ -64,7 +64,6 @@
     width: auto;
   }
 
-  /* Ghi đè style AntD */
   :global(.ant-input-affix-wrapper),
   :global(.ant-select-selector) {
     border-radius: 8px !important;
@@ -94,7 +93,6 @@
   }
 }
 
-/* ===== Box nội dung (Table) ===== */
 .content-box {
   background: var(--white-color);
   border-radius: 12px;
@@ -115,7 +113,6 @@
   }
 }
 
-/* ===== Bảng ===== */
 .table {
   :global(.ant-table-wrapper) {
     font-family: 'Montserrat', sans-serif;
@@ -204,28 +201,32 @@
 .status-tag {
   font-family: 'Montserrat';
   font-size: 13px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  text-align: center;
-  min-width: 80px;
+  font-weight: 500;
+  padding: 4px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
 
-  &.--success {
-    background-color: #d4f4d4;
-    color: var(--success-color);
-    border: 1px solid var(--success-color);
+  &__dot {
+    font-size: 8px;
   }
 
   &.--pending {
-    background-color: #ffeccc;
+    background: rgba(219, 123, 0, 0.12);
     color: var(--warning-color);
-    border: 1px solid var(--warning-color);
   }
 
-  &.--fail {
-    background-color: #fde6e6;
+  &.--approved {
+    background: rgba(25, 135, 84, 0.12);
+    color: var(--success-color);
+  }
+
+  &.--rejected {
+    background: rgba(220, 53, 69, 0.12);
     color: var(--danger-color);
-    border: 1px solid var(--danger-color);
   }
 }
 
@@ -255,6 +256,65 @@
   strong {
     color: var(--black-color);
     font-weight: 600;
+  }
+}
+
+.bulk-actions {
+  position: sticky;
+  bottom: 32px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--white-color);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid #f0f0f0;
+  z-index: 5;
+
+  &__summary {
+    font-size: 15px;
+    color: var(--muted-color);
+
+    strong {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    :global(.ant-btn) {
+      min-width: 120px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 500;
+    }
+  }
+}
+
+.decision-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted-color);
+
+    strong {
+      color: var(--primary-color);
+    }
+  }
+
+  :global(.ant-input-textarea textarea) {
+    font-family: 'Montserrat', sans-serif;
   }
 }
 

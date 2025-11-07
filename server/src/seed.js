@@ -141,7 +141,6 @@ const seed = async () => {
 
     const activitiesData = [
       {
-        maHoatDong: "HD20251030-ONGO-01",
         tieuDe: "Vệ sinh khuôn viên khoa CNTT",
         moTa: "Tổng vệ sinh khuôn viên, sắp xếp lại ghế đá và bảng thông báo.",
         diemCong: 10,
@@ -154,7 +153,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251030-ONGO-02",
         tieuDe: "Hỗ trợ hướng dẫn tân sinh viên",
         moTa: "Trực bàn hướng dẫn, chỉ đường và hỗ trợ thủ tục.",
         diemCong: 8,
@@ -167,7 +165,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251030-ONGO-03",
         tieuDe: "Chăm sóc vườn cây khoa",
         moTa: "Tưới cây, cắt tỉa lá khô, thu gom rác quanh bồn cây.",
         diemCong: 12,
@@ -180,7 +177,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251030-ONGO-04",
         tieuDe: "Xuân yêu thương – gói quà sớm",
         moTa: "Chuẩn bị quà Tết sớm cho hoạt động gây quỹ Xuân tình nguyện.",
         diemCong: 15,
@@ -193,7 +189,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251030-UP-01",
         tieuDe: "Tập huấn an toàn khi hiến máu",
         moTa: "Hướng dẫn kiến thức an toàn và dinh dưỡng trước – sau hiến máu.",
         diemCong: 15,
@@ -206,7 +201,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251031-UP-01",
         tieuDe: "Tham quan Địa chỉ đỏ: Bảo tàng Chứng tích Chiến tranh",
         moTa: "Chuyến tham quan học tập truyền thống cách mạng.",
         diemCong: 60,
@@ -219,7 +213,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251105-UP-01",
         tieuDe: "Ngày hội hiến máu – Giọt hồng IT",
         moTa: "Hiến máu tình nguyện vì cộng đồng.",
         diemCong: 25,
@@ -232,7 +225,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251110-UP-01",
         tieuDe: "Dọn rác tuyến kênh Tham Lương",
         moTa: "Hoạt động bảo vệ môi trường thiết thực.",
         diemCong: 18,
@@ -245,7 +237,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251120-UP-01",
         tieuDe: "Hỗ trợ tổ chức Ngày Nhà giáo Việt Nam 20/11",
         moTa: "Trang trí, sắp xếp chỗ ngồi, đón khách.",
         diemCong: 10,
@@ -258,7 +249,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251201-UP-01",
         tieuDe: "Xuân tình nguyện – Gây quỹ ấm no",
         moTa: "Bán hàng gây quỹ chuẩn bị cho chuyến đi vùng sâu.",
         diemCong: 16,
@@ -271,7 +261,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20260115-UP-01",
         tieuDe: "Mùa hè xanh – Tập huấn tiền trạm",
         moTa: "Tập huấn kỹ năng sinh hoạt tập thể, an toàn lao động.",
         diemCong: 15,
@@ -284,7 +273,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HIENMAU291025",
         tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",
         moTa: "Trở thành anh hùng thầm lặng bằng cách tham gia hiến máu.",
         diemCong: 25,
@@ -297,7 +285,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251029-END-01",
         tieuDe: "Chỉnh trang bảng tin khoa",
         moTa: "Thay poster cũ, gom rác quanh khu vực bảng tin.",
         diemCong: 6,
@@ -310,7 +297,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251020-END-01",
         tieuDe: "Tuyên truyền an toàn giao thông",
         moTa: "Phát tờ rơi, hướng dẫn đội mũ bảo hiểm đúng quy cách.",
         diemCong: 10,
@@ -323,7 +309,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251001-END-01",
         tieuDe: "Đêm hội trăng rằm – hỗ trợ chương trình",
         moTa: "Sắp xếp chỗ ngồi, phát quà cho thiếu nhi khu vực lân cận.",
         diemCong: 12,
@@ -336,7 +321,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20250915-END-01",
         tieuDe: "Tham quan Địa đạo Củ Chi",
         moTa: "Học tập lịch sử đấu tranh cách mạng dân tộc.",
         diemCong: 20,
@@ -349,7 +333,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20251010-END-01",
         tieuDe: "Dọn vệ sinh phòng máy",
         moTa: "Lau màn hình, vệ sinh bàn ghế, gom rác điện tử.",
         diemCong: 8,
@@ -362,7 +345,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20251005-END-01",
         tieuDe: "Nhặt rác – Tuyến đường xanh",
         moTa: "Làm sạch tuyến đường trước cổng trường.",
         diemCong: 9,
@@ -375,7 +357,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20250925-END-01",
         tieuDe: "Tập huấn PCCC cơ bản",
         moTa: "Hướng dẫn sử dụng bình chữa cháy, kỹ năng thoát hiểm.",
         diemCong: 7,
@@ -388,7 +369,6 @@ const seed = async () => {
         isFeatured: true
       },
       {
-        maHoatDong: "HD20250920-END-01",
         tieuDe: "Hiến máu – HUIT vì cộng đồng",
         moTa: "Sự kiện hiến máu định kỳ của khoa.",
         diemCong: 25,
@@ -401,7 +381,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20250910-END-01",
         tieuDe: "Địa chỉ đỏ: Bảo tàng Hồ Chí Minh – Chi nhánh TP.HCM",
         moTa: "Hành trình về nguồn dành cho tân sinh viên.",
         diemCong: 20,
@@ -414,7 +393,6 @@ const seed = async () => {
         isFeatured: false
       },
       {
-        maHoatDong: "HD20250830-END-01",
         tieuDe: "Tiếp sức mùa thi – tổng kết",
         moTa: "Tổng kết chiến dịch, trao giấy chứng nhận TNV.",
         diemCong: 15,
@@ -428,7 +406,6 @@ const seed = async () => {
       }
     ];
 
-    const activityMap = {};
     for (const activity of activitiesData) {
       const category = activity.categoryCode ? categoryMap[activity.categoryCode] : null;
       const academicPeriod = await resolveAcademicPeriodForDate(activity.batDauLuc ?? activity.ketThucLuc);
@@ -456,15 +433,12 @@ const seed = async () => {
         nhomDiem: category?.nhomDiem
       };
 
-      const created = await prisma.hoatDong.upsert({
-        where: { maHoatDong: activity.maHoatDong },
-        update: payload,
-        create: {
-          maHoatDong: activity.maHoatDong,
-          ...payload
-        }
-      });
-      activityMap[activity.maHoatDong] = created;
+      const existing = await prisma.hoatDong.findFirst({ where: { tieuDe: activity.tieuDe } });
+      if (existing) {
+        await prisma.hoatDong.update({ where: { id: existing.id }, data: payload });
+      } else {
+        await prisma.hoatDong.create({ data: payload });
+      }
     }
 
     console.log("Tạo seed thành công");

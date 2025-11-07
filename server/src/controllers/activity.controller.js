@@ -268,6 +268,7 @@ const mapFeedback = (feedback) => {
     content: feedback.noiDung,
     rating: feedback.danhGia ?? null,
     attachments: normalizeAttachments(feedback.minhChung),
+    rejectedReason: feedback.lyDoTuChoi ?? null,
     submittedAt: feedback.taoLuc?.toISOString() ?? null,
     updatedAt: feedback.capNhatLuc?.toISOString() ?? null
   };
@@ -413,7 +414,7 @@ const mapActivity = (activity, registration) => {
 
   return {
     id: activity.id,
-    code: activity.maHoatDong,
+    code: null,
     title: activity.tieuDe,
     description: activity.moTa,
     requirements: Array.isArray(activity.yeuCau) ? activity.yeuCau : [],
@@ -495,7 +496,6 @@ export const listActivities = async (req, res) => {
         OR: [
           { tieuDe: { contains: searchTerm, mode: 'insensitive' } },
           { diaDiem: { contains: searchTerm, mode: 'insensitive' } },
-          { maHoatDong: { contains: searchTerm, mode: 'insensitive' } },
         ],
       }
       : {}),
@@ -865,7 +865,8 @@ export const submitActivityFeedback = async (req, res) => {
     noiDung: String(content).trim(),
     danhGia: normalizedRating,
     minhChung: normalizedAttachments,
-    trangThai: "CHO_DUYET"
+    trangThai: "CHO_DUYET",
+    lyDoTuChoi: null,
   };
 
   let feedback;
@@ -974,9 +975,6 @@ export const createActivity = async (req, res) => {
     res.status(201).json({ activity });
   } catch (error) {
     console.error("Error creating activity:", error);
-    if (error.code === 'P2002' && error.meta?.target?.includes('maHoatDong')) {
-      return res.status(409).json({ error: 'Mã hoạt động đã tồn tại.' });
-    }
     res.status(500).json({ error: error.message || 'Không thể tạo hoạt động' });
   }
 };
