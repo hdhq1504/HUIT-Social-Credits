@@ -16,6 +16,8 @@ function ProgressSection({
   missingPoints = 0,
   onViewDetail,
   imageUrl = '/images/profile.png',
+  isQualified = false,
+  requirements = null,
 }) {
   const [avatarSrc, setAvatarSrc] = useState(imageUrl || '/images/profile.png');
 
@@ -33,6 +35,47 @@ function ProgressSection({
       safeMissingPoints: normalizedMissing,
     };
   }, [percent, missingPoints]);
+
+  const summaryInfo = useMemo(() => {
+    const groupOne = requirements?.groupOne;
+    const groupTwoThree = requirements?.groupTwoThree;
+
+    if (isQualified) {
+      return {
+        type: 'message',
+        message: 'Bạn đã đủ điều kiện để nhận chứng chỉ công tác xã hội.',
+      };
+    }
+
+    if (groupOne?.hasRequiredPoints && !groupOne?.hasRedAddressParticipation) {
+      return {
+        type: 'message',
+        message: 'Bạn cần tham gia ít nhất một hoạt động Địa chỉ đỏ để hoàn thành chứng chỉ.',
+      };
+    }
+
+    const needsGroupOnePoints = groupOne ? !groupOne.hasRequiredPoints : false;
+    const needsGroupTwoThreePoints = groupTwoThree ? !groupTwoThree.hasRequiredPoints : false;
+
+    if (needsGroupOnePoints || needsGroupTwoThreePoints) {
+      return {
+        type: 'points',
+        missing: Math.max(Math.round(safeMissingPoints), 0),
+      };
+    }
+
+    if (safeMissingPoints > 0) {
+      return {
+        type: 'points',
+        missing: Math.max(Math.round(safeMissingPoints), 0),
+      };
+    }
+
+    return {
+      type: 'message',
+      message: 'Bạn đã đạt đủ điểm số mục tiêu.',
+    };
+  }, [isQualified, requirements, safeMissingPoints]);
 
   return (
     <div className={cx('progress-section')}>
@@ -96,7 +139,13 @@ function ProgressSection({
           </div>
 
           <div className={cx('progress-section__summary')}>
-            Bạn còn thiếu <strong>{safeMissingPoints} điểm</strong> để đạt chứng chỉ hoàn thành.
+            {summaryInfo.type === 'points' ? (
+              <>
+                Bạn còn thiếu <strong>{summaryInfo.missing}</strong> điểm để đạt chứng chỉ hoàn thành.
+              </>
+            ) : (
+              summaryInfo.message
+            )}
           </div>
 
           <div className={cx('progress-section__actions')} onClick={onViewDetail}>

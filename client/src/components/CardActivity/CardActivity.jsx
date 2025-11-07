@@ -148,7 +148,6 @@ function CardActivity(props) {
       NHOM_1: 'Nhóm 1',
       NHOM_2: 'Nhóm 2',
       NHOM_3: 'Nhóm 3',
-      NHOM_2_3: 'Nhóm 2,3',
     }),
     [],
   );

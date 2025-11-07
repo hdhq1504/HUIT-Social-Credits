@@ -1,14 +1,9 @@
 const GROUP_CONFIG = {
   NHOM_1: { id: 'NHOM_1', name: 'Nhóm 1', target: 50 },
-  NHOM_2_3: { id: 'NHOM_2_3', name: 'Nhóm 2,3', target: 120 },
+  NHOM_23: { id: 'NHOM_23', name: 'Nhóm 2,3', target: 120 },
 };
 
-const POINT_TARGETS = {
-  NHOM_1: 50,
-  NHOM_2: 60,
-  NHOM_3: 60,
-};
-
+const GROUP_IDS = Object.keys(GROUP_CONFIG);
 const DEFAULT_IMAGE = '/images/profile.png';
 
 const buildDefaultGroup = (config) => ({
@@ -20,15 +15,18 @@ const buildDefaultGroup = (config) => ({
   status: 'warning',
   note: `Còn ${config.target} điểm`,
   value: `0/${config.target}`,
+  detail: null,
 });
 
 export const DEFAULT_PROGRESS_SECTION = {
   currentPoints: 0,
-  targetPoints: Object.values(GROUP_CONFIG).reduce((sum, item) => sum + item.target, 0),
+  targetPoints: GROUP_IDS.reduce((sum, id) => sum + GROUP_CONFIG[id].target, 0),
   percent: 0,
-  missingPoints: Object.values(GROUP_CONFIG).reduce((sum, item) => sum + item.target, 0),
-  groups: Object.values(GROUP_CONFIG).map(buildDefaultGroup),
+  missingPoints: GROUP_IDS.reduce((sum, id) => sum + GROUP_CONFIG[id].target, 0),
+  groups: GROUP_IDS.map((id) => buildDefaultGroup(GROUP_CONFIG[id])),
   imageUrl: DEFAULT_IMAGE,
+  isQualified: false,
+  requirements: null,
 };
 
 const parseFraction = (value) => {
@@ -39,106 +37,90 @@ const parseFraction = (value) => {
   return [Number.isFinite(current) ? current : undefined, Number.isFinite(target) ? target : undefined];
 };
 
-const parseMetrics = (group, fallbackTarget) => {
+const extractGroupMetrics = (group, fallbackTarget) => {
   if (!group) {
-    return { current: 0, target: fallbackTarget };
+    return {
+      current: 0,
+      target: fallbackTarget,
+      remaining: fallbackTarget,
+      status: 'warning',
+      note: `Còn ${fallbackTarget} điểm`,
+    };
   }
 
   const [fractionCurrent, fractionTarget] = parseFraction(group.value);
-  const current = Number.isFinite(group.current) ? group.current : (fractionCurrent ?? 0);
-  const target = Number.isFinite(group.target) ? group.target : (fractionTarget ?? fallbackTarget ?? 0);
+  const current = Number.isFinite(group.current) ? group.current : fractionCurrent ?? 0;
+  const target = Number.isFinite(group.target) ? group.target : fractionTarget ?? fallbackTarget ?? 0;
+  const remaining = Math.max(target - current, 0);
+  const status = group.status || (remaining > 0 ? 'warning' : 'success');
+  const note = group.note || (remaining > 0 ? `Còn ${remaining} điểm` : 'Hoàn thành');
 
-  return { current, target, source: group };
-};
-
-const computeNormalizedGroups = (groups = []) => {
-  const groupMap = new Map();
-  groups.forEach((group) => {
-    if (group?.id) {
-      groupMap.set(group.id, group);
-    }
-  });
-
-  const group1Metrics = parseMetrics(groupMap.get('NHOM_1'), POINT_TARGETS.NHOM_1);
-  const group2Metrics = parseMetrics(groupMap.get('NHOM_2'), POINT_TARGETS.NHOM_2);
-  const group3Metrics = parseMetrics(groupMap.get('NHOM_3'), POINT_TARGETS.NHOM_3);
-  const aggregatedMetrics = parseMetrics(groupMap.get('NHOM_2_3'), GROUP_CONFIG.NHOM_2_3.target);
-
-  const group1Target = group1Metrics.target || POINT_TARGETS.NHOM_1;
-  const group1Current = group1Metrics.current || 0;
-  const overflow = Math.max(group1Current - group1Target, 0);
-  const normalizedGroup1Current = Math.min(group1Current, group1Target);
-
-  const computedGroup23Target =
-    (group2Metrics.target || 0) + (group3Metrics.target || 0) ||
-    aggregatedMetrics.target ||
-    GROUP_CONFIG.NHOM_2_3.target;
-  const computedGroup23Current = overflow + (group2Metrics.current || 0) + (group3Metrics.current || 0);
-  const normalizedGroup23Current = Math.max(computedGroup23Current, aggregatedMetrics.current || 0);
-  const normalizedGroup23Target = aggregatedMetrics.target || computedGroup23Target;
-
-  const normalized = new Map();
-  normalized.set('NHOM_1', {
-    current: normalizedGroup1Current,
-    target: group1Target,
-    source: group1Metrics.source,
-  });
-  normalized.set('NHOM_2_3', {
-    current: normalizedGroup23Current,
-    target: normalizedGroup23Target,
-    source: aggregatedMetrics.source,
-  });
-
-  return normalized;
+  return { current, target, remaining, status, note };
 };
 
 export const mapProgressSummaryToSection = (summary) => {
   if (!summary) return DEFAULT_PROGRESS_SECTION;
 
-  const defaultTarget = DEFAULT_PROGRESS_SECTION.targetPoints;
-  const totalTarget = Number.isFinite(summary.targetPoints) ? summary.targetPoints : defaultTarget;
-  const currentPoints = Number.isFinite(summary.currentPoints) ? summary.currentPoints : 0;
+  const groupMap = new Map();
+  (summary.groups || []).forEach((group) => {
+    if (group?.id) {
+      groupMap.set(group.id, group);
+    }
+  });
 
-  const normalizedGroups = computeNormalizedGroups(summary.groups);
-
-  const groups = Object.values(GROUP_CONFIG).map((config) => {
-    const metrics = normalizedGroups.get(config.id);
-    const source = metrics?.source;
-    const current = metrics?.current ?? 0;
-    const target = metrics?.target ?? config.target;
-    const remaining = Math.max(target - current, 0);
-    const status = source?.status || (remaining > 0 ? 'warning' : 'success');
-    const note = source?.note || (remaining > 0 ? `Còn ${remaining} điểm` : 'Hoàn thành');
+  const groups = GROUP_IDS.map((id) => {
+    const config = GROUP_CONFIG[id];
+    const groupData = groupMap.get(id);
+    const metrics = extractGroupMetrics(groupData, config?.target);
+    const current = metrics.current || 0;
+    const target = metrics.target || config?.target || 0;
+    const remaining = Number.isFinite(metrics.remaining)
+      ? metrics.remaining
+      : Math.max(target - Math.min(current, target), 0);
 
     return {
-      id: config.id,
-      name: config.name,
+      id: groupData?.id || config.id,
+      name: groupData?.name || config.name,
       target,
       current,
       remaining,
-      status,
-      note,
-      value: `${current}/${target}`,
+      status: metrics.status,
+      note: metrics.note,
+      value: groupData?.value || `${current}/${target}`,
+      details: groupData?.details ?? null,
     };
   });
 
-  const missingPointsRaw = Number.isFinite(summary.missingPoints)
-    ? summary.missingPoints
-    : groups.reduce((sum, group) => sum + Math.max(group.target - group.current, 0), 0);
-  const missingPoints = Math.max(missingPointsRaw, 0);
+  const currentPoints = Number.isFinite(summary.currentPoints)
+    ? summary.currentPoints
+    : groups.reduce((sum, group) => sum + Math.min(group.current ?? 0, group.target ?? 0), 0);
+
+  const targetPoints = Number.isFinite(summary.targetPoints)
+    ? summary.targetPoints
+    : groups.reduce((sum, group) => sum + group.target, 0);
+
+  const missingPoints = Number.isFinite(summary.missingPoints)
+    ? Math.max(summary.missingPoints, 0)
+    : groups.reduce(
+      (sum, group) =>
+        sum + Math.max((group.target ?? 0) - Math.min(group.current ?? 0, group.target ?? 0), 0),
+      0,
+    );
 
   const percent = Number.isFinite(summary.percent)
     ? summary.percent
-    : totalTarget > 0
-      ? Math.round((currentPoints / totalTarget) * 100)
+    : targetPoints > 0
+      ? Math.min(100, Math.round((currentPoints / targetPoints) * 100))
       : 0;
 
   return {
     currentPoints,
-    targetPoints: totalTarget,
+    targetPoints,
     percent,
     missingPoints,
     groups,
     imageUrl: summary.avatarUrl || summary.imageUrl || DEFAULT_IMAGE,
+    isQualified: Boolean(summary.isQualified ?? summary.requirements?.isQualified),
+    requirements: summary.requirements ?? null,
   };
 };

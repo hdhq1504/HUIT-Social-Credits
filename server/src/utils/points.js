@@ -4,17 +4,36 @@ export const POINT_GROUPS = {
     label: 'Nhóm 1',
     target: 50,
   },
-  NHOM_2_3: {
-    id: 'NHOM_2_3',
-    label: 'Nhóm 2,3',
-    target: 120,
+  NHOM_2: {
+    id: 'NHOM_2',
+    label: 'Nhóm 2',
+    target: 60,
+  },
+  NHOM_3: {
+    id: 'NHOM_3',
+    label: 'Nhóm 3',
+    target: 60,
   },
 };
 
-export const DEFAULT_POINT_GROUP = 'NHOM_2_3';
+export const CERTIFICATE_TARGETS = {
+  GROUP_ONE: 50,
+  GROUP_TWO_THREE: 120,
+};
+
+export const CERTIFICATE_TOTAL_TARGET =
+  CERTIFICATE_TARGETS.GROUP_ONE + CERTIFICATE_TARGETS.GROUP_TWO_THREE;
+
+export const RED_ADDRESS_CATEGORY_NAME = 'Địa chỉ đỏ';
+
+export const DEFAULT_POINT_GROUP = 'NHOM_2';
+
+const hasPointGroup = (value) => Object.prototype.hasOwnProperty.call(POINT_GROUPS, value);
+
+export const isValidPointGroup = (value) => hasPointGroup(value);
 
 export const normalizePointGroup = (value) =>
-  Object.prototype.hasOwnProperty.call(POINT_GROUPS, value) ? value : DEFAULT_POINT_GROUP;
+  hasPointGroup(value) ? value : DEFAULT_POINT_GROUP;
 
 export const getPointGroupLabel = (value) => POINT_GROUPS[normalizePointGroup(value)].label;
 

@@ -18,6 +18,8 @@ import {
   faTrash,
   faCircleDot,
   faClipboardList,
+  faSchool,
+  faCalendarDays,
 } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
@@ -276,6 +278,12 @@ function ActivitiesDetailPage() {
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
                     <InfoItem icon={faMapPin} label="Địa điểm" value={activity.location || '--'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faSchool} label="Học kỳ" value={activity.semester || '--'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem icon={faCalendarDays} label="Năm học" value={activity.academicYear || '--'} />
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
                     <div className={cx('activity-detail__item')}>

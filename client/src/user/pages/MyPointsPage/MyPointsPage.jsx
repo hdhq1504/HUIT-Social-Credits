@@ -258,6 +258,8 @@ function MyPointsPage() {
             percent={progressSection.percent}
             groups={progressSection.groups}
             missingPoints={progressSection.missingPoints}
+            isQualified={progressSection.isQualified}
+            requirements={progressSection.requirements}
             imageUrl={progressSection.imageUrl}
             onViewDetail={() => {
               const el = document.getElementById('score-table');

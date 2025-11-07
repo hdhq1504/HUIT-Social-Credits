@@ -155,9 +155,14 @@
       color: var(--danger-color);
     }
 
-    &.--nhom-23 {
+    &.--nhom-2 {
       background: rgba(25, 120, 135, 0.12);
       color: var(--success-color);
+    }
+
+    &.--nhom-3 {
+      background: rgba(220, 119, 0, 0.12);
+      color: var(--warning-color);
     }
   }
 
@@ -244,7 +249,7 @@
   border-radius: 8px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
-  
+
   a {
     color: var(--xám, #696969);
   }
@@ -254,7 +259,7 @@
   background: var(--primary-color);
 
   border-color: var(--primary-color);
-  
+
   a {
     color: white;
   }

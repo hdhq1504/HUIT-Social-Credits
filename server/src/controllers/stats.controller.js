@@ -1,14 +1,26 @@
 import prisma from "../prisma.js";
 import {
+  CERTIFICATE_TARGETS,
+  CERTIFICATE_TOTAL_TARGET,
   DEFAULT_POINT_GROUP,
   POINT_GROUPS,
+  RED_ADDRESS_CATEGORY_NAME,
   getPointGroupLabel,
-  getPointGroupSummary,
-  getTotalTargetPoints,
   normalizePointGroup
 } from "../utils/points.js";
 
 const PROGRESS_GROUP_KEYS = Object.keys(POINT_GROUPS);
+const GROUP_ONE_KEY = "NHOM_1";
+const GROUP_TWO_KEY = "NHOM_2";
+const GROUP_THREE_KEY = "NHOM_3";
+const COMBINED_GROUP_KEY = "NHOM_23";
+const RED_ADDRESS_NAME_NORMALIZED = RED_ADDRESS_CATEGORY_NAME.trim().toLowerCase();
+
+const normalizeCategoryName = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const isRedAddressCategory = (value) =>
+  normalizeCategoryName(value) === RED_ADDRESS_NAME_NORMALIZED;
 
 const buildGroupMap = (groups = []) => {
   const map = new Map();
@@ -38,7 +50,10 @@ export const getProgressSummary = async (req, res) => {
         hoatDong: {
           select: {
             diemCong: true,
-            nhomDiem: true
+            nhomDiem: true,
+            danhMucRef: {
+              select: { ten: true }
+            }
           }
         }
       }
@@ -50,34 +65,119 @@ export const getProgressSummary = async (req, res) => {
     return acc;
   }, {});
 
+  let hasRedAddressParticipation = false;
+
   registrations.forEach((registration) => {
-    const group = normalizePointGroup(registration.hoatDong?.nhomDiem ?? DEFAULT_POINT_GROUP);
-    const points = registration.hoatDong?.diemCong ?? 0;
+    const activity = registration.hoatDong;
+    if (!activity) return;
+
+    const group = normalizePointGroup(activity.nhomDiem ?? DEFAULT_POINT_GROUP);
+    const points = activity.diemCong ?? 0;
     pointTotals[group] += points;
+
+    if (!hasRedAddressParticipation && isRedAddressCategory(activity.danhMucRef?.ten)) {
+      hasRedAddressParticipation = true;
+    }
   });
 
-  const totalPoints = Object.values(pointTotals).reduce((sum, value) => sum + value, 0);
-  const totalTarget = getTotalTargetPoints();
+  const groupOneTarget = CERTIFICATE_TARGETS.GROUP_ONE;
+  const groupTwoThreeTarget = CERTIFICATE_TARGETS.GROUP_TWO_THREE;
 
-  const groups = getPointGroupSummary().map(({ id, label, target }) => {
-    const current = pointTotals[id] ?? 0;
-    const remaining = Math.max(target - current, 0);
-    const status = remaining > 0 ? "warning" : "success";
-    const note = remaining > 0 ? `Còn ${remaining} điểm` : "Hoàn thành";
-    return {
-      id,
-      name: label,
-      target,
-      current,
-      remaining,
-      status,
-      note,
-      value: `${current}/${target}`
-    };
-  });
+  const groupOneRawPoints = pointTotals[GROUP_ONE_KEY] ?? 0;
+  const groupTwoRawPoints = pointTotals[GROUP_TWO_KEY] ?? 0;
+  const groupThreeRawPoints = pointTotals[GROUP_THREE_KEY] ?? 0;
 
-  const missingPoints = groups.reduce((sum, group) => sum + group.remaining, 0);
+  const overflowFromGroupOne = Math.max(groupOneRawPoints - groupOneTarget, 0);
+  const groupOneEffectivePoints = Math.min(groupOneRawPoints, groupOneTarget);
+  const groupTwoThreeEffectivePoints = groupTwoRawPoints + groupThreeRawPoints + overflowFromGroupOne;
+  const normalizedGroupTwoThreePoints = Math.min(groupTwoThreeEffectivePoints, groupTwoThreeTarget);
+
+  const normalizedGroupOnePoints = groupOneEffectivePoints;
+  const totalPoints = normalizedGroupOnePoints + normalizedGroupTwoThreePoints;
+  const totalTarget = CERTIFICATE_TOTAL_TARGET;
+
+  const groupOneRemaining = Math.max(groupOneTarget - groupOneEffectivePoints, 0);
+  const groupTwoThreeRemaining = Math.max(groupTwoThreeTarget - normalizedGroupTwoThreePoints, 0);
+
+  const groupOneHasRequiredPoints = groupOneEffectivePoints >= groupOneTarget;
+  const groupTwoThreeHasRequiredPoints = groupTwoThreeEffectivePoints >= groupTwoThreeTarget;
+  const isQualified =
+    groupOneHasRequiredPoints && groupTwoThreeHasRequiredPoints && hasRedAddressParticipation;
+
+  const groupOneStatus = groupOneHasRequiredPoints && hasRedAddressParticipation ? "success" : "warning";
+  const groupTwoThreeStatus = groupTwoThreeHasRequiredPoints ? "success" : "warning";
+
+  const groupOneNote = (() => {
+    if (!groupOneHasRequiredPoints) {
+      return groupOneRemaining > 0 ? `Còn ${groupOneRemaining} điểm` : "Cần hoàn thành điểm nhóm 1";
+    }
+    if (!hasRedAddressParticipation) {
+      return "Cần tham gia hoạt động Địa chỉ đỏ";
+    }
+    return "Hoàn thành";
+  })();
+
+  const groupTwoThreeNote = groupTwoThreeRemaining > 0 ? `Còn ${groupTwoThreeRemaining} điểm` : "Hoàn thành";
+
+  const groups = [
+    {
+      id: GROUP_ONE_KEY,
+      name: "Nhóm 1",
+      target: groupOneTarget,
+      current: groupOneRawPoints,
+      remaining: groupOneRemaining,
+      status: groupOneStatus,
+      note: groupOneNote,
+      value: `${groupOneRawPoints}/${groupOneTarget}`,
+      details: {
+        rawPoints: groupOneRawPoints,
+        effectivePoints: groupOneEffectivePoints,
+        overflowTransferred: overflowFromGroupOne,
+        hasRedAddressParticipation
+      }
+    },
+    {
+      id: COMBINED_GROUP_KEY,
+      name: "Nhóm 2,3",
+      target: groupTwoThreeTarget,
+      current: groupTwoThreeEffectivePoints,
+      remaining: groupTwoThreeRemaining,
+      status: groupTwoThreeStatus,
+      note: groupTwoThreeNote,
+      value: `${groupTwoThreeEffectivePoints}/${groupTwoThreeTarget}`,
+      details: {
+        rawGroupTwoPoints: groupTwoRawPoints,
+        rawGroupThreePoints: groupThreeRawPoints,
+        overflowFromGroupOne
+      }
+    }
+  ];
+
+  const missingPoints = groupOneRemaining + groupTwoThreeRemaining;
   const percent = totalTarget > 0 ? Math.min(100, Math.round((totalPoints / totalTarget) * 100)) : 0;
+
+  const requirements = {
+    isQualified,
+    totalTarget,
+    totalEarnedPoints: totalPoints,
+    totalRawPoints: groupOneRawPoints + groupTwoRawPoints + groupThreeRawPoints,
+    groupOne: {
+      target: groupOneTarget,
+      earned: groupOneRawPoints,
+      effective: groupOneEffectivePoints,
+      hasRequiredPoints: groupOneHasRequiredPoints,
+      hasRedAddressParticipation,
+      overflowToGroup23: overflowFromGroupOne
+    },
+    groupTwoThree: {
+      target: groupTwoThreeTarget,
+      earned: groupTwoThreeEffectivePoints,
+      rawGroupTwoPoints: groupTwoRawPoints,
+      rawGroupThreePoints: groupThreeRawPoints,
+      hasRequiredPoints: groupTwoThreeHasRequiredPoints,
+      overflowFromGroupOne
+    }
+  };
 
   res.json({
     progress: {
@@ -86,7 +186,9 @@ export const getProgressSummary = async (req, res) => {
       percent,
       missingPoints,
       groups,
-      avatarUrl: user?.avatarUrl ?? null
+      avatarUrl: user?.avatarUrl ?? null,
+      isQualified,
+      requirements
     }
   });
 };

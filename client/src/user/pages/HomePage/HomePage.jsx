@@ -80,6 +80,8 @@ function HomePage() {
             percent={progressSection.percent}
             missingPoints={progressSection.missingPoints}
             groups={progressSection.groups}
+            isQualified={progressSection.isQualified}
+            requirements={progressSection.requirements}
             onViewDetail={() => console.log('Xem chi tiết')}
             imageUrl={progressSection.imageUrl}
           />

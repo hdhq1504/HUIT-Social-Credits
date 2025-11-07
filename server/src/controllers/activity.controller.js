@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import { notifyUser } from "../utils/notification.service.js";
-import { getPointGroupLabel, normalizePointGroup } from "../utils/points.js";
+import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "../utils/points.js";
 
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
@@ -99,6 +99,25 @@ const sanitizeOptionalText = (value, maxLength = 500) => {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.slice(0, maxLength);
+};
+
+const sanitizeStringArray = (value, maxLength = 500) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => sanitizeOptionalText(item, maxLength))
+    .filter((item) => typeof item === "string" && item.length > 0);
+};
+
+const sanitizePoints = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return Math.round(parsed);
+};
+
+const sanitizeCapacity = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return Math.round(parsed);
 };
 
 const sanitizeAttendanceEvidence = (value) => {
@@ -332,7 +351,7 @@ const sanitizeStatusFilter = (value, allowed) => (allowed.includes(value) ? valu
 export const listActivities = async (req, res) => {
   const currentUserId = req.user?.sub;
 
-  const { limit, sort } = req.query || {};
+  const { limit, sort, search, pointGroup } = req.query || {};
   const take = limit ? parseInt(limit, 10) : undefined;
   let orderBy = [{ batDauLuc: 'asc' }, { tieuDe: 'asc' }];
 
@@ -340,10 +359,27 @@ export const listActivities = async (req, res) => {
     orderBy = [{ createdAt: 'desc' }];
   }
 
+  const searchTerm = sanitizeOptionalText(search, 100);
+  const normalizedPointGroup = isValidPointGroup(pointGroup) ? pointGroup : undefined;
+
+  const where = {
+    isPublished: true,
+    ...(normalizedPointGroup ? { nhomDiem: normalizedPointGroup } : {}),
+    ...(searchTerm
+      ? {
+        OR: [
+          { tieuDe: { contains: searchTerm, mode: 'insensitive' } },
+          { diaDiem: { contains: searchTerm, mode: 'insensitive' } },
+          { maHoatDong: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      }
+      : {}),
+  };
+
   const activities = await prisma.hoatDong.findMany({
-    where: { isPublished: true },
-    orderBy: orderBy,
-    take: take,
+    where,
+    orderBy,
+    take,
     include: ACTIVITY_INCLUDE,
   });
 
@@ -763,45 +799,129 @@ export const createActivity = async (req, res) => {
     huongDan,
     batDauLuc,
     ketThucLuc,
-    // TODO: Thêm các trường còn thiếu nếu cần (hinhAnh, hocKy, namHoc, ...)
+    hocKy,
+    namHoc,
   } = req.body;
 
-  if (!tieuDe) {
+  const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
+  if (!normalizedTitle) {
     return res.status(400).json({ error: "Trường 'tieuDe' (Tên hoạt động) là bắt buộc" });
   }
   if (!nhomDiem) {
     return res.status(400).json({ error: "Trường 'nhomDiem' (Nhóm hoạt động) là bắt buộc" });
   }
+  if (!isValidPointGroup(nhomDiem)) {
+    return res.status(400).json({ error: "Giá trị 'nhomDiem' không hợp lệ" });
+  }
 
   try {
     const data = {
-      tieuDe,
-      nhomDiem,
-      diemCong,
-      diaDiem,
-      sucChuaToiDa,
-      moTa,
-      quyenLoi: quyenLoi || [],
-      trachNhiem: trachNhiem || [],
-      yeuCau: yeuCau || [],
-      huongDan: huongDan || [],
+      tieuDe: normalizedTitle,
+      nhomDiem: normalizePointGroup(nhomDiem),
+      diemCong: sanitizePoints(diemCong),
+      diaDiem: sanitizeOptionalText(diaDiem, 255),
+      sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
+      moTa: sanitizeOptionalText(moTa, 4000),
+      quyenLoi: sanitizeStringArray(quyenLoi),
+      trachNhiem: sanitizeStringArray(trachNhiem),
+      yeuCau: sanitizeStringArray(yeuCau),
+      huongDan: sanitizeStringArray(huongDan, 1000),
       batDauLuc: batDauLuc ? toDate(batDauLuc) : null,
       ketThucLuc: ketThucLuc ? toDate(ketThucLuc) : null,
-      // TODO: Thêm logic xử lý upload hinhAnh (coverImage)
-      // hinhAnh: ...
+      hocKy: sanitizeOptionalText(hocKy, 20),
+      namHoc: sanitizeOptionalText(namHoc, 20),
     };
 
     const newActivity = await prisma.hoatDong.create({
       data,
     });
 
-    res.status(201).json({ activity: newActivity });
+    const activity = await buildActivityResponse(newActivity.id, req.user?.sub);
+
+    res.status(201).json({ activity });
   } catch (error) {
-    console.error('Error creating activity:', error);
+    console.error("Error creating activity:", error);
     if (error.code === 'P2002' && error.meta?.target?.includes('maHoatDong')) {
       return res.status(409).json({ error: 'Mã hoạt động đã tồn tại.' });
     }
     res.status(500).json({ error: error.message || 'Không thể tạo hoạt động' });
+  }
+};
+
+export const updateActivity = async (req, res) => {
+  const { id } = req.params;
+  const {
+    tieuDe,
+    nhomDiem,
+    diemCong,
+    diaDiem,
+    sucChuaToiDa,
+    moTa,
+    quyenLoi,
+    trachNhiem,
+    yeuCau,
+    huongDan,
+    batDauLuc,
+    ketThucLuc,
+    hocKy,
+    namHoc,
+  } = req.body;
+
+  const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
+  if (!normalizedTitle) {
+    return res.status(400).json({ error: "Trường 'tieuDe' (Tên hoạt động) là bắt buộc" });
+  }
+  if (!nhomDiem) {
+    return res.status(400).json({ error: "Trường 'nhomDiem' (Nhóm hoạt động) là bắt buộc" });
+  }
+  if (!isValidPointGroup(nhomDiem)) {
+    return res.status(400).json({ error: "Giá trị 'nhomDiem' không hợp lệ" });
+  }
+
+  try {
+    const updated = await prisma.hoatDong.update({
+      where: { id },
+      data: {
+        tieuDe: normalizedTitle,
+        nhomDiem: normalizePointGroup(nhomDiem),
+        diemCong: sanitizePoints(diemCong),
+        diaDiem: sanitizeOptionalText(diaDiem, 255),
+        sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
+        moTa: sanitizeOptionalText(moTa, 4000),
+        quyenLoi: sanitizeStringArray(quyenLoi),
+        trachNhiem: sanitizeStringArray(trachNhiem),
+        yeuCau: sanitizeStringArray(yeuCau),
+        huongDan: sanitizeStringArray(huongDan, 1000),
+        batDauLuc: batDauLuc ? toDate(batDauLuc) : null,
+        ketThucLuc: ketThucLuc ? toDate(ketThucLuc) : null,
+        hocKy: sanitizeOptionalText(hocKy, 20),
+        namHoc: sanitizeOptionalText(namHoc, 20),
+      },
+    });
+
+    const activity = await buildActivityResponse(updated.id, req.user?.sub);
+    res.json({ activity });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Hoạt động không tồn tại' });
+    }
+    console.error("Error updating activity:", error);
+    res.status(500).json({ error: error.message || 'Không thể cập nhật hoạt động' });
+  }
+};
+
+export const deleteActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.hoatDong.delete({ where: { id } });
+    res.json({ message: 'Đã xóa hoạt động' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Hoạt động không tồn tại' });
+    }
+    console.error("Error deleting activity:", error);
+    res.status(500).json({ error: error.message || 'Không thể xóa hoạt động' });
   }
 };
 

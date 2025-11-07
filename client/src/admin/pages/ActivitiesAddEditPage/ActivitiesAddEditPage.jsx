@@ -42,6 +42,11 @@ const combineDateAndTime = (date, time) => {
   return date.hour(time.hour()).minute(time.minute()).second(0).toISOString();
 };
 
+const combineDayjsDateAndTime = (date, time) => {
+  if (!date || !time) return null;
+  return date.clone().hour(time.hour()).minute(time.minute()).second(0).millisecond(0);
+};
+
 // Helper chuyển mảng về chuỗi (cho TextAreas)
 const arrayToString = (value) => {
   if (Array.isArray(value)) {
@@ -53,13 +58,18 @@ const arrayToString = (value) => {
 // Helper chuyển chuỗi về mảng (từ TextAreas)
 const stringToArray = (value) => {
   if (!value) return [];
-  return value.split('\n').filter((line) => line.trim() !== '');
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.trim() !== '');
 };
 
 const ActivitiesAddEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const startDateValue = Form.useWatch('startDate', form);
+  const startTimeValue = Form.useWatch('startTime', form);
   const isEditMode = !!id;
 
   const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
@@ -80,10 +90,12 @@ const ActivitiesAddEditPage = () => {
         points: activityData.points,
         location: activityData.location,
         maxCapacity: activityData.maxCapacity,
-        // TODO: Map 2 trường này (Schema của bạn chưa có)
+        semester: activityData.semester || '',
+        academicYear: activityData.academicYear || '',
+        // TODO: Map trường này (Schema của bạn chưa có)
         // attendanceMethod: activityData.attendanceMethod,
-        // registrationDeadline: activityData.registrationDeadline ? dayjs(activityData.registrationDeadline) : null,
-        // cancellationDeadline: activityData.cancellationDeadline ? dayjs(activityData.cancellationDeadline) : null,
+        registrationDeadline: activityData.registrationDeadline ? dayjs(activityData.registrationDeadline) : null,
+        cancellationDeadline: activityData.cancellationDeadline ? dayjs(activityData.cancellationDeadline) : null,
 
         // Map ngày/giờ
         startDate: activityData.startTime ? dayjs(activityData.startTime) : null,
@@ -148,7 +160,7 @@ const ActivitiesAddEditPage = () => {
 
       // Chuyển đổi TextAreas thành mảng JSON
       quyenLoi: stringToArray(values.benefits),
-      trachNih_em: stringToArray(values.responsibilities),
+      trachNhiem: stringToArray(values.responsibilities),
       yeuCau: stringToArray(values.requirements),
       huongDan: stringToArray(values.guidelines),
 
@@ -156,9 +168,11 @@ const ActivitiesAddEditPage = () => {
       batDauLuc: combineDateAndTime(values.startDate, values.startTime),
       ketThucLuc: combineDateAndTime(values.endDate, values.endTime),
 
-      // TODO: Map 2 trường này (Schema của bạn chưa có)
-      // registrationDeadline: values.registrationDeadline.toISOString(),
-      // cancellationDeadline: values.cancellationDeadline.toISOString(),
+      hocKy: values.semester ? values.semester.trim() : null,
+      namHoc: values.academicYear ? values.academicYear.trim() : null,
+
+      registrationDeadline: values.registrationDeadline ? values.registrationDeadline.toISOString() : null,
+      cancellationDeadline: values.cancellationDeadline ? values.cancellationDeadline.toISOString() : null,
     };
 
     console.log('Payload to API:', payload);
@@ -221,6 +235,20 @@ const ActivitiesAddEditPage = () => {
     return e?.fileList;
   };
 
+  useEffect(() => {
+    const combined = combineDayjsDateAndTime(startDateValue, startTimeValue);
+    if (!combined) {
+      form.setFieldsValue({ cancellationDeadline: null });
+      return;
+    }
+
+    const suggestedDeadline = combined.subtract(3, 'day');
+    const currentValue = form.getFieldValue('cancellationDeadline');
+    if (!currentValue || !currentValue.isSame(suggestedDeadline)) {
+      form.setFieldsValue({ cancellationDeadline: suggestedDeadline });
+    }
+  }, [form, startDateValue, startTimeValue]);
+
   if (isLoadingActivity) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -240,6 +268,8 @@ const ActivitiesAddEditPage = () => {
         initialValues={{
           points: 0,
           maxCapacity: 0,
+          semester: '',
+          academicYear: '',
         }}
       >
         {/* Form container */}
@@ -275,6 +305,16 @@ const ActivitiesAddEditPage = () => {
                       <Option value="NHOM_2">Nhóm 2</Option>
                       <Option value="NHOM_3">Nhóm 3</Option>
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="points" label="Học kỳ" className={cx('activities__group')}>
+                    <Input placeholder="Ví dụ: HK1" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="points" label="Số điểm" className={cx('activities__group')}>
+                    <Input placeholder="Ví dụ: 2024-2025" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
