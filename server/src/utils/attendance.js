@@ -1,0 +1,47 @@
+const ATTENDANCE_METHOD_MAP = {
+  QR: "qr",
+  PHOTO: "photo",
+  MANUAL: "manual"
+};
+
+const LABEL_MAP = {
+  qr: "QR Code",
+  photo: "Chụp ảnh",
+  manual: "Thủ công"
+};
+
+export const normalizeAttendanceMethod = (value) => {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase();
+  const entry = Object.entries(ATTENDANCE_METHOD_MAP).find(([, apiValue]) => apiValue === normalized);
+  if (entry) {
+    return entry[0];
+  }
+  const key = normalized.toUpperCase();
+  return ATTENDANCE_METHOD_MAP[key] ? key : null;
+};
+
+export const mapAttendanceMethodToApi = (value) => {
+  if (!value) return null;
+  if (ATTENDANCE_METHOD_MAP[value]) {
+    return ATTENDANCE_METHOD_MAP[value];
+  }
+  const normalized = String(value).trim().toLowerCase();
+  const entry = Object.entries(ATTENDANCE_METHOD_MAP).find(([, apiValue]) => apiValue === normalized);
+  return entry ? entry[1] : null;
+};
+
+export const getAttendanceMethodLabel = (value) => {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase();
+  return LABEL_MAP[normalized] ?? null;
+};
+
+export const getDefaultAttendanceMethod = () => "QR";
+
+export default {
+  normalizeAttendanceMethod,
+  mapAttendanceMethodToApi,
+  getAttendanceMethodLabel,
+  getDefaultAttendanceMethod
+};

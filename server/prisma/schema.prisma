@@ -63,36 +63,77 @@ model DanhMucHoatDong {
   @@index([isActive, nhomDiem])
 }
 
+model NamHoc {
+  id        String    @id @default(cuid())
+  ma        String    @unique
+  nienKhoa  String    @unique
+  ten       String?
+  batDau    DateTime
+  ketThuc   DateTime
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  hocKy     HocKy[]
+  hoatDong  HoatDong[] @relation("HoatDongNamHoc")
+
+  @@index([isActive, batDau])
+  @@index([batDau, ketThuc])
+}
+
+model HocKy {
+  id        String    @id @default(cuid())
+  ma        String    @unique
+  ten       String
+  thuTu     Int?
+  moTa      String?
+  batDau    DateTime
+  ketThuc   DateTime
+  isActive  Boolean   @default(true)
+  namHocId  String
+  namHoc    NamHoc    @relation(fields: [namHocId], references: [id], onDelete: Cascade)
+  hoatDong  HoatDong[] @relation("HoatDongHocKy")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([namHocId, isActive, thuTu])
+  @@index([batDau, ketThuc])
+}
+
 model HoatDong {
-  id                String              @id @default(cuid())
-  maHoatDong        String?             @unique
-  tieuDe            String
-  moTa              String?
-  quyenLoi          Json?
-  trachNhiem        Json?
-  yeuCau            Json?
-  huongDan          Json?
-  diemCong          Int                 @default(0)
-  batDauLuc         DateTime?
-  ketThucLuc        DateTime?
-  diaDiem           String?
-  sucChuaToiDa      Int?
-  hinhAnh           String?             @db.VarChar(255)
-  isFeatured        Boolean             @default(false)
-  isPublished       Boolean             @default(true)
-  hocKy             String?             @db.VarChar(20)
-  namHoc            String?             @db.VarChar(20)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  dangKy            DangKyHoatDong[]
-  phanHoi           PhanHoiHoatDong[]
-  danhMucId         String?
-  nhomDiem          NhomDiem            @default(NHOM_2)
-  danhMucRef        DanhMucHoatDong?    @relation(fields: [danhMucId], references: [id])
-  DiemDanhNguoiDung DiemDanhNguoiDung[]
+  id                 String              @id @default(cuid())
+  maHoatDong         String?             @unique
+  tieuDe             String
+  moTa               String?             @db.Text
+  yeuCau             Json?
+  huongDan           Json?
+  diemCong           Int                 @default(0)
+  batDauLuc          DateTime?
+  ketThucLuc         DateTime?
+  diaDiem            String?
+  sucChuaToiDa       Int?
+  hinhAnh            String?             @db.VarChar(255)
+  isFeatured         Boolean             @default(false)
+  isPublished        Boolean             @default(true)
+  hanDangKy          DateTime?
+  hanHuyDangKy       DateTime?
+  phuongThucDiemDanh AttendanceMethod    @default(QR)
+  hocKyId            String?
+  namHocId           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  dangKy             DangKyHoatDong[]
+  phanHoi            PhanHoiHoatDong[]
+  danhMucId          String?
+  nhomDiem           NhomDiem            @default(NHOM_2)
+  danhMucRef         DanhMucHoatDong?    @relation(fields: [danhMucId], references: [id])
+  DiemDanhNguoiDung  DiemDanhNguoiDung[]
+  hocKyRef           HocKy?              @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
+  namHocRef          NamHoc?             @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
 
   @@index([isPublished, batDauLuc])
   @@index([danhMucId])
+  @@index([hocKyId])
+  @@index([namHocId])
 }
 
 model DangKyHoatDong {
@@ -216,4 +257,10 @@ enum NhomDiem {
   NHOM_1
   NHOM_2
   NHOM_3
+}
+
+enum AttendanceMethod {
+  QR
+  PHOTO
+  MANUAL
 }

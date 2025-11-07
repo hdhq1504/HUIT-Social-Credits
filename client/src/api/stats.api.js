@@ -2,6 +2,7 @@ import http from '@utils/http';
 
 export const PROGRESS_QUERY_KEY = ['stats', 'progress'];
 export const CATEGORY_QUERY_KEY = ['stats', 'categories'];
+export const ADMIN_DASHBOARD_QUERY_KEY = ['dashboard', 'admin'];
 
 export const statsApi = {
   async getProgress() {
@@ -11,6 +12,10 @@ export const statsApi = {
   async getCategories() {
     const { data } = await http.get('/stats/categories');
     return data.categories ?? [];
+  },
+  async getAdminDashboard() {
+    const { data } = await http.get('/stats/admin/dashboard');
+    return data;
   },
 };
 

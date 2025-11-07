@@ -8,6 +8,7 @@ import {
   getPointGroupLabel,
   normalizePointGroup
 } from "../utils/points.js";
+import { mapAttendanceMethodToApi } from "../utils/attendance.js";
 
 const PROGRESS_GROUP_KEYS = Object.keys(POINT_GROUPS);
 const GROUP_ONE_KEY = "NHOM_1";
@@ -15,6 +16,7 @@ const GROUP_TWO_KEY = "NHOM_2";
 const GROUP_THREE_KEY = "NHOM_3";
 const COMBINED_GROUP_KEY = "NHOM_23";
 const RED_ADDRESS_NAME_NORMALIZED = RED_ADDRESS_CATEGORY_NAME.trim().toLowerCase();
+const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 
 const normalizeCategoryName = (value) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -236,4 +238,175 @@ export const getActivityCategories = async (_req, res) => {
   );
 
   res.json({ categories: items, summary: totals });
+};
+
+const computePercentChange = (current, previous) => {
+  if (!previous) {
+    return current > 0 ? 100 : 0;
+  }
+  const delta = ((current - previous) / previous) * 100;
+  if (!Number.isFinite(delta)) {
+    return 0;
+  }
+  return Math.round(delta);
+};
+
+const monthLabel = (month) => `T${month}`;
+
+const buildChartData = (activities = []) => {
+  const buckets = new Map();
+
+  activities.forEach((activity) => {
+    const start = activity.batDauLuc ? new Date(activity.batDauLuc) : null;
+    if (!start || Number.isNaN(start.getTime())) return;
+
+    const year = start.getFullYear();
+    const month = start.getMonth() + 1;
+    if (!buckets.has(year)) {
+      buckets.set(year, new Map());
+    }
+    const yearBucket = buckets.get(year);
+    if (!yearBucket.has(month)) {
+      yearBucket.set(month, { group1: 0, group23: 0 });
+    }
+    const target = yearBucket.get(month);
+    if (activity.nhomDiem === GROUP_ONE_KEY) {
+      target.group1 += 1;
+    } else {
+      target.group23 += 1;
+    }
+  });
+
+  const chart = {};
+  Array.from(buckets.entries())
+    .sort(([yearA], [yearB]) => Number(yearA) - Number(yearB))
+    .forEach(([year, months]) => {
+      const rows = [];
+      for (let month = 1; month <= 12; month += 1) {
+        const entry = months.get(month) ?? { group1: 0, group23: 0 };
+        rows.push({
+          month,
+          label: monthLabel(month),
+          group1: entry.group1,
+          group23: entry.group23
+        });
+      }
+      chart[year] = rows;
+    });
+
+  return chart;
+};
+
+const mapUpcomingActivities = (activities = []) =>
+  activities.map((activity) => {
+    const attendanceMethod = mapAttendanceMethodToApi(activity.phuongThucDiemDanh);
+    return {
+      id: activity.id,
+      title: activity.tieuDe,
+      location: activity.diaDiem ?? "Đang cập nhật",
+      startTime: activity.batDauLuc?.toISOString() ?? null,
+      attendanceMethod,
+      participantsCount: activity.dangKy?.length ?? 0,
+      maxCapacity: activity.sucChuaToiDa ?? null
+    };
+  });
+
+const mapFeedbackSummaries = (feedbacks = []) =>
+  feedbacks.map((feedback) => ({
+    id: feedback.id,
+    message: feedback.noiDung,
+    submittedAt: feedback.taoLuc?.toISOString() ?? null,
+    name: feedback.nguoiDung?.hoTen ?? feedback.nguoiDung?.email ?? "Người dùng",
+    avatarUrl: feedback.nguoiDung?.avatarUrl ?? null
+  }));
+
+export const getAdminDashboardOverview = async (req, res) => {
+  if (req.user?.role !== "ADMIN") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(thirtyDaysAgo.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const chartStartDate = new Date(now.getFullYear() - 2, 0, 1);
+
+  const [
+    [totalActivities, totalParticipants, pendingFeedback],
+    [recentActivities, previousActivities, recentParticipants, previousParticipants, recentFeedbacks, previousFeedbacks],
+    chartSource,
+    upcomingActivities,
+    pendingFeedbackList
+  ] = await Promise.all([
+    Promise.all([
+      prisma.hoatDong.count(),
+      prisma.dangKyHoatDong.count({ where: { trangThai: { in: ACTIVE_REG_STATUSES } } }),
+      prisma.phanHoiHoatDong.count({ where: { trangThai: "CHO_DUYET" } })
+    ]),
+    Promise.all([
+      prisma.hoatDong.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.hoatDong.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+      prisma.dangKyHoatDong.count({ where: { dangKyLuc: { gte: thirtyDaysAgo }, trangThai: { in: ACTIVE_REG_STATUSES } } }),
+      prisma.dangKyHoatDong.count({
+        where: {
+          dangKyLuc: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
+          trangThai: { in: ACTIVE_REG_STATUSES }
+        }
+      }),
+      prisma.phanHoiHoatDong.count({ where: { taoLuc: { gte: thirtyDaysAgo } } }),
+      prisma.phanHoiHoatDong.count({ where: { taoLuc: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } })
+    ]),
+    prisma.hoatDong.findMany({
+      where: { batDauLuc: { not: null, gte: chartStartDate } },
+      select: { id: true, nhomDiem: true, batDauLuc: true }
+    }),
+    prisma.hoatDong.findMany({
+      where: {
+        batDauLuc: { gte: now },
+        isPublished: true
+      },
+      include: {
+        dangKy: {
+          where: { trangThai: { in: ACTIVE_REG_STATUSES } },
+          select: { id: true }
+        }
+      },
+      orderBy: { batDauLuc: "asc" },
+      take: 4
+    }),
+    prisma.phanHoiHoatDong.findMany({
+      where: { trangThai: "CHO_DUYET" },
+      include: {
+        nguoiDung: {
+          select: {
+            hoTen: true,
+            email: true,
+            avatarUrl: true
+          }
+        }
+      },
+      orderBy: { taoLuc: "desc" },
+      take: 5
+    })
+  ]);
+
+  const overview = {
+    activities: {
+      total: totalActivities,
+      changePercent: computePercentChange(recentActivities, previousActivities)
+    },
+    participants: {
+      total: totalParticipants,
+      changePercent: computePercentChange(recentParticipants, previousParticipants)
+    },
+    feedbacks: {
+      total: pendingFeedback,
+      changePercent: computePercentChange(recentFeedbacks, previousFeedbacks)
+    }
+  };
+
+  const chart = buildChartData(chartSource);
+  const upcoming = mapUpcomingActivities(upcomingActivities);
+  const feedbacks = mapFeedbackSummaries(pendingFeedbackList);
+
+  res.json({ overview, chart, upcoming, feedbacks });
 };

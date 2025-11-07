@@ -1,6 +1,50 @@
+import sanitizeHtml from "sanitize-html";
 import prisma from "../prisma.js";
 import { notifyUser } from "../utils/notification.service.js";
 import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "../utils/points.js";
+import { deriveSemesterInfo, resolveAcademicPeriodForDate } from "../utils/academic.js";
+import {
+  getAttendanceMethodLabel,
+  getDefaultAttendanceMethod,
+  mapAttendanceMethodToApi,
+  normalizeAttendanceMethod
+} from "../utils/attendance.js";
+
+const normalizeSemesterLabel = (value) => {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  switch (trimmed.toUpperCase()) {
+    case "HK1":
+      return "Học kỳ 1";
+    case "HK2":
+      return "Học kỳ 2";
+    case "HK3":
+      return "Học kỳ 3";
+    default:
+      return trimmed;
+  }
+};
+
+const normalizeAcademicYearLabel = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+
+  if (typeof value?.ten === "string" && value.ten.trim()) {
+    return value.ten.trim();
+  }
+  if (typeof value?.nienKhoa === "string" && value.nienKhoa.trim()) {
+    return value.nienKhoa.trim();
+  }
+  if (typeof value?.ma === "string" && value.ma.trim()) {
+    return value.ma.trim();
+  }
+
+  return null;
+};
 
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
@@ -23,7 +67,13 @@ const ACTIVITY_INCLUDE = {
     },
     orderBy: { dangKyLuc: "asc" }
   },
-  danhMucRef: true
+  danhMucRef: true,
+  hocKyRef: {
+    include: {
+      namHoc: true
+    }
+  },
+  namHocRef: true
 };
 
 const REGISTRATION_INCLUDE = {
@@ -106,6 +156,59 @@ const sanitizeStringArray = (value, maxLength = 500) => {
   return value
     .map((item) => sanitizeOptionalText(item, maxLength))
     .filter((item) => typeof item === "string" && item.length > 0);
+};
+
+const RICH_TEXT_ALLOWED_TAGS = Array.from(
+  new Set([
+    ...sanitizeHtml.defaults.allowedTags,
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "img",
+    "figure",
+    "figcaption",
+    "span",
+    "p"
+  ])
+);
+
+const RICH_TEXT_ALLOWED_ATTRIBUTES = {
+  ...sanitizeHtml.defaults.allowedAttributes,
+  a: ["href", "name", "target", "rel", "class"],
+  img: ["src", "alt", "title", "width", "height", "style", "class"],
+  span: ["style", "class"],
+  p: ["style", "class"],
+  div: ["style", "class"],
+  ol: ["class"],
+  ul: ["class"],
+  li: ["class"],
+  h1: ["class"],
+  h2: ["class"],
+  h3: ["class"],
+  h4: ["class"],
+  h5: ["class"],
+  h6: ["class"]
+};
+
+const sanitizeRichText = (value, maxLength = 20_000) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const limited = trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+  return sanitizeHtml(limited, {
+    allowedTags: RICH_TEXT_ALLOWED_TAGS,
+    allowedAttributes: RICH_TEXT_ALLOWED_ATTRIBUTES,
+    allowedSchemesByTag: {
+      img: ["data", "http", "https"]
+    },
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" })
+    }
+  });
 };
 
 const sanitizePoints = (value) => {
@@ -289,6 +392,20 @@ const mapActivity = (activity, registration) => {
   const pointGroup = normalizePointGroup(activity.nhomDiem);
   const pointGroupLabel = getPointGroupLabel(pointGroup);
   const category = activity.danhMucRef;
+  const semesterRef = activity.hocKyRef ?? null;
+  const academicYearRef = semesterRef?.namHoc ?? activity.namHocRef ?? null;
+  const defaultAttendanceMethod = getDefaultAttendanceMethod();
+  const attendanceSource = activity.phuongThucDiemDanh || defaultAttendanceMethod;
+  const attendanceMethod =
+    mapAttendanceMethodToApi(attendanceSource) || mapAttendanceMethodToApi(defaultAttendanceMethod);
+  const attendanceMethodLabel =
+    getAttendanceMethodLabel(attendanceMethod) ||
+    getAttendanceMethodLabel(mapAttendanceMethodToApi(defaultAttendanceMethod));
+  const storedSemester = normalizeSemesterLabel(semesterRef?.ten);
+  const storedAcademicYear = normalizeAcademicYearLabel(academicYearRef);
+  const fallbackSemesterInfo = deriveSemesterInfo(activity.batDauLuc ?? activity.ketThucLuc);
+  const semesterLabel = storedSemester ?? fallbackSemesterInfo.semester ?? null;
+  const academicYearLabel = storedAcademicYear ?? fallbackSemesterInfo.academicYear ?? null;
   const capacityLabel =
     typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0
       ? `${Math.min(registeredCount, activity.sucChuaToiDa)}/${activity.sucChuaToiDa}`
@@ -299,8 +416,6 @@ const mapActivity = (activity, registration) => {
     code: activity.maHoatDong,
     title: activity.tieuDe,
     description: activity.moTa,
-    benefits: Array.isArray(activity.quyenLoi) ? activity.quyenLoi : [],
-    responsibilities: Array.isArray(activity.trachNhiem) ? activity.trachNhiem : [],
     requirements: Array.isArray(activity.yeuCau) ? activity.yeuCau : [],
     guidelines: Array.isArray(activity.huongDan) ? activity.huongDan : [],
     points: activity.diemCong,
@@ -321,8 +436,18 @@ const mapActivity = (activity, registration) => {
     pointGroupLabel,
     isFeatured: activity.isFeatured,
     isPublished: activity.isPublished,
-    semester: activity.hocKy ?? null,
-    academicYear: activity.namHoc ?? null,
+    semester: semesterLabel,
+    academicYear: academicYearLabel,
+    semesterId: semesterRef?.id ?? null,
+    academicYearId: academicYearRef?.id ?? null,
+    semesterStartDate: semesterRef?.batDau?.toISOString() ?? null,
+    semesterEndDate: semesterRef?.ketThuc?.toISOString() ?? null,
+    academicYearStartDate: academicYearRef?.batDau?.toISOString() ?? null,
+    academicYearEndDate: academicYearRef?.ketThuc?.toISOString() ?? null,
+    attendanceMethod,
+    attendanceMethodLabel,
+    registrationDeadline: activity.hanDangKy?.toISOString() ?? null,
+    cancellationDeadline: activity.hanHuyDangKy?.toISOString() ?? null,
     state: determineState(activity, registration),
     registration: mapRegistration(registration, activity)
   };
@@ -793,14 +918,13 @@ export const createActivity = async (req, res) => {
     diaDiem,
     sucChuaToiDa,
     moTa,
-    quyenLoi,
-    trachNhiem,
     yeuCau,
     huongDan,
     batDauLuc,
     ketThucLuc,
-    hocKy,
-    namHoc,
+    attendanceMethod,
+    registrationDeadline,
+    cancellationDeadline,
   } = req.body;
 
   const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
@@ -815,21 +939,30 @@ export const createActivity = async (req, res) => {
   }
 
   try {
+    const startTime = batDauLuc ? toDate(batDauLuc) : null;
+    const endTime = ketThucLuc ? toDate(ketThucLuc) : null;
+    const academicPeriod = await resolveAcademicPeriodForDate(startTime ?? endTime ?? new Date());
+    const normalizedAttendanceMethod =
+      normalizeAttendanceMethod(attendanceMethod ?? req.body?.phuongThucDiemDanh) || getDefaultAttendanceMethod();
+    const registrationDue = registrationDeadline ?? req.body?.hanDangKy;
+    const cancellationDue = cancellationDeadline ?? req.body?.hanHuyDangKy;
+
     const data = {
       tieuDe: normalizedTitle,
       nhomDiem: normalizePointGroup(nhomDiem),
       diemCong: sanitizePoints(diemCong),
       diaDiem: sanitizeOptionalText(diaDiem, 255),
       sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
-      moTa: sanitizeOptionalText(moTa, 4000),
-      quyenLoi: sanitizeStringArray(quyenLoi),
-      trachNhiem: sanitizeStringArray(trachNhiem),
+      moTa: sanitizeOptionalText(moTa),
       yeuCau: sanitizeStringArray(yeuCau),
       huongDan: sanitizeStringArray(huongDan, 1000),
-      batDauLuc: batDauLuc ? toDate(batDauLuc) : null,
-      ketThucLuc: ketThucLuc ? toDate(ketThucLuc) : null,
-      hocKy: sanitizeOptionalText(hocKy, 20),
-      namHoc: sanitizeOptionalText(namHoc, 20),
+      batDauLuc: startTime,
+      ketThucLuc: endTime,
+      hanDangKy: registrationDue ? toDate(registrationDue) : null,
+      hanHuyDangKy: cancellationDue ? toDate(cancellationDue) : null,
+      phuongThucDiemDanh: normalizedAttendanceMethod,
+      hocKyId: academicPeriod.hocKyId,
+      namHocId: academicPeriod.namHocId
     };
 
     const newActivity = await prisma.hoatDong.create({
@@ -857,14 +990,13 @@ export const updateActivity = async (req, res) => {
     diaDiem,
     sucChuaToiDa,
     moTa,
-    quyenLoi,
-    trachNhiem,
     yeuCau,
     huongDan,
     batDauLuc,
     ketThucLuc,
-    hocKy,
-    namHoc,
+    attendanceMethod,
+    registrationDeadline,
+    cancellationDeadline,
   } = req.body;
 
   const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
@@ -879,6 +1011,14 @@ export const updateActivity = async (req, res) => {
   }
 
   try {
+    const startTime = batDauLuc ? toDate(batDauLuc) : null;
+    const endTime = ketThucLuc ? toDate(ketThucLuc) : null;
+    const academicPeriod = await resolveAcademicPeriodForDate(startTime ?? endTime ?? new Date());
+    const normalizedAttendanceMethod =
+      normalizeAttendanceMethod(attendanceMethod ?? req.body?.phuongThucDiemDanh) || getDefaultAttendanceMethod();
+    const registrationDue = registrationDeadline ?? req.body?.hanDangKy;
+    const cancellationDue = cancellationDeadline ?? req.body?.hanHuyDangKy;
+
     const updated = await prisma.hoatDong.update({
       where: { id },
       data: {
@@ -887,15 +1027,16 @@ export const updateActivity = async (req, res) => {
         diemCong: sanitizePoints(diemCong),
         diaDiem: sanitizeOptionalText(diaDiem, 255),
         sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
-        moTa: sanitizeOptionalText(moTa, 4000),
-        quyenLoi: sanitizeStringArray(quyenLoi),
-        trachNhiem: sanitizeStringArray(trachNhiem),
+        moTa: sanitizeOptionalText(moTa),
         yeuCau: sanitizeStringArray(yeuCau),
         huongDan: sanitizeStringArray(huongDan, 1000),
-        batDauLuc: batDauLuc ? toDate(batDauLuc) : null,
-        ketThucLuc: ketThucLuc ? toDate(ketThucLuc) : null,
-        hocKy: sanitizeOptionalText(hocKy, 20),
-        namHoc: sanitizeOptionalText(namHoc, 20),
+        batDauLuc: startTime,
+        ketThucLuc: endTime,
+        hanDangKy: registrationDue ? toDate(registrationDue) : null,
+        hanHuyDangKy: cancellationDue ? toDate(cancellationDue) : null,
+        phuongThucDiemDanh: normalizedAttendanceMethod,
+        hocKyId: academicPeriod.hocKyId,
+        namHocId: academicPeriod.namHocId,
       },
     });
 

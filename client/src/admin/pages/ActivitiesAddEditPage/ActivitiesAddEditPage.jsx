@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Form, Input, Select, InputNumber, DatePicker, TimePicker, Upload, Row, Col, ConfigProvider, Spin } from 'antd';
@@ -22,9 +22,13 @@ import 'dayjs/locale/vi';
 import viVN from 'antd/locale/vi_VN';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import { RichTextEditor } from '@/components';
 import useToast from '@/components/Toast/Toast';
 import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/activities.api';
-import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
+import academicsApi, { ACADEMICS_QUERY_KEY } from '@/api/academics.api';
+import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import { deriveSemesterInfo } from '@/utils/semester';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -82,6 +86,13 @@ const ActivitiesAddEditPage = () => {
     enabled: isEditMode,
   });
 
+  const { data: academicMetadata } = useQuery({
+    queryKey: [ACADEMICS_QUERY_KEY, 'semesters'],
+    queryFn: () => academicsApi.listSemesters(),
+  });
+
+  const semesterDefinitions = useMemo(() => academicMetadata?.semesters ?? [], [academicMetadata?.semesters]);
+
   useEffect(() => {
     if (isEditMode && activityData) {
       form.setFieldsValue({
@@ -92,8 +103,7 @@ const ActivitiesAddEditPage = () => {
         maxCapacity: activityData.maxCapacity,
         semester: activityData.semester || '',
         academicYear: activityData.academicYear || '',
-        // TODO: Map trường này (Schema của bạn chưa có)
-        // attendanceMethod: activityData.attendanceMethod,
+        attendanceMethod: activityData.attendanceMethod || 'qr',
         registrationDeadline: activityData.registrationDeadline ? dayjs(activityData.registrationDeadline) : null,
         cancellationDeadline: activityData.cancellationDeadline ? dayjs(activityData.cancellationDeadline) : null,
 
@@ -104,9 +114,7 @@ const ActivitiesAddEditPage = () => {
         endTime: activityData.endTime ? dayjs(activityData.endTime) : null,
 
         // Map các trường JSON (chuyển mảng về string)
-        description: activityData.description, // Mô tả là string, không phải mảng
-        benefits: arrayToString(activityData.benefits),
-        responsibilities: arrayToString(activityData.responsibilities),
+        description: activityData.description,
         requirements: arrayToString(activityData.requirements),
         guidelines: arrayToString(activityData.guidelines),
         // TODO: Xử lý coverImage
@@ -114,9 +122,9 @@ const ActivitiesAddEditPage = () => {
     }
   }, [activityData, isEditMode, form]);
 
-  const handleBackToList = () => {
+  const handleBackToList = useCallback(() => {
     navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
-  };
+  }, [navigate]);
 
   // Mutation cho Create
   const createActivityMutation = useMutation({
@@ -124,6 +132,7 @@ const ActivitiesAddEditPage = () => {
     onSuccess: () => {
       openToast({ message: 'Thêm hoạt động mới thành công!', variant: 'success' });
       queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      queryClient.invalidateQueries(ADMIN_DASHBOARD_QUERY_KEY);
       queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang List
       navigate(ROUTE_PATHS.ADMIN.ACTIVITIES); // Quay về trang List
     },
@@ -139,6 +148,7 @@ const ActivitiesAddEditPage = () => {
       queryClient.invalidateQueries([ACTIVITIES_QUERY_KEY, 'detail', id]); // Làm mới trang detail
       queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang list
       queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      queryClient.invalidateQueries(ADMIN_DASHBOARD_QUERY_KEY);
       navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
     },
     onError: (error) => {
@@ -156,11 +166,8 @@ const ActivitiesAddEditPage = () => {
       diemCong: values.points,
       diaDiem: values.location,
       sucChuaToiDa: values.maxCapacity,
-      moTa: values.description,
 
-      // Chuyển đổi TextAreas thành mảng JSON
-      quyenLoi: stringToArray(values.benefits),
-      trachNhiem: stringToArray(values.responsibilities),
+      moTa: values.description,
       yeuCau: stringToArray(values.requirements),
       huongDan: stringToArray(values.guidelines),
 
@@ -168,14 +175,11 @@ const ActivitiesAddEditPage = () => {
       batDauLuc: combineDateAndTime(values.startDate, values.startTime),
       ketThucLuc: combineDateAndTime(values.endDate, values.endTime),
 
-      hocKy: values.semester ? values.semester.trim() : null,
-      namHoc: values.academicYear ? values.academicYear.trim() : null,
+      attendanceMethod: values.attendanceMethod,
 
       registrationDeadline: values.registrationDeadline ? values.registrationDeadline.toISOString() : null,
       cancellationDeadline: values.cancellationDeadline ? values.cancellationDeadline.toISOString() : null,
     };
-
-    console.log('Payload to API:', payload);
     if (isEditMode) {
       updateActivityMutation.mutate({ id, data: payload });
     } else {
@@ -226,6 +230,7 @@ const ActivitiesAddEditPage = () => {
     isEditMode,
     createActivityMutation.isLoading,
     updateActivityMutation.isLoading,
+    handleBackToList,
   ]);
 
   const normFile = (e) => {
@@ -249,6 +254,25 @@ const ActivitiesAddEditPage = () => {
     }
   }, [form, startDateValue, startTimeValue]);
 
+  useEffect(() => {
+    if (!startDateValue) {
+      form.setFieldsValue({ semester: '', academicYear: '' });
+      return;
+    }
+
+    const { semester, academicYear } = deriveSemesterInfo(startDateValue);
+    const updates = {};
+    if (semester && form.getFieldValue('semester') !== semester) {
+      updates.semester = semester;
+    }
+    if (academicYear && form.getFieldValue('academicYear') !== academicYear) {
+      updates.academicYear = academicYear;
+    }
+    if (Object.keys(updates).length > 0) {
+      form.setFieldsValue(updates);
+    }
+  }, [form, startDateValue]);
+
   if (isLoadingActivity) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -270,6 +294,7 @@ const ActivitiesAddEditPage = () => {
           maxCapacity: 0,
           semester: '',
           academicYear: '',
+          attendanceMethod: 'qr',
         }}
       >
         {/* Form container */}
@@ -308,13 +333,13 @@ const ActivitiesAddEditPage = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="points" label="Học kỳ" className={cx('activities__group')}>
-                    <Input placeholder="Ví dụ: HK1" />
+                  <Form.Item name="semester" label="Học kỳ" className={cx('activities__group')}>
+                    <Input placeholder="" readOnly />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="points" label="Số điểm" className={cx('activities__group')}>
-                    <Input placeholder="Ví dụ: 2024-2025" />
+                  <Form.Item name="academicYear" label="Năm học" className={cx('activities__group')}>
+                    <Input placeholder="" readOnly />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
@@ -324,7 +349,7 @@ const ActivitiesAddEditPage = () => {
                     className={cx('activities__group')}
                     rules={[{ required: true, message: 'Vui lòng nhập số điểm!' }]}
                   >
-                    <InputNumber min={0} placeholder="0" />
+                    <InputNumber min={0} placeholder="0" style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
@@ -406,7 +431,7 @@ const ActivitiesAddEditPage = () => {
                   >
                     <Select placeholder="Chọn phương thức">
                       <Option value="qr">QR Code</Option>
-                      <Option value="photo">Ảnh</Option>
+                      <Option value="photo">Chụp ảnh</Option>
                       <Option value="manual">Thủ công</Option>
                     </Select>
                   </Form.Item>
@@ -457,8 +482,10 @@ const ActivitiesAddEditPage = () => {
                     label="Mô tả hoạt động"
                     className={cx('activities__group')}
                     rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}
+                    valuePropName="value"
+                    getValueFromEvent={(content) => content}
                   >
-                    <TextArea rows={4} placeholder="Mô tả chi tiết về hoạt động..." />
+                    <RichTextEditor placeholder="Mô tả chi tiết về hoạt động..." />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>

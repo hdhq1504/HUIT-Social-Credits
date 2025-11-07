@@ -18,3 +18,4 @@ export { default as RegisterModal } from './RegisterModal/RegisterModal';
 export { default as ScrollToTop } from './ScrollToTop/ScrollToTop';
 export { default as UpcomingActivitiesSection } from './UpcomingActivitiesSection/UpcomingActivitiesSection';
 export { default as AdminRoute } from './AdminRoute/AdminRoute';
+export { default as RichTextEditor} from './RichTextEditor/RichTextEditor';

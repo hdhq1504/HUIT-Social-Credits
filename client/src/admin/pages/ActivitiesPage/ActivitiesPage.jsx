@@ -114,6 +114,7 @@ export default function ActivitiesPage() {
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
+  const [activityToDelete, setActivityToDelete] = useState(null);
 
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ACTIVITIES_QUERY_KEY,
@@ -160,19 +161,22 @@ export default function ActivitiesPage() {
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, [searchTerm, selectedGroup, selectedStatus, selectedDate]);
 
-  const handleDelete = useCallback(
-    (activity) => {
-      Modal.confirm({
-        title: 'Bạn có chắc chắn muốn xóa?',
-        content: `Hoạt động "${activity.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.`,
-        okText: 'Xóa',
-        okType: 'danger',
-        cancelText: 'Hủy',
-        onOk: () => deleteMutation.mutateAsync(activity.id),
-      });
-    },
-    [deleteMutation],
-  );
+  const handleOpenDeleteModal = useCallback((activity) => {
+    setActivityToDelete(activity);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setActivityToDelete(null);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!activityToDelete) return;
+    try {
+      await deleteMutation.mutateAsync(activityToDelete.id);
+    } finally {
+      setActivityToDelete(null);
+    }
+  }, [activityToDelete, deleteMutation]);
 
   const onSelectChange = (newSelectedRowKeys) => {
     setSelectedRowKeys(newSelectedRowKeys);
@@ -302,8 +306,13 @@ export default function ActivitiesPage() {
             </Tooltip>
             <Tooltip title="Xóa">
               <button
+                type="button"
                 className={cx('activities-list__action-btn', '--delete')}
-                onClick={() => handleDelete(record)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleOpenDeleteModal(record);
+                }}
                 disabled={deleteMutation.isLoading}
               >
                 <FontAwesomeIcon icon={faTrashAlt} />
@@ -313,7 +322,7 @@ export default function ActivitiesPage() {
         ),
       },
     ],
-    [pagination, navigate, handleDelete, deleteMutation.isLoading],
+    [pagination, navigate, handleOpenDeleteModal, deleteMutation.isLoading],
   );
 
   return (
@@ -395,6 +404,20 @@ export default function ActivitiesPage() {
           />
         </div>
       </div>
+      <Modal
+        open={!!activityToDelete}
+        title="Bạn có chắc chắn muốn xóa?"
+        okText="Xóa"
+        okType="danger"
+        cancelText="Hủy"
+        confirmLoading={deleteMutation.isLoading}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        destroyOnClose
+        centered
+      >
+        <p>Hoạt động "{activityToDelete?.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+      </Modal>
     </ConfigProvider>
   );
 }

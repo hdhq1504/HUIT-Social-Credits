@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import prisma from "./prisma.js";
+import { resolveAcademicPeriodForDate } from "./utils/academic.js";
 
 const seed = async () => {
   try {
@@ -116,6 +117,26 @@ const seed = async () => {
         [copy[i], copy[j]] = [copy[j], copy[i]];
       }
       return copy.slice(0, Math.min(n, copy.length));
+    };
+
+    const buildRichDescription = (summary, benefits = [], responsibilities = []) => {
+      const safeSummary = typeof summary === "string" && summary.trim() ? summary.trim() : null;
+      const listItems = (items) =>
+        items
+          .filter((item) => typeof item === "string" && item.trim())
+          .map((item) => `<li>${item.trim()}</li>`)
+          .join("");
+
+      const benefitList = listItems(benefits);
+      const responsibilityList = listItems(responsibilities);
+
+      return [
+        safeSummary ? `<p>${safeSummary}</p>` : null,
+        benefitList ? `<h3>Quyền lợi</h3><ul>${benefitList}</ul>` : null,
+        responsibilityList ? `<h3>Trách nhiệm</h3><ul>${responsibilityList}</ul>` : null
+      ]
+        .filter(Boolean)
+        .join("");
     };
 
     const activitiesData = [
@@ -410,11 +431,14 @@ const seed = async () => {
     const activityMap = {};
     for (const activity of activitiesData) {
       const category = activity.categoryCode ? categoryMap[activity.categoryCode] : null;
+      const academicPeriod = await resolveAcademicPeriodForDate(activity.batDauLuc ?? activity.ketThucLuc);
+      const benefits = activity.benefits ?? pickSome(BENEFITS_PRESET, 3);
+      const responsibilities = activity.responsibilities ?? pickSome(RESPONSIBILITIES_PRESET, 3);
+      const richDescription = buildRichDescription(activity.moTa, benefits, responsibilities);
+
       const payload = {
         tieuDe: activity.tieuDe,
-        moTa: activity.moTa,
-        quyenLoi: activity.quyenLoi ?? pickSome(BENEFITS_PRESET, 3),
-        trachNhiem: activity.trachNhiem ?? pickSome(RESPONSIBILITIES_PRESET, 3),
+        moTa: richDescription || null,
         yeuCau: activity.yeuCau ?? pickSome(REQUIREMENTS_PRESET, 3),
         huongDan: activity.huongDan ?? pickSome(GUIDES_PRESET, 3),
         diemCong: activity.diemCong,
@@ -424,8 +448,9 @@ const seed = async () => {
         sucChuaToiDa: activity.sucChuaToiDa,
         hinhAnh: activity.hinhAnh,
         isFeatured: activity.isFeatured,
-        hocKy: activity.hocKy ?? "HK1",
-        namHoc: activity.namHoc ?? "2025-2026",
+        phuongThucDiemDanh: activity.phuongThucDiemDanh ?? "QR",
+        hocKyId: activity.hocKyId ?? academicPeriod.hocKyId,
+        namHocId: activity.namHocId ?? academicPeriod.namHocId,
         isPublished: true,
         danhMucId: category?.id ?? null,
         nhomDiem: category?.nhomDiem
@@ -440,39 +465,6 @@ const seed = async () => {
         }
       });
       activityMap[activity.maHoatDong] = created;
-    }
-
-    const registrationsData = [];
-
-    const now = new Date();
-    for (const registration of registrationsData) {
-      const activity = activityMap[registration.maHoatDong];
-      if (!activity) continue;
-      await prisma.dangKyHoatDong.upsert({
-        where: {
-          nguoiDungId_hoatDongId: {
-            nguoiDungId: user.id,
-            hoatDongId: activity.id
-          }
-        },
-        update: {
-          trangThai: registration.trangThai,
-          dangKyLuc: registration.dangKyLuc ?? now,
-          diemDanhLuc: registration.diemDanhLuc ?? now,
-          diemDanhBoiId: user.id,
-          lyDoHuy: null,
-          ghiChu: null,
-          diemDanhGhiChu: null
-        },
-        create: {
-          nguoiDungId: user.id,
-          hoatDongId: activity.id,
-          trangThai: registration.trangThai,
-          dangKyLuc: registration.dangKyLuc ?? now,
-          diemDanhLuc: registration.diemDanhLuc ?? now,
-          diemDanhBoiId: user.id
-        }
-      });
     }
 
     console.log("Tạo seed thành công");

@@ -1,16 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faArrowRight,
-  faCircleCheck,
-  faClipboardList,
-  faEnvelope,
-  faPhone,
-  faTriangleExclamation,
-} from '@fortawesome/free-solid-svg-icons';
+import { faArrowRight, faClipboardList, faEnvelope, faPhone } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label } from '@components/index';
@@ -20,10 +12,17 @@ import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
+import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
+
+const ATTENDANCE_METHOD_BADGES = {
+  qr: { label: 'QR Code', className: 'activity-detail__checkin-badge--qr' },
+  photo: { label: 'Chụp ảnh', className: 'activity-detail__checkin-badge--photo' },
+  manual: { label: 'Thủ công', className: 'activity-detail__checkin-badge--manual' },
+};
 
 function ActivityDetailPage() {
   const { id } = useParams();
@@ -35,7 +34,7 @@ function ActivityDetailPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
 
-  // Lấy chi tiết hoạt động từ API và tận dụng cache của React Query để giảm số lần tải lại.
+  // Lấy chi tiết hoạt động từ API
   const {
     data: activity,
     isLoading: loading,
@@ -76,6 +75,19 @@ function ActivityDetailPage() {
   const remaining = capacityInfo.hasLimit ? Math.max(capacityInfo.total - capacityInfo.current, 0) : 0;
   const percent =
     capacityInfo.total > 0 ? Math.min(100, Math.round((capacityInfo.current / capacityInfo.total) * 100)) : 0;
+
+  const attendanceDisplay = useMemo(() => {
+    if (!activity?.attendanceMethod) return null;
+    const method = activity.attendanceMethod;
+    const base = ATTENDANCE_METHOD_BADGES[method] || {
+      label: activity.attendanceMethodLabel || method,
+      className: 'activity-detail__checkin-badge--manual',
+    };
+    return {
+      label: activity.attendanceMethodLabel || base.label,
+      className: base.className,
+    };
+  }, [activity?.attendanceMethod, activity?.attendanceMethodLabel]);
 
   const handleOpenRegister = () => {
     setModalVariant('confirm');
@@ -159,16 +171,11 @@ function ActivityDetailPage() {
     });
   };
 
-  const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
-
-  const responsibilityItems = useMemo(
-    () => normalizeStringItems(activity?.responsibilities),
-    [activity?.responsibilities],
-  );
-
   const requirementItems = useMemo(() => normalizeStringItems(activity?.requirements), [activity?.requirements]);
 
   const guideSteps = useMemo(() => normalizeGuideItems(activity?.guidelines), [activity?.guidelines]);
+
+  const safeDescription = useMemo(() => sanitizeHtml(activity?.description ?? ''), [activity?.description]);
 
   const buildListItemKey = useCallback((item, index) => {
     const rawKey = typeof item === 'string' ? item : item?.content || item?.title || index;
@@ -398,47 +405,15 @@ function ActivityDetailPage() {
                   <div className={cx('activity-detail__content', 'activity-detail__content--description')}>
                     <h2 className={cx('activity-detail__content-title')}>Mô tả</h2>
                     <div className={cx('activity-detail__content-body')}>
-                      {activity?.description ? (
-                        <p className={cx('activity-detail__paragraph')}>{activity.description}</p>
+                      {safeDescription ? (
+                        <div
+                          className={cx('activity-detail__rich-text')}
+                          dangerouslySetInnerHTML={{ __html: safeDescription }}
+                        />
                       ) : (
-                        <span>Không có mô tả</span>
+                        <Empty description="Chưa có mô tả chi tiết" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                       )}
                     </div>
-
-                    <section className={cx('activity-detail__benefit')}>
-                      <h3 className={cx('activity-detail__benefit-title')}>Quyền lợi khi tham gia:</h3>
-                      {benefitItems.length ? (
-                        <ul className={cx('activity-detail__benefit-list')}>
-                          {benefitItems.map((item, index) => (
-                            <li key={`${item}-${index}`} className={cx('activity-detail__benefit-item')}>
-                              <FontAwesomeIcon icon={faCircleCheck} className={cx('activity-detail__benefit-icon')} />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <Empty description="Chưa có thông tin quyền lợi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                      )}
-                    </section>
-
-                    <section className={cx('activity-detail__responsibility')}>
-                      <h3 className={cx('activity-detail__responsibility-title')}>Trách nhiệm của người tham gia:</h3>
-                      {responsibilityItems.length ? (
-                        <ul className={cx('activity-detail__responsibility-list')}>
-                          {responsibilityItems.map((item, index) => (
-                            <li key={`${item}-${index}`} className={cx('activity-detail__responsibility-item')}>
-                              <FontAwesomeIcon
-                                icon={faTriangleExclamation}
-                                className={cx('activity-detail__responsibility-icon')}
-                              />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <Empty description="Chưa có thông tin trách nhiệm" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                      )}
-                    </section>
                   </div>
 
                   <div className={cx('activity-detail__tabs')}>
@@ -509,14 +484,16 @@ function ActivityDetailPage() {
                       <div className={cx('activity-detail__info-row')}>
                         <span className={cx('activity-detail__info-label')}>Hạn đăng ký</span>
                         <span className={cx('activity-detail__info-value')}>
-                          {activity.startTime ? formatDateTime(activity.startTime) : 'Đang cập nhật'}
+                          {activity.registrationDeadline
+                            ? formatDateTime(activity.registrationDeadline)
+                            : 'Đang cập nhật'}
                         </span>
                       </div>
                       <div className={cx('activity-detail__info-row')}>
                         <span className={cx('activity-detail__info-label')}>Hạn hủy đăng ký</span>
                         <span className={cx('activity-detail__info-value')}>
-                          {activity.startTime
-                            ? formatDateTime(dayjs(activity.startTime).subtract(3, 'day'))
+                          {activity.cancellationDeadline
+                            ? formatDateTime(activity.cancellationDeadline)
                             : 'Đang cập nhật'}
                         </span>
                       </div>
@@ -525,14 +502,17 @@ function ActivityDetailPage() {
                     <div className={cx('activity-detail__sidebar-checkin')}>
                       <div className={cx('activity-detail__checkin-label')}>Phương thức điểm danh</div>
                       <div className={cx('activity-detail__checkin-methods')}>
-                        <span className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--qr')}>
-                          QR Code
-                        </span>
-                        <span
-                          className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--checkin')}
-                        >
-                          Check in
-                        </span>
+                        {attendanceDisplay ? (
+                          <span className={cx('activity-detail__checkin-badge', attendanceDisplay.className)}>
+                            {attendanceDisplay.label}
+                          </span>
+                        ) : (
+                          <span
+                            className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--manual')}
+                          >
+                            Đang cập nhật
+                          </span>
+                        )}
                       </div>
                     </div>
 

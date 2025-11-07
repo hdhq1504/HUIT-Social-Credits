@@ -21,44 +21,23 @@ import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import AdminSearchBar from '../../layouts/AdminSearchBar/AdminSearchBar';
 import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
+import statsApi, { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
+import { formatDateTime } from '@/utils/datetime';
 import styles from './DashboardPage.module.scss';
+import { useMemo } from 'react';
 
 const cx = classNames.bind(styles);
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const chartData = {
-  2022: [
-    { name: 'T1', group1: 10, group2: 5 },
-    { name: 'T2', group1: 12, group2: 7 },
-  ],
-  2023: [
-    { name: 'T1', group1: 15, group2: 10 },
-    { name: 'T2', group1: 18, group2: 12 },
-    { name: 'T3', group1: 20, group2: 15 },
-    { name: 'T4', group1: 17, group2: 11 },
-    { name: 'T5', group1: 22, group2: 18 },
-    { name: 'T6', group1: 25, group2: 20 },
-  ],
+const formatPercentChange = (value) => {
+  if (value == null) return '0%';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value}%`;
 };
-const upcomingEvents = [
-  {
-    title: 'Chiến dịch Mùa Hè Xanh 2024',
-    location: 'Huyện Cần Giờ, TP.HCM',
-    date: '15/07/2024',
-    participants: 120,
-  },
-];
-const pendingFeedback = [
-  {
-    name: 'Nguyễn Văn A',
-    message: 'Xin chào, tôi đã tham gia...',
-    time: '2 giờ trước',
-  },
-];
 
 export default function DashboardPage() {
-  const [year, setYear] = useState(2023);
+  const [year, setYear] = useState(dayjs().year());
   const { setPageActions } = useContext(AdminPageContext);
   const navigate = useNavigate();
 
@@ -66,6 +45,77 @@ export default function DashboardPage() {
     queryKey: [DASHBOARD_QUERY_KEY, 'recent'],
     queryFn: activitiesApi.getRecent,
   });
+
+  const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
+    queryKey: ADMIN_DASHBOARD_QUERY_KEY,
+    queryFn: statsApi.getAdminDashboard,
+  });
+
+  const availableYears = useMemo(() => {
+    if (!dashboardData?.chart) return [];
+    return Object.keys(dashboardData.chart)
+      .map((key) => Number(key))
+      .filter((value) => Number.isFinite(value))
+      .sort((a, b) => a - b);
+  }, [dashboardData?.chart]);
+
+  useEffect(() => {
+    if (!availableYears.length) return;
+    if (!availableYears.includes(year)) {
+      setYear(availableYears[availableYears.length - 1]);
+    }
+  }, [availableYears, year]);
+
+  const chartRows = useMemo(() => {
+    if (!dashboardData?.chart || !year) return [];
+    const rows = dashboardData.chart[year];
+    if (!Array.isArray(rows)) return [];
+    return rows.map((row) => ({
+      name: row.label ?? `T${row.month ?? ''}`,
+      group1: row.group1 ?? 0,
+      group23: row.group23 ?? 0,
+    }));
+  }, [dashboardData?.chart, year]);
+
+  const overviewCards = useMemo(() => {
+    const overview = dashboardData?.overview;
+    const baseCards = [
+      {
+        key: 'activities',
+        icon: <FontAwesomeIcon icon={faCalendarCheck} size={22} color="#fff" />,
+        count: overview?.activities?.total ?? 0,
+        label: 'Hoạt động CTXH',
+        percent: overview?.activities?.changePercent ?? 0,
+        color: 'blue',
+      },
+      {
+        key: 'participants',
+        icon: <FontAwesomeIcon icon={faUsers} size={22} color="#fff" />,
+        count: overview?.participants?.total ?? 0,
+        label: 'Sinh viên tham gia',
+        percent: overview?.participants?.changePercent ?? 0,
+        color: 'green',
+      },
+      {
+        key: 'feedbacks',
+        icon: <FontAwesomeIcon icon={faComments} size={22} color="#fff" />,
+        count: overview?.feedbacks?.total ?? 0,
+        label: 'Phản hồi chờ xử lý',
+        percent: overview?.feedbacks?.changePercent ?? 0,
+        color: 'purple',
+      },
+    ];
+
+    return baseCards.map(({ percent, ...card }) => ({
+      ...card,
+      count: isLoadingDashboard ? '--' : card.count,
+      badge: isLoadingDashboard ? '--' : formatPercentChange(percent),
+      negative: !isLoadingDashboard && percent < 0,
+    }));
+  }, [dashboardData?.overview, isLoadingDashboard]);
+
+  const upcomingActivities = dashboardData?.upcoming ?? [];
+  const pendingFeedback = dashboardData?.feedbacks ?? [];
 
   useEffect(() => {
     setPageActions([
@@ -167,31 +217,8 @@ export default function DashboardPage() {
 
       {/* Quick stats */}
       <section className={cx('dashboard__stats')}>
-        {[
-          {
-            icon: <FontAwesomeIcon icon={faCalendarCheck} size={22} color="#fff" />,
-            count: 156,
-            label: 'Hoạt động CTXH',
-            badge: '+12%',
-            color: 'blue',
-          },
-          {
-            icon: <FontAwesomeIcon icon={faUsers} size={22} color="#fff" />,
-            count: 1245,
-            label: 'Sinh viên tham gia',
-            badge: '+8%',
-            color: 'green',
-          },
-          {
-            icon: <FontAwesomeIcon icon={faComments} size={22} color="#fff" />,
-            count: 89,
-            label: 'Phản hồi chờ xử lý',
-            badge: '-2%',
-            color: 'purple',
-            negative: true,
-          },
-        ].map((item, idx) => (
-          <div key={idx} className={cx('dashboard__stat-card')}>
+        {overviewCards.map((item) => (
+          <div key={item.key} className={cx('dashboard__stat-card')}>
             <div className={cx('dashboard__icon-box', `dashboard__icon-box--${item.color}`)}>{item.icon}</div>
             <div className={cx('dashboard__stat-info')}>
               <h2>{item.count}</h2>
@@ -215,19 +242,27 @@ export default function DashboardPage() {
           <div className={cx('dashboard__chart-header')}>
             <h3 className={cx('dashboard__chart-title')}>Hoạt động CTXH theo tháng</h3>
             <div className={cx('dashboard__chart-year-group')}>
-              {[2022, 2023].map((y) => (
-                <button
-                  key={y}
-                  onClick={() => setYear(y)}
-                  className={cx('dashboard__chart-year-chip', { 'dashboard__chart-year-chip--active': year === y })}
-                >
-                  {y}
-                </button>
-              ))}
+              {availableYears.length > 0 ? (
+                availableYears.map((y) => (
+                  <button
+                    key={y}
+                    onClick={() => setYear(y)}
+                    className={cx('dashboard__chart-year-chip', {
+                      'dashboard__chart-year-chip--active': year === y,
+                    })}
+                  >
+                    {y}
+                  </button>
+                ))
+              ) : (
+                <span className={cx('dashboard__chart-year-chip')} style={{ cursor: 'default', opacity: 0.6 }}>
+                  Chưa có dữ liệu
+                </span>
+              )}
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData[year]} barCategoryGap={18} barGap={6}>
+            <BarChart data={chartRows[year]} barCategoryGap={18} barGap={6}>
               <CartesianGrid stroke="#B3B3B3" strokeOpacity={0.35} vertical={false} />
               <XAxis
                 dataKey="name"
@@ -258,7 +293,7 @@ export default function DashboardPage() {
                 wrapperStyle={{ paddingTop: 14 }}
               />
               <Bar dataKey="group1" name="Hoạt động nhóm 1" fill="#00008B" barSize={12} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="group2" name="Hoạt động nhóm 2,3" fill="#FF5C00" barSize={12} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="group23" name="Hoạt động nhóm 2,3" fill="#FF5C00" barSize={12} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -276,22 +311,31 @@ export default function DashboardPage() {
             </a>
           </div>
           <div className={cx('dashboard__upcoming-list')}>
-            {upcomingEvents.map((event, idx) => (
-              <div key={idx} className={cx('dashboard__upcoming-item')}>
-                <h4 className={cx('dashboard__upcoming-title')}>{event.title}</h4>
-                <p className={cx('dashboard__upcoming-location')}>{event.location}</p>
-                <div className={cx('dashboard__upcoming-footer')}>
-                  <div className={cx('dashboard__upcoming-date')}>
-                    <FontAwesomeIcon icon={faCalendar} />
-                    <span>{event.date}</span>
-                  </div>
-                  <div className={cx('dashboard__upcoming-participants')}>
-                    <FontAwesomeIcon icon={faUsers} />
-                    <span>{event.participants} người</span>
+            {isLoadingDashboard ? (
+              <div className={cx('dashboard__upcoming-item')}>Đang tải dữ liệu...</div>
+            ) : upcomingActivities.length ? (
+              upcomingActivities.map((event) => (
+                <div key={event.id} className={cx('dashboard__upcoming-item')}>
+                  <h4 className={cx('dashboard__upcoming-title')}>{event.title}</h4>
+                  <p className={cx('dashboard__upcoming-location')}>{event.location}</p>
+                  <div className={cx('dashboard__upcoming-footer')}>
+                    <div className={cx('dashboard__upcoming-date')}>
+                      <FontAwesomeIcon icon={faCalendar} />
+                      <span>{formatDateTime(event.startTime)}</span>
+                    </div>
+                    <div className={cx('dashboard__upcoming-participants')}>
+                      <FontAwesomeIcon icon={faUsers} />
+                      <span>
+                        {event.participantsCount}
+                        {event.maxCapacity ? `/${event.maxCapacity}` : ''} người
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className={cx('dashboard__upcoming-item')}>Không có hoạt động sắp diễn ra.</div>
+            )}
           </div>
         </div>
 
@@ -303,29 +347,37 @@ export default function DashboardPage() {
             </a>
           </div>
           <div className={cx('dashboard__feedback-list')}>
-            {pendingFeedback.map((feedback, idx) => (
-              <div key={idx} className={cx('dashboard__feedback-item')}>
-                <img
-                  src={feedback.avatar || `https://i.pravatar.cc/40?img=${idx + 5}`}
-                  alt={feedback.name}
-                  className={cx('dashboard__feedback-avatar')}
-                />
-                <div className={cx('dashboard__feedback-content')}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <strong className={cx('dashboard__feedback-name')}>{feedback.name}</strong>
-                    <span className={cx('dashboard__feedback-time')}>{feedback.time}</span>
+            {isLoadingDashboard ? (
+              <div className={cx('dashboard__feedback-item')}>Đang tải dữ liệu...</div>
+            ) : pendingFeedback.length ? (
+              pendingFeedback.map((feedback, idx) => (
+                <div key={feedback.id || idx} className={cx('dashboard__feedback-item')}>
+                  <img
+                    src={feedback.avatarUrl || `https://i.pravatar.cc/40?img=${idx + 5}`}
+                    alt={feedback.name}
+                    className={cx('dashboard__feedback-avatar')}
+                  />
+                  <div className={cx('dashboard__feedback-content')}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <strong className={cx('dashboard__feedback-name')}>{feedback.name}</strong>
+                      <span className={cx('dashboard__feedback-time')}>
+                        {feedback.submittedAt ? dayjs(feedback.submittedAt).fromNow() : 'Vừa xong'}
+                      </span>
+                    </div>
+                    <p className={cx('dashboard__feedback-message')}>{feedback.message}</p>
                   </div>
-                  <p className={cx('dashboard__feedback-message')}>{feedback.message}</p>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className={cx('dashboard__feedback-item')}>Không có phản hồi chờ xử lý.</div>
+            )}
           </div>
         </div>
       </section>

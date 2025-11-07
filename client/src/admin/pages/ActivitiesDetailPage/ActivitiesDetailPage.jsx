@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,11 +27,24 @@ import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
+import { sanitizeHtml } from '@/utils/sanitize';
 import useToast from '@/components/Toast/Toast';
 import styles from './ActivitiesDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
 const { TabPane } = Tabs;
+
+const ATTENDANCE_METHOD_LABELS = {
+  qr: 'QR Code',
+  photo: 'Chụp ảnh',
+  manual: 'Thủ công',
+};
+
+const resolveAttendanceLabel = (method, label) => {
+  if (label) return label;
+  if (!method) return '--';
+  return ATTENDANCE_METHOD_LABELS[method] || '--';
+};
 
 // === Helpers ===
 const formatDateTime = (isoString, format = 'HH:mm [ngày] DD/MM/YYYY') => {
@@ -88,33 +101,13 @@ const InfoItem = ({ icon, label, value }) => (
   </div>
 );
 
-const DetailListSection = ({ title, items, icon, iconClass }) => {
-  const listItems = useMemo(() => {
-    if (!items || items.length === 0) {
-      return <li className={cx('activity-detail__list-item', '--empty')}>Không có thông tin.</li>;
-    }
-    return items.map((item, index) => (
-      <li key={index} className={cx('activity-detail__list-item')}>
-        <FontAwesomeIcon icon={icon} className={cx('activity-detail__list-icon', iconClass)} />
-        <span>{item}</span>
-      </li>
-    ));
-  }, [items, icon, iconClass]);
-
-  return (
-    <div className={cx('activity-detail__list-section')}>
-      <h3 className={cx('activity-detail__list-title')}>{title}</h3>
-      <ul className={cx('activity-detail__list')}>{listItems}</ul>
-    </div>
-  );
-};
-
 function ActivitiesDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
   const { contextHolder, open: openToast } = useToast();
   const queryClient = useQueryClient();
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const {
     data: activity,
@@ -138,16 +131,21 @@ function ActivitiesDetailPage() {
     },
   });
 
-  const handleDelete = () => {
-    Modal.confirm({
-      title: 'Bạn có chắc chắn muốn xóa?',
-      content: `Hoạt động "${activity.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.`,
-      okText: 'Xác nhận Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => deleteMutation.mutate(),
-    });
-  };
+  const handleDelete = useCallback(() => {
+    setDeleteModalOpen(true);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteModalOpen(false);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    try {
+      await deleteMutation.mutateAsync();
+    } finally {
+      setDeleteModalOpen(false);
+    }
+  }, [deleteMutation]);
 
   useEffect(() => {
     if (activity) {
@@ -184,15 +182,11 @@ function ActivitiesDetailPage() {
       setBreadcrumbs(null);
       setPageActions(null);
     };
-  }, [setPageActions, setBreadcrumbs, navigate, id, activity, deleteMutation.isLoading]);
+  }, [setPageActions, setBreadcrumbs, navigate, id, activity, deleteMutation.isLoading, handleDelete]);
 
-  const benefitItems = useMemo(() => normalizeStringItems(activity?.benefits), [activity?.benefits]);
-  const responsibilityItems = useMemo(
-    () => normalizeStringItems(activity?.responsibilities),
-    [activity?.responsibilities],
-  );
   const requirementItems = useMemo(() => normalizeStringItems(activity?.requirements), [activity?.requirements]);
   const guideSteps = useMemo(() => normalizeGuideItems(activity?.guidelines), [activity?.guidelines]);
+  const safeDescription = useMemo(() => sanitizeHtml(activity?.description ?? ''), [activity?.description]);
 
   const buildListItemKey = useCallback((item, index) => {
     const rawKey = typeof item === 'string' ? item : item?.content || item?.title || index;
@@ -238,6 +232,7 @@ function ActivitiesDetailPage() {
   return (
     <ConfigProvider locale={viVN}>
       {contextHolder}
+
       <div className={cx('activity-detail')}>
         <section className={cx('activity-detail__card')}>
           <Row gutter={[20, 20]}>
@@ -271,6 +266,13 @@ function ActivitiesDetailPage() {
                     />
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
+                    <InfoItem
+                      icon={faTriangleExclamation}
+                      label="Hạn hủy đăng ký"
+                      value={formatDateTime(activity.cancellationDeadline, 'HH:mm, DD/MM/YYYY') || '--'}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
                     <InfoItem icon={faClock} label="Thời gian" value={activity.dateTime || '--'} />
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
@@ -284,6 +286,13 @@ function ActivitiesDetailPage() {
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
                     <InfoItem icon={faCalendarDays} label="Năm học" value={activity.academicYear || '--'} />
+                  </Col>
+                  <Col xs={24} sm={12} lg={8}>
+                    <InfoItem
+                      icon={faListCheck}
+                      label="Phương thức điểm danh"
+                      value={resolveAttendanceLabel(activity.attendanceMethod, activity.attendanceMethodLabel)}
+                    />
                   </Col>
                   <Col xs={24} sm={12} lg={8}>
                     <div className={cx('activity-detail__item')}>
@@ -303,25 +312,14 @@ function ActivitiesDetailPage() {
         </section>
 
         <section className={cx('activity-detail__content-box')}>
-          <Row gutter={[32, 24]}>
-            <Col xs={24} lg={24}>
-              <DetailListSection title="Mô tả" items={activity.description ? [activity.description] : []} />
-            </Col>
-            <Col xs={24} lg={12}>
-              <DetailListSection
-                title="Quyền lợi khi tham gia"
-                items={benefitItems}
-                icon={faCircleCheck}
-                iconClass="--success"
-              />
-              <DetailListSection
-                title="Trách nhiệm của người tham gia"
-                items={responsibilityItems}
-                icon={faTriangleExclamation}
-                iconClass="--warning"
-              />
-            </Col>
-          </Row>
+          <div className={cx('activity-detail__rich-section')}>
+            <h3 className={cx('activity-detail__list-title')}>Mô tả chi tiết</h3>
+            {safeDescription ? (
+              <div className={cx('activity-detail__rich-text')} dangerouslySetInnerHTML={{ __html: safeDescription }} />
+            ) : (
+              <Empty description="Chưa có mô tả chi tiết" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </div>
         </section>
 
         <div className={cx('activity-detail__tabs-container')}>
@@ -338,6 +336,21 @@ function ActivitiesDetailPage() {
           </Tabs>
         </div>
       </div>
+
+      <Modal
+        open={isDeleteModalOpen}
+        title="Bạn có chắc chắn muốn xóa?"
+        okText="Xóa"
+        okType="danger"
+        cancelText="Hủy"
+        confirmLoading={deleteMutation.isLoading}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        destroyOnClose
+        centered
+      >
+        <p>Hoạt động "{activity?.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+      </Modal>
     </ConfigProvider>
   );
 }

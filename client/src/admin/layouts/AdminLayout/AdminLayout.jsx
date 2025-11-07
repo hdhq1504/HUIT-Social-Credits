@@ -1,12 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames/bind';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import AdminHeader from '../AdminHeader/AdminHeader';
 import AdminSidebar from '../AdminSidebar/AdminSidebar';
 import AdminBodyContent from '../AdminBodyContent/AdminBodyContent';
-import styles from './AdminLayout.module.scss';
-import adminRoutes from '@/routes/adminRoutes';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import adminRoutes from '@/routes/adminRoutes';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import useAuthStore from '@/stores/useAuthStore';
+import { authApi } from '@/api/auth.api';
+import useToast from '@/components/Toast/Toast';
+import styles from './AdminLayout.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -27,7 +32,16 @@ function AdminLayout() {
   const navigate = useNavigate();
   const [pageActions, setPageActions] = useState(null);
   const [breadcrumbs, setBreadcrumbs] = useState(null);
+  const authUser = useAuthStore((state) => state.user);
+  const clearSession = useAuthStore((state) => state.logout);
+  const { contextHolder, open: openToast } = useToast();
   const contextValue = useMemo(() => ({ setPageActions, setBreadcrumbs }), []);
+
+  useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: authApi.me,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const sidebarItems = useMemo(
     () =>
@@ -54,8 +68,34 @@ function AdminLayout() {
     navigate(path);
   };
 
+  const logoutMutation = useMutation({
+    mutationFn: () => authApi.logout(),
+    onSuccess: () => {
+      clearSession();
+      openToast({ message: 'Đã đăng xuất khỏi hệ thống.', variant: 'success' });
+      navigate(ROUTE_PATHS.PUBLIC.LOGIN);
+    },
+    onError: (error) => {
+      openToast({ message: error.response?.data?.error || 'Đăng xuất thất bại, vui lòng thử lại.', variant: 'danger' });
+    },
+  });
+
+  const handleLogout = useCallback(() => {
+    logoutMutation.mutate();
+  }, [logoutMutation]);
+
+  const headerUser = useMemo(
+    () => ({
+      name: authUser?.fullName || 'Admin',
+      email: authUser?.email || 'admin@huit.edu.vn',
+      avatarUrl: authUser?.avatarUrl || '',
+    }),
+    [authUser],
+  );
+
   return (
     <AdminPageContext.Provider value={contextValue}>
+      {contextHolder}
       <div className={cx('admin-layout')}>
         <div
           className={`${cx('admin-layout__sidebar')} ${
@@ -72,7 +112,12 @@ function AdminLayout() {
 
         <div className={cx('admin-layout__main')}>
           <div className={cx('admin-layout__header')}>
-            <AdminHeader onToggleSidebar={handleToggleSidebar} isOpen={isSidebarOpen} />
+            <AdminHeader
+              onToggleSidebar={handleToggleSidebar}
+              isOpen={isSidebarOpen}
+              user={headerUser}
+              onLogout={handleLogout}
+            />
           </div>
 
           <AdminBodyContent
