@@ -1,0 +1,289 @@
+/* Đây là file .scss được cung cấp, giữ nguyên */
+.detail-page {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  &__left {
+    .breadcrumb {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--muted-color);
+    }
+    .page-title {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 24px;
+      color: var(--primary-color);
+      margin: 0;
+    }
+  }
+
+  &__right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    :global(.ant-btn) {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      border-radius: 8px;
+      min-width: 120px;
+    }
+  }
+}
+
+/* Thống kê Mini */
+.stats-mini__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--white-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: var(--muted-color);
+    font-weight: 500;
+  }
+
+  &__value {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  &__icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+}
+
+/* Thẻ thông tin chung */
+.info-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  font-family: 'Montserrat', sans-serif;
+
+  :global(.ant-card-head) {
+    background: #f9faff;
+    border-bottom: 1px solid #e8edff;
+    border-radius: 12px 12px 0 0;
+    padding: 0 24px;
+  }
+
+  :global(.ant-card-head-title) {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 18px;
+    padding: 16px 0;
+  }
+
+  :global(.ant-card-extra) {
+    font-size: 14px;
+    color: var(--muted-color);
+    padding: 16px 0;
+  }
+
+  :global(.ant-card-body) {
+    padding: 24px;
+  }
+}
+
+/* Thẻ thông tin hoạt động */
+.activity-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.activity-tag {
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-right: 12px;
+}
+.activity-points {
+  font-size: 15px;
+  strong {
+    color: var(--primary-color);
+    font-weight: 700;
+  }
+}
+
+/* Thông tin chi tiết (Grid) */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  &__icon {
+    font-size: 16px;
+    color: var(--primary-color);
+    width: 20px;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: var(--muted-color);
+  }
+
+  &__value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--black-color);
+  }
+}
+
+/* Thẻ phản hồi */
+.feedback-content {
+  margin-bottom: 24px;
+  h4 {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--black-color);
+  }
+}
+
+.feedback-attachment {
+  margin-bottom: 24px;
+  h4 {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f9faff;
+  border: 1px solid #e8edff;
+  border-radius: 8px;
+  padding: 16px;
+
+  &__icon {
+    font-size: 24px;
+    color: var(--primary-color);
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    strong {
+      font-size: 15px;
+      font-weight: 500;
+    }
+    span {
+      font-size: 13px;
+      color: var(--muted-color);
+    }
+  }
+
+  a :global(.ant-btn) {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #e8edff;
+    color: var(--primary-color);
+    &:hover {
+      background: #dce3ff;
+    }
+  }
+}
+
+.feedback-status {
+  margin-top: 20px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Thẻ thông tin sinh viên */
+.student-info-card {
+  :global(.ant-card-body) {
+    padding: 0;
+  }
+
+  .student-info__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    background: #f9faff;
+    border-bottom: 1px solid #e8edff;
+  }
+
+  .student-info__name {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+
+  .student-info__details {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}

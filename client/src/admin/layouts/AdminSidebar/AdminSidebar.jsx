@@ -5,8 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import logo from '@/assets/images/apple-touch-icon.png';
 import {
   faGaugeHigh,
-  faClipboardCheck,
-  faComments,
+  faUsers,
   faChartColumn,
   faMedal,
   faGear,
@@ -22,8 +21,7 @@ const iconByKey = {
   dashboard: faGaugeHigh,
   activities: faHeart,
   scoring: faCalendar,
-  proof: faClipboardCheck,
-  feedback: faComments,
+  feedback: faUsers,
   reports: faChartColumn,
   council: faMedal,
   system: faGear,

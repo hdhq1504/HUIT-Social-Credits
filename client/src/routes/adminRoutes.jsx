@@ -3,8 +3,7 @@ import {
   DashboardPage,
   ActivitiesPage,
   ScoringPage,
-  ProofPage,
-  AdminFeedbackPage,
+  FeedbackPage,
   ReportsPage,
   CouncilPage,
   SystemPage,
@@ -41,17 +40,8 @@ export const adminRoutes = [
     },
   },
   {
-    path: lastPathSegment(ROUTE_PATHS.ADMIN.PROOF), // 'proof'
-    component: ProofPage,
-    meta: {
-      key: 'proof',
-      label: 'Duyệt minh chứng',
-      icon: 'FileSearchOutlined',
-    },
-  },
-  {
     path: lastPathSegment(ROUTE_PATHS.ADMIN.FEEDBACK), // 'feedback'
-    component: AdminFeedbackPage,
+    component: FeedbackPage,
     meta: {
       key: 'feedback',
       label: 'Phản hồi sinh viên',

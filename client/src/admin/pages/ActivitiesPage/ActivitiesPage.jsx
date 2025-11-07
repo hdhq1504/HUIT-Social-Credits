@@ -329,7 +329,7 @@ export default function ActivitiesPage() {
     <ConfigProvider locale={viVN}>
       {contextHolder}
       <div className={cx('activities-page__wrapper')}>
-        {/* Filter Bar (Giữ nguyên) */}
+        {/* Filter Bar */}
         <div className={cx('activities-list__filter-bar')}>
           <Input
             placeholder="Tìm kiếm hoạt động..."
