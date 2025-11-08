@@ -567,7 +567,7 @@ function CardActivity(props) {
       case 'absent':
         return {
           status: pill(L.absent, 'danger'),
-          buttons: [btn(L.details, openDetails, { variant: 'outline' })],
+          buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
         };
       default:
         return {

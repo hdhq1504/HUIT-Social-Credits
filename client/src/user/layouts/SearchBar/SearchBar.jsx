@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
@@ -9,10 +9,14 @@ const cx = classNames.bind(styles);
 
 const { Option } = Select;
 
-function SearchBar({ variant = 'home', onSubmit, onFilterChange }) {
-  const [query, setQuery] = useState('');
+function SearchBar({ variant = 'home', onSubmit, onFilterChange, initialQuery = '' }) {
+  const [query, setQuery] = useState(initialQuery);
   const [group, setGroup] = useState('all');
   const [status, setStatus] = useState('all');
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const handleRunSearch = () => {
     onSubmit?.(query.trim());
@@ -27,7 +31,7 @@ function SearchBar({ variant = 'home', onSubmit, onFilterChange }) {
       {variant === 'home' ? (
         <div className={cx('homeSearch')}>
           <Input
-            placeholder="Nhập từ khóa (ví dụ: Hiến máu, Mùa hè xanh...)"
+            placeholder="Nhập từ khóa (ví dụ: tên hoạt động, địa điểm, nhóm điểm...)"
             size="large"
             className={cx('searchInput')}
             allowClear
@@ -64,12 +68,10 @@ function SearchBar({ variant = 'home', onSubmit, onFilterChange }) {
             }}
             aria-label="Lọc theo nhóm"
           >
-            <Option value="all">Tất cả nhóm</Option>
-            <Option value="mua-he-xanh">Mùa hè xanh</Option>
-            <Option value="hien-mau">Hiến máu</Option>
-            <Option value="dia-chi-do">Địa chỉ đỏ</Option>
-            <Option value="ho-tro">Hỗ trợ</Option>
-            <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
+            <Option value="all">Tất cả nhóm điểm</Option>
+            <Option value="NHOM_1">Nhóm 1</Option>
+            <Option value="NHOM_2">Nhóm 2</Option>
+            <Option value="NHOM_3">Nhóm 3</Option>
           </Select>
 
           <Select
@@ -90,7 +92,7 @@ function SearchBar({ variant = 'home', onSubmit, onFilterChange }) {
 
           <Button type="primary" size="large" className={cx('filterButton')} onClick={handleRunSearch}>
             <FontAwesomeIcon icon={faSearch} />
-            Lọc
+            Tìm kiếm
           </Button>
         </div>
       )}

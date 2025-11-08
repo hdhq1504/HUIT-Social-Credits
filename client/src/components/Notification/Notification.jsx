@@ -6,7 +6,6 @@ import {
   faCalendarCheck,
   faChartLine,
   faCheck,
-  faCheckDouble,
   faFileCircleCheck,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
@@ -78,14 +77,6 @@ function Notification({ onMarkAllRead }) {
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY });
       onMarkAllRead?.();
-
-      antdNotification.open({
-        message: 'Đã đánh dấu tất cả là đã đọc',
-        description: 'Mọi thông báo hiện tại đã được cập nhật trạng thái.',
-        placement: 'topRight',
-        icon: <FontAwesomeIcon icon={faCheckDouble} />,
-        duration: 2.2,
-      });
     },
     onError: () => {
       antdNotification.open({

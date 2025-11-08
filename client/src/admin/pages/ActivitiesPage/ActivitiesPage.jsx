@@ -10,6 +10,7 @@ import viVN from 'antd/locale/vi_VN';
 import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
 import { buildPath } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
+import useDebounce from '@/hooks/useDebounce';
 import styles from './ActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -115,6 +116,7 @@ export default function ActivitiesPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
   const [activityToDelete, setActivityToDelete] = useState(null);
+  const debouncedSearch = useDebounce(searchTerm, 400);
 
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ACTIVITIES_QUERY_KEY,
@@ -136,7 +138,7 @@ export default function ActivitiesPage() {
   });
 
   const filteredActivities = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
     return activities.filter((activity) => {
       const matchesSearch =
@@ -155,11 +157,11 @@ export default function ActivitiesPage() {
 
       return matchesSearch && matchesGroup && matchesStatus && matchesDate;
     });
-  }, [activities, searchTerm, selectedGroup, selectedStatus, selectedDate]);
+  }, [activities, debouncedSearch, selectedGroup, selectedStatus, selectedDate]);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, current: 1 }));
-  }, [searchTerm, selectedGroup, selectedStatus, selectedDate]);
+  }, [debouncedSearch, selectedGroup, selectedStatus, selectedDate]);
 
   const handleOpenDeleteModal = useCallback((activity) => {
     setActivityToDelete(activity);

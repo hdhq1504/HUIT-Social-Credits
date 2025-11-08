@@ -53,32 +53,6 @@ const seed = async () => {
       },
     });
 
-    const categoriesData = [
-      { ma: "DIA_CHI_DO", ten: "Địa chỉ đỏ", moTa: "Hoạt động bắt buộc", nhomDiem: "NHOM_1" },
-      { ma: "HIEN_MAU", ten: "Hiến máu", moTa: "Cứu người, cứu đời", nhomDiem: "NHOM_3" },
-      { ma: "MUA_HE_XANH", ten: "Mùa hè xanh", moTa: "Bảo vệ môi trường", nhomDiem: "NHOM_2" },
-      { ma: "XUAN_TINH_NGUYEN", ten: "Xuân tình nguyện", moTa: "Hoạt động mùa xuân", nhomDiem: "NHOM_2" },
-      { ma: "HO_TRO", ten: "Hỗ trợ", moTa: "Hỗ trợ cộng đồng", nhomDiem: "NHOM_3" }
-    ];
-
-    const categoryMap = {};
-    for (const category of categoriesData) {
-      const created = await prisma.danhMucHoatDong.upsert({
-        where: { ma: category.ma },
-        update: {
-          ten: category.ten,
-          moTa: category.moTa,
-          nhomDiem: category.nhomDiem,
-          isActive: true
-        },
-        create: {
-          ...category,
-          isActive: true
-        }
-      });
-      categoryMap[category.ma] = created;
-    }
-
     const BENEFITS_PRESET = [
       "Cộng điểm rèn luyện",
       "Giấy chứng nhận (nếu đủ điều kiện)",
@@ -149,7 +123,7 @@ const seed = async () => {
         diaDiem: "Khuôn viên khoa CNTT, cơ sở Gò Vấp",
         sucChuaToiDa: 60,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: true
       },
       {
@@ -161,7 +135,7 @@ const seed = async () => {
         diaDiem: "Sảnh A, cơ sở Quang Trung",
         sucChuaToiDa: 30,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -173,7 +147,7 @@ const seed = async () => {
         diaDiem: "Sân sau nhà E",
         sucChuaToiDa: 25,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "MUA_HE_XANH",
+        nhomDiem: "NHOM_2",
         isFeatured: false
       },
       {
@@ -185,7 +159,7 @@ const seed = async () => {
         diaDiem: "Phòng Công tác sinh viên",
         sucChuaToiDa: 40,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "XUAN_TINH_NGUYEN",
+        nhomDiem: "NHOM_1",
         isFeatured: true
       },
       {
@@ -197,7 +171,7 @@ const seed = async () => {
         diaDiem: "Hội trường lớn",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HIEN_MAU",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -209,7 +183,7 @@ const seed = async () => {
         diaDiem: "28 Võ Văn Tần, Q.3",
         sucChuaToiDa: 90,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "DIA_CHI_DO",
+        nhomDiem: "NHOM_1",
         isFeatured: true
       },
       {
@@ -221,7 +195,7 @@ const seed = async () => {
         diaDiem: "Sảnh nhà A",
         sucChuaToiDa: 150,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HIEN_MAU",
+        nhomDiem: "NHOM_3",
         isFeatured: true
       },
       {
@@ -233,7 +207,7 @@ const seed = async () => {
         diaDiem: "Kênh Tham Lương, Q.12",
         sucChuaToiDa: 80,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "MUA_HE_XANH",
+        nhomDiem: "NHOM_2",
         isFeatured: false
       },
       {
@@ -245,7 +219,7 @@ const seed = async () => {
         diaDiem: "Hội trường lớn",
         sucChuaToiDa: 50,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: true
       },
       {
@@ -257,7 +231,7 @@ const seed = async () => {
         diaDiem: "Sảnh nhà B",
         sucChuaToiDa: 70,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "XUAN_TINH_NGUYEN",
+        nhomDiem: "NHOM_1",
         isFeatured: false
       },
       {
@@ -269,7 +243,7 @@ const seed = async () => {
         diaDiem: "Sân bóng khoa CNTT",
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "MUA_HE_XANH",
+        nhomDiem: "NHOM_2",
         isFeatured: false
       },
       {
@@ -281,7 +255,7 @@ const seed = async () => {
         diaDiem: "Nhà hàng Đồng Xanh, 1320 Lê Đức Thọ, Gò Vấp",
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HIEN_MAU",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -293,7 +267,7 @@ const seed = async () => {
         diaDiem: "Hành lang nhà E",
         sucChuaToiDa: 20,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -305,7 +279,7 @@ const seed = async () => {
         diaDiem: "Cổng trường",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -317,7 +291,7 @@ const seed = async () => {
         diaDiem: "Sân trường",
         sucChuaToiDa: 80,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "XUAN_TINH_NGUYEN",
+        nhomDiem: "NHOM_1",
         isFeatured: false
       },
       {
@@ -329,7 +303,7 @@ const seed = async () => {
         diaDiem: "Địa đạo Củ Chi",
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "DIA_CHI_DO",
+        nhomDiem: "NHOM_1",
         isFeatured: true
       },
       {
@@ -341,7 +315,7 @@ const seed = async () => {
         diaDiem: "Phòng Lab 3",
         sucChuaToiDa: 25,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -353,7 +327,7 @@ const seed = async () => {
         diaDiem: "Đường Lê Đức Thọ",
         sucChuaToiDa: 60,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "MUA_HE_XANH",
+        nhomDiem: "NHOM_2",
         isFeatured: false
       },
       {
@@ -365,7 +339,7 @@ const seed = async () => {
         diaDiem: "Bãi xe nhà A",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: true
       },
       {
@@ -377,7 +351,7 @@ const seed = async () => {
         diaDiem: "Sảnh chính",
         sucChuaToiDa: 140,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HIEN_MAU",
+        nhomDiem: "NHOM_3",
         isFeatured: false
       },
       {
@@ -389,7 +363,7 @@ const seed = async () => {
         diaDiem: "1 Nguyễn Tất Thành, Q.4",
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "DIA_CHI_DO",
+        nhomDiem: "NHOM_1",
         isFeatured: false
       },
       {
@@ -401,13 +375,12 @@ const seed = async () => {
         diaDiem: "Hội trường tầng 2",
         sucChuaToiDa: 200,
         hinhAnh: "/images/activity-cover.png",
-        categoryCode: "HO_TRO",
+        nhomDiem: "NHOM_3",
         isFeatured: true
       }
     ];
 
     for (const activity of activitiesData) {
-      const category = activity.categoryCode ? categoryMap[activity.categoryCode] : null;
       const academicPeriod = await resolveAcademicPeriodForDate(activity.batDauLuc ?? activity.ketThucLuc);
       const benefits = activity.benefits ?? pickSome(BENEFITS_PRESET, 3);
       const responsibilities = activity.responsibilities ?? pickSome(RESPONSIBILITIES_PRESET, 3);
@@ -429,8 +402,7 @@ const seed = async () => {
         hocKyId: activity.hocKyId ?? academicPeriod.hocKyId,
         namHocId: activity.namHocId ?? academicPeriod.namHocId,
         isPublished: true,
-        danhMucId: category?.id ?? null,
-        nhomDiem: category?.nhomDiem
+        nhomDiem: activity.nhomDiem ?? "NHOM_2"
       };
 
       const existing = await prisma.hoatDong.findFirst({ where: { tieuDe: activity.tieuDe } });

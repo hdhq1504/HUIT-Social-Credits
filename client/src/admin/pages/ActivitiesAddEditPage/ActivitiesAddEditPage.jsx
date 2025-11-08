@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Form, Input, Select, InputNumber, DatePicker, TimePicker, Upload, Row, Col, ConfigProvider, Spin } from 'antd';
@@ -25,7 +25,6 @@ import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { RichTextEditor } from '@/components';
 import useToast from '@/components/Toast/Toast';
 import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/activities.api';
-import academicsApi, { ACADEMICS_QUERY_KEY } from '@/api/academics.api';
 import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
@@ -85,13 +84,6 @@ const ActivitiesAddEditPage = () => {
     queryFn: () => activitiesApi.detail(id),
     enabled: isEditMode,
   });
-
-  const { data: academicMetadata } = useQuery({
-    queryKey: [ACADEMICS_QUERY_KEY, 'semesters'],
-    queryFn: () => academicsApi.listSemesters(),
-  });
-
-  const semesterDefinitions = useMemo(() => academicMetadata?.semesters ?? [], [academicMetadata?.semesters]);
 
   useEffect(() => {
     if (isEditMode && activityData) {
@@ -330,16 +322,6 @@ const ActivitiesAddEditPage = () => {
                       <Option value="NHOM_2">Nhóm 2</Option>
                       <Option value="NHOM_3">Nhóm 3</Option>
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="semester" label="Học kỳ" className={cx('activities__group')}>
-                    <Input placeholder="" readOnly />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="academicYear" label="Năm học" className={cx('activities__group')}>
-                    <Input placeholder="" readOnly />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>

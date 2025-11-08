@@ -1,4 +1,3 @@
-export { default as ActivityCategoriesSection } from './ActivityCategoriesSection/ActivityCategoriesSection';
 export { default as Button } from './Button/Button';
 export { default as CardActivity } from './CardActivity/CardActivity';
 export { default as ChangePasswordModal } from './ChangePasswordModal/ChangePasswordModal';
@@ -18,4 +17,4 @@ export { default as RegisterModal } from './RegisterModal/RegisterModal';
 export { default as ScrollToTop } from './ScrollToTop/ScrollToTop';
 export { default as UpcomingActivitiesSection } from './UpcomingActivitiesSection/UpcomingActivitiesSection';
 export { default as AdminRoute } from './AdminRoute/AdminRoute';
-export { default as RichTextEditor} from './RichTextEditor/RichTextEditor';
+export { default as RichTextEditor } from './RichTextEditor/RichTextEditor';

@@ -1,22 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import {
-  ConfigProvider,
-  Row,
-  Col,
-  Typography,
-  Select,
-  Pagination,
-  Drawer,
-  Button as AntButton,
-  Grid,
-  Empty,
-} from 'antd';
-import { CardActivity, CheckboxGroup } from '@components/index';
+import { ConfigProvider, Row, Col, Typography, Select, Pagination, Grid, Empty } from 'antd';
+import { CardActivity } from '@components/index';
 import SearchBar from '../../../user/layouts/SearchBar/SearchBar';
 import activitiesApi from '@api/activities.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import useDebounce from '@/hooks/useDebounce';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './ListActivitiesPage.module.scss';
 // ⬇️ Bỏ import lọc theo state đăng ký để hiển thị tất cả
 // import { isUnregisteredOrParticipated } from '@utils/activityState';
@@ -26,12 +17,11 @@ const { Text } = Typography;
 const PAGE_SIZE = 10;
 
 function ListActivitiesPage() {
-  const [selectedItems, setSelectedItems] = useState([]);
   const [sortBy, setSortBy] = useState('latest');
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const invalidateActivityQueries = useInvalidateActivities();
 
   // Search/filter states
   const location = useLocation();
@@ -41,15 +31,7 @@ function ListActivitiesPage() {
   const [query, setQuery] = useState(initialQ);
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-
-  const options = [
-    { value: 'Tất cả', label: 'Tất cả' },
-    { value: 'Địa chỉ đỏ', label: 'Địa chỉ đỏ' },
-    { value: 'Mùa hè xanh', label: 'Mùa hè xanh' },
-    { value: 'Xuân tình nguyện', label: 'Xuân tình nguyện' },
-    { value: 'Hiến máu', label: 'Hiến máu' },
-    { value: 'Hỗ trợ', label: 'Hỗ trợ' },
-  ];
+  const debouncedQuery = useDebounce(query, 400);
 
   const screens = Grid.useBreakpoint();
 
@@ -81,11 +63,6 @@ function ListActivitiesPage() {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
-  const normalizedSelectedCategories = useMemo(() => {
-    if (!selectedItems.length || selectedItems.includes('Tất cả')) return [];
-    return selectedItems.map((value) => normalize(value));
-  }, [selectedItems]);
-
   const computeStatus = (a) => {
     const now = Date.now();
     const start = a.startTime ? new Date(a.startTime).getTime() : null;
@@ -99,16 +76,8 @@ function ListActivitiesPage() {
   const groupMatches = useCallback(
     (a) => {
       if (filterGroup === 'all') return true;
-      const groupKey =
-        {
-          'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
-          'hien-mau': ['hiến máu', 'hien mau'],
-          'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
-          'ho-tro': ['hỗ trợ', 'ho tro'],
-          'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
-        }[filterGroup] || [];
-      const haystack = normalize([a.title, a.code, a.categoryName, a.description].join(' '));
-      return groupKey.some((k) => haystack.includes(k));
+      const groupKey = (a.pointGroup || '').toUpperCase();
+      return groupKey === filterGroup;
     },
     [filterGroup],
   );
@@ -123,26 +92,20 @@ function ListActivitiesPage() {
 
   const keywordMatches = useCallback(
     (a) => {
-      if (!query.trim()) return true;
-      const q = normalize(query);
-      const haystack = normalize([a.title, a.code, a.categoryName, a.description, a.location].join(' '));
+      if (!debouncedQuery.trim()) return true;
+      const q = normalize(debouncedQuery);
+      const haystack = normalize(
+        [a.title, a.code, a.description, a.location, a.pointGroup, a.pointGroupLabel].join(' '),
+      );
       return haystack.includes(q);
     },
-    [query],
+    [debouncedQuery],
   );
 
   const visibleActivities = useMemo(() => {
     let result = [...activities];
 
-    const matchesSelectedCategories = (a) => {
-      if (!normalizedSelectedCategories.length) return true;
-      const categoryText = normalize([a.category, a.categoryName].filter(Boolean).join(' '));
-      return normalizedSelectedCategories.some((category) => categoryText.includes(category));
-    };
-
-    result = result.filter(
-      (a) => keywordMatches(a) && groupMatches(a) && statusMatches(a) && matchesSelectedCategories(a),
-    );
+    result = result.filter((a) => keywordMatches(a) && groupMatches(a) && statusMatches(a));
 
     if (sortBy === 'latest') {
       result = result.sort((a, b) => {
@@ -157,7 +120,7 @@ function ListActivitiesPage() {
     }
 
     return result;
-  }, [activities, groupMatches, keywordMatches, normalizedSelectedCategories, sortBy, statusMatches]);
+  }, [activities, groupMatches, keywordMatches, sortBy, statusMatches]);
 
   const unregisteredActivities = useMemo(
     () =>
@@ -190,7 +153,7 @@ function ListActivitiesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [sortBy, filterGroup, filterStatus, query, selectedItems]);
+  }, [sortBy, filterGroup, filterStatus, debouncedQuery]);
 
   const handleSearchSubmit = (q) => {
     setCurrentPage(1);
@@ -208,13 +171,17 @@ function ListActivitiesPage() {
   return (
     <section className={cx('activities-page')}>
       <header className={cx('activities-page__search')}>
-        <SearchBar variant="list" onSubmit={handleSearchSubmit} onFilterChange={handleFilterChange} />
+        <SearchBar
+          variant="list"
+          onSubmit={handleSearchSubmit}
+          onFilterChange={handleFilterChange}
+          initialQuery={query}
+        />
       </header>
 
       <div className={cx('activities-page__container')}>
         <nav className={cx('activities-page__breadcrumb')} aria-label="Breadcrumb">
-          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link>
-          <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link>
+          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link> / {''}
           <span>
             {sortBy === 'latest'
               ? 'Sắp xếp ngày đăng gần nhất'
@@ -227,7 +194,7 @@ function ListActivitiesPage() {
         <div className={cx('activities-page__layout')}>
           <Row gutter={[24, 24]}>
             {/* Content 9/12 */}
-            <Col xs={24} lg={18}>
+            <Col xs={24}>
               <section className={cx('activities-page__results')} aria-label="Kết quả hoạt động">
                 <header className={cx('activities-page__results-header')}>
                   <div className={cx('activities-page__results-count')}>
@@ -258,13 +225,6 @@ function ListActivitiesPage() {
                         ]}
                       />
                     </div>
-                    <AntButton
-                      onClick={() => setDrawerOpen(true)}
-                      size="medium"
-                      className={cx('activities-page__filter-button')}
-                    >
-                      Bộ lọc
-                    </AntButton>
                   </div>
                 </header>
 
@@ -287,6 +247,7 @@ function ListActivitiesPage() {
                             try {
                               const updated = await activitiesApi.register(current.id, note ? { note } : {});
                               setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                              await invalidateActivityQueries();
                             } catch (error) {
                               console.error('Register failed', error);
                               throw error;
@@ -296,6 +257,7 @@ function ListActivitiesPage() {
                             try {
                               const updated = await activitiesApi.cancel(current.id, { reason, note });
                               setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                              await invalidateActivityQueries();
                             } catch (error) {
                               console.error('Cancel registration failed', error);
                               throw error;
@@ -339,38 +301,9 @@ function ListActivitiesPage() {
                 )}
               </section>
             </Col>
-
-            {/* Sidebar 3/12 - Desktop only */}
-            <Col xs={0} lg={6}>
-              <aside className={cx('activities-page__filters')} aria-label="Bộ lọc hoạt động">
-                <CheckboxGroup selectedValues={selectedItems} onChange={setSelectedItems} options={options} />
-              </aside>
-            </Col>
           </Row>
         </div>
       </div>
-
-      {/* Mobile Drawer */}
-      <Drawer
-        title={null}
-        placement="bottom"
-        onClose={() => setDrawerOpen(false)}
-        open={drawerOpen}
-        width={320}
-        closeIcon={null}
-        className={cx('activities-page__drawer')}
-        styles={{
-          body: { padding: 0 },
-        }}
-      >
-        <CheckboxGroup
-          selectedValues={selectedItems}
-          onChange={setSelectedItems}
-          options={options}
-          showCloseButton
-          onClose={() => setDrawerOpen(false)}
-        />
-      </Drawer>
     </section>
   );
 }

@@ -4,7 +4,6 @@ import {
   CERTIFICATE_TOTAL_TARGET,
   DEFAULT_POINT_GROUP,
   POINT_GROUPS,
-  RED_ADDRESS_CATEGORY_NAME,
   getPointGroupLabel,
   normalizePointGroup
 } from "../utils/points.js";
@@ -15,24 +14,7 @@ const GROUP_ONE_KEY = "NHOM_1";
 const GROUP_TWO_KEY = "NHOM_2";
 const GROUP_THREE_KEY = "NHOM_3";
 const COMBINED_GROUP_KEY = "NHOM_23";
-const RED_ADDRESS_NAME_NORMALIZED = RED_ADDRESS_CATEGORY_NAME.trim().toLowerCase();
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
-
-const normalizeCategoryName = (value) =>
-  typeof value === "string" ? value.trim().toLowerCase() : "";
-
-const isRedAddressCategory = (value) =>
-  normalizeCategoryName(value) === RED_ADDRESS_NAME_NORMALIZED;
-
-const buildGroupMap = (groups = []) => {
-  const map = new Map();
-  groups.forEach((group) => {
-    if (group?.id) {
-      map.set(group.id, group);
-    }
-  });
-  return map;
-};
 
 export const getProgressSummary = async (req, res) => {
   const userId = req.user?.sub;
@@ -52,10 +34,7 @@ export const getProgressSummary = async (req, res) => {
         hoatDong: {
           select: {
             diemCong: true,
-            nhomDiem: true,
-            danhMucRef: {
-              select: { ten: true }
-            }
+            nhomDiem: true
           }
         }
       }
@@ -77,7 +56,7 @@ export const getProgressSummary = async (req, res) => {
     const points = activity.diemCong ?? 0;
     pointTotals[group] += points;
 
-    if (!hasRedAddressParticipation && isRedAddressCategory(activity.danhMucRef?.ten)) {
+    if (!hasRedAddressParticipation && group === GROUP_ONE_KEY) {
       hasRedAddressParticipation = true;
     }
   });
@@ -114,7 +93,7 @@ export const getProgressSummary = async (req, res) => {
       return groupOneRemaining > 0 ? `Còn ${groupOneRemaining} điểm` : "Cần hoàn thành điểm nhóm 1";
     }
     if (!hasRedAddressParticipation) {
-      return "Cần tham gia hoạt động Địa chỉ đỏ";
+      return "Cần tham gia ít nhất 1 hoạt động thuộc nhóm 1";
     }
     return "Hoàn thành";
   })();
@@ -193,51 +172,6 @@ export const getProgressSummary = async (req, res) => {
       requirements
     }
   });
-};
-
-export const getActivityCategories = async (_req, res) => {
-  const [categories, activityCounts] = await Promise.all([
-    prisma.danhMucHoatDong.findMany({
-      where: { isActive: true },
-      orderBy: { ten: "asc" }
-    }),
-    prisma.hoatDong.groupBy({
-      by: ["danhMucId"],
-      where: { isPublished: true, danhMucId: { not: null } },
-      _count: { _all: true }
-    })
-  ]);
-
-  const countMap = buildGroupMap(
-    activityCounts.map((item) => ({
-      id: item.danhMucId,
-      count: item._count?._all ?? 0
-    }))
-  );
-
-  const items = categories.map((category) => {
-    const pointGroup = normalizePointGroup(category.nhomDiem ?? DEFAULT_POINT_GROUP);
-    return {
-      id: category.id,
-      code: category.ma,
-      name: category.ten,
-      description: category.moTa ?? null,
-      pointGroup,
-      pointGroupLabel: getPointGroupLabel(pointGroup),
-      activityCount: countMap.get(category.id)?.count ?? 0,
-      isActive: category.isActive
-    };
-  });
-
-  const totals = items.reduce(
-    (acc, item) => {
-      acc.totalActivities += item.activityCount;
-      return acc;
-    },
-    { totalCategories: items.length, totalActivities: 0 }
-  );
-
-  res.json({ categories: items, summary: totals });
 };
 
 const computePercentChange = (current, previous) => {

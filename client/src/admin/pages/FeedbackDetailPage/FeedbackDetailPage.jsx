@@ -326,9 +326,9 @@ function FeedbackDetailPage() {
               <Card title="Thông tin hoạt động" className={cx('info-card')}>
                 <div className={cx('activity-card__header')}>
                   <h3 className={cx('activity-title')}>{activity.title || 'Hoạt động'}</h3>
-                  {activity.categoryName ? (
+                  {activity.pointGroupLabel ? (
                     <Tag color="blue" className={cx('activity-tag')}>
-                      {activity.categoryName}
+                      {activity.pointGroupLabel}
                     </Tag>
                   ) : null}
                 </div>

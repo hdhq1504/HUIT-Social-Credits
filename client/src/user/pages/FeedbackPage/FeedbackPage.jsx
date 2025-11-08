@@ -4,12 +4,14 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Empty, Input, Pagination, Select, Tabs } from 'antd';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { CardActivity, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
-import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
-import styles from './FeedbackPage.module.scss';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import useDebounce from '@/hooks/useDebounce';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
+import styles from './FeedbackPage.module.scss';
 
 const cx = classNames.bind(styles);
 const { Option } = Select;
@@ -17,13 +19,13 @@ const PAGE_SIZE = 6;
 
 function FeedbackPage() {
   const { contextHolder, open: toast } = useToast();
-  const queryClient = useQueryClient();
 
   // ====== Search/Filter/Sort states ======
   const [q, setQ] = useState('');
   const [group, setGroup] = useState('all');
   const [sort, setSort] = useState('latest');
   const [pages, setPages] = useState({ all: 1, approved: 1, submitted: 1, denied: 1 });
+  const debounceQuery = useDebounce(q, 400);
 
   // Helpers
   const normalize = (s) =>
@@ -36,39 +38,29 @@ function FeedbackPage() {
   const matchGroup = useCallback(
     (activity) => {
       if (group === 'all') return true;
-      const map = {
-        'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
-        'hien-mau': ['hiến máu', 'hien mau'],
-        'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
-        'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
-        'ho-tro': ['hỗ trợ', 'ho tro'],
-      };
-      const keys = map[group] || [];
-      const haystack = normalize(
-        [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
-      );
-      return keys.some((k) => haystack.includes(k));
+      const groupKey = (activity?.pointGroup || '').toUpperCase();
+      return groupKey === group;
     },
     [group],
   );
 
   const matchKeyword = useCallback(
     (activity) => {
-      const key = q.trim();
+      const key = debounceQuery.trim();
       if (!key) return true;
       const haystack = normalize(
         [
           activity?.title,
           activity?.code,
-          activity?.categoryName,
-          activity?.groupName,
           activity?.location,
           activity?.description,
+          activity?.pointGroup,
+          activity?.pointGroupLabel,
         ].join(' '),
       );
       return haystack.includes(normalize(key));
     },
-    [q],
+    [debounceQuery],
   );
 
   const sortItems = useCallback(
@@ -124,10 +116,12 @@ function FeedbackPage() {
     },
   });
 
+  const invalidateActivityQueries = useInvalidateActivities();
+
   const registerMutation = useMutation({
     mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể đăng ký hoạt động. Vui lòng thử lại.';
@@ -137,8 +131,8 @@ function FeedbackPage() {
 
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason, note }) => activitiesApi.cancel(id, { reason, note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể hủy đăng ký hoạt động. Vui lòng thử lại.';
@@ -148,8 +142,8 @@ function FeedbackPage() {
 
   const feedbackMutation = useMutation({
     mutationFn: ({ id, content, attachments }) => activitiesApi.feedback(id, { content, attachments }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -292,7 +286,7 @@ function FeedbackPage() {
 
   useEffect(() => {
     setPages({ all: 1, approved: 1, submitted: 1, denied: 1 });
-  }, [q, group, sort, registrations]);
+  }, [debounceQuery, group, sort, registrations]);
 
   const handleReset = () => {
     setQ('');
@@ -339,12 +333,10 @@ function FeedbackPage() {
                     />
 
                     <Select value={group} size="large" className={cx('feedback__search-select')} onChange={setGroup}>
-                      <Option value="all">Nhóm hoạt động</Option>
-                      <Option value="mua-he-xanh">Mùa hè xanh</Option>
-                      <Option value="hien-mau">Hiến máu</Option>
-                      <Option value="dia-chi-do">Địa chỉ đỏ</Option>
-                      <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
-                      <Option value="ho-tro">Hỗ trợ</Option>
+                      <Option value="all">Tất cả nhóm điểm</Option>
+                      <Option value="NHOM_1">Nhóm 1</Option>
+                      <Option value="NHOM_2">Nhóm 2</Option>
+                      <Option value="NHOM_3">Nhóm 3</Option>
                     </Select>
 
                     <Select value={sort} size="large" className={cx('feedback__search-select')} onChange={setSort}>

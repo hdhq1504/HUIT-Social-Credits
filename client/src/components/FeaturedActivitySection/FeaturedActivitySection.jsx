@@ -9,12 +9,14 @@ import 'swiper/css/navigation';
 import activitiesApi from '@api/activities.api';
 import { isUnregisteredOrParticipated } from '@utils/activityState';
 import styles from './FeaturedActivitySection.module.scss';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 
 const cx = classNames.bind(styles);
 
 function FeaturedActivitySection() {
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const invalidateActivityQueries = useInvalidateActivities();
 
   // Fetch activities once on mount
   useEffect(() => {
@@ -90,15 +92,17 @@ function FeaturedActivitySection() {
                       try {
                         const updated = await activitiesApi.register(activity.id, note ? { note } : {});
                         setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Register failed', e);
-                        throw e; // rethrow để CardActivity show toast nếu cần
+                        throw e;
                       }
                     }}
                     onCancelRegister={async ({ activity, reason, note }) => {
                       try {
                         const updated = await activitiesApi.cancel(activity.id, { reason, note });
                         setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Cancel registration failed', e);
                         throw e;

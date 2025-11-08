@@ -4,12 +4,14 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Empty, Input, Pagination, Select, Tabs } from 'antd';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { CardActivity, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import useDebounce from '@/hooks/useDebounce';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -18,13 +20,13 @@ const PAGE_SIZE = 6;
 
 function RollCallPage() {
   const { contextHolder, open: toast } = useToast();
-  const queryClient = useQueryClient();
 
   // ====== Search/Filter/Sort states ======
   const [q, setQ] = useState('');
   const [group, setGroup] = useState('all');
   const [sort, setSort] = useState('latest');
   const [pages, setPages] = useState({ ongoing: 1, upcoming: 1, ended: 1 });
+  const debouncedQuery = useDebounce(q, 400);
 
   // Helpers
   const normalize = (s) =>
@@ -37,25 +39,15 @@ function RollCallPage() {
   const matchGroup = useCallback(
     (activity) => {
       if (group === 'all') return true;
-      const map = {
-        'mua-he-xanh': ['mùa hè xanh', 'mua he xanh'],
-        'hien-mau': ['hiến máu', 'hien mau'],
-        'dia-chi-do': ['địa chỉ đỏ', 'dia chi do'],
-        'xuan-tinh-nguyen': ['xuân tình nguyện', 'xuan tinh nguyen'],
-        'ho-tro': ['hỗ trợ', 'ho tro'],
-      };
-      const keys = map[group] || [];
-      const haystack = normalize(
-        [activity?.title, activity?.categoryName, activity?.groupName, activity?.description].join(' '),
-      );
-      return keys.some((k) => haystack.includes(k));
+      const groupKey = (activity?.pointGroup || '').toUpperCase();
+      return groupKey === group;
     },
     [group],
   );
 
   const matchKeyword = useCallback(
     (activity) => {
-      const key = q.trim();
+      const key = debouncedQuery.trim();
       if (!key) return true;
       const haystack = normalize(
         [
@@ -65,11 +57,13 @@ function RollCallPage() {
           activity?.groupName,
           activity?.location,
           activity?.description,
+          activity?.pointGroup,
+          activity?.pointGroupLabel,
         ].join(' '),
       );
       return haystack.includes(normalize(key));
     },
-    [q],
+    [debouncedQuery],
   );
 
   const sortItems = useCallback(
@@ -125,10 +119,12 @@ function RollCallPage() {
     },
   });
 
+  const invalidateActivityQueries = useInvalidateActivities();
+
   const registerMutation = useMutation({
     mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -139,8 +135,8 @@ function RollCallPage() {
 
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason, note }) => activitiesApi.cancel(id, { reason, note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Hủy đăng ký hoạt động thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -151,8 +147,8 @@ function RollCallPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async (data) => {
+      await invalidateActivityQueries();
       const message = data?.message || 'Điểm danh thành công!';
       toast({ message, variant: 'success' });
     },
@@ -164,8 +160,8 @@ function RollCallPage() {
 
   const feedbackMutation = useMutation({
     mutationFn: ({ id, content, attachments }) => activitiesApi.feedback(id, { content, attachments }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -349,7 +345,7 @@ function RollCallPage() {
 
   useEffect(() => {
     setPages({ ongoing: 1, upcoming: 1, ended: 1 });
-  }, [q, group, sort, registrations]);
+  }, [debouncedQuery, group, sort, registrations]);
 
   // Reset
   const handleReset = () => {
@@ -397,12 +393,10 @@ function RollCallPage() {
                     />
 
                     <Select value={group} size="large" className={cx('roll-call__search-select')} onChange={setGroup}>
-                      <Option value="all">Nhóm hoạt động</Option>
-                      <Option value="mua-he-xanh">Mùa hè xanh</Option>
-                      <Option value="hien-mau">Hiến máu</Option>
-                      <Option value="dia-chi-do">Địa chỉ đỏ</Option>
-                      <Option value="xuan-tinh-nguyen">Xuân tình nguyện</Option>
-                      <Option value="ho-tro">Hỗ trợ</Option>
+                      <Option value="all">Tất cả nhóm điểm</Option>
+                      <Option value="NHOM_1">Nhóm 1</Option>
+                      <Option value="NHOM_2">Nhóm 2</Option>
+                      <Option value="NHOM_3">Nhóm 3</Option>
                     </Select>
 
                     <Select value={sort} size="large" className={cx('roll-call__search-select')} onChange={setSort}>

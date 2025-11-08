@@ -67,7 +67,6 @@ const ACTIVITY_INCLUDE = {
     },
     orderBy: { dangKyLuc: "asc" }
   },
-  danhMucRef: true,
   hocKyRef: {
     include: {
       namHoc: true
@@ -287,7 +286,8 @@ const computeFeedbackAvailableAt = (activity, registration) => {
   const participationTime = registration?.diemDanhLuc
     ? new Date(registration.diemDanhLuc)
     : end || toDate(activity?.batDauLuc) || new Date();
-  const available = new Date(participationTime.getTime() + 48 * 60 * 60 * 1000);
+  // const available = new Date(participationTime.getTime() + 48 * 60 * 60 * 1000);
+  const available = participationTime;
   return available.toISOString();
 };
 
@@ -392,7 +392,6 @@ const mapActivity = (activity, registration) => {
   const registeredCount = activeRegistrations.length;
   const pointGroup = normalizePointGroup(activity.nhomDiem);
   const pointGroupLabel = getPointGroupLabel(pointGroup);
-  const category = activity.danhMucRef;
   const semesterRef = activity.hocKyRef ?? null;
   const academicYearRef = semesterRef?.namHoc ?? activity.namHocRef ?? null;
   const defaultAttendanceMethod = getDefaultAttendanceMethod();
@@ -430,9 +429,6 @@ const mapActivity = (activity, registration) => {
     capacity: capacityLabel,
     maxCapacity: activity.sucChuaToiDa,
     coverImage: activity.hinhAnh,
-    category: category?.ten ?? null,
-    categoryCode: category?.ma ?? null,
-    categoryDescription: category?.moTa ?? null,
     pointGroup,
     pointGroupLabel,
     isFeatured: activity.isFeatured,
@@ -866,7 +862,7 @@ export const submitActivityFeedback = async (req, res) => {
     danhGia: normalizedRating,
     minhChung: normalizedAttachments,
     trangThai: "CHO_DUYET",
-    lyDoTuChoi: null,
+    lydoTuChoi: null,
   };
 
   let feedback;

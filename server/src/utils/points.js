@@ -24,8 +24,6 @@ export const CERTIFICATE_TARGETS = {
 export const CERTIFICATE_TOTAL_TARGET =
   CERTIFICATE_TARGETS.GROUP_ONE + CERTIFICATE_TARGETS.GROUP_TWO_THREE;
 
-export const RED_ADDRESS_CATEGORY_NAME = 'Địa chỉ đỏ';
-
 export const DEFAULT_POINT_GROUP = 'NHOM_2';
 
 const hasPointGroup = (value) => Object.prototype.hasOwnProperty.call(POINT_GROUPS, value);

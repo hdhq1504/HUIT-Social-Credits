@@ -70,9 +70,9 @@ function ProofStatusSection() {
         const reason = mapping.status === 'rejected' && feedback?.content ? String(feedback.content).trim() : null;
 
         const infoParts = [];
-        if (activity?.category) infoParts.push(activity.category);
+        if (activity?.pointGroupLabel) infoParts.push(activity.pointGroupLabel);
         if (typeof activity?.points === 'number') infoParts.push(`${activity.points} điểm`);
-        const activityLabel = infoParts.length ? `Hoạt động: ${infoParts.join(' • ')}` : 'Hoạt động bạn đã tham gia';
+        const activityLabel = infoParts.length ? `${infoParts.join(' • ')}` : 'Hoạt động bạn đã tham gia';
 
         const sortTime = new Date(
           feedback?.updatedAt ||
@@ -182,9 +182,7 @@ function ProofStatusSection() {
             <div className={cx('proof-status__empty')}>
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  isLoggedIn ? 'Chưa có phản hồi nào' : 'Đăng nhập để xem trạng thái phản hồi'
-                }
+                description={isLoggedIn ? 'Chưa có phản hồi nào' : 'Đăng nhập để xem trạng thái phản hồi'}
               />
             </div>
           )}

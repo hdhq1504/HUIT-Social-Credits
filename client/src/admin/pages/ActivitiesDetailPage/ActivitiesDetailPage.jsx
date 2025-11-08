@@ -248,7 +248,7 @@ function ActivitiesDetailPage() {
               <div className={cx('activity-detail__info')}>
                 <h2 className={cx('activity-detail__title')}>{activity.title}</h2>
                 <div className={cx('activity-detail__meta')}>
-                  <Tag className={cx('activity-detail__badge')}>{activity.category || 'Hoạt động'}</Tag>
+                  <Tag className={cx('activity-detail__badge')}>{activity.pointGroupLabel || 'Hoạt động'}</Tag>
                   <span className={cx('activity-detail__points')}>
                     <FontAwesomeIcon icon={faStar} /> {activity.points || 0} điểm
                   </span>

@@ -9,24 +9,25 @@ import CardActivity from '../CardActivity/CardActivity';
 import Label from '../Label/Label';
 import activitiesApi from '@api/activities.api';
 import { isUnregisteredOrParticipated } from '@utils/activityState';
+import { ROUTE_PATHS } from '@/config/routes.config';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './UpcomingActivitiesSection.module.scss';
 
 const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);
 
-const CATEGORIES = ['Tất cả', 'Địa chỉ đỏ', 'Mùa hè xanh', 'Xuân tình nguyện', 'Hiến máu', 'Hỗ trợ'];
-
-function getCategoriesOf(activity) {
-  if (typeof activity?.category === 'string') return [activity.category];
-  if (Array.isArray(activity?.categories)) return activity.categories;
-  if (Array.isArray(activity?.tags)) return activity.tags;
-  return [];
-}
+const GROUP_FILTERS = [
+  { key: 'all', label: 'Tất cả nhóm' },
+  { key: 'NHOM_1', label: 'Nhóm 1' },
+  { key: 'NHOM_2', label: 'Nhóm 2' },
+  { key: 'NHOM_3', label: 'Nhóm 3' },
+];
 
 function UpcomingActivitiesSection() {
   const [activities, setActivities] = useState([]);
-  const [selected, setSelected] = useState('Tất cả');
+  const [selectedGroup, setSelectedGroup] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const invalidateActivityQueries = useInvalidateActivities();
 
   const visibleActivities = useMemo(
     () => activities.filter((activity) => isUnregisteredOrParticipated(activity)),
@@ -49,12 +50,9 @@ function UpcomingActivitiesSection() {
   }, []);
 
   const filteredActivities = useMemo(() => {
-    if (selected === 'Tất cả') return visibleActivities;
-    return visibleActivities.filter((a) => {
-      const cats = getCategoriesOf(a).map((x) => String(x).trim().toLowerCase());
-      return cats.includes(selected.trim().toLowerCase());
-    });
-  }, [visibleActivities, selected]);
+    if (selectedGroup === 'all') return visibleActivities;
+    return visibleActivities.filter((activity) => (activity.pointGroup || '').toUpperCase() === selectedGroup);
+  }, [visibleActivities, selectedGroup]);
 
   return (
     <>
@@ -69,16 +67,16 @@ function UpcomingActivitiesSection() {
 
       <div className={cx('upcoming-activities')}>
         <div className={cx('upcoming-activities__filters')}>
-          {CATEGORIES.map((cat) => (
+          {GROUP_FILTERS.map((filter) => (
             <CheckableTag
-              key={cat}
-              checked={selected === cat}
-              onChange={() => setSelected(cat)}
+              key={filter.key}
+              checked={selectedGroup === filter}
+              onChange={() => setSelectedGroup(filter.key)}
               className={cx('upcoming-activities__tag', {
-                'upcoming-activities__tag--active': selected === cat,
+                'upcoming-activities__tag--active': selectedGroup === filter.key,
               })}
             >
-              {cat}
+              {filter.label}
             </CheckableTag>
           ))}
         </div>
@@ -100,6 +98,7 @@ function UpcomingActivitiesSection() {
                       try {
                         const updated = await activitiesApi.register(activity.id, note ? { note } : {});
                         setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Register failed', e);
                         throw e;
@@ -109,6 +108,7 @@ function UpcomingActivitiesSection() {
                       try {
                         const updated = await activitiesApi.cancel(activity.id, { reason, note });
                         setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Cancel registration failed', e);
                         throw e;
@@ -126,8 +126,8 @@ function UpcomingActivitiesSection() {
         </div>
 
         <div className={cx('upcoming-activities__actions')}>
-          <Link to="/list-activities">
-            <Button variant="primary" onClick={() => setSelected('Tất cả')}>
+          <Link to={ROUTE_PATHS.USER.ACTIVITIES}>
+            <Button variant="primary" onClick={() => setSelectedGroup('all')}>
               <span>Xem tất cả</span>
               <FontAwesomeIcon icon={faArrowRight} />
             </Button>

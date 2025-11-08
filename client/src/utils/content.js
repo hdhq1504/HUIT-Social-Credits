@@ -1,7 +1,3 @@
-/**
- * Chuyển đổi danh sách yêu cầu/quyền lợi dạng hỗn hợp (string, object) về mảng chuỗi sạch.
- * Đồng thời loại bỏ giá trị rỗng để tránh render các dòng thừa.
- */
 export const normalizeStringItems = (value) => {
   if (!Array.isArray(value)) return [];
 
@@ -23,10 +19,6 @@ export const normalizeStringItems = (value) => {
     .filter(Boolean);
 };
 
-/**
- * Chuẩn hoá dữ liệu hướng dẫn gồm tiêu đề và nội dung.
- * Đảm bảo mỗi bước luôn có content, tiêu đề có thể để trống nếu không cung cấp.
- */
 export const normalizeGuideItems = (value) => {
   if (!Array.isArray(value)) return [];
 

@@ -210,8 +210,8 @@ export default function DashboardPage() {
       <AdminSearchBar
         facultyOptions={[
           { value: 'all', label: 'Tất cả khoa' },
-          { value: 'cntt', label: 'Khoa CNTT' },
-          { value: 'kt', label: 'Khoa Kế toán' },
+          { value: 'cntt', label: 'Công nghệ thông tin' },
+          { value: 'kt', label: 'Quản trị kinh doanh' },
         ]}
       />
 

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import SearchBar from '../../../user/layouts/SearchBar/SearchBar';
 import {
   FeaturedActivitySection,
-  ActivityCategoriesSection,
   PersonalActivitiesSection,
   ProgressSection,
   ProofStatusSection,
@@ -63,10 +62,6 @@ function HomePage() {
       <div className={cx('home__sections')}>
         <section className={cx('home__section')}>
           <FeaturedActivitySection />
-        </section>
-
-        <section className={cx('home__section', 'home__section--spacious')}>
-          <ActivityCategoriesSection />
         </section>
 
         <section className={cx('home__section')}>

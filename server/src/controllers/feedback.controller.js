@@ -55,11 +55,6 @@ const FEEDBACK_DETAIL_INCLUDE = {
       ketThucLuc: true,
       diaDiem: true,
       sucChuaToiDa: true,
-      danhMucRef: {
-        select: {
-          ten: true
-        }
-      },
       dangKy: {
         select: {
           id: true
@@ -143,7 +138,6 @@ const mapActivitySummary = (activity) => {
     points: activity.diemCong ?? 0,
     pointGroup: activity.nhomDiem ?? null,
     location: activity.diaDiem ?? null,
-    categoryName: activity.danhMucRef?.ten ?? null,
     maxParticipants: activity.sucChuaToiDa ?? null,
     participantCount: Array.isArray(activity.dangKy) ? activity.dangKy.length : 0
   };
@@ -391,7 +385,7 @@ export const decideFeedbackStatus = async (req, res) => {
     where: { id: { in: normalizedIds } },
     data: {
       trangThai: normalizedStatus,
-      lyDoTuChoi: normalizedStatus === "BI_TU_CHOI" ? normalizedReason : null
+      lydoTuChoi: normalizedStatus === "BI_TU_CHOI" ? normalizedReason : null
     }
   });
 

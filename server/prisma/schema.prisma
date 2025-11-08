@@ -49,20 +49,6 @@ model NguoiDung {
   @@index([resetPasswordTokenExpiresAt])
 }
 
-model DanhMucHoatDong {
-  id        String     @id @default(cuid())
-  ma        String     @unique
-  ten       String
-  moTa      String?
-  nhomDiem  NhomDiem   @default(NHOM_2)
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  hoatDong  HoatDong[]
-
-  @@index([isActive, nhomDiem])
-}
-
 model NamHoc {
   id        String    @id @default(cuid())
   ma        String    @unique
@@ -122,15 +108,12 @@ model HoatDong {
   updatedAt          DateTime            @updatedAt
   dangKy             DangKyHoatDong[]
   phanHoi            PhanHoiHoatDong[]
-  danhMucId          String?
   nhomDiem           NhomDiem            @default(NHOM_2)
-  danhMucRef         DanhMucHoatDong?    @relation(fields: [danhMucId], references: [id])
   DiemDanhNguoiDung  DiemDanhNguoiDung[]
   hocKyRef           HocKy?              @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
   namHocRef          NamHoc?             @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
 
   @@index([isPublished, batDauLuc])
-  @@index([danhMucId])
   @@index([hocKyId])
   @@index([namHocId])
 }

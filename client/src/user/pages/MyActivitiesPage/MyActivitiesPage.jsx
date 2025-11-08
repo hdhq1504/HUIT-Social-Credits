@@ -14,12 +14,14 @@ import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import updateLocale from 'dayjs/plugin/updateLocale';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { CardActivity, Label } from '@components/index';
 import useToast from '@components/Toast/Toast';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import useDebounce from '@/hooks/useDebounce';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -39,11 +41,11 @@ const normalize = (s) =>
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
 
-  const queryClient = useQueryClient();
   const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
   const [keyword, setKeyword] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
+  const debouncedKeyword = useDebounce(keyword, 400);
 
   const {
     data: registrations = [],
@@ -74,10 +76,12 @@ function MyActivitiesPage() {
     return { academicYears: sortedYears, semesters: sortedSemesters };
   }, [registrations]);
 
+  const invalidateActivityQueries = useInvalidateActivities();
+
   const registerMutation = useMutation({
     mutationFn: ({ id, note }) => activitiesApi.register(id, { note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -88,8 +92,8 @@ function MyActivitiesPage() {
 
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason, note }) => activitiesApi.cancel(id, { reason, note }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Hủy đăng ký hoạt động thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -100,8 +104,8 @@ function MyActivitiesPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async (data) => {
+      await invalidateActivityQueries();
       const message = data?.message || 'Điểm danh thành công!';
       toast({ message, variant: 'success' });
     },
@@ -113,8 +117,8 @@ function MyActivitiesPage() {
 
   const feedbackMutation = useMutation({
     mutationFn: ({ id, content, attachments }) => activitiesApi.feedback(id, { content, attachments }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(MY_ACTIVITIES_QUERY_KEY);
+    onSuccess: async () => {
+      await invalidateActivityQueries();
       toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
     },
     onError: (error) => {
@@ -133,7 +137,7 @@ function MyActivitiesPage() {
         if (selectedSemester !== 'all' && activity.semester !== selectedSemester) return false;
         if (normalizedKeyword) {
           const haystack = normalize(
-            [activity.title, activity.code, activity.location, activity.category, activity.pointGroupLabel]
+            [activity.title, activity.code, activity.location, activity.pointGroup, activity.pointGroupLabel]
               .filter(Boolean)
               .join(' '),
           );

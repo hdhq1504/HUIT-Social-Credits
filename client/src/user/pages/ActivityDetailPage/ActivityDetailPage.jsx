@@ -4,7 +4,7 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faClipboardList, faEnvelope, faPhone } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import Loading from '../../../user/pages/Loading/Loading';
@@ -14,6 +14,7 @@ import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -26,7 +27,7 @@ const ATTENDANCE_METHOD_BADGES = {
 
 function ActivityDetailPage() {
   const { id } = useParams();
-  const queryClient = useQueryClient();
+  const invalidateActivityQueries = useInvalidateActivities();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [modalVariant, setModalVariant] = useState('confirm');
   const [isCheckOpen, setIsCheckOpen] = useState(false);
@@ -107,9 +108,8 @@ function ActivityDetailPage() {
       }
       return activitiesApi.register(id, { note });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['activity', id]);
-      queryClient.invalidateQueries(['activities', 'related', id]);
+    onSuccess: async () => {
+      await invalidateActivityQueries(['activity', 'id'], ['activities', 'related', id]);
       setIsRegisterOpen(false);
       toast({
         message: modalVariant === 'cancel' ? 'Hủy đăng ký thành công.' : 'Đăng ký hoạt động thành công!',
@@ -124,8 +124,8 @@ function ActivityDetailPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id: activityId, payload }) => activitiesApi.attendance(activityId, payload),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['activity', id]);
+    onSuccess: async (data) => {
+      await invalidateActivityQueries(['activity', id]);
       setIsCheckOpen(false);
       setAttendancePhase('checkin');
       const message = data?.message || 'Điểm danh thành công!';
@@ -389,9 +389,6 @@ function ActivityDetailPage() {
                   <div className={cx('activity-detail__title')}>{activity.title}</div>
                 </div>
                 <div className={cx('activity-detail__group')}>
-                  <div className={cx('activity-detail__group-badge')}>
-                    <span>{activity.category || 'Hoạt động CTXH'}</span>
-                  </div>
                   {activity.pointGroupLabel && (
                     <div className={cx('activity-detail__group-badge')}>
                       <span>{activity.pointGroupLabel}</span>
@@ -569,11 +566,11 @@ function ActivityDetailPage() {
                     state={item.state || 'details_only'}
                     onRegistered={async ({ note }) => {
                       await activitiesApi.register(item.id, { note });
-                      queryClient.invalidateQueries(['activities', 'related', id]);
+                      await invalidateActivityQueries(['activities', 'related', id]);
                     }}
                     onCancelRegister={async ({ reason, note }) => {
                       await activitiesApi.cancel(item.id, { reason, note });
-                      queryClient.invalidateQueries(['activities', 'related', id]);
+                      await invalidateActivityQueries(['activities', 'related', id]);
                     }}
                     onConfirmPresent={async ({ dataUrl, file, phase }) => {
                       let evidenceDataUrl = dataUrl ?? null;
@@ -587,12 +584,12 @@ function ActivityDetailPage() {
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
                       });
-                      queryClient.invalidateQueries(['activities', 'related', id]);
+                      await invalidateActivityQueries(['activities', 'related', id]);
                     }}
                     onSendFeedback={async ({ content, files }) => {
                       const attachments = (files || []).map((file) => file?.name).filter(Boolean);
                       await activitiesApi.feedback(item.id, { content, attachments });
-                      queryClient.invalidateQueries(['activities', 'related', id]);
+                      await invalidateActivityQueries(['activities', 'related', id]);
                     }}
                   />
                 ))}
@@ -643,7 +640,7 @@ function ActivityDetailPage() {
           try {
             const attachments = (files || []).map((file) => file?.name).filter(Boolean);
             await activitiesApi.feedback(id, { content, attachments });
-            queryClient.invalidateQueries(['activity', id]);
+            await invalidateActivityQueries(['activity', id]);
             setIsFeedbackOpen(false);
             toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
           } catch (error) {
