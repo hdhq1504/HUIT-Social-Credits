@@ -107,8 +107,7 @@
   :global(.ant-table-tbody > tr > td) {
     padding: 16px 12px;
     font-size: 14px;
-    color: --black-color;
-    border-top: 0.56px var(--border-color) solid;
+    color: var(--black-color);
 
     &:first-child {
       padding-left: 24px;
@@ -133,6 +132,7 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+
     p {
       font-size: 14px;
       font-weight: 400;
@@ -182,6 +182,7 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
+    border: none;
 
     .dot-icon {
       font-size: 8px;

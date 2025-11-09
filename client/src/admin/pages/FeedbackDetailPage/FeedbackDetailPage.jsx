@@ -1,14 +1,15 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import {
   Avatar,
-  Breadcrumb,
   Button,
   Card,
   Col,
   ConfigProvider,
+  Divider,
   Input,
+  List,
   Modal,
   Result,
   Row,
@@ -20,17 +21,17 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faCalendar,
   faCalendarDays,
   faCheck,
-  faChevronRight,
   faCircleCheck,
   faCircleDot,
   faCircleXmark,
   faDownload,
   faFileLines,
-  faHome,
   faHourglassHalf,
-  faMapPin,
+  faLocationDot,
+  faStar,
   faUsers,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
@@ -76,21 +77,6 @@ const formatFileSize = (bytes) => {
   return `${value.toFixed(digits)} ${units[index]}`;
 };
 
-// Helper render thẻ thống kê
-const StatCard = ({ item }) => (
-  <div className={cx('stat-card-mini')}>
-    <div className={cx('stat-card-mini__info')}>
-      <p className={cx('stat-card-mini__label')}>{item.label}</p>
-      <h2 className={cx('stat-card-mini__value')} style={{ color: item.color }}>
-        {item.value}
-      </h2>
-    </div>
-    <div className={cx('stat-card-mini__icon-box')} style={{ backgroundColor: item.bg, color: item.color }}>
-      <FontAwesomeIcon icon={item.icon} />
-    </div>
-  </div>
-);
-
 const InfoItem = ({ icon, label, children }) => (
   <div className={cx('info-item')}>
     <span className={cx('info-item__icon')}>
@@ -120,28 +106,6 @@ function FeedbackDetailPage() {
   const feedback = data?.feedback;
   const stats = data?.stats ?? {};
 
-  useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
-      { label: 'Phản hồi sinh viên', path: ROUTE_PATHS.ADMIN.FEEDBACK },
-      { label: 'Chi tiết phản hồi', path: buildPath.adminFeedbackDetail(id) },
-    ]);
-    setPageActions([]);
-    return () => {
-      setBreadcrumbs(null);
-      setPageActions(null);
-    };
-  }, [id, setBreadcrumbs, setPageActions]);
-
-  useEffect(() => {
-    if (!feedback?.student?.name) return;
-    setBreadcrumbs([
-      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
-      { label: 'Phản hồi sinh viên', path: ROUTE_PATHS.ADMIN.FEEDBACK },
-      { label: feedback.student.name, path: buildPath.adminFeedbackDetail(id) },
-    ]);
-  }, [feedback?.student?.name, id, setBreadcrumbs]);
-
   const decideMutation = useMutation({
     mutationFn: feedbackApi.decide,
     onSuccess: (response) => {
@@ -162,15 +126,59 @@ function FeedbackDetailPage() {
     },
   });
 
-  const handleApprove = async () => {
+  const handleApprove = useCallback(() => {
     if (!feedback?.id) return;
-    await decideMutation.mutateAsync({ ids: [feedback.id], status: 'DA_DUYET' });
-  };
+    decideMutation.mutateAsync({ ids: [feedback.id], status: 'DA_DUYET' });
+  }, [decideMutation, feedback?.id]);
 
-  const handleRejectSubmit = async () => {
+  const handleRejectSubmit = useCallback(() => {
     if (!feedback?.id) return;
-    await decideMutation.mutateAsync({ ids: [feedback.id], status: 'BI_TU_CHOI', reason: rejectReason });
-  };
+    decideMutation.mutateAsync({ ids: [feedback.id], status: 'BI_TU_CHOI', reason: rejectReason });
+  }, [decideMutation, rejectReason, feedback?.id]);
+
+  const approveDisabled = decideMutation.isPending || !feedback || feedback.status === 'DA_DUYET';
+  const rejectDisabled = decideMutation.isPending || !feedback || feedback.status === 'BI_TU_CHOI';
+
+  useEffect(() => {
+    setBreadcrumbs([
+      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
+      { label: 'Phản hồi sinh viên', path: ROUTE_PATHS.ADMIN.FEEDBACK },
+      { label: 'Chi tiết phản hồi', path: buildPath.adminFeedbackDetail(id) },
+    ]);
+    setPageActions([
+      {
+        key: 'reject',
+        label: 'Từ chối',
+        icon: <FontAwesomeIcon icon={faXmark} />,
+        type: 'default',
+        className: 'admin-navbar__btn--danger',
+        onClick: handleRejectSubmit,
+        disabled: rejectDisabled,
+      },
+      {
+        key: 'approve',
+        label: 'Duyệt',
+        icon: <FontAwesomeIcon icon={faCheck} />,
+        type: 'primary',
+        className: 'admin-navbar__btn--success',
+        onClick: handleApprove,
+        disabled: approveDisabled,
+      },
+    ]);
+    return () => {
+      setBreadcrumbs(null);
+      setPageActions(null);
+    };
+  }, [
+    setBreadcrumbs,
+    setPageActions,
+    id,
+    handleRejectSubmit,
+    handleApprove,
+    approveDisabled,
+    rejectDisabled,
+    decideMutation.isLoading,
+  ]);
 
   const statsCards = useMemo(
     () => [
@@ -218,8 +226,6 @@ function FeedbackDetailPage() {
     activity.maxParticipants !== undefined && activity.maxParticipants !== null
       ? formatNumber(activity.maxParticipants, '--')
       : '--';
-  const approveDisabled = decideMutation.isPending || !feedback || feedback.status === 'DA_DUYET';
-  const rejectDisabled = decideMutation.isPending || !feedback || feedback.status === 'BI_TU_CHOI';
 
   if (isLoading) {
     return (
@@ -266,57 +272,19 @@ function FeedbackDetailPage() {
       {contextHolder}
 
       <div className={cx('detail-page')}>
-        <header className={cx('page-header')}>
-          <div className={cx('page-header__left')}>
-            <Breadcrumb separator={<FontAwesomeIcon icon={faChevronRight} size="xs" />} className={cx('breadcrumb')}>
-              <Breadcrumb.Item>
-                <Link to={ROUTE_PATHS.ADMIN.DASHBOARD}>
-                  <FontAwesomeIcon icon={faHome} /> Trang chủ
-                </Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>
-                <Link to={ROUTE_PATHS.ADMIN.FEEDBACK}>Phản hồi sinh viên</Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>{student.name || 'Chi tiết phản hồi'}</Breadcrumb.Item>
-            </Breadcrumb>
-            <div className={cx('page-header__title-block')}>
-              <h1 className={cx('page-title')}>{student.name || 'Chi tiết phản hồi'}</h1>
-              {buildStatusTag(feedback.status, feedback.statusLabel)}
-            </div>
-            <p className={cx('page-meta')}>Gửi lúc {formatDateTime(feedback.submittedAt)}</p>
-          </div>
-          <div className={cx('page-header__right')}>
-            <Space size="middle">
-              <Button
-                danger
-                icon={<FontAwesomeIcon icon={faXmark} />}
-                size="large"
-                onClick={() => {
-                  setRejectModalOpen(true);
-                  setRejectReason('');
-                }}
-                disabled={rejectDisabled}
-                loading={decideMutation.isPending}
-              >
-                Từ chối
-              </Button>
-              <Button
-                type="primary"
-                icon={<FontAwesomeIcon icon={faCheck} />}
-                size="large"
-                onClick={handleApprove}
-                disabled={approveDisabled}
-                loading={decideMutation.isPending}
-              >
-                Duyệt
-              </Button>
-            </Space>
-          </div>
-        </header>
-
-        <section className={cx('stats-mini__grid')}>
+        <section className={cx('stats__grid')}>
           {statsCards.map((item) => (
-            <StatCard key={item.key} item={item} />
+            <div key={item.key} className={cx('stats__card')}>
+              <div className={cx('stats__info')}>
+                <p className={cx('stats__label')}>{item.label}</p>
+                <h2 className={cx('stats__value')} style={{ color: item.color }}>
+                  {item.value}
+                </h2>
+              </div>
+              <div className={cx('stats__icon-box')} style={{ backgroundColor: item.bg }}>
+                <FontAwesomeIcon icon={item.icon} size="lg" color={item.color} />
+              </div>
+            </div>
           ))}
         </section>
 
@@ -327,24 +295,28 @@ function FeedbackDetailPage() {
                 <div className={cx('activity-card__header')}>
                   <h3 className={cx('activity-title')}>{activity.title || 'Hoạt động'}</h3>
                   {activity.pointGroupLabel ? (
-                    <Tag color="blue" className={cx('activity-tag')}>
-                      {activity.pointGroupLabel}
-                    </Tag>
+                    <Tag className={cx('activity-tag')}>{activity.pointGroupLabel}</Tag>
                   ) : null}
                 </div>
                 <span className={cx('activity-points')}>
-                  <strong>{activity.points ?? 0}</strong> điểm CTXH
+                  <FontAwesomeIcon icon={faStar} />
+                  <span>{activity.points ?? 0} điểm</span>
                 </span>
 
                 <div className={cx('info-grid')}>
                   <InfoItem icon={faCalendarDays} label="Thời gian">
                     {formatDateTimeRange(activity.startTime, activity.endTime)}
                   </InfoItem>
-                  <InfoItem icon={faMapPin} label="Địa điểm">
+                  <InfoItem icon={faLocationDot} label="Địa điểm">
                     {activity.location || 'Đang cập nhật'}
                   </InfoItem>
                   <InfoItem icon={faUsers} label="Số lượng tham gia">
                     {participantCountLabel} / {maxParticipantsLabel}
+                  </InfoItem>
+                  <InfoItem icon={faCalendar} label="Học kỳ - Năm học">
+                    {activity.semester && activity.academicYear
+                      ? `${activity.semester} - ${activity.academicYear}`
+                      : 'Đang cập nhật'}
                   </InfoItem>
                 </div>
               </Card>
@@ -352,92 +324,128 @@ function FeedbackDetailPage() {
               <Card
                 title="Phản hồi sinh viên"
                 className={cx('info-card')}
-                extra={<span>Cập nhật lúc {formatDateTime(feedback.updatedAt)}</span>}
+                extra={<span>Đã gửi: {formatDateTime(feedback.submittedAt)}</span>}
               >
-                <div className={cx('feedback-meta')}>
-                  <div>
-                    <Text type="secondary">Trạng thái</Text>
-                    <div>{buildStatusTag(feedback.status, feedback.statusLabel)}</div>
-                  </div>
-                  <div>
-                    <Text type="secondary">Gửi lúc</Text>
-                    <div>{formatDateTime(feedback.submittedAt)}</div>
+                {/* Nội dung phản hồi */}
+                <div className={cx('feedback-section', 'feedback-section--content')}>
+                  <Typography.Title level={5} className={cx('section-title')}>
+                    Nội dung phản hồi
+                  </Typography.Title>
+                  <div className={cx('content-box')}>
+                    <Paragraph className={cx('content-text')}>{feedback.content}</Paragraph>
                   </div>
                 </div>
 
-                <div className={cx('feedback-content')}>
-                  <h4>Nội dung phản hồi</h4>
-                  <Paragraph>{feedback.content}</Paragraph>
-                </div>
+                {/* Lý do từ chối (nếu có) */}
                 {feedback.reason ? (
-                  <div className={cx('feedback-reject-reason')}>
-                    <h4>Lý do từ chối</h4>
-                    <Paragraph type="danger">{feedback.reason}</Paragraph>
+                  <div className={cx('feedback-section')}>
+                    <Typography.Title level={5} className={cx('section-title')}>
+                      Lý do từ chối
+                    </Typography.Title>
+                    <div className={cx('content-box', 'content-box--danger')}>
+                      <Paragraph className={cx('content-text')}>{feedback.reason}</Paragraph>
+                    </div>
                   </div>
                 ) : null}
 
-                <div className={cx('feedback-attachments')}>
-                  <h4>Minh chứng đính kèm</h4>
+                {/* File đính kèm */}
+                <div className={cx('feedback-section')}>
+                  <Typography.Title level={5} className={cx('section-title')}>
+                    File minh chứng đính kèm
+                  </Typography.Title>
+
                   {attachments.length ? (
-                    <div className={cx('attachment-list')}>
-                      {attachments.map((file, index) => {
+                    <List
+                      className={cx('attachment-list')}
+                      itemLayout="horizontal"
+                      dataSource={attachments}
+                      renderItem={(file, index) => {
                         const url = file.url || '#';
                         const sizeLabel = formatFileSize(file.size);
-                        const isDisabled = !file.url;
+                        const uploadedAt = file.uploadedAt ? formatDateTime(file.uploadedAt) : null;
+                        const disabled = !file.url;
+
                         return (
-                          <a
-                            key={file.id || file.name || index}
-                            className={cx('attachment-item', { '--disabled': isDisabled })}
-                            href={isDisabled ? undefined : url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(event) => {
-                              if (isDisabled) event.preventDefault();
-                            }}
+                          <List.Item
+                            className={cx('attachment-item', { '--disabled': disabled })}
+                            actions={[
+                              <Button
+                                key="download"
+                                type="text"
+                                icon={<FontAwesomeIcon icon={faDownload} />}
+                                href={disabled ? undefined : url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => disabled && e.preventDefault()}
+                              />,
+                            ]}
                           >
-                            <FontAwesomeIcon icon={faDownload} />
-                            <span>{file.name || 'Minh chứng'}</span>
-                            {sizeLabel ? <small>{sizeLabel}</small> : null}
-                          </a>
+                            <List.Item.Meta
+                              avatar={
+                                <div className={cx('file-thumb')}>
+                                  <FontAwesomeIcon icon={faFileLines} />
+                                </div>
+                              }
+                              title={<span className={cx('file-name')}>{file.name || `Minh chứng ${index + 1}`}</span>}
+                              description={
+                                <span className={cx('file-desc')}>
+                                  {sizeLabel ? `${sizeLabel}` : '—'}
+                                  {uploadedAt ? ` • Tải lên ${uploadedAt}` : ''}
+                                </span>
+                              }
+                            />
+                          </List.Item>
                         );
-                      })}
-                    </div>
+                      }}
+                    />
                   ) : (
                     <Paragraph type="secondary">Không có minh chứng đính kèm.</Paragraph>
                   )}
+                </div>
+
+                <Divider className={cx('footer-divider')} />
+
+                <div className={cx('feedback-status-row')}>
+                  <Text type="secondary" strong>
+                    Trạng thái phản hồi:
+                  </Text>
+                  {buildStatusTag(feedback.status, feedback.statusLabel)}
                 </div>
               </Card>
             </Space>
           </Col>
 
-          {/* Cột phải */}
+          {/* Thông tin sinh viên */}
           <Col xs={24} lg={8}>
             <Card title="Thông tin sinh viên" className={cx('info-card')}>
               <div className={cx('student-summary')}>
-                <Avatar size={72} src={student.avatarUrl} alt={student.name}>
-                  {student.name?.[0] ?? '?'}
-                </Avatar>
-                <div className={cx('student-summary__details')}>
-                  <h3>{student.name || 'Sinh viên'}</h3>
-                  <p>{student.email || '—'}</p>
+                <div className={cx('student-avatar-wrap')}>
+                  <Avatar shape="square" size={200} src={student.avatarUrl} alt={student.name}>
+                    {student.name?.[0] ?? '?'}
+                  </Avatar>
                 </div>
               </div>
-              <div className={cx('student-metadata')}>
-                <div>
-                  <span>MSSV</span>
-                  <strong>{student.studentCode || '--'}</strong>
+
+              <div className={cx('student-grid')}>
+                <div className={cx('field')}>
+                  <span className={cx('field__label')}>Mã sinh viên</span>
+                  <span className={cx('field__value')}>{student.studentCode || '--'}</span>
                 </div>
-                <div>
-                  <span>Khoa</span>
-                  <strong>{student.faculty || '--'}</strong>
+                <div className={cx('field')}>
+                  <span className={cx('field__label')}>Khoa</span>
+                  <span className={cx('field__value')}>{student.faculty || '--'}</span>
                 </div>
-                <div>
-                  <span>Lớp</span>
-                  <strong>{student.className || '--'}</strong>
+                <div className={cx('field')}>
+                  <span className={cx('field__label')}>Lớp</span>
+                  <span className={cx('field__value')}>{student.className || '--'}</span>
                 </div>
-                <div>
-                  <span>Điện thoại</span>
-                  <strong>{student.phone || '--'}</strong>
+                <div className={cx('field')}>
+                  <span className={cx('field__label')}>Số điện thoại</span>
+                  <span className={cx('field__value')}>{student.phone || '--'}</span>
+                </div>
+                <div className={cx('field', 'field--full')}>
+                  <span className={cx('field__label')}>Email</span>
+                  <span className={cx('field__value')}>{student.email || '--'}</span>
                 </div>
               </div>
             </Card>

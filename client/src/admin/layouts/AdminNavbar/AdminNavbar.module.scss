@@ -4,7 +4,7 @@
   align-items: center;
   padding: 16px;
   margin-bottom: 20px;
-  background: var(--white-color, #fff);
+  background: var(--white-color);
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   height: 68px;
@@ -49,7 +49,7 @@
     transition: 0.2s;
 
     &:hover {
-      background: #d49f33;
+      background-color: #01016d;
     }
   }
 
@@ -66,25 +66,57 @@
     border-radius: 8px;
 
     &--orange {
-      background: var(--Text-Orange, #ff5c00);
-      border-color: var(--Text-Orange, #ff5c00);
+      background: var(--orange-color);
+      border-color: var(--orange-color);
       color: white;
-      
+
       &:hover {
         background: #e65100 !important;
         border-color: #e65100 !important;
       }
     }
 
-    &--danger-outline {
-      background: var(--Bg-White, white);
-      border-color: var(--Danger, #dc3545);
-      color: var(--Danger, #dc3545);
-      
+    &--danger {
+      background-color: var(--danger-color);
+      border-color: var(--danger-color);
+      color: var(--white-color);
+
       &:hover {
-        background: #fff5f5 !important;
-        border-color: #ff4d4f !important;
-        color: #ff4d4f !important;
+        background: #b7192c !important;
+        border-color: #b7192c !important;
+        color: var(--white-color) !important;
+      }
+
+      &[disabled],
+      &[disabled]:hover,
+      &:disabled,
+      &:disabled:hover {
+        background-color: #f5f5f5 !important;
+        color: rgba(0, 0, 0, 0.25) !important;
+        border-color: #d9d9d9 !important;
+        cursor: not-allowed;
+      }
+    }
+
+    &--success {
+      background-color: var(--success-color);
+      border-color: var(--success-color);
+      color: var(--white-color);
+
+      &:hover {
+        background: #186340 !important;
+        border-color: #186340 !important;
+        color: var(--white-color) !important;
+      }
+
+      &[disabled],
+      &[disabled]:hover,
+      &:disabled,
+      &:disabled:hover {
+        background-color: #f5f5f5 !important;
+        color: rgba(0, 0, 0, 0.25) !important;
+        border-color: #d9d9d9 !important;
+        cursor: not-allowed;
       }
     }
   }
