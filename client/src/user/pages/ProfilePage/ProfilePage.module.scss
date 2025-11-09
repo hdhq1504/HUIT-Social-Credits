@@ -226,6 +226,16 @@
       background-color: #000070;
     }
 
+    &--secondary {
+      margin-top: 12px;
+      background-color: #1f2937;
+      color: #fff;
+
+      &:hover {
+        background-color: #111827;
+      }
+    }
+
     @media (max-width: 992px) {
       width: 100%;
       max-width: 250px;
@@ -234,6 +244,13 @@
 
     @media (max-width: 576px) {
       max-width: 50%;
+    }
+
+    &__face-status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.5;
     }
   }
 

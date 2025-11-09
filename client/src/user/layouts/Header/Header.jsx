@@ -111,14 +111,16 @@ function Header() {
   const renderLoggedInMenu = () => (
     <div className={cx('header__menu')}>
       <div className={cx('header__menu-header')}>
-        {user?.role !== 'SINHVIEN' && <span>Xin chào {user?.TenNguoiDung}</span>}
+        {user?.role !== 'SINHVIEN' && (
+          <span>Xin chào {user?.fullName || user?.TenNguoiDung || user?.hoTen || user?.email}</span>
+        )}
       </div>
 
       {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
       {user?.role !== 'ADMIN' && (
         <>
           <div className={cx('header__menu-header')}>
-            Xin chào <span>{user?.TenNguoiDung}</span>
+            Xin chào <span>{user?.fullName || user?.TenNguoiDung || user?.hoTen || user?.email}</span>
           </div>
           <div className={cx('header__menu-item')}>
             <Link to={ROUTE_PATHS.USER.PROFILE}>

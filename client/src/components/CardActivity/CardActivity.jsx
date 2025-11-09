@@ -360,7 +360,7 @@ function CardActivity(props) {
 
     try {
       setIsAttendanceSubmitting(true);
-      await onConfirmPresent?.({
+      const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
         previewUrl: payload.previewUrl,
@@ -369,10 +369,13 @@ function CardActivity(props) {
       });
       setOpenCheck(false);
       setCaptured(null);
+      const faceStatus = result?.face?.status || null;
+      const toastVariant = faceStatus === 'REVIEW' ? 'warning' : 'success';
+      const fallbackMessage =
+        phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
       openToast({
-        message:
-          phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!',
-        variant: 'success',
+        message: result?.message || fallbackMessage,
+        variant: toastVariant,
       });
       // Toggle step and update ui state accordingly
       setAttendanceStep(phaseToSend === 'checkin' ? 'checkout' : 'checkin');
@@ -388,7 +391,8 @@ function CardActivity(props) {
       } else {
         checkoutReminderShownRef.current = true;
       }
-    } catch {
+    } catch (error) {
+      if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
       setIsAttendanceSubmitting(false);

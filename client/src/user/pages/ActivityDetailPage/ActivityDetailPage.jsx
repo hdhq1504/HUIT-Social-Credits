@@ -15,6 +15,7 @@ import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
+import faceRecognitionService from '@/services/faceRecognitionService';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -155,6 +156,26 @@ function ActivityDetailPage() {
       }
     }
 
+    let facePayload;
+    if (activity?.attendanceMethod === 'face') {
+      if (!evidenceDataUrl) {
+        toast({ message: 'Vui lòng chụp ảnh khuôn mặt rõ ràng để điểm danh.', variant: 'danger' });
+        return;
+      }
+      try {
+        const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(evidenceDataUrl);
+        facePayload = { descriptor };
+      } catch (error) {
+        const code = error?.message || '';
+        const message =
+          code === 'FACE_NOT_DETECTED'
+            ? 'Không nhận diện được khuôn mặt trong ảnh. Vui lòng chụp lại với ánh sáng tốt hơn.'
+            : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
+        toast({ message, variant: 'danger' });
+        return;
+      }
+    }
+
     attendanceMutation.mutate({
       id,
       payload: {
@@ -167,6 +188,7 @@ function ActivityDetailPage() {
               fileName: file?.name,
             }
           : undefined,
+        face: facePayload,
       },
     });
   };
@@ -575,16 +597,46 @@ function ActivityDetailPage() {
                     onConfirmPresent={async ({ dataUrl, file, phase }) => {
                       let evidenceDataUrl = dataUrl ?? null;
                       if (!evidenceDataUrl && file) {
-                        evidenceDataUrl = await fileToDataUrl(file);
+                        try {
+                          evidenceDataUrl = await fileToDataUrl(file);
+                        } catch {
+                          toast({
+                            message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.',
+                            variant: 'danger',
+                          });
+                          throw new Error('ATTENDANCE_ABORTED');
+                        }
                       }
-                      await activitiesApi.attendance(item.id, {
+                      let facePayload;
+                      if (item?.attendanceMethod === 'face') {
+                        if (!evidenceDataUrl) {
+                          toast({ message: 'Vui lòng chụp ảnh khuôn mặt rõ ràng để điểm danh.', variant: 'danger' });
+                          throw new Error('ATTENDANCE_ABORTED');
+                        }
+                        try {
+                          const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(evidenceDataUrl);
+                          facePayload = { descriptor };
+                        } catch (error) {
+                          const code = error?.message || '';
+                          const message =
+                            code === 'FACE_NOT_DETECTED'
+                              ? 'Không nhận diện được khuôn mặt trong ảnh. Vui lòng chụp lại với ánh sáng tốt hơn.'
+                              : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
+                          toast({ message, variant: 'danger' });
+                          throw new Error('ATTENDANCE_ABORTED');
+                        }
+                      }
+
+                      const result = await activitiesApi.attendance(item.id, {
                         status: 'present',
                         phase,
                         evidence: evidenceDataUrl
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
+                        face: facePayload,
                       });
                       await invalidateActivityQueries(['activities', 'related', id]);
+                      return result;
                     }}
                     onSendFeedback={async ({ content, files }) => {
                       const attachments = (files || []).map((file) => file?.name).filter(Boolean);

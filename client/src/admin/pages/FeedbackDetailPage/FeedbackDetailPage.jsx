@@ -8,6 +8,7 @@ import {
   Col,
   ConfigProvider,
   Divider,
+  Image,
   Input,
   List,
   Modal,
@@ -219,6 +220,16 @@ function FeedbackDetailPage() {
   );
 
   const attachments = feedback?.attachments ?? [];
+
+  const isImageAttachment = useCallback((file) => {
+    if (!file) return false;
+    const mime = typeof file.mimeType === 'string' ? file.mimeType.toLowerCase() : '';
+    if (mime.startsWith('image/')) return true;
+    const url = typeof file.url === 'string' ? file.url.toLowerCase() : '';
+    if (url.startsWith('data:image')) return true;
+    const name = typeof file.name === 'string' ? file.name.toLowerCase() : '';
+    return /\.(png|jpe?g|gif|bmp|webp|heic|heif)$/i.test(name);
+  }, []);
   const student = feedback?.student ?? {};
   const activity = feedback?.activity ?? {};
   const participantCountLabel = formatNumber(activity.participantCount, '--');
@@ -314,9 +325,11 @@ function FeedbackDetailPage() {
                     {participantCountLabel} / {maxParticipantsLabel}
                   </InfoItem>
                   <InfoItem icon={faCalendar} label="Học kỳ - Năm học">
-                    {activity.semester && activity.academicYear
-                      ? `${activity.semester} - ${activity.academicYear}`
-                      : 'Đang cập nhật'}
+                    {activity.semesterDisplay
+                      ? activity.semesterDisplay
+                      : activity.semester && activity.academicYear
+                        ? `${activity.semester} - ${activity.academicYear}`
+                        : 'Đang cập nhật'}
                   </InfoItem>
                 </div>
               </Card>
@@ -365,6 +378,22 @@ function FeedbackDetailPage() {
                         const uploadedAt = file.uploadedAt ? formatDateTime(file.uploadedAt) : null;
                         const disabled = !file.url;
 
+                        const isImage = isImageAttachment(file);
+                        const previewNode =
+                          isImage && !disabled ? (
+                            <Image
+                              src={url}
+                              alt={file.name || `Minh chứng ${index + 1}`}
+                              width={64}
+                              height={64}
+                              style={{ objectFit: 'cover', borderRadius: 8 }}
+                            />
+                          ) : (
+                            <div className={cx('file-thumb')}>
+                              <FontAwesomeIcon icon={faFileLines} />
+                            </div>
+                          );
+
                         return (
                           <List.Item
                             className={cx('attachment-item', { '--disabled': disabled })}
@@ -381,11 +410,7 @@ function FeedbackDetailPage() {
                             ]}
                           >
                             <List.Item.Meta
-                              avatar={
-                                <div className={cx('file-thumb')}>
-                                  <FontAwesomeIcon icon={faFileLines} />
-                                </div>
-                              }
+                              avatar={previewNode}
                               title={<span className={cx('file-name')}>{file.name || `Minh chứng ${index + 1}`}</span>}
                               description={
                                 <span className={cx('file-desc')}>

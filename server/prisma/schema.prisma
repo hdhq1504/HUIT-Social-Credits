@@ -41,6 +41,7 @@ model NguoiDung {
   phanHoi                     PhanHoiHoatDong[]
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
+  faceProfile                 FaceProfile?
 
   @@index([email])
   @@index([maSV])
@@ -155,6 +156,9 @@ model DiemDanhNguoiDung {
   anhDinhKem  String?         @db.Text
   anhMimeType String?         @db.VarChar(100)
   anhTen      String?         @db.VarChar(255)
+  faceMatch   FaceMatchStatus?
+  faceScore   Float?
+  faceMeta    Json?
   taoLuc      DateTime        @default(now())
 
   dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
@@ -164,6 +168,17 @@ model DiemDanhNguoiDung {
   @@index([dangKyId])
   @@index([nguoiDungId])
   @@index([hoatDongId])
+}
+
+model FaceProfile {
+  id          String   @id @default(cuid())
+  nguoiDungId String   @unique
+  descriptors Json
+  samples     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
 }
 
 model PhanHoiHoatDong {
@@ -246,4 +261,10 @@ enum AttendanceMethod {
   QR
   PHOTO
   MANUAL
+}
+
+enum FaceMatchStatus {
+  APPROVED
+  REVIEW
+  REJECTED
 }

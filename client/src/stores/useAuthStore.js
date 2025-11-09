@@ -2,6 +2,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi } from '../api/auth.api';
 
+const normalizeUser = (user) => {
+  if (!user) return null;
+  const role = user.role || user.vaiTro || 'SINHVIEN';
+  const fullName =
+    user.fullName || user.hoTen || user.TenNguoiDung || user.name || user.email || '';
+  return {
+    ...user,
+    role,
+    fullName,
+    TenNguoiDung: user.TenNguoiDung || fullName,
+    hoTen: user.hoTen || fullName,
+  };
+};
+
 const useAuthStore = create(
   persist(
     (set) => ({
@@ -13,10 +27,7 @@ const useAuthStore = create(
         set({
           accessToken,
           isLoggedIn: true,
-          user: {
-            ...user,
-            role: user.role || 'SINHVIEN',
-          },
+          user: normalizeUser(user),
         });
       },
 
@@ -24,7 +35,7 @@ const useAuthStore = create(
 
       updateUser: (user) =>
         set((state) => ({
-          user: state.user ? { ...state.user, ...user } : user,
+          user: normalizeUser({ ...(state.user || {}), ...user }),
         })),
 
       logout: () => {
@@ -36,10 +47,7 @@ const useAuthStore = create(
           const user = await authApi.me();
           set((state) => ({
             isLoggedIn: !!state.accessToken,
-            user: {
-              ...user,
-              role: user.role || 'SINHVIEN',
-            },
+            user: normalizeUser(user),
           }));
         } catch {
           set({ isLoggedIn: false, user: null });

@@ -152,15 +152,15 @@ function PersonalActivitiesSection() {
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
           </div>
         )}
-
-        {canShowViewAll && (
-          <div className={cx('personal-activities__actions')}>
-            <Link to={'/my-activities'}>
-              <Button variant="primary">Xem tất cả</Button>
-            </Link>
-          </div>
-        )}
       </div>
+      
+      {canShowViewAll && (
+        <div className={cx('personal-activities__actions')}>
+          <Link to={'/my-activities'}>
+            <Button variant="primary">Xem tất cả</Button>
+          </Link>
+        </div>
+      )}
     </>
   );
 }

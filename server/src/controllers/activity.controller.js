@@ -1,5 +1,6 @@
 import sanitizeHtml from "sanitize-html";
 import prisma from "../prisma.js";
+import { env } from "../env.js";
 import { notifyUser } from "../utils/notification.service.js";
 import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "../utils/points.js";
 import { deriveSemesterInfo, resolveAcademicPeriodForDate } from "../utils/academic.js";
@@ -9,6 +10,12 @@ import {
   mapAttendanceMethodToApi,
   normalizeAttendanceMethod
 } from "../utils/attendance.js";
+import { sanitizeDescriptor, computeMatchConfidence, deriveMatchStatus } from "../utils/face.js";
+import {
+  uploadBase64Image,
+  buildAttendancePath,
+  isSupabaseConfigured,
+} from "../utils/supabaseStorage.js";
 
 const normalizeSemesterLabel = (value) => {
   if (!value) return null;
@@ -49,6 +56,7 @@ const normalizeAcademicYearLabel = (value) => {
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
+const FACE_ATTENDANCE_METHOD = "face";
 
 const USER_PUBLIC_FIELDS = {
   id: true,
@@ -135,10 +143,66 @@ const mapParticipants = (registrations = []) =>
       return { id: user.id, name: user.hoTen ?? user.email ?? "Người dùng" };
     });
 
+const resolveAttachmentUrl = (raw) => {
+  if (!raw) return null;
+  const value = String(raw).trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:")) {
+    return value;
+  }
+  if (!env.APP_URL) {
+    return value;
+  }
+  const base = env.APP_URL.replace(/\/+$/, "");
+  const path = value.replace(/^\/+/, "");
+  return `${base}/${path}`;
+};
+
 const normalizeAttachments = (value) => {
   if (!value) return [];
-  if (Array.isArray(value)) return value;
-  return [value];
+  const items = Array.isArray(value) ? value : [value];
+  return items
+    .map((item, index) => {
+      if (!item) return null;
+      const fallbackName = `Minh chứng ${index + 1}`;
+
+      if (typeof item === "string") {
+        const url = resolveAttachmentUrl(item);
+        const name = item.split("/").pop() || fallbackName;
+        return { id: String(index), name, url };
+      }
+
+      if (typeof item === "object") {
+        const rawUrl =
+          typeof item.url === "string"
+            ? item.url
+            : typeof item.href === "string"
+              ? item.href
+              : typeof item.path === "string"
+                ? item.path
+                : null;
+        const url = resolveAttachmentUrl(rawUrl);
+        const nameCandidate =
+          typeof item.name === "string"
+            ? item.name
+            : typeof item.fileName === "string"
+              ? item.fileName
+              : url?.split("/").pop();
+        const size = Number.isFinite(item.size) ? item.size : null;
+        const mimeType = typeof item.mimeType === "string" ? item.mimeType : null;
+
+        return {
+          id: item.id ? String(item.id) : String(index),
+          name: nameCandidate || fallbackName,
+          url,
+          size,
+          mimeType
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
 };
 
 const MAX_ATTENDANCE_EVIDENCE_SIZE = 5_000_000;
@@ -245,6 +309,20 @@ const sanitizeAttendanceEvidence = (value) => {
   return { data, mimeType, fileName };
 };
 
+const extractFaceDescriptorPayload = (value) => {
+  if (!value || typeof value !== "object") return null;
+  const source = Array.isArray(value.descriptor)
+    ? value.descriptor
+    : Array.isArray(value.vector)
+      ? value.vector
+      : Array.isArray(value.data)
+        ? value.data
+        : null;
+  const descriptor = sanitizeDescriptor(source);
+  if (!descriptor) return null;
+  return { descriptor };
+};
+
 const mapAttendanceEntry = (entry) => {
   if (!entry) return null;
   return {
@@ -255,7 +333,11 @@ const mapAttendanceEntry = (entry) => {
     capturedAt: entry.taoLuc?.toISOString() ?? null,
     attachment: entry.anhDinhKem ?? null,
     attachmentMimeType: entry.anhMimeType ?? null,
-    attachmentFileName: entry.anhTen ?? null
+    attachmentFileName: entry.anhTen ?? null,
+    faceMatchStatus: entry.faceMatch ?? null,
+    faceMatchScore:
+      typeof entry.faceScore === "number" && Number.isFinite(entry.faceScore) ? entry.faceScore : null,
+    faceNeedsReview: entry.faceMatch === "REVIEW"
   };
 };
 
@@ -406,6 +488,10 @@ const mapActivity = (activity, registration) => {
   const fallbackSemesterInfo = deriveSemesterInfo(activity.batDauLuc ?? activity.ketThucLuc);
   const semesterLabel = storedSemester ?? fallbackSemesterInfo.semester ?? null;
   const academicYearLabel = storedAcademicYear ?? fallbackSemesterInfo.academicYear ?? null;
+  const semesterDisplay =
+    semesterLabel && academicYearLabel
+      ? `${semesterLabel} - ${academicYearLabel}`
+      : semesterLabel || academicYearLabel || null;
   const capacityLabel =
     typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0
       ? `${Math.min(registeredCount, activity.sucChuaToiDa)}/${activity.sucChuaToiDa}`
@@ -435,6 +521,7 @@ const mapActivity = (activity, registration) => {
     isPublished: activity.isPublished,
     semester: semesterLabel,
     academicYear: academicYearLabel,
+    semesterDisplay,
     semesterId: semesterRef?.id ?? null,
     academicYearId: academicYearRef?.id ?? null,
     semesterStartDate: semesterRef?.batDau?.toISOString() ?? null,
@@ -737,10 +824,86 @@ export const markAttendance = async (req, res) => {
     return res.status(409).json({ error: "Bạn đã điểm danh cuối giờ cho hoạt động này" });
   }
 
-  const nextStatus = status === "absent" && isCheckout ? "VANG_MAT" : "DA_THAM_GIA";
+  const defaultAttendanceMethod = getDefaultAttendanceMethod();
+  const attendanceSource = activity.phuongThucDiemDanh || defaultAttendanceMethod;
+  const attendanceMethod =
+    mapAttendanceMethodToApi(attendanceSource) || mapAttendanceMethodToApi(defaultAttendanceMethod);
+  const isFaceAttendance = attendanceMethod === FACE_ATTENDANCE_METHOD;
+
   const normalizedNote = sanitizeOptionalText(note);
-  const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
+  let storedEvidence = { url: null, mimeType: null, fileName: null, path: null };
+  if (sanitizedEvidence.data) {
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ error: "Dịch vụ lưu trữ chưa được cấu hình" });
+    }
+    try {
+      const uploadResult = await uploadBase64Image({
+        dataUrl: sanitizedEvidence.data,
+        bucket: env.SUPABASE_ATTENDANCE_BUCKET,
+        pathPrefix: buildAttendancePath({ userId, activityId }),
+        fileName: sanitizedEvidence.fileName,
+      });
+      storedEvidence = {
+        url: uploadResult.url,
+        mimeType: sanitizedEvidence.mimeType ?? uploadResult.mimeType,
+        fileName: sanitizedEvidence.fileName ?? uploadResult.fileName,
+        path: uploadResult.path,
+      };
+    } catch (error) {
+      console.error("Không thể lưu ảnh điểm danh lên Supabase:", error);
+      return res.status(500).json({ error: "Không thể lưu ảnh điểm danh. Vui lòng thử lại." });
+    }
+  }
   const attendanceTime = new Date();
+
+  const baseNextStatus = status === "absent" && isCheckout ? "VANG_MAT" : "DA_THAM_GIA";
+  let finalStatus = baseNextStatus;
+  let entryStatus = isCheckout ? baseNextStatus : "DANG_KY";
+  let faceResult = null;
+
+  if (isFaceAttendance) {
+    const facePayload = extractFaceDescriptorPayload(req.body?.face ?? req.body?.faceData ?? req.body?.faceVector ?? req.body);
+    if (!facePayload?.descriptor) {
+      return res.status(400).json({ error: "Không tìm thấy dữ liệu khuôn mặt hợp lệ" });
+    }
+
+    const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
+    const storedDescriptors = Array.isArray(faceProfile?.descriptors) ? faceProfile.descriptors : [];
+    if (!storedDescriptors.length) {
+      return res
+        .status(400)
+        .json({ error: "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi điểm danh." });
+    }
+
+    const { confidence } = computeMatchConfidence(storedDescriptors, facePayload.descriptor);
+    const score = Math.round(confidence * 10_000) / 100; // percent with 2 decimals
+    const matchStatus = deriveMatchStatus(confidence);
+
+    if (matchStatus === "REJECTED") {
+      return res.status(403).json({
+        error: "Không thể xác thực khuôn mặt. Vui lòng thử lại hoặc liên hệ quản trị viên.",
+        face: { status: matchStatus, score }
+      });
+    }
+
+    if (isCheckout) {
+      if (matchStatus === "APPROVED") {
+        finalStatus = "DA_THAM_GIA";
+      } else if (matchStatus === "REVIEW") {
+        finalStatus = "DANG_KY";
+      }
+      entryStatus = finalStatus;
+    } else {
+      entryStatus = "DANG_KY";
+    }
+
+    faceResult = {
+      status: matchStatus,
+      score,
+      descriptor: facePayload.descriptor,
+      profileId: faceProfile.id
+    };
+  }
 
   const registrationUpdate = {
     diemDanhLuc: attendanceTime,
@@ -748,7 +911,7 @@ export const markAttendance = async (req, res) => {
     diemDanhBoiId: userId
   };
   if (isCheckout) {
-    registrationUpdate.trangThai = nextStatus;
+    registrationUpdate.trangThai = finalStatus;
   }
 
   await prisma.$transaction([
@@ -761,47 +924,119 @@ export const markAttendance = async (req, res) => {
         dangKyId: registration.id,
         nguoiDungId: userId,
         hoatDongId: activityId,
-        trangThai: isCheckout ? nextStatus : "DANG_KY",
+        trangThai: entryStatus,
         loai: isCheckout ? "CHECKOUT" : "CHECKIN",
         ghiChu: normalizedNote,
-        anhDinhKem: sanitizedEvidence.data,
-        anhMimeType: sanitizedEvidence.mimeType,
-        anhTen: sanitizedEvidence.fileName
+        anhDinhKem: storedEvidence.url,
+        anhMimeType: storedEvidence.mimeType,
+        anhTen: storedEvidence.fileName,
+        faceMatch: faceResult?.status ?? null,
+        faceScore: faceResult?.score ?? null,
+        faceMeta: faceResult
+          ? { profileId: faceResult.profileId, descriptor: faceResult.descriptor }
+          : null
       }
     })
   ]);
 
   const updated = await buildActivityResponse(activityId, userId);
-  const success = isCheckout && nextStatus === "DA_THAM_GIA";
+  const faceReviewPending = faceResult?.status === "REVIEW";
+  const success = isCheckout ? finalStatus === "DA_THAM_GIA" : true;
 
-  const notificationTitle = isCheckout
-    ? success
-      ? "Điểm danh thành công"
-      : "Đã ghi nhận vắng mặt"
-    : "Đã ghi nhận điểm danh đầu giờ";
-  const notificationMessage = isCheckout
-    ? success
-      ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`
-      : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`
-    : `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
-  const notificationType = isCheckout ? (success ? "success" : "danger") : "info";
-  const notificationAction = isCheckout ? (success ? "ATTENDED" : "ABSENT") : "CHECKIN";
-  const emailSubject = isCheckout
-    ? success
-      ? `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`
-      : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`
-    : `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
-  const emailMessageLines = isCheckout
-    ? [
-      success
-        ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
-        : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
-      normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-    ]
-    : [
-      `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`,
-      normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-    ];
+  let notificationTitle;
+  let notificationMessage;
+  let notificationType;
+  let notificationAction;
+  let emailSubject;
+  let emailMessageLines;
+  let responseMessage;
+
+  if (isFaceAttendance) {
+    const scoreLabel = faceResult ? ` (độ khớp ${faceResult.score.toFixed(2)}%)` : "";
+    if (isCheckout) {
+      if (faceReviewPending) {
+        responseMessage = "Điểm danh cuối giờ đã ghi nhận và đang chờ xác minh";
+        notificationTitle = "Điểm danh cuối giờ cần xác minh";
+        notificationMessage = `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" đang chờ quản trị viên xác minh${scoreLabel}.`;
+        notificationType = "warning";
+        notificationAction = "CHECKOUT_REVIEW";
+        emailSubject = `[HUIT Social Credits] Điểm danh cần xác minh - "${activity.tieuDe}"`;
+        emailMessageLines = [
+          `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" đang chờ quản trị viên xác minh thêm.${scoreLabel}`,
+          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+        ];
+      } else {
+        responseMessage = "Điểm danh cuối giờ thành công";
+        notificationTitle = "Điểm danh thành công";
+        notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận${scoreLabel}.`;
+        notificationType = "success";
+        notificationAction = "ATTENDED";
+        emailSubject = `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`;
+        emailMessageLines = [
+          `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.${scoreLabel}`,
+          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+        ];
+      }
+    } else {
+      if (faceReviewPending) {
+        responseMessage = "Điểm danh đầu giờ đã ghi nhận và đang chờ xác minh";
+        notificationTitle = "Điểm danh đầu giờ cần xác minh";
+        notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đang chờ xác minh thêm${scoreLabel}.`;
+        notificationType = "warning";
+        notificationAction = "CHECKIN_REVIEW";
+        emailSubject = `[HUIT Social Credits] Điểm danh cần xác minh - "${activity.tieuDe}"`;
+        emailMessageLines = [
+          `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đang chờ xác minh thêm.${scoreLabel}`,
+          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+        ];
+      } else {
+        responseMessage = "Điểm danh đầu giờ thành công";
+        notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
+        notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận${scoreLabel}.`;
+        notificationType = "info";
+        notificationAction = "CHECKIN";
+        emailSubject = `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
+        emailMessageLines = [
+          `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.${scoreLabel}`,
+          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+        ];
+      }
+    }
+  } else {
+    notificationTitle = isCheckout
+      ? success
+        ? "Điểm danh thành công"
+        : "Đã ghi nhận vắng mặt"
+      : "Đã ghi nhận điểm danh đầu giờ";
+    notificationMessage = isCheckout
+      ? success
+        ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`
+        : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`
+      : `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
+    notificationType = isCheckout ? (success ? "success" : "danger") : "info";
+    notificationAction = isCheckout ? (success ? "ATTENDED" : "ABSENT") : "CHECKIN";
+    emailSubject = isCheckout
+      ? success
+        ? `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`
+        : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`
+      : `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
+    emailMessageLines = isCheckout
+      ? [
+        success
+          ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
+          : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
+        normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+      ]
+      : [
+        `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`,
+        normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+      ];
+    responseMessage = isCheckout
+      ? success
+        ? "Điểm danh cuối giờ thành công"
+        : "Đã ghi nhận vắng mặt"
+      : "Điểm danh đầu giờ thành công";
+  }
 
   await notifyUser({
     userId,
@@ -815,12 +1050,14 @@ export const markAttendance = async (req, res) => {
   });
 
   res.json({
-    message: isCheckout
-      ? success
-        ? "Điểm danh cuối giờ thành công"
-        : "Đã ghi nhận vắng mặt"
-      : "Điểm danh đầu giờ thành công",
-    activity: updated
+    message: responseMessage,
+    activity: updated,
+    face: faceResult
+      ? {
+        status: faceResult.status,
+        score: faceResult.score
+      }
+      : null
   });
 };
 

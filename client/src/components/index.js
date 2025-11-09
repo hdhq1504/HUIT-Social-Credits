@@ -5,6 +5,7 @@ export { default as CheckboxGroup } from './CheckboxGroup/CheckboxGroup';
 export { default as CheckModal } from './CheckModal/CheckModal';
 export { default as FeaturedActivitySection } from './FeaturedActivitySection/FeaturedActivitySection';
 export { default as FeedbackModal } from './FeedbackModal/FeedbackModal';
+export { default as FaceRegistrationModal } from './FaceRegistrationModal/FaceRegistrationModal';
 export { default as ForgotPasswordForm } from './ForgotPasswordForm/ForgotPasswordForm';
 export { default as Label } from './Label/Label';
 export { default as LoginForm } from './LoginForm/LoginForm';

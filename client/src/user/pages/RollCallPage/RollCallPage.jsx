@@ -12,6 +12,7 @@ import { fileToDataUrl } from '@utils/file';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useDebounce from '@/hooks/useDebounce';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
+import faceRecognitionService from '@/services/faceRecognitionService';
 import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -149,8 +150,7 @@ function RollCallPage() {
     mutationFn: ({ id, payload }) => activitiesApi.attendance(id, payload),
     onSuccess: async (data) => {
       await invalidateActivityQueries();
-      const message = data?.message || 'Điểm danh thành công!';
-      toast({ message, variant: 'success' });
+      return data;
     },
     onError: (error) => {
       const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
@@ -196,16 +196,37 @@ function RollCallPage() {
           evidenceDataUrl = await fileToDataUrl(file);
         } catch {
           toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
-          return;
+          throw new Error('ATTENDANCE_ABORTED');
         }
       }
 
-      await attendanceMutation.mutateAsync({
+      let facePayload;
+      if (activity?.attendanceMethod === 'face') {
+        if (!evidenceDataUrl) {
+          toast({ message: 'Vui lòng chụp ảnh khuôn mặt rõ ràng để điểm danh.', variant: 'danger' });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+        try {
+          const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(evidenceDataUrl);
+          facePayload = { descriptor };
+        } catch (error) {
+          const code = error?.message || '';
+          const message =
+            code === 'FACE_NOT_DETECTED'
+              ? 'Không nhận diện được khuôn mặt trong ảnh. Vui lòng chụp lại với ánh sáng tốt hơn.'
+              : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
+          toast({ message, variant: 'danger' });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+      }
+
+      return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+          face: facePayload,
         },
       });
     },

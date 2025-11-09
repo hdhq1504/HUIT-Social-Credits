@@ -14,5 +14,10 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_FROM: process.env.SMTP_FROM,
-  APP_URL: process.env.APP_URL
+  APP_URL: process.env.APP_URL,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_PUBLIC_URL: process.env.SUPABASE_PUBLIC_URL,
+  SUPABASE_FACE_BUCKET: process.env.SUPABASE_FACE_BUCKET || 'face-profiles',
+  SUPABASE_ATTENDANCE_BUCKET: process.env.SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos'
 };

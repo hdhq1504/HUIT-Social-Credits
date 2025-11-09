@@ -1,4 +1,5 @@
 import prisma from "../prisma.js";
+import { env } from "../env.js";
 
 const STATUS_LABELS = {
   CHO_DUYET: "Chờ duyệt",
@@ -91,25 +92,49 @@ const normalizeAttachments = (value) => {
   return [value];
 };
 
+const resolveAttachmentUrl = (value) => {
+  const raw = normalizeString(value);
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) {
+    return raw;
+  }
+  if (!env.APP_URL) return raw;
+  const base = env.APP_URL.replace(/\/+$/, "");
+  const path = raw.replace(/^\/+/, "");
+  return `${base}/${path}`;
+};
+
 const mapAttachments = (attachments) =>
   normalizeAttachments(attachments)
     .map((item, index) => {
       if (!item) return null;
+      const fallbackName = `Minh chứng ${index + 1}`;
+
       if (typeof item === "string") {
-        const fileName = item.split("/").pop() || `Minh chứng ${index + 1}`;
-        return { id: String(index), name: fileName, url: item };
+        const url = resolveAttachmentUrl(item);
+        const fileName = item.split("/").pop() || fallbackName;
+        return { id: String(index), name: fileName, url };
       }
       if (typeof item === "object") {
-        const url = normalizeString(item.url) || normalizeString(item.href) || null;
-        const name = normalizeString(item.name) || normalizeString(item.fileName) || (url ? url.split("/").pop() : null);
-        const size = typeof item.size === "number" ? item.size : null;
+        const rawUrl = normalizeString(item.url) || normalizeString(item.href) || normalizeString(item.path);
+        const url = resolveAttachmentUrl(rawUrl);
+        const name =
+          normalizeString(item.name) ||
+          normalizeString(item.fileName) ||
+          (url ? url.split("/").pop() : null) ||
+          fallbackName;
+        const sizeValue = Number(item.size);
+        const size = Number.isFinite(sizeValue) ? sizeValue : null;
+        const mimeType = normalizeString(item.mimeType);
         return {
           id: item.id ? String(item.id) : String(index),
-          name: name || `Minh chứng ${index + 1}`,
+          name,
           url,
-          size
+          size,
+          mimeType
         };
       }
+      
       return null;
     })
     .filter(Boolean);

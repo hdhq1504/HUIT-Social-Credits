@@ -1,13 +1,15 @@
 const ATTENDANCE_METHOD_MAP = {
   QR: "qr",
   PHOTO: "photo",
-  MANUAL: "manual"
+  MANUAL: "manual",
+  FACE: "face"
 };
 
 const LABEL_MAP = {
   qr: "QR Code",
   photo: "Chụp ảnh",
-  manual: "Thủ công"
+  manual: "Thủ công",
+  face: "Nhận diện khuôn mặt"
 };
 
 export const normalizeAttendanceMethod = (value) => {

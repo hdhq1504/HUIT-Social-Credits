@@ -1,0 +1,253 @@
+.modal {
+  max-width: 720px;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+    font-weight: 600;
+
+    &-icon {
+      color: #2563eb;
+    }
+  }
+
+  &__body {
+    display: grid;
+    gap: 16px;
+  }
+
+  &__instructions {
+    background: #f5f7ff;
+    border-radius: 8px;
+    padding: 16px;
+
+    h4 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 4px;
+      color: #374151;
+      font-size: 0.95rem;
+    }
+  }
+
+  &__content {
+    display: grid;
+    gap: 16px;
+  }
+
+  &__steps {
+    .ant-steps-item-title {
+      font-size: 0.85rem;
+    }
+  }
+
+  &__status {
+    display: flex;
+    justify-content: center;
+  }
+
+  &__camera {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__camera-frame {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 4 / 3;
+    background: #0f172a;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__webcam {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__camera-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 16px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), transparent 45%);
+  }
+
+  &__camera-circle {
+    width: min(80%, 320px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 32px rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(1px);
+  }
+
+  &__camera-hint {
+    color: #f8fafc;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-shadow: 0 0 12px rgba(15, 23, 42, 0.45);
+  }
+
+  &__camera-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.65);
+    color: #e0f2fe;
+    font-size: 0.85rem;
+    letter-spacing: 0.01em;
+    transition: background 0.2s ease;
+
+    &::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #60a5fa;
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.8);
+    }
+
+    &--active {
+      background: rgba(22, 163, 74, 0.7);
+
+      &::before {
+        background: #22c55e;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+      }
+    }
+  }
+
+  &__completed {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    color: #16a34a;
+
+    svg {
+      font-size: 2.5rem;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+    background: #e5e7eb;
+    color: #1f2937;
+
+    &:hover:not(&--disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+    }
+
+    &--primary {
+      background: linear-gradient(135deg, #2563eb, #4c51bf);
+      color: #fff;
+    }
+
+    &--success {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+    }
+
+    &--disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  &__previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  &__preview-card {
+    background: #f9fafb;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+
+    img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    max-width: 96vw;
+
+    &__body {
+      gap: 12px;
+    }
+
+    &__instructions {
+      padding: 12px;
+
+      ul {
+        font-size: 0.85rem;
+      }
+    }
+
+    &__camera-frame {
+      aspect-ratio: 3 / 4;
+      max-width: 100%;
+    }
+
+    &__camera-hint {
+      font-size: 0.8rem;
+    }
+
+    &__actions {
+      flex-direction: column;
+    }
+  }
+}

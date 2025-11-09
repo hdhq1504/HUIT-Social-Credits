@@ -17,7 +17,7 @@ const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);
 
 const GROUP_FILTERS = [
-  { key: 'all', label: 'Tất cả nhóm' },
+  { key: 'all', label: 'Tất cả' },
   { key: 'NHOM_1', label: 'Nhóm 1' },
   { key: 'NHOM_2', label: 'Nhóm 2' },
   { key: 'NHOM_3', label: 'Nhóm 3' },

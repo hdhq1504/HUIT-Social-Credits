@@ -53,6 +53,70 @@ const seed = async () => {
       },
     });
 
+    const newStudents = [
+      {
+        email: "2001220001@huit.edu.vn",
+        hoTen: "Trần Thị Bích",
+        gioiTinh: "Nữ",
+        maLop: "13DHTH01",
+        maKhoa: "CNTT",
+        soDT: "0912345671",
+        ngaySinh: new Date("2004-01-20"),
+      },
+      {
+        email: "2001220002@huit.edu.vn",
+        hoTen: "Lê Minh Cường",
+        gioiTinh: "Nam",
+        maLop: "13DHTH02",
+        maKhoa: "CNTT",
+        soDT: "0912345672",
+        ngaySinh: new Date("2004-02-15"),
+      },
+      {
+        email: "2001220003@huit.edu.vn",
+        hoTen: "Phạm Văn Dũng",
+        gioiTinh: "Nam",
+        maLop: "13DHTH03",
+        maKhoa: "CNTT",
+        soDT: "0912345673",
+        ngaySinh: new Date("2004-03-10"),
+      },
+      {
+        email: "2001220004@huit.edu.vn",
+        hoTen: "Võ Thị Em",
+        gioiTinh: "Nữ",
+        maLop: "13DHTH01",
+        maKhoa: "CNTT",
+        soDT: "0912345674",
+        ngaySinh: new Date("2004-05-05"),
+      },
+      {
+        email: "2001220005@huit.edu.vn",
+        hoTen: "Nguyễn Hoàng Phúc",
+        gioiTinh: "Nam",
+        maLop: "13DHTH02",
+        maKhoa: "CNTT",
+        soDT: "0912345675",
+        ngaySinh: new Date("2004-06-22"),
+      },
+    ];
+
+    for (const student of newStudents) {
+      const maSV = student.email.split("@")[0];
+      await prisma.nguoiDung.upsert({
+        where: { email: student.email },
+        update: {},
+        create: {
+          ...student,
+          maSV,
+          matKhau: hashed,
+          vaiTro: "SINHVIEN",
+          isActive: true,
+          avatarUrl: "/images/profile.png",
+        },
+      });
+    }
+
     const BENEFITS_PRESET = [
       "Cộng điểm rèn luyện",
       "Giấy chứng nhận (nếu đủ điều kiện)",
