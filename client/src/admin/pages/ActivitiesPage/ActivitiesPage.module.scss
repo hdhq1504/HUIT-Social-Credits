@@ -141,7 +141,6 @@
     }
   }
 
-  // Nhóm
   .activities-list__group-tag {
     font-family: 'Montserrat';
     font-size: 14px;
@@ -150,19 +149,11 @@
     border-radius: 24px;
     border: none;
 
-    &.--nhom-1 {
-      background: rgba(220, 53, 69, 0.12);
-      color: var(--danger-color);
-    }
-
-    &.--nhom-2 {
-      background: rgba(25, 120, 135, 0.12);
-      color: var(--success-color);
-    }
-
+    &.--nhom-1,
+    &.--nhom-2,
     &.--nhom-3 {
-      background: rgba(220, 119, 0, 0.12);
-      color: var(--warning-color);
+      background: var(--secondary-color);
+      color: var(--primary-color);
     }
   }
 
@@ -252,7 +243,7 @@
   font-weight: 400;
 
   a {
-    color: var(--xám, #696969);
+    color: #696969;
   }
 }
 
@@ -269,6 +260,6 @@
 :global(.ant-pagination-next) {
   .ant-pagination-item-link {
     border-radius: 8px;
-    color: var(--xám, #696969);
+    color: #696969;
   }
 }

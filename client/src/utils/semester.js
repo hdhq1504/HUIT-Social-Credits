@@ -65,9 +65,10 @@ export const deriveSemesterInfo = (value, definitions = []) => {
   }
 
   const normalized = normalizeDefinitions(definitions);
-  const matched = normalized.find((definition) =>
-    (date.isAfter(definition.start) || date.isSame(definition.start, 'day')) &&
-    (date.isBefore(definition.end) || date.isSame(definition.end, 'day'))
+  const matched = normalized.find(
+    (definition) =>
+      (date.isAfter(definition.start) || date.isSame(definition.start, 'day')) &&
+      (date.isBefore(definition.end) || date.isSame(definition.end, 'day')),
   );
 
   if (matched) {

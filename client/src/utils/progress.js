@@ -49,8 +49,8 @@ const extractGroupMetrics = (group, fallbackTarget) => {
   }
 
   const [fractionCurrent, fractionTarget] = parseFraction(group.value);
-  const current = Number.isFinite(group.current) ? group.current : fractionCurrent ?? 0;
-  const target = Number.isFinite(group.target) ? group.target : fractionTarget ?? fallbackTarget ?? 0;
+  const current = Number.isFinite(group.current) ? group.current : (fractionCurrent ?? 0);
+  const target = Number.isFinite(group.target) ? group.target : (fractionTarget ?? fallbackTarget ?? 0);
   const remaining = Math.max(target - current, 0);
   const status = group.status || (remaining > 0 ? 'warning' : 'success');
   const note = group.note || (remaining > 0 ? `Còn ${remaining} điểm` : 'Hoàn thành');
@@ -102,10 +102,9 @@ export const mapProgressSummaryToSection = (summary) => {
   const missingPoints = Number.isFinite(summary.missingPoints)
     ? Math.max(summary.missingPoints, 0)
     : groups.reduce(
-      (sum, group) =>
-        sum + Math.max((group.target ?? 0) - Math.min(group.current ?? 0, group.target ?? 0), 0),
-      0,
-    );
+        (sum, group) => sum + Math.max((group.target ?? 0) - Math.min(group.current ?? 0, group.target ?? 0), 0),
+        0,
+      );
 
   const percent = Number.isFinite(summary.percent)
     ? summary.percent

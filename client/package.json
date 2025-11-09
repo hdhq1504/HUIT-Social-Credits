@@ -23,6 +23,7 @@
     "antd": "^5.27.4",
     "axios": "^1.12.2",
     "dompurify": "^3.3.0",
+    "face-api.js": "^0.22.2",
     "install": "^0.13.0",
     "lucide-react": "^0.544.0",
     "normalize.css": "^8.0.1",

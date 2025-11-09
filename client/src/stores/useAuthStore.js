@@ -15,8 +15,8 @@ const useAuthStore = create(
           isLoggedIn: true,
           user: {
             ...user,
-            role: user.role || 'SINHVIEN'
-          }
+            role: user.role || 'SINHVIEN',
+          },
         });
       },
 
@@ -24,7 +24,7 @@ const useAuthStore = create(
 
       updateUser: (user) =>
         set((state) => ({
-          user: state.user ? { ...state.user, ...user } : user
+          user: state.user ? { ...state.user, ...user } : user,
         })),
 
       logout: () => {
@@ -38,23 +38,23 @@ const useAuthStore = create(
             isLoggedIn: !!state.accessToken,
             user: {
               ...user,
-              role: user.role || 'SINHVIEN'
-            }
+              role: user.role || 'SINHVIEN',
+            },
           }));
         } catch {
           set({ isLoggedIn: false, user: null });
         }
-      }
+      },
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         accessToken: state.accessToken,
         isLoggedIn: state.isLoggedIn,
-        user: state.user
-      })
-    }
-  )
+        user: state.user,
+      }),
+    },
+  ),
 );
 
 export default useAuthStore;

@@ -181,7 +181,8 @@ function ListActivitiesPage() {
 
       <div className={cx('activities-page__container')}>
         <nav className={cx('activities-page__breadcrumb')} aria-label="Breadcrumb">
-          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link> / {''}
+          <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <Link to={ROUTE_PATHS.USER.ACTIVITIES}>Hoạt động</Link>{' '}
+          / {''}
           <span>
             {sortBy === 'latest'
               ? 'Sắp xếp ngày đăng gần nhất'
