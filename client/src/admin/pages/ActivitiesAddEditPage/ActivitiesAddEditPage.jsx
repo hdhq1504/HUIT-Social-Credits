@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Form, Input, Select, InputNumber, DatePicker, TimePicker, Upload, Row, Col, ConfigProvider, Spin } from 'antd';
@@ -28,6 +28,7 @@ import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/
 import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
+import { fileToDataUrl } from '@/utils/file';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -71,6 +72,8 @@ const ActivitiesAddEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [coverFileList, setCoverFileList] = useState([]);
+  const [initialCoverMeta, setInitialCoverMeta] = useState(null);
   const startDateValue = Form.useWatch('startDate', form);
   const startTimeValue = Form.useWatch('startTime', form);
   const isEditMode = !!id;
@@ -87,6 +90,21 @@ const ActivitiesAddEditPage = () => {
 
   useEffect(() => {
     if (isEditMode && activityData) {
+      const coverMeta = activityData.coverImageMeta ?? null;
+      const coverFiles = coverMeta?.url
+        ? [
+            {
+              uid: coverMeta.path || coverMeta.url,
+              name: coverMeta.fileName || 'cover-image',
+              status: 'done',
+              url: coverMeta.url,
+              thumbUrl: coverMeta.url,
+              meta: coverMeta,
+            },
+          ]
+        : [];
+      setCoverFileList(coverFiles);
+      setInitialCoverMeta(coverMeta);
       form.setFieldsValue({
         title: activityData.title,
         pointGroup: activityData.pointGroup,
@@ -109,8 +127,12 @@ const ActivitiesAddEditPage = () => {
         description: activityData.description,
         requirements: arrayToString(activityData.requirements),
         guidelines: arrayToString(activityData.guidelines),
-        // TODO: Xử lý coverImage
+        coverImage: coverFiles,
       });
+    } else if (!isEditMode) {
+      setCoverFileList([]);
+      setInitialCoverMeta(null);
+      form.setFieldsValue({ coverImage: [] });
     }
   }, [activityData, isEditMode, form]);
 
@@ -148,8 +170,36 @@ const ActivitiesAddEditPage = () => {
     },
   });
 
-  const onFinish = (values) => {
-    // TODO: Xử lý logic upload ảnh (nếu có)
+  const onFinish = async (values) => {
+    let coverImagePayload;
+    if (coverFileList.length === 0) {
+      if (isEditMode && initialCoverMeta) {
+        coverImagePayload = null;
+      }
+    } else {
+      const [fileItem] = coverFileList;
+      if (fileItem?.originFileObj) {
+        try {
+          const dataUrl = await fileToDataUrl(fileItem.originFileObj);
+          coverImagePayload = {
+            dataUrl,
+            fileName: fileItem.originFileObj.name,
+            mimeType: fileItem.originFileObj.type,
+          };
+        } catch (error) {
+          console.error('Failed to read cover image file', error);
+          openToast({ message: 'Không thể đọc file ảnh bìa. Vui lòng thử lại.', variant: 'danger' });
+          return;
+        }
+      } else if (fileItem?.meta) {
+        coverImagePayload = fileItem.meta;
+      } else if (fileItem?.url) {
+        coverImagePayload = {
+          url: fileItem.url,
+          fileName: fileItem.name,
+        };
+      }
+    }
 
     const payload = {
       // Map tên từ form -> schema (để khớp với controller)
@@ -172,6 +222,10 @@ const ActivitiesAddEditPage = () => {
       registrationDeadline: values.registrationDeadline ? values.registrationDeadline.toISOString() : null,
       cancellationDeadline: values.cancellationDeadline ? values.cancellationDeadline.toISOString() : null,
     };
+
+    if (coverImagePayload !== undefined) {
+      payload.coverImage = coverImagePayload;
+    }
     if (isEditMode) {
       updateActivityMutation.mutate({ id, data: payload });
     } else {
@@ -226,10 +280,10 @@ const ActivitiesAddEditPage = () => {
   ]);
 
   const normFile = (e) => {
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return e?.fileList;
+    const fileList = Array.isArray(e) ? e : e?.fileList || [];
+    const limited = fileList.slice(-1);
+    setCoverFileList(limited);
+    return limited;
   };
 
   useEffect(() => {
@@ -530,15 +584,21 @@ const ActivitiesAddEditPage = () => {
                 <Dragger
                   name="file"
                   multiple={false}
-                  action="/api/upload" // TODO: Cập nhật API endpoint thật
-                  beforeUpload={() => false} // Ngăn auto-upload, xử lý trong onFinish
+                  beforeUpload={() => false}
+                  fileList={coverFileList}
+                  maxCount={1}
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onRemove={() => {
+                    setCoverFileList([]);
+                    form.setFieldsValue({ coverImage: [] });
+                  }}
                   className={cx('activities__upload')}
                 >
                   <p className="ant-upload-drag-icon">
                     <FontAwesomeIcon icon={faPaperclip} />
                   </p>
                   <p className="ant-upload-text">Kéo thả file hoặc chọn file</p>
-                  <p className="ant-upload-hint">Hỗ trợ JPG, PNG ≤ 10MB</p>
+                  <p className="ant-upload-hint">Hỗ trợ JPG, PNG, WEBP ≤ 5MB</p>
                 </Dragger>
               </Form.Item>
             </section>
@@ -559,7 +619,7 @@ const ActivitiesAddEditPage = () => {
                   </div>
                   <div className={cx('activities__status-text')}>
                     <span>Người tạo</span>
-                    <p>Admin HUIT</p>
+                    <p>Admin</p>
                   </div>
                 </div>
 

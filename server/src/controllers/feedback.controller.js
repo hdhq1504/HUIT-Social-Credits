@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { env } from "../env.js";
+import { mapStorageListForResponse } from "../utils/storageMapper.js";
 
 const STATUS_LABELS = {
   CHO_DUYET: "Chờ duyệt",
@@ -86,58 +87,20 @@ const sanitizeReason = (value) => {
   return text.slice(0, MAX_REASON_LENGTH);
 };
 
-const normalizeAttachments = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  return [value];
-};
-
-const resolveAttachmentUrl = (value) => {
-  const raw = normalizeString(value);
-  if (!raw) return null;
-  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) {
-    return raw;
-  }
-  if (!env.APP_URL) return raw;
-  const base = env.APP_URL.replace(/\/+$/, "");
-  const path = raw.replace(/^\/+/, "");
-  return `${base}/${path}`;
-};
-
 const mapAttachments = (attachments) =>
-  normalizeAttachments(attachments)
-    .map((item, index) => {
-      if (!item) return null;
-      const fallbackName = `Minh chứng ${index + 1}`;
-
-      if (typeof item === "string") {
-        const url = resolveAttachmentUrl(item);
-        const fileName = item.split("/").pop() || fallbackName;
-        return { id: String(index), name: fileName, url };
-      }
-      if (typeof item === "object") {
-        const rawUrl = normalizeString(item.url) || normalizeString(item.href) || normalizeString(item.path);
-        const url = resolveAttachmentUrl(rawUrl);
-        const name =
-          normalizeString(item.name) ||
-          normalizeString(item.fileName) ||
-          (url ? url.split("/").pop() : null) ||
-          fallbackName;
-        const sizeValue = Number(item.size);
-        const size = Number.isFinite(sizeValue) ? sizeValue : null;
-        const mimeType = normalizeString(item.mimeType);
-        return {
-          id: item.id ? String(item.id) : String(index),
-          name,
-          url,
-          size,
-          mimeType
-        };
-      }
-      
-      return null;
-    })
-    .filter(Boolean);
+  mapStorageListForResponse(attachments, {
+    fallbackBucket: env.SUPABASE_FEEDBACK_BUCKET,
+  }).map((item, index) => ({
+    id: item.path ? `${index}-${item.path}` : String(index),
+    name: item.fileName || `Minh chứng ${index + 1}`,
+    url: item.url,
+    size: item.size,
+    mimeType: item.mimeType,
+    uploadedAt: item.uploadedAt,
+    bucket: item.bucket,
+    path: item.path,
+    storage: item,
+  }));
 
 const mapStudentSummary = (student) => {
   if (!student) return null;

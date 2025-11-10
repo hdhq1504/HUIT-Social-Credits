@@ -15,7 +15,15 @@ import {
   uploadBase64Image,
   buildAttendancePath,
   isSupabaseConfigured,
+  removeFiles,
 } from "../utils/supabaseStorage.js";
+import {
+  sanitizeStorageMetadata,
+  sanitizeStorageList,
+  mapStorageForResponse,
+  mapStorageListForResponse,
+  extractStoragePaths,
+} from "../utils/storageMapper.js";
 
 const normalizeSemesterLabel = (value) => {
   if (!value) return null;
@@ -57,6 +65,45 @@ const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
 const FACE_ATTENDANCE_METHOD = "face";
+
+const buildBucketSet = (...values) =>
+  new Set(
+    values
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .filter(Boolean),
+  );
+
+const ACTIVITY_BUCKET_SET = buildBucketSet(env.SUPABASE_ACTIVITY_BUCKET);
+const ATTENDANCE_BUCKET_SET = buildBucketSet(env.SUPABASE_ATTENDANCE_BUCKET);
+const FEEDBACK_BUCKET_SET = buildBucketSet(env.SUPABASE_FEEDBACK_BUCKET);
+
+const sanitizeActivityCoverMetadata = (value) =>
+  sanitizeStorageMetadata(value, {
+    allowedBuckets: ACTIVITY_BUCKET_SET,
+    fallbackBucket: env.SUPABASE_ACTIVITY_BUCKET,
+  });
+
+const mapActivityCover = (value) =>
+  mapStorageForResponse(value, {
+    fallbackBucket: env.SUPABASE_ACTIVITY_BUCKET,
+  });
+
+const mapAttendanceEvidence = (value) =>
+  mapStorageForResponse(value, {
+    fallbackBucket: env.SUPABASE_ATTENDANCE_BUCKET,
+  });
+
+const mapFeedbackAttachments = (value) =>
+  mapStorageListForResponse(value, {
+    fallbackBucket: env.SUPABASE_FEEDBACK_BUCKET,
+  });
+
+const sanitizeFeedbackAttachmentList = (value) =>
+  sanitizeStorageList(value, {
+    allowedBuckets: FEEDBACK_BUCKET_SET,
+    fallbackBucket: env.SUPABASE_FEEDBACK_BUCKET,
+    limit: 10,
+  });
 
 const USER_PUBLIC_FIELDS = {
   id: true,
@@ -143,66 +190,19 @@ const mapParticipants = (registrations = []) =>
       return { id: user.id, name: user.hoTen ?? user.email ?? "Người dùng" };
     });
 
-const resolveAttachmentUrl = (raw) => {
-  if (!raw) return null;
-  const value = String(raw).trim();
-  if (!value) return null;
-  if (/^https?:\/\//i.test(value) || value.startsWith("data:")) {
-    return value;
-  }
-  if (!env.APP_URL) {
-    return value;
-  }
-  const base = env.APP_URL.replace(/\/+$/, "");
-  const path = value.replace(/^\/+/, "");
-  return `${base}/${path}`;
-};
-
 const normalizeAttachments = (value) => {
-  if (!value) return [];
-  const items = Array.isArray(value) ? value : [value];
-  return items
-    .map((item, index) => {
-      if (!item) return null;
-      const fallbackName = `Minh chứng ${index + 1}`;
-
-      if (typeof item === "string") {
-        const url = resolveAttachmentUrl(item);
-        const name = item.split("/").pop() || fallbackName;
-        return { id: String(index), name, url };
-      }
-
-      if (typeof item === "object") {
-        const rawUrl =
-          typeof item.url === "string"
-            ? item.url
-            : typeof item.href === "string"
-              ? item.href
-              : typeof item.path === "string"
-                ? item.path
-                : null;
-        const url = resolveAttachmentUrl(rawUrl);
-        const nameCandidate =
-          typeof item.name === "string"
-            ? item.name
-            : typeof item.fileName === "string"
-              ? item.fileName
-              : url?.split("/").pop();
-        const size = Number.isFinite(item.size) ? item.size : null;
-        const mimeType = typeof item.mimeType === "string" ? item.mimeType : null;
-
-        return {
-          id: item.id ? String(item.id) : String(index),
-          name: nameCandidate || fallbackName,
-          url,
-          size,
-          mimeType
-        };
-      }
-
-      return null;
-    })
-    .filter(Boolean);
+  const attachments = mapFeedbackAttachments(value);
+  return attachments.map((item, index) => ({
+    id: item.path ? `${index}-${item.path}` : String(index),
+    name: item.fileName || `Minh chứng ${index + 1}`,
+    url: item.url,
+    size: item.size,
+    mimeType: item.mimeType,
+    uploadedAt: item.uploadedAt,
+    bucket: item.bucket,
+    path: item.path,
+    storage: item,
+  }));
 };
 
 const MAX_ATTENDANCE_EVIDENCE_SIZE = 5_000_000;
@@ -325,15 +325,17 @@ const extractFaceDescriptorPayload = (value) => {
 
 const mapAttendanceEntry = (entry) => {
   if (!entry) return null;
+  const attachmentMeta = mapAttendanceEntry(entry.anhDinhKem);
   return {
     id: entry.id,
     status: entry.trangThai,
     phase: entry.loai === "CHECKOUT" ? "checkout" : "checkin",
     note: entry.ghiChu ?? null,
     capturedAt: entry.taoLuc?.toISOString() ?? null,
-    attachment: entry.anhDinhKem ?? null,
-    attachmentMimeType: entry.anhMimeType ?? null,
-    attachmentFileName: entry.anhTen ?? null,
+    attachment: attachmentMeta,
+    attachmentUrl: attachmentMeta?.url ?? null,
+    attachmentMimeType: attachmentMeta?.mimeType ?? null,
+    attachmentFileName: attachmentMeta?.fileName ?? null,
     faceMatchStatus: entry.faceMatch ?? null,
     faceMatchScore:
       typeof entry.faceScore === "number" && Number.isFinite(entry.faceScore) ? entry.faceScore : null,
@@ -409,6 +411,78 @@ const mapRegistration = (registration, activity) => {
       feedbackAvailableAt
     },
     feedback: mapFeedback(registration.phanHoi)
+  };
+};
+
+const processActivityCover = async ({ activityId, payload, existing }) => {
+  if (payload === undefined) {
+    return { metadata: existing ?? null, removed: [] };
+  }
+
+  const sanitizedExisting = existing
+    ? sanitizeActivityCoverMetadata(existing)
+    : null;
+  const removalCandidates =
+    sanitizedExisting && sanitizedExisting.path
+      ? [
+        {
+          bucket: sanitizedExisting.bucket || env.SUPABASE_ACTIVITY_BUCKET,
+          path: sanitizedExisting.path,
+        },
+      ]
+      : [];
+
+  if (payload === null) {
+    return {
+      metadata: null,
+      removed: removalCandidates,
+    };
+  }
+
+  if (payload && typeof payload === "object" && typeof payload.dataUrl === "string") {
+    if (!isSupabaseConfigured()) {
+      const error = new Error("Dịch vụ lưu trữ chưa được cấu hình");
+      error.code = "SUPABASE_NOT_CONFIGURED";
+      throw error;
+    }
+    const uploadResult = await uploadBase64Image({
+      dataUrl: payload.dataUrl,
+      bucket: env.SUPABASE_ACTIVITY_BUCKET,
+      pathPrefix: `activities/${activityId}`,
+      fileName: payload.fileName,
+    });
+    return {
+      metadata: {
+        ...uploadResult,
+        mimeType: payload.mimeType ?? uploadResult.mimeType,
+        fileName: payload.fileName ?? uploadResult.fileName,
+      },
+      removed: removalCandidates,
+    };
+  }
+
+  const sanitized = sanitizeActivityCoverMetadata(payload);
+  if (!sanitized) {
+    return {
+      metadata: null,
+      removed: removalCandidates,
+    };
+  }
+
+  if (
+    sanitizedExisting &&
+    sanitizedExisting.bucket === sanitized.bucket &&
+    sanitizedExisting.path === sanitized.path
+  ) {
+    return {
+      metadata: { ...sanitizedExisting, ...sanitized },
+      removed: [],
+    };
+  }
+
+  return {
+    metadata: sanitized,
+    removed: removalCandidates,
   };
 };
 
@@ -496,6 +570,7 @@ const mapActivity = (activity, registration) => {
     typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0
       ? `${Math.min(registeredCount, activity.sucChuaToiDa)}/${activity.sucChuaToiDa}`
       : `${registeredCount}`;
+  const coverMeta = mapActivityCover(activity.hinhAnh);
 
   return {
     id: activity.id,
@@ -514,7 +589,9 @@ const mapActivity = (activity, registration) => {
     participantsCount: registeredCount,
     capacity: capacityLabel,
     maxCapacity: activity.sucChuaToiDa,
-    coverImage: activity.hinhAnh,
+    coverImage:
+      coverMeta?.url ?? (typeof activity.hinhAnh === "string" ? activity.hinhAnh : null),
+    coverImageMeta: coverMeta,
     pointGroup,
     pointGroupLabel,
     isFeatured: activity.isFeatured,
@@ -831,7 +908,7 @@ export const markAttendance = async (req, res) => {
   const isFaceAttendance = attendanceMethod === FACE_ATTENDANCE_METHOD;
 
   const normalizedNote = sanitizeOptionalText(note);
-  let storedEvidence = { url: null, mimeType: null, fileName: null, path: null };
+  let storedEvidence = null;
   if (sanitizedEvidence.data) {
     if (!isSupabaseConfigured()) {
       return res.status(500).json({ error: "Dịch vụ lưu trữ chưa được cấu hình" });
@@ -844,10 +921,9 @@ export const markAttendance = async (req, res) => {
         fileName: sanitizedEvidence.fileName,
       });
       storedEvidence = {
-        url: uploadResult.url,
+        ...uploadResult,
         mimeType: sanitizedEvidence.mimeType ?? uploadResult.mimeType,
         fileName: sanitizedEvidence.fileName ?? uploadResult.fileName,
-        path: uploadResult.path,
       };
     } catch (error) {
       console.error("Không thể lưu ảnh điểm danh lên Supabase:", error);
@@ -927,9 +1003,7 @@ export const markAttendance = async (req, res) => {
         trangThai: entryStatus,
         loai: isCheckout ? "CHECKOUT" : "CHECKIN",
         ghiChu: normalizedNote,
-        anhDinhKem: storedEvidence.url,
-        anhMimeType: storedEvidence.mimeType,
-        anhTen: storedEvidence.fileName,
+        anhDinhKem: storedEvidence,
         faceMatch: faceResult?.status ?? null,
         faceScore: faceResult?.score ?? null,
         faceMeta: faceResult
@@ -1089,9 +1163,28 @@ export const submitActivityFeedback = async (req, res) => {
     return res.status(400).json({ error: "Bạn cần tham gia hoạt động trước khi gửi phản hồi" });
   }
 
-  const normalizedAttachments = Array.isArray(attachments)
-    ? attachments.filter((item) => typeof item === "string" && item.trim()).slice(0, 10)
+  const existingFeedback = registration.phanHoi ?? null;
+  const existingAttachments = existingFeedback
+    ? sanitizeFeedbackAttachmentList(existingFeedback.minhChung)
     : [];
+
+  const normalizedAttachments = sanitizeFeedbackAttachmentList(attachments);
+  if (Array.isArray(attachments) && attachments.length && !normalizedAttachments.length) {
+    return res.status(400).json({ error: "Danh sách minh chứng không hợp lệ" });
+  }
+
+  const incomingPathSet = new Set(extractStoragePaths(normalizedAttachments));
+  const removalMap = new Map();
+  existingAttachments.forEach((item) => {
+    if (!item?.path) return;
+    if (incomingPathSet.has(item.path)) return;
+    const bucket = item.bucket || env.SUPABASE_FEEDBACK_BUCKET;
+    if (!bucket) return;
+    if (!removalMap.has(bucket)) {
+      removalMap.set(bucket, []);
+    }
+    removalMap.get(bucket).push(item.path);
+  });
 
   const normalizedRating = typeof rating === "number" ? Math.max(1, Math.min(5, rating)) : null;
   const payload = {
@@ -1103,9 +1196,9 @@ export const submitActivityFeedback = async (req, res) => {
   };
 
   let feedback;
-  if (registration.phanHoi) {
+  if (existingFeedback) {
     feedback = await prisma.phanHoiHoatDong.update({
-      where: { id: registration.phanHoi.id },
+      where: { id: existingFeedback.id },
       data: payload
     });
   } else {
@@ -1118,6 +1211,12 @@ export const submitActivityFeedback = async (req, res) => {
       }
     });
   }
+
+  removalMap.forEach((paths, bucket) => {
+    if (paths?.length) {
+      removeFiles(bucket, paths);
+    }
+  });
 
   const activity = await buildActivityResponse(activityId, userId);
   const activityTitle = activity?.title ?? registration.hoatDong?.tieuDe ?? "hoạt động";
@@ -1160,6 +1259,11 @@ export const createActivity = async (req, res) => {
     registrationDeadline,
     cancellationDeadline,
   } = req.body;
+  const hasCoverImage = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
+    || Object.prototype.hasOwnProperty.call(req.body ?? {}, "hinhAnh");
+  const coverPayload = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
+    ? req.body.coverImage
+    : req.body?.hinhAnh;
 
   const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
   if (!normalizedTitle) {
@@ -1203,6 +1307,32 @@ export const createActivity = async (req, res) => {
       data,
     });
 
+    if (hasCoverImage) {
+      try {
+        const coverResult = await processActivityCover({
+          activityId: newActivity.id,
+          payload: coverPayload,
+          existing: null,
+        });
+        await prisma.hoatDong.update({
+          where: { id: newActivity.id },
+          data: { hinhAnh: coverResult.metadata },
+        });
+        coverResult.removed.forEach((target) => {
+          if (target?.bucket && target?.path) {
+            removeFiles(target.bucket, [target.path]);
+          }
+        });
+      } catch (error) {
+        console.error("Không thể xử lý ảnh bìa hoạt động:", error);
+        const message =
+          error?.code === "SUPABASE_NOT_CONFIGURED"
+            ? "Dịch vụ lưu trữ chưa được cấu hình"
+            : error?.message || "Không thể xử lý ảnh bìa hoạt động";
+        return res.status(500).json({ error: message });
+      }
+    }
+
     const activity = await buildActivityResponse(newActivity.id, req.user?.sub);
 
     res.status(201).json({ activity });
@@ -1229,6 +1359,11 @@ export const updateActivity = async (req, res) => {
     registrationDeadline,
     cancellationDeadline,
   } = req.body;
+  const hasCoverImage = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
+    || Object.prototype.hasOwnProperty.call(req.body ?? {}, "hinhAnh");
+  const coverPayload = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
+    ? req.body.coverImage
+    : req.body?.hinhAnh;
 
   const normalizedTitle = sanitizeOptionalText(tieuDe, 255);
   if (!normalizedTitle) {
@@ -1242,6 +1377,14 @@ export const updateActivity = async (req, res) => {
   }
 
   try {
+    const existingActivity = await prisma.hoatDong.findUnique({
+      where: { id },
+      select: { hinhAnh: true },
+    });
+    if (!existingActivity) {
+      return res.status(404).json({ error: "Hoạt động không tồn tại" });
+    }
+
     const startTime = batDauLuc ? toDate(batDauLuc) : null;
     const endTime = ketThucLuc ? toDate(ketThucLuc) : null;
     const academicPeriod = await resolveAcademicPeriodForDate(startTime ?? endTime ?? new Date());
@@ -1250,26 +1393,66 @@ export const updateActivity = async (req, res) => {
     const registrationDue = registrationDeadline ?? req.body?.hanDangKy;
     const cancellationDue = cancellationDeadline ?? req.body?.hanHuyDangKy;
 
+    let coverResult = null;
+    if (hasCoverImage) {
+      try {
+        coverResult = await processActivityCover({
+          activityId: id,
+          payload: coverPayload,
+          existing: existingActivity.hinhAnh,
+        });
+      } catch (error) {
+        console.error("Không thể xử lý ảnh bìa hoạt động:", error);
+        const message =
+          error?.code === "SUPABASE_NOT_CONFIGURED"
+            ? "Dịch vụ lưu trữ chưa được cấu hình"
+            : error?.message || "Không thể xử lý ảnh bìa hoạt động";
+        return res.status(500).json({ error: message });
+      }
+    }
+
+    const updateData = {
+      tieuDe: normalizedTitle,
+      nhomDiem: normalizePointGroup(nhomDiem),
+      diemCong: sanitizePoints(diemCong),
+      diaDiem: sanitizeOptionalText(diaDiem, 255),
+      sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
+      moTa: sanitizeOptionalText(moTa),
+      yeuCau: sanitizeStringArray(yeuCau),
+      huongDan: sanitizeStringArray(huongDan, 1000),
+      batDauLuc: startTime,
+      ketThucLuc: endTime,
+      hanDangKy: registrationDue ? toDate(registrationDue) : null,
+      hanHuyDangKy: cancellationDue ? toDate(cancellationDue) : null,
+      phuongThucDiemDanh: normalizedAttendanceMethod,
+      hocKyId: academicPeriod.hocKyId,
+      namHocId: academicPeriod.namHocId,
+    };
+
+    if (hasCoverImage) {
+      updateData.hinhAnh = coverResult?.metadata ?? null;
+    }
+
     const updated = await prisma.hoatDong.update({
       where: { id },
-      data: {
-        tieuDe: normalizedTitle,
-        nhomDiem: normalizePointGroup(nhomDiem),
-        diemCong: sanitizePoints(diemCong),
-        diaDiem: sanitizeOptionalText(diaDiem, 255),
-        sucChuaToiDa: sanitizeCapacity(sucChuaToiDa),
-        moTa: sanitizeOptionalText(moTa),
-        yeuCau: sanitizeStringArray(yeuCau),
-        huongDan: sanitizeStringArray(huongDan, 1000),
-        batDauLuc: startTime,
-        ketThucLuc: endTime,
-        hanDangKy: registrationDue ? toDate(registrationDue) : null,
-        hanHuyDangKy: cancellationDue ? toDate(cancellationDue) : null,
-        phuongThucDiemDanh: normalizedAttendanceMethod,
-        hocKyId: academicPeriod.hocKyId,
-        namHocId: academicPeriod.namHocId,
-      },
+      data: updateData,
     });
+
+    if (coverResult?.removed?.length) {
+      const buckets = new Map();
+      coverResult.removed.forEach((target) => {
+        if (!target?.bucket || !target?.path) return;
+        if (!buckets.has(target.bucket)) {
+          buckets.set(target.bucket, []);
+        }
+        buckets.get(target.bucket).push(target.path);
+      });
+      buckets.forEach((paths, bucket) => {
+        if (paths.length) {
+          removeFiles(bucket, paths);
+        }
+      });
+    }
 
     const activity = await buildActivityResponse(updated.id, req.user?.sub);
     res.json({ activity });

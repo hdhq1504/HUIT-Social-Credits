@@ -9,6 +9,8 @@ import { CardActivity, Label } from '@components/index';
 import useToast from '../../../components/Toast/Toast';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import uploadService from '@/services/uploadService';
+import useAuthStore from '@/stores/useAuthStore';
 import useDebounce from '@/hooks/useDebounce';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './FeedbackPage.module.scss';
@@ -19,6 +21,7 @@ const PAGE_SIZE = 6;
 
 function FeedbackPage() {
   const { contextHolder, open: toast } = useToast();
+  const userId = useAuthStore((state) => state.user?.id);
 
   // ====== Search/Filter/Sort states ======
   const [q, setQ] = useState('');
@@ -155,10 +158,18 @@ function FeedbackPage() {
   const handleFeedback = useCallback(
     async ({ activity, content, files }) => {
       if (!activity?.id) return;
-      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-      await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
+      try {
+        const attachments = await uploadService.uploadMultipleFeedbackEvidence(files || [], {
+          userId,
+          activityId: activity.id,
+        });
+        await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
+      } catch (error) {
+        const message = error?.message || 'Không thể tải minh chứng. Vui lòng thử lại.';
+        toast({ message, variant: 'danger' });
+      }
     },
-    [feedbackMutation],
+    [feedbackMutation, toast, userId],
   );
 
   const handleRegister = useCallback(

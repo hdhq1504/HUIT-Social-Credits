@@ -55,7 +55,7 @@ const buildFilePath = (pathPrefix, extension, explicitName) => {
   return safePrefix ? `${safePrefix}/${normalized}` : normalized;
 };
 
-const buildPublicUrl = (bucket, path) => {
+export const buildPublicUrl = (bucket, path) => {
   if (!path) return null;
   const client = ensureClient();
   const { data } = client.storage.from(bucket).getPublicUrl(path);
@@ -75,6 +75,7 @@ export const uploadBase64Image = async ({
   bucket,
   pathPrefix,
   fileName,
+  metadata = {},
 }) => {
   const client = ensureClient();
   if (!bucket) {
@@ -86,6 +87,7 @@ export const uploadBase64Image = async ({
   const { error } = await client.storage.from(bucket).upload(path, buffer, {
     contentType: mimeType,
     upsert: false,
+    ...metadata,
   });
   if (error) {
     throw new Error(error.message || "SUPABASE_UPLOAD_FAILED");
@@ -97,6 +99,8 @@ export const uploadBase64Image = async ({
     mimeType,
     size: buffer.length,
     fileName: path.split("/").pop(),
+    bucket,
+    uploadedAt: new Date().toISOString(),
   };
 };
 
@@ -132,4 +136,5 @@ export default {
   removeFiles,
   buildFaceSamplePath,
   buildAttendancePath,
+  buildPublicUrl,
 };

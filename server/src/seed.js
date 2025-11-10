@@ -29,31 +29,20 @@ const seed = async () => {
       },
     });
 
-    const email = "2001223947@huit.edu.vn";
-    const maSV = email.split("@")[0];
     const plainPassword = process.env.SEED_PASSWORD || "1234";
     const hashed = await bcrypt.hash(plainPassword, 10);
 
-    const user = await prisma.nguoiDung.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        matKhau: hashed,
+    const Students = [
+      {
+        email: "2001223947@huit.edu.vn",
         hoTen: "Hồ Đức Hoàng Quân",
-        vaiTro: "SINHVIEN",
-        maSV,
-        isActive: true,
         gioiTinh: "Nam",
         maLop: "13DHTH02",
+        vaiTro: "SINHVIEN",
         maKhoa: "CNTT",
         soDT: "0931318657",
         ngaySinh: new Date("2004-04-15"),
-        avatarUrl: "/images/profile.png",
       },
-    });
-
-    const newStudents = [
       {
         email: "2001220001@huit.edu.vn",
         hoTen: "Trần Thị Bích",
@@ -101,7 +90,7 @@ const seed = async () => {
       },
     ];
 
-    for (const student of newStudents) {
+    for (const student of Students) {
       const maSV = student.email.split("@")[0];
       await prisma.nguoiDung.upsert({
         where: { email: student.email },

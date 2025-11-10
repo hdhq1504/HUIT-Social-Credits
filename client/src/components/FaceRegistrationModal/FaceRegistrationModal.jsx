@@ -3,62 +3,160 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
 import { Modal, Steps, Tag } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCamera, faCircleCheck, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
 import { useMutation } from '@tanstack/react-query';
 import faceApi from '@api/face.api';
 import faceRecognitionService from '@/services/faceRecognitionService';
+import * as faceapi from 'face-api.js';
+import { estimateFaceOrientation } from '@/utils/faceOrientation';
 import useToast from '../Toast/Toast';
 import styles from './FaceRegistrationModal.module.scss';
 
 const cx = classNames.bind(styles);
 
-const MAX_SAMPLES = 5;
+const MATCH_DURATION_MS = 1200;
+const STEP_SEQUENCE = [
+  {
+    key: 'front',
+    title: 'Nhìn thẳng',
+    description: 'Giữ thẳng đầu, nhìn trực diện vào camera.',
+    hint: 'Giữ mặt cân đối trong khung tròn.',
+    validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.1 && Math.abs(pitch) <= 0.1,
+  },
+  {
+    key: 'left',
+    title: 'Nghiêng trái',
+    description: 'Quay mặt nhẹ sang trái sao cho tai trái tiến gần về phía camera.',
+    hint: 'Nghiêng mặt sang trái và giữ ổn định.',
+    validate: ({ yaw }) => yaw >= 0.1,
+  },
+  {
+    key: 'right',
+    title: 'Nghiêng phải',
+    description: 'Quay mặt nhẹ sang phải và giữ mắt nhìn về camera.',
+    hint: 'Nghiêng mặt sang phải và giữ ổn định.',
+    validate: ({ yaw }) => yaw <= -0.1,
+  },
+  {
+    key: 'down',
+    title: 'Cúi đầu',
+    description: 'Cúi cằm nhẹ xuống, vẫn nhìn vào camera.',
+    hint: 'Hạ cằm xuống một chút rồi giữ nguyên.',
+    validate: ({ pitch }) => pitch >= 0.1,
+  },
+  {
+    key: 'up',
+    title: 'Ngẩng đầu',
+    description: 'Ngẩng đầu nhẹ lên phía trên.',
+    hint: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
+    validate: ({ pitch }) => pitch <= -0.1,
+  },
+];
+const MAX_SAMPLES = STEP_SEQUENCE.length;
 
 function FaceRegistrationModal({ open, onClose, onSuccess }) {
   const webcamRef = useRef(null);
   const wasOpenRef = useRef(false);
   const processingRef = useRef(false);
-  const capturesRef = useRef([]);
+  const detectionIntervalRef = useRef(null);
+  const matchStartRef = useRef(null);
+  const progressRef = useRef(0);
+  const modelsLoadedRef = useRef(false);
+  const detectorOptionsRef = useRef(null);
   const [captures, setCaptures] = useState([]);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [autoCapturing, setAutoCapturing] = useState(false);
+  const [modelsReady, setModelsReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [orientationState, setOrientationState] = useState({ yaw: 0, pitch: 0, matched: false });
   const { contextHolder, open: toast } = useToast();
+
+  // Thêm toastRef để ổn định hàm toast
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   const registrationMutation = useMutation({
     mutationFn: (payload) => faceApi.register(payload),
     onSuccess: (data) => {
-      toast({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
+      toastRef.current({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
       onSuccess?.(data?.profile ?? null);
       setCaptures([]);
     },
     onError: (error) => {
       const message = error?.response?.data?.error || 'Không thể đăng ký khuôn mặt. Vui lòng thử lại.';
-      toast({ message, variant: 'danger' });
+      toastRef.current({ message, variant: 'danger' });
     },
   });
+
+  const stopDetection = useCallback(() => {
+    if (detectionIntervalRef.current) {
+      clearInterval(detectionIntervalRef.current);
+      detectionIntervalRef.current = null;
+    }
+    matchStartRef.current = null;
+    progressRef.current = 0;
+    setProgress(0);
+    setOrientationState({ yaw: 0, pitch: 0, matched: false });
+  }, []);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
       setCaptures([]);
       setProcessing(false);
       setIsCameraReady(false);
-      setAutoCapturing(true);
+      setModelsReady(modelsLoadedRef.current);
+      setProgress(0);
+      setOrientationState({ yaw: 0, pitch: 0, matched: false });
     }
     if (!open && wasOpenRef.current) {
+      stopDetection();
       setCaptures([]);
       setProcessing(false);
       setIsCameraReady(false);
-      setAutoCapturing(false);
       processingRef.current = false;
     }
     wasOpenRef.current = open;
-  }, [open]);
+  }, [open, stopDetection]);
+
+  // === CẬP NHẬT 1: Sửa hàm ensureFaceModels ===
+  // Đổi `faceLandmark68Net` thành `faceLandmark68TinyNet`
+  const ensureFaceModels = useCallback(async () => {
+    if (modelsLoadedRef.current) {
+      setModelsReady(true);
+      return;
+    }
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        // SỬA DÒNG NÀY:
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
+      ]);
+      modelsLoadedRef.current = true;
+      setModelsReady(true);
+    } catch (error) {
+      console.error('Failed to load face-api models', error);
+      toastRef.current({ message: 'Không thể tải mô hình nhận diện khuôn mặt.', variant: 'danger' });
+      setModelsReady(false);
+    }
+  }, []); // <-- Dependency rỗng (đã sửa từ trước)
+  // === KẾT THÚC CẬP NHẬT 1 ===
 
   useEffect(() => {
-    capturesRef.current = captures;
-  }, [captures]);
+    if (!open) return undefined;
+    let cancelled = false;
+    (async () => {
+      await ensureFaceModels();
+      if (!cancelled && modelsLoadedRef.current) {
+        setModelsReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, ensureFaceModels]);
 
   const addCapture = useCallback(
     (dataUrl, descriptor, { silent } = {}) => {
@@ -73,13 +171,13 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       });
 
       if (nextLength && nextLength <= MAX_SAMPLES && silent !== true) {
-        toast({
+        toastRef.current({
           message: `Đã ghi nhận ảnh ${nextLength}/${MAX_SAMPLES}`,
           variant: nextLength === MAX_SAMPLES ? 'success' : 'info',
         });
       }
     },
-    [toast],
+    [], // <-- Dependency rỗng (đã sửa từ trước)
   );
 
   const runCapture = useCallback(
@@ -89,7 +187,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       const dataUrl = webcamRef.current.getScreenshot();
       if (!dataUrl) {
         if (!skipErrorToast) {
-          toast({
+          toastRef.current({
             message: 'Không thể chụp ảnh. Hãy đảm bảo camera đang hoạt động.',
             variant: 'danger',
           });
@@ -111,7 +209,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
             code === 'FACE_NOT_DETECTED'
               ? 'Không tìm thấy khuôn mặt trong ảnh. Vui lòng điều chỉnh góc chụp và thử lại.'
               : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
-          toast({ message, variant: 'danger' });
+          toastRef.current({ message, variant: 'danger' });
         }
         return false;
       } finally {
@@ -119,43 +217,111 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         setProcessing(false);
       }
     },
-    [addCapture, toast],
+    [addCapture], // <-- Dependency ổn định (đã sửa từ trước)
   );
 
-  const handleCapture = useCallback(() => {
-    void runCapture();
-  }, [runCapture]);
+  const pendingStep = useMemo(() => {
+    if (captures.length >= STEP_SEQUENCE.length) return null;
+    return STEP_SEQUENCE[captures.length];
+  }, [captures.length]);
+
+  const updateProgress = useCallback((value) => {
+    const safeValue = Math.max(0, Math.min(100, value));
+    progressRef.current = safeValue;
+    setProgress(safeValue);
+  }, []);
 
   useEffect(() => {
-    if (!open || !isCameraReady) {
-      return undefined;
-    }
-    if (captures.length >= MAX_SAMPLES) {
-      setAutoCapturing(false);
+    updateProgress(0);
+    setOrientationState((prev) => ({ ...prev, matched: false }));
+    matchStartRef.current = null;
+  }, [captures.length, updateProgress]);
+
+  useEffect(() => {
+    if (!open || !isCameraReady || !modelsReady || !pendingStep) {
+      stopDetection();
       return undefined;
     }
 
-    setAutoCapturing(true);
-    let isCancelled = false;
-    const interval = setInterval(() => {
-      if (isCancelled) return;
-      if (processingRef.current) return;
-      if ((capturesRef.current?.length ?? 0) >= MAX_SAMPLES) {
-        setAutoCapturing(false);
+    stopDetection();
+    let cancelled = false;
+    let isCapturing = false;
+
+    const detect = async () => {
+      if (cancelled || isCapturing || !webcamRef.current?.video) {
         return;
       }
-      void runCapture({ skipErrorToast: true });
-    }, 1500);
+      const video = webcamRef.current.video;
+      if (!video || video.readyState < 2) {
+        return;
+      }
+      try {
+        if (!detectorOptionsRef.current) {
+          detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
+        }
+        // Lệnh này giờ sẽ hoạt động vì 'faceLandmark68TinyNet' đã được tải
+        const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
+
+        if (cancelled) return;
+
+        // Kiểm tra landmarks (đã sửa từ trước)
+        if (!detection || !detection.landmarks) {
+          if (progressRef.current !== 0) {
+            updateProgress(0);
+          }
+          setOrientationState({ yaw: 0, pitch: 0, matched: false });
+          matchStartRef.current = null;
+          return;
+        }
+
+        const orientation = estimateFaceOrientation(detection.landmarks, { mirrored: true });
+        const matched = pendingStep.validate(orientation);
+        setOrientationState({ ...orientation, matched });
+
+        if (matched) {
+          if (!matchStartRef.current) {
+            matchStartRef.current = performance.now();
+          }
+          const elapsed = performance.now() - matchStartRef.current;
+          const ratio = Math.min(elapsed / MATCH_DURATION_MS, 1);
+          const nextProgress = ratio * 100;
+          if (Math.abs(nextProgress - progressRef.current) >= 1) {
+            updateProgress(nextProgress);
+          }
+
+          if (ratio >= 1 && !isCapturing && !processingRef.current) {
+            isCapturing = true;
+            matchStartRef.current = null;
+            updateProgress(0);
+            const success = await runCapture({ silent: false, skipErrorToast: false });
+            isCapturing = false;
+
+            if (!success) {
+              matchStartRef.current = null;
+            }
+          }
+        } else {
+          if (progressRef.current !== 0) {
+            updateProgress(0);
+          }
+          matchStartRef.current = null;
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Face detection error', error);
+        }
+      }
+    };
+
+    detectionIntervalRef.current = setInterval(() => {
+      void detect();
+    }, 200);
 
     return () => {
-      isCancelled = true;
-      clearInterval(interval);
+      cancelled = true;
+      stopDetection();
     };
-  }, [open, isCameraReady, captures.length, runCapture]);
-
-  const handleRemoveLast = () => {
-    setCaptures((prev) => prev.slice(0, prev.length - 1));
-  };
+  }, [open, isCameraReady, modelsReady, pendingStep, runCapture, stopDetection, updateProgress]);
 
   const handleSubmit = async () => {
     if (captures.length < MAX_SAMPLES || registrationMutation.isPending) return;
@@ -171,21 +337,15 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
 
   const instructions = useMemo(
     () => [
-      'Chụp đủ 5 ảnh với các góc độ khác nhau (thẳng, trái, phải, cúi, ngẩng).',
-      'Giữ khuôn mặt trong khung hình, tránh ánh sáng ngược.',
-      'Không sử dụng khẩu trang, kính râm hoặc che mặt.',
+      'Thực hiện lần lượt 5 góc chụp: Nhìn thẳng, nghiêng trái, nghiêng phải, cúi đầu, ngẩng đầu.',
+      'Giữ khuôn mặt nằm trọn trong vòng tròn và tránh ánh sáng quá mạnh phía sau.',
+      'Không đeo khẩu trang, kính râm hoặc che khuất khuôn mặt.',
     ],
     [],
   );
 
-  const stepItems = useMemo(
-    () =>
-      Array.from({ length: MAX_SAMPLES }).map((_, index) => ({
-        title: `Ảnh ${index + 1}`,
-        status: index < captures.length ? 'finish' : 'wait',
-      })),
-    [captures.length],
-  );
+  const completedCount = captures.length;
+  const activeStep = completedCount >= STEP_SEQUENCE.length ? null : STEP_SEQUENCE[completedCount];
 
   return (
     <Modal
@@ -193,7 +353,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       onCancel={onClose}
       footer={null}
       centered
-      destroyOnClose
+      destroyOnHidden
       className={cx('modal')}
       title={
         <div className={cx('modal__title')}>
@@ -204,32 +364,18 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     >
       {contextHolder}
       <div className={cx('modal__body')}>
-        <section className={cx('modal__instructions')}>
+        <aside className={cx('modal__instructions')}>
           <h4>Hướng dẫn</h4>
-          <ul>
+          <ol>
             {instructions.map((text) => (
               <li key={text}>{text}</li>
             ))}
-          </ul>
-        </section>
+          </ol>
+        </aside>
 
         <section className={cx('modal__content')}>
-          <Steps current={captures.length} items={stepItems} className={cx('modal__steps')} responsive={false} />
-
-          <div className={cx('modal__status')}>
-            <Tag color={captures.length >= MAX_SAMPLES ? 'green' : autoCapturing ? 'geekblue' : 'default'}>
-              {!isCameraReady
-                ? 'Đang khởi tạo camera…'
-                : captures.length >= MAX_SAMPLES
-                  ? 'Đã đủ ảnh. Bạn có thể hoàn tất đăng ký.'
-                  : autoCapturing
-                    ? 'Đang tự động ghi nhận khuôn mặt…'
-                    : 'Giữ khuôn mặt trong vòng tròn để hệ thống quét.'}
-            </Tag>
-          </div>
-
-          <div className={cx('modal__camera')}>
-            {captures.length < MAX_SAMPLES ? (
+          <div className={cx('modal__viewer')}>
+            {completedCount < MAX_SAMPLES ? (
               <div className={cx('modal__camera-frame')}>
                 <Webcam
                   className={cx('modal__webcam')}
@@ -240,20 +386,50 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                   onUserMedia={() => setIsCameraReady(true)}
                   onUserMediaError={() => setIsCameraReady(false)}
                 />
-                <div className={cx('modal__camera-overlay')}>
-                  <div className={cx('modal__camera-circle')} aria-hidden />
-                  <span className={cx('modal__camera-hint')}>
-                    Căn chỉnh khuôn mặt trong vòng tròn để ghi nhận tự động
-                  </span>
-                  <span className={cx('modal__camera-indicator', processing && 'modal__camera-indicator--active')}>
-                    {processing
-                      ? 'Đang xử lý...'
-                      : !isCameraReady
-                        ? 'Đang mở camera'
-                        : autoCapturing
-                          ? 'Đang quét'
-                          : 'Sẵn sàng'}
-                  </span>
+                <div className={cx('modal__overlay')}>
+                  <div
+                    className={cx('modal__progress', orientationState.matched && 'modal__progress--active')}
+                    style={{
+                      '--progress-angle': `${Math.round((progress / 100) * 360)}deg`,
+                    }}
+                  >
+                    <div className={cx('modal__progress-content')}>
+                      <FontAwesomeIcon icon={orientationState.matched ? faCircleCheck : faCamera} />
+                      <span>{Math.round(progress)}%</span>
+                    </div>
+                  </div>
+                  <div className={cx('modal__overlay-hint')}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '10px', // Đặt lên trên cùng
+                        left: '10px',
+                        background: 'rgba(0,0,0,0.7)',
+                        color: 'white',
+                        padding: '5px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontFamily: 'monospace',
+                        zIndex: 10, // Đảm bảo nó nổi lên trên
+                      }}
+                    >
+                      {/* Hiển thị giá trị Yaw (Nghiêng) và Pitch (Ngẩng) */}
+                      <div>Yaw: {orientationState.yaw.toFixed(2)}</div>
+                      <div>Pitch: {orientationState.pitch.toFixed(2)}</div>
+                    </div>
+
+                    {activeStep ? (
+                      <>
+                        <span className={cx('modal__step-title')}>{activeStep.title}</span>
+                        <p>{activeStep.description}</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className={cx('modal__step-title')}>Hoàn tất</span>
+                        <p>Đã đủ {MAX_SAMPLES} ảnh. Vui lòng bấm hoàn tất đăng ký.</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -263,45 +439,24 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
               </div>
             )}
           </div>
-
           <div className={cx('modal__actions')}>
-            <button
-              type="button"
-              className={cx('modal__btn', 'modal__btn--primary')}
-              onClick={handleCapture}
-              disabled={!isCameraReady || captures.length >= MAX_SAMPLES || processing}
-            >
-              <FontAwesomeIcon icon={faCamera} />
-              <span>Chụp ảnh</span>
-            </button>
-            <button
-              type="button"
-              className={cx('modal__btn', captures.length === 0 && 'modal__btn--disabled')}
-              onClick={handleRemoveLast}
-              disabled={captures.length === 0 || processing}
-            >
-              <FontAwesomeIcon icon={faRotateLeft} />
-              <span>Chụp lại ảnh cuối</span>
-            </button>
             <button
               type="button"
               className={cx(
                 'modal__btn',
                 'modal__btn--success',
-                captures.length < MAX_SAMPLES && 'modal__btn--disabled',
+                completedCount < MAX_SAMPLES && 'modal__btn--disabled',
               )}
               onClick={handleSubmit}
-              disabled={captures.length < MAX_SAMPLES || registrationMutation.isPending || processing}
+              disabled={completedCount < MAX_SAMPLES || registrationMutation.isPending || processing}
             >
               {registrationMutation.isPending ? 'Đang đăng ký...' : 'Hoàn tất đăng ký'}
             </button>
           </div>
-
           <div className={cx('modal__previews')}>
             {captures.map((item, index) => (
               <div key={item.dataUrl} className={cx('modal__preview-card')}>
                 <img src={item.dataUrl} alt={`Ảnh ${index + 1}`} />
-                <Tag color="blue">Ảnh {index + 1}</Tag>
               </div>
             ))}
           </div>

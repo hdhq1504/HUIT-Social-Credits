@@ -23,6 +23,8 @@ import { ROUTE_PATHS } from '@/config/routes.config';
 import useDebounce from '@/hooks/useDebounce';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import faceRecognitionService from '@/services/faceRecognitionService';
+import uploadService from '@/services/uploadService';
+import useAuthStore from '@/stores/useAuthStore';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -41,6 +43,7 @@ const normalize = (s) =>
 
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
+  const userId = useAuthStore((state) => state.user?.id);
 
   const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
   const [keyword, setKeyword] = useState('');
@@ -301,10 +304,18 @@ function MyActivitiesPage() {
   const handleFeedback = useCallback(
     async ({ activity, content, files }) => {
       if (!activity?.id) return;
-      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-      await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
+      try {
+        const attachments = await uploadService.uploadMultipleFeedbackEvidence(files || [], {
+          userId,
+          activityId: activity.id,
+        });
+        await feedbackMutation.mutateAsync({ id: activity.id, content, attachments });
+      } catch (error) {
+        const message = error?.message || 'Không thể tải minh chứng. Vui lòng thử lại.';
+        toast({ message, variant: 'danger' });
+      }
     },
-    [feedbackMutation],
+    [feedbackMutation, toast, userId],
   );
 
   const buildCards = useCallback(

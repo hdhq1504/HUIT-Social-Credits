@@ -16,6 +16,8 @@ import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import faceRecognitionService from '@/services/faceRecognitionService';
+import uploadService from '@/services/uploadService';
+import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -35,6 +37,7 @@ function ActivityDetailPage() {
   const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { contextHolder, open: toast } = useToast();
+  const userId = useAuthStore((state) => state.user?.id);
 
   // Lấy chi tiết hoạt động từ API
   const {
@@ -639,9 +642,17 @@ function ActivityDetailPage() {
                       return result;
                     }}
                     onSendFeedback={async ({ content, files }) => {
-                      const attachments = (files || []).map((file) => file?.name).filter(Boolean);
-                      await activitiesApi.feedback(item.id, { content, attachments });
-                      await invalidateActivityQueries(['activities', 'related', id]);
+                      try {
+                        const attachments = await uploadService.uploadMultipleFeedbackEvidence(files || [], {
+                          userId,
+                          activityId: item.id,
+                        });
+                        await activitiesApi.feedback(item.id, { content, attachments });
+                        await invalidateActivityQueries(['activities', 'related', id]);
+                      } catch (error) {
+                        const message = error?.message || 'Không thể tải minh chứng. Vui lòng thử lại.';
+                        toast({ message, variant: 'danger' });
+                      }
                     }}
                   />
                 ))}
@@ -690,13 +701,17 @@ function ActivityDetailPage() {
         onCancel={() => setIsFeedbackOpen(false)}
         onSubmit={async ({ content, files }) => {
           try {
-            const attachments = (files || []).map((file) => file?.name).filter(Boolean);
+            const attachments = await uploadService.uploadMultipleFeedbackEvidence(files || [], {
+              userId,
+              activityId: id,
+            });
             await activitiesApi.feedback(id, { content, attachments });
             await invalidateActivityQueries(['activity', id]);
             setIsFeedbackOpen(false);
             toast({ message: 'Gửi phản hồi thành công!', variant: 'success' });
           } catch (error) {
-            const message = error.response?.data?.error || 'Gửi phản hồi thất bại. Vui lòng thử lại.';
+            const message =
+              error?.response?.data?.error || error?.message || 'Gửi phản hồi thất bại. Vui lòng thử lại.';
             toast({ message, variant: 'danger' });
           }
         }}

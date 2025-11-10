@@ -97,7 +97,7 @@ model HoatDong {
   ketThucLuc         DateTime?
   diaDiem            String?
   sucChuaToiDa       Int?
-  hinhAnh            String?             @db.VarChar(255)
+  hinhAnh            Json?
   isFeatured         Boolean             @default(false)
   isPublished        Boolean             @default(true)
   hanDangKy          DateTime?
@@ -153,9 +153,7 @@ model DiemDanhNguoiDung {
   trangThai   TrangThaiDangKy
   loai        AttendancePhase @default(CHECKIN)
   ghiChu      String?
-  anhDinhKem  String?         @db.Text
-  anhMimeType String?         @db.VarChar(100)
-  anhTen      String?         @db.VarChar(255)
+  anhDinhKem  Json?
   faceMatch   FaceMatchStatus?
   faceScore   Float?
   faceMeta    Json?
