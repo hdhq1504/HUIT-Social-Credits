@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
-import { Modal, Steps, Tag } from 'antd';
+import { Modal } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
@@ -22,35 +22,35 @@ const STEP_SEQUENCE = [
     title: 'Nhìn thẳng',
     description: 'Giữ thẳng đầu, nhìn trực diện vào camera.',
     hint: 'Giữ mặt cân đối trong khung tròn.',
-    validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.1 && Math.abs(pitch) <= 0.1,
+    validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.12 && Math.abs(pitch) <= 0.12,
   },
   {
     key: 'left',
     title: 'Nghiêng trái',
     description: 'Quay mặt nhẹ sang trái sao cho tai trái tiến gần về phía camera.',
     hint: 'Nghiêng mặt sang trái và giữ ổn định.',
-    validate: ({ yaw }) => yaw >= 0.1,
+    validate: ({ yaw }) => yaw >= 0.18,
   },
   {
     key: 'right',
     title: 'Nghiêng phải',
     description: 'Quay mặt nhẹ sang phải và giữ mắt nhìn về camera.',
     hint: 'Nghiêng mặt sang phải và giữ ổn định.',
-    validate: ({ yaw }) => yaw <= -0.1,
+    validate: ({ yaw }) => yaw <= -0.18,
   },
   {
     key: 'down',
     title: 'Cúi đầu',
     description: 'Cúi cằm nhẹ xuống, vẫn nhìn vào camera.',
     hint: 'Hạ cằm xuống một chút rồi giữ nguyên.',
-    validate: ({ pitch }) => pitch >= 0.1,
+    validate: ({ pitch }) => pitch >= 0.08,
   },
   {
     key: 'up',
     title: 'Ngẩng đầu',
     description: 'Ngẩng đầu nhẹ lên phía trên.',
     hint: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
-    validate: ({ pitch }) => pitch <= -0.1,
+    validate: ({ pitch }) => pitch <= -0.08,
   },
 ];
 const MAX_SAMPLES = STEP_SEQUENCE.length;
@@ -72,7 +72,6 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
   const [orientationState, setOrientationState] = useState({ yaw: 0, pitch: 0, matched: false });
   const { contextHolder, open: toast } = useToast();
 
-  // Thêm toastRef để ổn định hàm toast
   const toastRef = useRef(toast);
   useEffect(() => {
     toastRef.current = toast;
@@ -121,8 +120,6 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     wasOpenRef.current = open;
   }, [open, stopDetection]);
 
-  // === CẬP NHẬT 1: Sửa hàm ensureFaceModels ===
-  // Đổi `faceLandmark68Net` thành `faceLandmark68TinyNet`
   const ensureFaceModels = useCallback(async () => {
     if (modelsLoadedRef.current) {
       setModelsReady(true);
@@ -141,8 +138,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       toastRef.current({ message: 'Không thể tải mô hình nhận diện khuôn mặt.', variant: 'danger' });
       setModelsReady(false);
     }
-  }, []); // <-- Dependency rỗng (đã sửa từ trước)
-  // === KẾT THÚC CẬP NHẬT 1 ===
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -177,7 +173,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         });
       }
     },
-    [], // <-- Dependency rỗng (đã sửa từ trước)
+    [],
   );
 
   const runCapture = useCallback(
@@ -217,7 +213,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         setProcessing(false);
       }
     },
-    [addCapture], // <-- Dependency ổn định (đã sửa từ trước)
+    [addCapture],
   );
 
   const pendingStep = useMemo(() => {
@@ -259,12 +255,10 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!detectorOptionsRef.current) {
           detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
         }
-        // Lệnh này giờ sẽ hoạt động vì 'faceLandmark68TinyNet' đã được tải
         const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
 
         if (cancelled) return;
 
-        // Kiểm tra landmarks (đã sửa từ trước)
         if (!detection || !detection.landmarks) {
           if (progressRef.current !== 0) {
             updateProgress(0);
@@ -402,7 +396,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                     <div
                       style={{
                         position: 'absolute',
-                        top: '10px', // Đặt lên trên cùng
+                        top: '10px',
                         left: '10px',
                         background: 'rgba(0,0,0,0.7)',
                         color: 'white',
@@ -410,7 +404,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                         borderRadius: '4px',
                         fontSize: '12px',
                         fontFamily: 'monospace',
-                        zIndex: 10, // Đảm bảo nó nổi lên trên
+                        zIndex: 10,
                       }}
                     >
                       {/* Hiển thị giá trị Yaw (Nghiêng) và Pitch (Ngẩng) */}
