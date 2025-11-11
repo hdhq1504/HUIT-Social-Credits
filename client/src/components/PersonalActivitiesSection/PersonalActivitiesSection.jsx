@@ -65,7 +65,7 @@ function PersonalActivitiesSection() {
       });
   }, [registrations]);
 
-  const canShowViewAll = Array.isArray(activities) && activities.length >= 1 && !isFetching;
+  const canShowViewAll = Array.isArray(activities) && activities.length > 3 && !isFetching;
 
   const emptyText = isLoggedIn ? 'Bạn chưa có hoạt động sắp tới' : 'Đăng nhập để xem hoạt động sắp tới của bạn';
 

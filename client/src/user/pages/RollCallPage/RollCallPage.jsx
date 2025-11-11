@@ -5,70 +5,59 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Empty, Input, Pagination, Select, Tabs } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CardActivity, Label } from '@components/index';
-import useToast from '../../../components/Toast/Toast';
+import { CardActivity, Label, useToast } from '@components/index';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { ROUTE_PATHS } from '@/config/routes.config';
-import useDebounce from '@/hooks/useDebounce';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
+import useRegistrationFilters from '@/hooks/useRegistrationFilters';
 import faceRecognitionService from '@/services/faceRecognitionService';
 import uploadService from '@/services/uploadService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './RollCallPage.module.scss';
 
 const cx = classNames.bind(styles);
-const { Option } = Select;
 const PAGE_SIZE = 6;
 
 function RollCallPage() {
   const { contextHolder, open: toast } = useToast();
-  const userId = useAuthStore((state) => state.user?.Id);
+  const userId = useAuthStore((state) => state.user?.id);
 
   // ====== Search/Filter/Sort states ======
-  const [q, setQ] = useState('');
-  const [group, setGroup] = useState('all');
   const [sort, setSort] = useState('latest');
   const [pages, setPages] = useState({ ongoing: 1, upcoming: 1, ended: 1 });
-  const debouncedQuery = useDebounce(q, 400);
 
-  // Helpers
-  const normalize = (s) =>
-    (s || '')
-      .toString()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+  const handlePageChange = useCallback((tabKey, page) => {
+    setPages((prev) => ({ ...prev, [tabKey]: page }));
+  }, []);
 
-  const matchGroup = useCallback(
-    (activity) => {
-      if (group === 'all') return true;
-      const groupKey = (activity?.pointGroup || '').toUpperCase();
-      return groupKey === group;
+  // ====== Data ======
+  const {
+    data: registrations = [],
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
+    queryFn: () => activitiesApi.listMine(),
+    staleTime: 30 * 1000,
+    retry: 1,
+    onError: (error) => {
+      const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động.';
+      toast({ message, variant: 'danger' });
     },
-    [group],
-  );
+  });
 
-  const matchKeyword = useCallback(
-    (activity) => {
-      const key = debouncedQuery.trim();
-      if (!key) return true;
-      const haystack = normalize(
-        [
-          activity?.title,
-          activity?.code,
-          activity?.categoryName,
-          activity?.groupName,
-          activity?.location,
-          activity?.description,
-          activity?.pointGroup,
-          activity?.pointGroupLabel,
-        ].join(' '),
-      );
-      return haystack.includes(normalize(key));
-    },
-    [debouncedQuery],
-  );
+  const {
+    keyword,
+    setKeyword,
+    semester,
+    setSemester,
+    semesters,
+    filtered: filteredRegistrations,
+    resetFilters,
+  } = useRegistrationFilters(registrations, {
+    enableSemester: true,
+  });
 
   const sortItems = useCallback(
     (arr) => {
@@ -93,35 +82,10 @@ function RollCallPage() {
     [sort],
   );
 
-  const applySearch = useCallback(
-    (items) => {
-      const filtered = (items || []).filter(
-        (reg) => reg?.activity && matchGroup(reg.activity) && matchKeyword(reg.activity),
-      );
-      return sortItems(filtered);
-    },
-    [matchGroup, matchKeyword, sortItems],
+  const processedRegistrations = useMemo(
+    () => sortItems(filteredRegistrations.filter((registration) => Boolean(registration?.activity))),
+    [filteredRegistrations, sortItems],
   );
-
-  const handlePageChange = useCallback((tabKey, page) => {
-    setPages((prev) => ({ ...prev, [tabKey]: page }));
-  }, []);
-
-  // ====== Data ======
-  const {
-    data: registrations = [],
-    isFetching,
-    refetch,
-  } = useQuery({
-    queryKey: MY_ACTIVITIES_QUERY_KEY,
-    queryFn: () => activitiesApi.listMine(),
-    staleTime: 30 * 1000,
-    retry: 1,
-    onError: (error) => {
-      const message = error.response?.data?.error || 'Không thể tải danh sách hoạt động.';
-      toast({ message, variant: 'danger' });
-    },
-  });
 
   const invalidateActivityQueries = useInvalidateActivities();
 
@@ -156,8 +120,20 @@ function RollCallPage() {
       return data;
     },
     onError: (error) => {
-      const message = error.response?.data?.error || 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
-      toast({ message, variant: 'danger' });
+      const rawMessage = error.response?.data?.error;
+      const message =
+        typeof rawMessage === 'string' && rawMessage.trim()
+          ? rawMessage.trim()
+          : 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
+      const requiresFaceProfile = message.toLowerCase().includes('đăng ký khuôn mặt');
+      toast({ message, variant: requiresFaceProfile ? 'warning' : 'danger' });
+      if (error && typeof error === 'object') {
+        try {
+          Object.defineProperty(error, 'handledByToast', { value: true, configurable: true, writable: true });
+        } catch {
+          // ignore
+        }
+      }
     },
   });
 
@@ -223,17 +199,34 @@ function RollCallPage() {
         }
       }
 
+      let evidencePayload;
+      if (file) {
+        try {
+          evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
+            userId,
+            activityId: activity.id,
+            phase,
+          });
+        } catch (error) {
+          const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
+          toast({ message, variant: 'danger' });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+      }
+
       return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
-          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+          evidence:
+            evidencePayload ||
+            (evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined),
           face: facePayload,
         },
       });
     },
-    [attendanceMutation, toast],
+    [attendanceMutation, toast, userId],
   );
 
   const handleFeedback = useCallback(
@@ -253,10 +246,9 @@ function RollCallPage() {
     [feedbackMutation, toast, userId],
   );
 
-  // Phân loại theo state tab
   const categorized = useMemo(() => {
     const groups = { ongoing: [], upcoming: [], ended: [] };
-    registrations.forEach((registration) => {
+    processedRegistrations.forEach((registration) => {
       const activity = registration.activity;
       if (!activity) return;
       switch (activity.state) {
@@ -273,12 +265,11 @@ function RollCallPage() {
       }
     });
     return groups;
-  }, [registrations]);
+  }, [processedRegistrations]);
 
-  // UI list/empty (áp bộ lọc + sort)
   const ListOrEmpty = useCallback(
     ({ items, emptyText, tabKey }) => {
-      const list = applySearch(items);
+      const list = Array.isArray(items) ? items : [];
       const total = list.length;
       const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const current = Math.max(1, Math.min(pages[tabKey] ?? 1, totalPages));
@@ -326,7 +317,6 @@ function RollCallPage() {
       );
     },
     [
-      applySearch,
       handleRegister,
       handleCancel,
       handleAttendance,
@@ -377,12 +367,11 @@ function RollCallPage() {
 
   useEffect(() => {
     setPages({ ongoing: 1, upcoming: 1, ended: 1 });
-  }, [debouncedQuery, group, sort, registrations]);
+  }, [filteredRegistrations, semester, sort]);
 
   // Reset
   const handleReset = () => {
-    setQ('');
-    setGroup('all');
+    resetFilters();
     setSort('latest');
     refetch();
   };
@@ -419,23 +408,33 @@ function RollCallPage() {
                       size="large"
                       className={cx('roll-call__search-input')}
                       allowClear
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
                       onPressEnter={() => {}}
                     />
 
-                    <Select value={group} size="large" className={cx('roll-call__search-select')} onChange={setGroup}>
-                      <Option value="all">Tất cả nhóm điểm</Option>
-                      <Option value="NHOM_1">Nhóm 1</Option>
-                      <Option value="NHOM_2">Nhóm 2</Option>
-                      <Option value="NHOM_3">Nhóm 3</Option>
-                    </Select>
+                    <Select
+                      value={semester}
+                      size="large"
+                      className={cx('roll-call__search-select')}
+                      onChange={setSemester}
+                      options={[
+                        { value: 'all', label: 'Tất cả học kỳ' },
+                        ...semesters.map((value) => ({ value, label: value })),
+                      ]}
+                    />
 
-                    <Select value={sort} size="large" className={cx('roll-call__search-select')} onChange={setSort}>
-                      <Option value="latest">Mới nhất</Option>
-                      <Option value="oldest">Cũ nhất</Option>
-                      <Option value="popular">Phổ biến nhất</Option>
-                    </Select>
+                    <Select
+                      value={sort}
+                      size="large"
+                      className={cx('roll-call__search-select')}
+                      onChange={setSort}
+                      options={[
+                        { value: 'latest', label: 'Mới nhất' },
+                        { value: 'oldest', label: 'Cũ nhất' },
+                        { value: 'popular', label: 'Phổ biến nhất' },
+                      ]}
+                    />
 
                     <Button
                       type="primary"

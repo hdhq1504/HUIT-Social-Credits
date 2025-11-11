@@ -136,8 +136,13 @@ function ActivityDetailPage() {
       toast({ message, variant: 'success' });
     },
     onError: (error) => {
-      const message = error.response?.data?.error || 'Điểm danh thất bại. Vui lòng thử lại.';
-      toast({ message, variant: 'danger' });
+      const rawMessage = error.response?.data?.error;
+      const message =
+        typeof rawMessage === 'string' && rawMessage.trim()
+          ? rawMessage.trim()
+          : 'Điểm danh thất bại. Vui lòng thử lại.';
+      const requiresFaceProfile = message.toLowerCase().includes('đăng ký khuôn mặt');
+      toast({ message, variant: requiresFaceProfile ? 'warning' : 'danger' });
     },
   });
 
@@ -179,18 +184,35 @@ function ActivityDetailPage() {
       }
     }
 
+    let evidencePayload;
+    if (file) {
+      try {
+        evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
+          userId,
+          activityId: id,
+          phase: attendancePhase,
+        });
+      } catch (error) {
+        const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
+        toast({ message, variant: 'danger' });
+        return;
+      }
+    }
+
     attendanceMutation.mutate({
       id,
       payload: {
         status: 'present',
         phase: attendancePhase,
-        evidence: evidenceDataUrl
-          ? {
-              data: evidenceDataUrl,
-              mimeType: file?.type,
-              fileName: file?.name,
-            }
-          : undefined,
+        evidence:
+          evidencePayload ||
+          (evidenceDataUrl
+            ? {
+                data: evidenceDataUrl,
+                mimeType: file?.type,
+                fileName: file?.name,
+              }
+            : undefined),
         face: facePayload,
       },
     });

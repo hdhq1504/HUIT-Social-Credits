@@ -93,6 +93,12 @@ const mapAttendanceEvidence = (value) =>
     fallbackBucket: env.SUPABASE_ATTENDANCE_BUCKET,
   });
 
+const sanitizeAttendanceEvidenceMetadata = (value) =>
+  sanitizeAttendanceEvidenceMetadata(value, {
+    allowedBuckets: ATTENDANCE_BUCKET_SET,
+    fallbackBucket: env.SUPABASE_ATTENDANCE_BUCKET,
+  });
+
 const mapFeedbackAttachments = (value) =>
   mapStorageListForResponse(value, {
     fallbackBucket: env.SUPABASE_FEEDBACK_BUCKET,
@@ -109,7 +115,10 @@ const USER_PUBLIC_FIELDS = {
   id: true,
   hoTen: true,
   email: true,
-  avatarUrl: true
+  avatarUrl: true,
+  maSV: true,
+  maLop: true,
+  maKhoa: true
 };
 
 const ACTIVITY_INCLUDE = {
@@ -121,6 +130,22 @@ const ACTIVITY_INCLUDE = {
       }
     },
     orderBy: { dangKyLuc: "asc" }
+  },
+  phanHoi: {
+    include: {
+      nguoiDung: {
+        select: {
+          id: true,
+          hoTen: true,
+          email: true,
+          avatarUrl: true,
+          maSV: true,
+          maKhoa: true,
+          maLop: true
+        }
+      }
+    },
+    orderBy: { taoLuc: "desc" }
   },
   hocKyRef: {
     include: {
@@ -288,7 +313,17 @@ const sanitizeCapacity = (value) => {
 
 const sanitizeAttendanceEvidence = (value) => {
   if (!value || typeof value !== "object") {
-    return { data: null, mimeType: null, fileName: null };
+    return { data: null, mimeType: null, fileName: null, metadata: null };
+  }
+
+  const metadata = sanitizeAttendanceEvidenceMetadata(value);
+  if (metadata) {
+    return {
+      data: null,
+      mimeType: metadata.mimeType ?? null,
+      filename: metadata.fileName ?? null,
+      metadata,
+    };
   }
 
   const rawData =
@@ -300,13 +335,13 @@ const sanitizeAttendanceEvidence = (value) => {
   const data = rawData?.trim();
 
   if (!data || data.length > MAX_ATTENDANCE_EVIDENCE_SIZE || !data.startsWith("data:")) {
-    return { data: null, mimeType: null, fileName: null };
+    return { data: null, mimeType: null, fileName: null, metadata: null };
   }
 
   const mimeType = typeof value.mimeType === "string" ? value.mimeType.slice(0, 100) : null;
   const fileName = typeof value.fileName === "string" ? value.fileName.slice(0, 255) : null;
 
-  return { data, mimeType, fileName };
+  return { data, mimeType, fileName, metadata: null };
 };
 
 const extractFaceDescriptorPayload = (value) => {
@@ -325,7 +360,7 @@ const extractFaceDescriptorPayload = (value) => {
 
 const mapAttendanceEntry = (entry) => {
   if (!entry) return null;
-  const attachmentMeta = mapAttendanceEntry(entry.anhDinhKem);
+  const attachmentMeta = mapAttendanceEvidence(entry.anhDinhKem);
   return {
     id: entry.id,
     status: entry.trangThai,
@@ -370,7 +405,6 @@ const computeFeedbackAvailableAt = (activity, registration) => {
   const participationTime = registration?.diemDanhLuc
     ? new Date(registration.diemDanhLuc)
     : end || toDate(activity?.batDauLuc) || new Date();
-  // const available = new Date(participationTime.getTime() + 48 * 60 * 60 * 1000);
   const available = participationTime;
   return available.toISOString();
 };
@@ -572,6 +606,53 @@ const mapActivity = (activity, registration) => {
       : `${registeredCount}`;
   const coverMeta = mapActivityCover(activity.hinhAnh);
 
+  const participantRegistrations = activeRegistrations.map((item) => {
+    const student = item.nguoiDung
+      ? {
+        id: item.nguoiDung.id,
+        name:
+          sanitizeOptionalText(item.nguoiDung.hoTen) ||
+          sanitizeOptionalText(item.nguoiDung.email) ||
+          "Người dùng",
+        email: item.nguoiDung.email ?? null,
+        avatarUrl: item.nguoiDung.avatarUrl ?? null,
+        studentCode: item.nguoiDung.maSV ?? null,
+        faculty: item.nguoiDung.maKhoa ?? null,
+        className: item.nguoiDung.maLop ?? null
+      }
+      : null;
+
+    return {
+      id: item.id,
+      status: item.trangThai,
+      registeredAt: item.dangKyLuc?.toISOString() ?? null,
+      updatedAt: item.updatedAt?.toISOString() ?? null,
+      checkInAt: item.diemDanhLuc?.toISOString() ?? null,
+      student
+    };
+  });
+
+  const feedbackLogs = Array.isArray(activity.phanHoi)
+    ? activity.phanHoi.map((feedbackItem) => {
+      const base = mapFeedback(feedbackItem);
+      const student = feedbackItem.nguoiDung
+        ? {
+          id: feedbackItem.nguoiDung.id,
+          name:
+            sanitizeOptionalText(feedbackItem.nguoiDung.hoTen) ||
+            sanitizeOptionalText(feedbackItem.nguoiDung.email) ||
+            "Người dùng",
+          email: feedbackItem.nguoiDung.email ?? null,
+          avatarUrl: feedbackItem.nguoiDung.avatarUrl ?? null,
+          studentCode: feedbackItem.nguoiDung.maSV ?? null,
+          faculty: feedbackItem.nguoiDung.maKhoa ?? null,
+          className: feedbackItem.nguoiDung.maLop ?? null
+        }
+        : null;
+      return { ...base, student };
+    })
+    : [];
+
   return {
     id: activity.id,
     code: null,
@@ -586,6 +667,8 @@ const mapActivity = (activity, registration) => {
     createdAt: activity.createdAt?.toISOString() ?? null,
     location: activity.diaDiem,
     participants,
+    participantRegistrations,
+    feedbackLogs,
     participantsCount: registeredCount,
     capacity: capacityLabel,
     maxCapacity: activity.sucChuaToiDa,
@@ -908,8 +991,11 @@ export const markAttendance = async (req, res) => {
   const isFaceAttendance = attendanceMethod === FACE_ATTENDANCE_METHOD;
 
   const normalizedNote = sanitizeOptionalText(note);
+  const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
   let storedEvidence = null;
-  if (sanitizedEvidence.data) {
+  if (sanitizedEvidence.metadata) {
+    storedEvidence = sanitizedEvidence.metadata;
+  } else if (sanitizedEvidence.data) {
     if (!isSupabaseConfigured()) {
       return res.status(500).json({ error: "Dịch vụ lưu trữ chưa được cấu hình" });
     }
@@ -981,6 +1067,8 @@ export const markAttendance = async (req, res) => {
     };
   }
 
+  const shouldAutoApprove = isCheckout && finalStatus === 'DA_THAM_GIA' && isFaceAttendance && faceResult?.status === 'APPROVED';
+
   const registrationUpdate = {
     diemDanhLuc: attendanceTime,
     diemDanhGhiChu: normalizedNote,
@@ -988,6 +1076,9 @@ export const markAttendance = async (req, res) => {
   };
   if (isCheckout) {
     registrationUpdate.trangThai = finalStatus;
+    if (finalStatus === 'DA_THAM_GIA') {
+      registrationUpdate.duyetLuc = attendanceTime;
+    }
   }
 
   await prisma.$transaction([
@@ -1012,6 +1103,25 @@ export const markAttendance = async (req, res) => {
       }
     })
   ]);
+
+  if (shouldAutoApprove) {
+    await prisma.phanHoiHoatDong.upsert({
+      where: { dangKyId: registration.id },
+      update: {
+        trangThai: "DA_DUYET",
+        lydoTuChoi: null
+      },
+      create: {
+        dangKyId: registration.id,
+        nguoiDungId: userId,
+        hoatDongId: activityId,
+        noiDung: "Điểm danh được hệ thống tự động xác nhận.",
+        danhGia: null,
+        minhChung: null,
+        trangThai: "DA_DUYET"
+      }
+    });
+  }
 
   const updated = await buildActivityResponse(activityId, userId);
   const faceReviewPending = faceResult?.status === "REVIEW";

@@ -665,6 +665,22 @@
     }
   }
 
+  &__search-range {
+    flex: 0 0 260px;
+
+    @media (max-width: 1200px) {
+      flex: 0 0 220px;
+    }
+
+    @media (max-width: 992px) {
+      flex: 0 0 200px;
+    }
+
+    @media (max-width: 768px) {
+      flex: 1 1 100%;
+    }
+  }
+
   &__reset-button {
     background-color: var(--orange-color);
     border: none;

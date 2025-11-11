@@ -265,6 +265,13 @@
     overflow: hidden;
   }
 
+  &__details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+  }
+
   &__tabs {
     :global {
       .ant-tabs-nav {
@@ -316,6 +323,20 @@
     padding: 0 32px 16px;
   }
 
+  &__table-wrapper {
+    padding: 24px 0;
+
+    :global {
+      .ant-table {
+        font-size: 14px;
+      }
+      .ant-table-thead > tr > th {
+        background: #f9fafb;
+        font-weight: 600;
+      }
+    }
+  }
+
   &__list-section {
     margin-bottom: 24px;
   }
@@ -326,6 +347,33 @@
     font-weight: 600;
     color: var(--primary-color);
     margin-bottom: 16px;
+  }
+
+  &__student-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__student-avatar {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+  }
+
+  &__student-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__student-name {
+    font-weight: 600;
+    color: var(--black-color);
+  }
+
+  &__student-email {
+    font-size: 12px;
+    color: var(--muted-color);
   }
 
   &__list {
@@ -374,6 +422,63 @@
 
     &.--warning {
       color: var(--warning-color);
+    }
+  }
+
+  &__feedback-item {
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  &__feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--black-color);
+
+    span {
+      flex: 1;
+    }
+  }
+
+  &__feedback-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted-color);
+
+    span + span::before {
+      content: '\2022';
+      margin: 0 8px;
+    }
+  }
+
+  &__feedback-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--black-color);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__feedback-rating {
+    font-weight: 500;
+    color: var(--primary-color);
+  }
+
+  &__feedback-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    a {
+      color: var(--primary-color);
+      font-weight: 500;
     }
   }
 }

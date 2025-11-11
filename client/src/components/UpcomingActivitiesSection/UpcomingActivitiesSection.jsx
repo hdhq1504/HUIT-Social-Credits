@@ -8,7 +8,7 @@ import Button from '../Button/Button';
 import CardActivity from '../CardActivity/CardActivity';
 import Label from '../Label/Label';
 import activitiesApi from '@api/activities.api';
-import { isUnregisteredOrParticipated } from '@utils/activityState';
+import { isRegisterableActivity } from '@utils/activityState';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './UpcomingActivitiesSection.module.scss';
@@ -30,7 +30,7 @@ function UpcomingActivitiesSection() {
   const invalidateActivityQueries = useInvalidateActivities();
 
   const visibleActivities = useMemo(
-    () => activities.filter((activity) => isUnregisteredOrParticipated(activity)),
+    () => activities.filter((activity) => isRegisterableActivity(activity)),
     [activities],
   );
 
@@ -70,7 +70,7 @@ function UpcomingActivitiesSection() {
           {GROUP_FILTERS.map((filter) => (
             <CheckableTag
               key={filter.key}
-              checked={selectedGroup === filter}
+              checked={selectedGroup === filter.key}
               onChange={() => setSelectedGroup(filter.key)}
               className={cx('upcoming-activities__tag', {
                 'upcoming-activities__tag--active': selectedGroup === filter.key,

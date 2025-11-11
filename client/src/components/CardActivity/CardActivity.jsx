@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { buildPath } from '@/config/routes.config';
@@ -27,7 +27,6 @@ const initials = (name = '') =>
       .join('') || 'U'
   ).toUpperCase();
 
-// Convert string/Date -> timestamp number; nếu invalid trả về null
 const toTimestamp = (value) => {
   if (!value) return null;
   const ts = new Date(value).getTime();
@@ -37,8 +36,32 @@ const toTimestamp = (value) => {
 // Thời gian offset trước checkout để bật nút checkout (mặc định 10 phút)
 const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
 
+const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailable }) => ({
+  registerModalOpen: false,
+  uiState: initialUiState,
+  modalVariant: 'confirm',
+  checkModalOpen: false,
+  capturedEvidence: null,
+  feedbackModalOpen: false,
+  isRegisterProcessing: false,
+  isAttendanceSubmitting: false,
+  isFeedbackSubmitting: false,
+  attendanceStep,
+  checkoutAvailable,
+});
+
+const cardActivityReducer = (prevState, action) => {
+  switch (action.type) {
+    case 'SET':
+      return { ...prevState, ...action.payload };
+    case 'RESET_CAPTURED':
+      return { ...prevState, capturedEvidence: null };
+    default:
+      return prevState;
+  }
+};
+
 function CardActivity(props) {
-  // Destructure props (đã có mặc định trong file gốc)
   const {
     id,
     title,
@@ -64,10 +87,6 @@ function CardActivity(props) {
     buttonLabels = {},
     registerModalProps = {},
     autoSwitchStateOnRegister = true,
-    successMessage = 'Đăng ký hoạt động thành công!',
-    errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.',
-    cancelSuccessMessage = 'Hủy đăng ký thành công!',
-    cancelErrorMessage = 'Hủy đăng ký thất bại. Vui lòng thử lại.',
     onCancelRegister,
     onCheckin,
     onComplete,
@@ -84,31 +103,9 @@ function CardActivity(props) {
     loading = false,
   } = props;
 
-  // Local UI state
-  const [openReg, setOpenReg] = useState(false);
-  const [uiState, setUiState] = useState(state);
-  const navigate = useNavigate();
-  const { contextHolder, open: openToast } = useToast();
-  const [modalVariant, setModalVariant] = useState('confirm');
-
-  const [openCheck, setOpenCheck] = useState(false);
-  const [captured, setCaptured] = useState(null);
-
-  const [openFeedback, setOpenFeedback] = useState(false);
-  const [isRegisterProcessing, setIsRegisterProcessing] = useState(false);
-  const [isAttendanceSubmitting, setIsAttendanceSubmitting] = useState(false);
-  const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
-
-  // attendanceSummary có thể từ prop registration; chứa nextPhase, hasCheckout, ...
   const attendanceSummary = registration?.attendanceSummary;
   const derivedNextAttendancePhase = attendanceSummary?.nextPhase ?? 'checkin';
-  const [attendanceStep, setAttendanceStep] = useState(derivedNextAttendancePhase);
 
-  // Timer để mở checkout lúc đúng thời điểm
-  const checkoutTimerRef = useRef(null);
-  const checkoutReminderShownRef = useRef(false);
-
-  // Tính toán timestamp mà checkout được mở (ưu tiên attendanceSummary.checkoutAvailableAt)
   const checkoutAvailableTimestamp = useMemo(() => {
     if (attendanceSummary?.checkoutAvailableAt) {
       const ts = toTimestamp(attendanceSummary.checkoutAvailableAt);
@@ -122,13 +119,38 @@ function CardActivity(props) {
   }, [attendanceSummary?.checkoutAvailableAt, endTime]);
 
   // Nếu attendanceSummary.hasCheckout true => đã checkout
-  const [checkoutAvailable, setCheckoutAvailable] = useState(() => {
+  const initialCheckoutAvailability = useMemo(() => {
     if (attendanceSummary?.hasCheckout) return true;
     if (!checkoutAvailableTimestamp) return true;
     return Date.now() >= checkoutAvailableTimestamp;
-  });
+  }, [attendanceSummary?.hasCheckout, checkoutAvailableTimestamp]);
 
-  // Activity object dùng cho callback
+  const [localState, dispatch] = useReducer(
+    cardActivityReducer,
+    buildInitialCardState({
+      initialUiState: state,
+      attendanceStep: derivedNextAttendancePhase,
+      checkoutAvailable: initialCheckoutAvailability,
+    }),
+  );
+  const {
+    registerModalOpen,
+    uiState,
+    modalVariant,
+    checkModalOpen,
+    capturedEvidence,
+    feedbackModalOpen,
+    isRegisterProcessing,
+    isAttendanceSubmitting,
+    isFeedbackSubmitting,
+    attendanceStep,
+    checkoutAvailable,
+  } = localState;
+  const navigate = useNavigate();
+  const { contextHolder, open: openToast } = useToast();
+  const checkoutTimerRef = useRef(null);
+  const checkoutReminderShownRef = useRef(false);
+
   const activity = {
     id,
     title,
@@ -142,7 +164,6 @@ function CardActivity(props) {
     pointGroupLabel,
   };
 
-  // Map nhãn nhóm (có thể mở rộng)
   const groupLabelMap = useMemo(
     () => ({
       NHOM_1: 'Nhóm 1',
@@ -154,7 +175,6 @@ function CardActivity(props) {
 
   const normalizedGroupLabel = modalGroupLabelProp ?? pointGroupLabel ?? groupLabelMap[pointGroup];
 
-  // Skeleton UI để đồng bộ với List page
   const skeletonContent = (
     <div
       className={cx(
@@ -179,14 +199,12 @@ function CardActivity(props) {
     </div>
   );
 
-  // Sync prop state -> local uiState
   useEffect(() => {
-    setUiState(state);
+    dispatch({ type: 'SET', payload: { uiState: false } });
   }, [state]);
 
-  // Sync derivedNextAttendancePhase
   useEffect(() => {
-    setAttendanceStep(derivedNextAttendancePhase);
+    dispatch({ type: 'SET', payload: { attendanceStep: derivedNextAttendancePhase } });
   }, [derivedNextAttendancePhase]);
 
   // EFFECT: quản lý timer checkout mở
@@ -199,27 +217,27 @@ function CardActivity(props) {
 
     // Nếu đã checkout thì mở luôn
     if (attendanceSummary?.hasCheckout) {
-      setCheckoutAvailable(true);
+      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       checkoutReminderShownRef.current = true;
       return undefined;
     }
 
-    // Nếu uiState không phải confirm_out (người dùng chưa ở trạng thái chờ checkout) -> không cần timer
+    // Nếu người dùng chưa ở trạng thái chờ checkout -> không cần timer
     if (uiState !== 'confirm_out') {
-      setCheckoutAvailable(true);
+      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       checkoutReminderShownRef.current = false;
       return undefined;
     }
 
     if (!checkoutAvailableTimestamp) {
-      setCheckoutAvailable(true);
+      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       return undefined;
     }
 
     const now = Date.now();
     // Nếu đã vượt timestamp -> mở và show reminder 1 lần
     if (now >= checkoutAvailableTimestamp) {
-      setCheckoutAvailable(true);
+      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       if (!checkoutReminderShownRef.current) {
         openToast({ message: 'Điểm danh cuối giờ đã mở, đừng quên hoàn tất nhé!', variant: 'info' });
         checkoutReminderShownRef.current = true;
@@ -228,9 +246,9 @@ function CardActivity(props) {
     }
 
     // Chưa tới thời điểm -> set timeout
-    setCheckoutAvailable(false);
+    dispatch({ type: 'SET', payload: { checkoutAvailable: false } });
     checkoutTimerRef.current = setTimeout(() => {
-      setCheckoutAvailable(true);
+      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       if (!checkoutReminderShownRef.current) {
         openToast({ message: 'Điểm danh cuối giờ đã mở, đừng quên hoàn tất nhé!', variant: 'info' });
         checkoutReminderShownRef.current = true;
@@ -277,68 +295,68 @@ function CardActivity(props) {
   // Register modal handling
   const handleOpenRegister = () => {
     onRegister?.(activity);
-    setModalVariant('confirm');
-    setOpenReg(true);
+    dispatch({ type: 'SET', payload: { modalVariant: 'confirm', registerModalOpen: true } });
   };
 
   const handleOpenCancel = () => {
-    setModalVariant('cancel');
-    setOpenReg(true);
+    dispatch({ type: 'SET', payload: { modalVariant: 'cancel', registerModalOpen: true } });
   };
 
-  const handleCloseRegister = () => setOpenReg(false);
+  const handleCloseRegister = () => dispatch({ type: 'SET', payload: { registerModalOpen: true } });
 
   // Xử lý xác nhận register / cancel register
   const handleConfirmRegister = async (payload) => {
-    setIsRegisterProcessing(true);
+    dispatch({ type: 'SET', payload: { isRegisterProcessing: true } });
     try {
       if (modalVariant === 'cancel') {
         await onCancelRegister?.({ activity, ...payload });
-        setOpenReg(false);
-        setUiState('guest');
+        dispatch({ type: 'SET', payload: { registerModalOpen: false, uiState: 'guest', modalVariant: 'confirm' } });
         // notify parent
         // onStateChange optional
         onStateChange?.('guest');
-        openToast({ message: cancelSuccessMessage, variant: 'success' });
+        openToast({ message: 'Hủy đăng ký thành công!', variant: 'success' });
       } else {
         await onRegistered?.({ activity, ...payload });
-        setOpenReg(false);
+        dispatch({ type: 'SET', payload: { uiState: 'registered' } });
         if (autoSwitchStateOnRegister) {
-          setUiState('registered');
+          dispatch({ type: 'SET', payload: { uiState: 'registered' } });
           onStateChange?.('registered');
         }
-        openToast({ message: successMessage, variant: 'success' });
+        openToast({ message: 'Đăng ký hoạt động thành công!', variant: 'success' });
       }
     } catch {
       openToast({
-        message: modalVariant === 'cancel' ? cancelErrorMessage : errorMessage,
+        message:
+          modalVariant === 'cancel' ? 'Hủy đăng ký thất bại. Vui lòng thử lại.' : 'Đăng ký thất bại. Vui lòng thử lại.',
         variant: 'danger',
       });
     } finally {
-      setIsRegisterProcessing(false);
+      dispatch({ type: 'SET', payload: { isRegisterProcessing: false } });
     }
   };
 
   // Attendance handling (mở modal chụp/submit)
   const handleOpenAttendance = (phase = attendanceStep ?? 'checkin') => {
-    setCaptured(null);
-    setAttendanceStep(phase);
-    setOpenCheck(true);
+    dispatch({
+      type: 'SET',
+      payload: { capturedEvidence: null, attendanceStep: phase, checkModalOpen: true },
+    });
   };
 
   const handleCloseAttendance = () => {
-    setOpenCheck(false);
-    setCaptured(null);
+    dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+    dispatch({ type: 'RESET_CAPTURED' });
   };
 
-  const handleCaptured = ({ file, previewUrl, dataUrl }) => setCaptured({ file, previewUrl, dataUrl });
+  const handleCaptured = ({ file, previewUrl, dataUrl }) =>
+    dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
 
   // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
   const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
     const payload = {
-      file: file ?? captured?.file ?? null,
-      previewUrl: previewUrl ?? captured?.previewUrl ?? null,
-      dataUrl: dataUrl ?? captured?.dataUrl ?? null,
+      file: file ?? capturedEvidence?.file ?? null,
+      previewUrl: previewUrl ?? capturedEvidence?.previewUrl ?? null,
+      dataUrl: dataUrl ?? capturedEvidence?.dataUrl ?? null,
     };
 
     if (!payload.file) {
@@ -359,7 +377,7 @@ function CardActivity(props) {
     const phaseToSend = attendanceStep || 'checkin';
 
     try {
-      setIsAttendanceSubmitting(true);
+      dispatch({ type: 'SET', payload: { checkModalOpen: false } });
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
@@ -367,8 +385,8 @@ function CardActivity(props) {
         dataUrl: evidenceDataUrl,
         phase: phaseToSend,
       });
-      setOpenCheck(false);
-      setCaptured(null);
+      dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+      dispatch({ type: 'RESET_CAPTURED' });
       const faceStatus = result?.face?.status || null;
       const toastVariant = faceStatus === 'REVIEW' ? 'warning' : 'success';
       const fallbackMessage =
@@ -377,16 +395,17 @@ function CardActivity(props) {
         message: result?.message || fallbackMessage,
         variant: toastVariant,
       });
-      // Toggle step and update ui state accordingly
-      setAttendanceStep(phaseToSend === 'checkin' ? 'checkout' : 'checkin');
+      dispatch({
+        type: 'SET',
+        payload: { attendanceStep: phaseToSend === 'checkin' ? 'checkout' : 'checkin' },
+      });
       if (phaseToSend === 'checkin') {
-        // reset reminder so that checkout reminder shows later
         checkoutReminderShownRef.current = false;
-        setCheckoutAvailable(() => {
-          if (!checkoutAvailableTimestamp) return true;
-          return Date.now() >= checkoutAvailableTimestamp;
+        const nextAvailability = checkoutAvailableTimestamp ? Date.now() >= checkoutAvailableTimestamp : true;
+        dispatch({
+          type: 'SET',
+          payload: { checkoutAvailable: nextAvailability, uiState: 'confirm_out' },
         });
-        setUiState('confirm_out');
         onStateChange?.('confirm_out');
       } else {
         checkoutReminderShownRef.current = true;
@@ -395,29 +414,28 @@ function CardActivity(props) {
       if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
-      setIsAttendanceSubmitting(false);
+      dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false } });
     }
   };
 
   // ==== Feedback handlers ====
   const handleOpenFeedback = () => {
-    setOpenFeedback(true);
+    dispatch({ type: 'SET', payload: { feedbackModalOpen: true } });
   };
 
-  const handleCloseFeedback = () => setOpenFeedback(false);
+  const handleCloseFeedback = () => dispatch({ type: 'SET', payload: { feedbackModalOpen: false } });
 
   const handleSubmitFeedback = async ({ content, files, confirm }) => {
-    setIsFeedbackSubmitting(true);
+    dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
-      setOpenFeedback(false);
-      setUiState('feedback_reviewing');
+      dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
       onStateChange?.('feedback_reviewing');
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
     } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
-      setIsFeedbackSubmitting(false);
+      dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false } });
     }
   };
 
@@ -706,7 +724,7 @@ function CardActivity(props) {
 
       {/* Register modal: truyền props cần thiết, confirmLoading từ state */}
       <RegisterModal
-        open={openReg}
+        open={checkModalOpen}
         onCancel={handleCloseRegister}
         onConfirm={handleConfirmRegister}
         variant={modalVariant}
@@ -722,10 +740,10 @@ function CardActivity(props) {
 
       {/* CheckModal: điểm danh (camera / upload) */}
       <CheckModal
-        open={openCheck}
+        open={checkModalOpen}
         onCancel={handleCloseAttendance}
         onCapture={handleCaptured}
-        onRetake={() => setCaptured(null)}
+        onRetake={() => dispatch({ type: 'RESET_CAPTURED' })}
         onSubmit={handleSubmitAttendance}
         variant="checkin"
         campaignName={title}
@@ -739,7 +757,7 @@ function CardActivity(props) {
 
       {/* FeedbackModal chỉ mở khi user muốn gửi phản hồi */}
       <FeedbackModal
-        open={openFeedback}
+        open={feedbackModalOpen}
         onSubmit={handleSubmitFeedback}
         onCancel={handleCloseFeedback}
         campaignName={title}

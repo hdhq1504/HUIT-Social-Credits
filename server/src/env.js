@@ -19,5 +19,7 @@ export const env = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_PUBLIC_URL: process.env.SUPABASE_PUBLIC_URL,
   SUPABASE_FACE_BUCKET: process.env.SUPABASE_FACE_BUCKET || 'face-profiles',
-  SUPABASE_ATTENDANCE_BUCKET: process.env.SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos'
+  SUPABASE_ATTENDANCE_BUCKET: process.env.SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos',
+  SUPABASE_FEEDBACK_BUCKET: process.env.SUPABASE_FEEDBACK_BUCKET || 'feedback-proofs',
+  SUPABASE_ACTIVITY_BUCKET: process.env.SUPABASE_ACTIVITY_BUCKET || 'activity-covers',
 };

@@ -88,19 +88,29 @@
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: calc(1.4em * 2);
+    max-height: calc(1.4em * 2);
 
     @media (max-width: 768px) {
       font-size: 13px;
       line-height: 1.3;
+      min-height: calc(1.3em * 2);
+      max-height: calc(1.3em * 2);
     }
 
     @media (max-width: 576px) {
       font-size: 12px;
+      min-height: calc(1.3em * 2);
+      max-height: calc(1.3em * 2);
     }
 
     @media (max-width: 480px) {
       font-size: 11px;
       line-height: 1.3;
+      min-height: calc(1.3em * 2);
+      max-height: calc(1.3em * 2);
     }
   }
 

@@ -7,7 +7,7 @@ import { Autoplay, Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import activitiesApi from '@api/activities.api';
-import { isUnregisteredOrParticipated } from '@utils/activityState';
+import { isRegisterableActivity } from '@utils/activityState';
 import styles from './FeaturedActivitySection.module.scss';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 
@@ -37,7 +37,7 @@ function FeaturedActivitySection() {
 
   // Filter ra những activity được đánh dấu nổi bật + phù hợp trạng thái sử dụng
   const featuredActivities = useMemo(
-    () => activities.filter((activity) => activity.isFeatured && isUnregisteredOrParticipated(activity)),
+    () => activities.filter((activity) => activity.isFeatured && isRegisterableActivity(activity)),
     [activities],
   );
 

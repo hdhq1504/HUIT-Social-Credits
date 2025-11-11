@@ -5,18 +5,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { Button, Empty, Input, Pagination, Select, Tabs } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CardActivity, Label } from '@components/index';
-import useToast from '../../../components/Toast/Toast';
+import { CardActivity, Label, useToast } from '@components/index';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import uploadService from '@/services/uploadService';
 import useAuthStore from '@/stores/useAuthStore';
-import useDebounce from '@/hooks/useDebounce';
+import useRegistrationFilters from '@/hooks/useRegistrationFilters';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './FeedbackPage.module.scss';
 
 const cx = classNames.bind(styles);
-const { Option } = Select;
 const PAGE_SIZE = 6;
 
 function FeedbackPage() {
@@ -24,48 +22,10 @@ function FeedbackPage() {
   const userId = useAuthStore((state) => state.user?.id);
 
   // ====== Search/Filter/Sort states ======
-  const [q, setQ] = useState('');
-  const [group, setGroup] = useState('all');
   const [sort, setSort] = useState('latest');
   const [pages, setPages] = useState({ all: 1, approved: 1, submitted: 1, denied: 1 });
-  const debounceQuery = useDebounce(q, 400);
 
   // Helpers
-  const normalize = (s) =>
-    (s || '')
-      .toString()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-
-  const matchGroup = useCallback(
-    (activity) => {
-      if (group === 'all') return true;
-      const groupKey = (activity?.pointGroup || '').toUpperCase();
-      return groupKey === group;
-    },
-    [group],
-  );
-
-  const matchKeyword = useCallback(
-    (activity) => {
-      const key = debounceQuery.trim();
-      if (!key) return true;
-      const haystack = normalize(
-        [
-          activity?.title,
-          activity?.code,
-          activity?.location,
-          activity?.description,
-          activity?.pointGroup,
-          activity?.pointGroupLabel,
-        ].join(' '),
-      );
-      return haystack.includes(normalize(key));
-    },
-    [debounceQuery],
-  );
-
   const sortItems = useCallback(
     (arr) => {
       const items = [...arr];
@@ -89,16 +49,6 @@ function FeedbackPage() {
     [sort],
   );
 
-  const applySearch = useCallback(
-    (items) => {
-      const filtered = (items || []).filter(
-        (reg) => reg?.activity && matchGroup(reg.activity) && matchKeyword(reg.activity),
-      );
-      return sortItems(filtered);
-    },
-    [matchGroup, matchKeyword, sortItems],
-  );
-
   const handlePageChange = useCallback((tabKey, page) => {
     setPages((prev) => ({ ...prev, [tabKey]: page }));
   }, []);
@@ -118,6 +68,23 @@ function FeedbackPage() {
       toast({ message, variant: 'danger' });
     },
   });
+
+  const {
+    keyword,
+    setKeyword,
+    semester,
+    setSemester,
+    semesters,
+    filtered: filteredRegistrations,
+    resetFilters,
+  } = useRegistrationFilters(registrations, {
+    enableSemester: true,
+  });
+
+  const processedRegistrations = useMemo(
+    () => sortItems(filteredRegistrations.filter((registration) => Boolean(registration?.activity))),
+    [filteredRegistrations, sortItems],
+  );
 
   const invalidateActivityQueries = useInvalidateActivities();
 
@@ -190,16 +157,16 @@ function FeedbackPage() {
 
   // Phân loại theo trạng thái phản hồi
   const categorized = useMemo(() => {
-    const all = registrations.filter((item) => Boolean(item.activity));
+    const all = processedRegistrations;
     const awarded = all.filter((item) => item.activity?.state === 'feedback_accepted');
     const submitted = all.filter((item) => item.activity?.state === 'feedback_reviewing');
     const denied = all.filter((item) => item.activity?.state === 'feedback_denied');
     return { all, awarded, submitted, denied };
-  }, [registrations]);
+  }, [processedRegistrations]);
 
   const ListOrEmpty = useCallback(
     ({ items, emptyText, tabKey }) => {
-      const list = applySearch(items);
+      const list = Array.isArray(items) ? items : [];
       const total = list.length;
       const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const current = Math.max(1, Math.min(pages[tabKey] ?? 1, totalPages));
@@ -244,7 +211,7 @@ function FeedbackPage() {
         </>
       );
     },
-    [applySearch, handleFeedback, handleRegister, handleCancel, isFetching, pages, handlePageChange],
+    [handleFeedback, handleRegister, handleCancel, isFetching, pages, handlePageChange],
   );
 
   const tabItems = useMemo(
@@ -297,11 +264,10 @@ function FeedbackPage() {
 
   useEffect(() => {
     setPages({ all: 1, approved: 1, submitted: 1, denied: 1 });
-  }, [debounceQuery, group, sort, registrations]);
+  }, [filteredRegistrations, semester, sort]);
 
   const handleReset = () => {
-    setQ('');
-    setGroup('all');
+    resetFilters();
     setSort('latest');
     refetch();
   };
@@ -338,23 +304,33 @@ function FeedbackPage() {
                       size="large"
                       className={cx('feedback__search-input')}
                       allowClear
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
                       onPressEnter={() => {}}
                     />
 
-                    <Select value={group} size="large" className={cx('feedback__search-select')} onChange={setGroup}>
-                      <Option value="all">Tất cả nhóm điểm</Option>
-                      <Option value="NHOM_1">Nhóm 1</Option>
-                      <Option value="NHOM_2">Nhóm 2</Option>
-                      <Option value="NHOM_3">Nhóm 3</Option>
-                    </Select>
+                    <Select
+                      value={semester}
+                      size="large"
+                      className={cx('feedback__search-select')}
+                      onChange={setSemester}
+                      options={[
+                        { value: 'all', label: 'Tất cả học kỳ' },
+                        ...semesters.map((value) => ({ value, label: value })),
+                      ]}
+                    />
 
-                    <Select value={sort} size="large" className={cx('feedback__search-select')} onChange={setSort}>
-                      <Option value="latest">Mới nhất</Option>
-                      <Option value="oldest">Cũ nhất</Option>
-                      <Option value="popular">Phổ biến nhất</Option>
-                    </Select>
+                    <Select
+                      value={sort}
+                      size="large"
+                      className={cx('feedback__search-select')}
+                      onChange={setSort}
+                      options={[
+                        { value: 'latest', label: 'Mới nhất' },
+                        { value: 'oldest', label: 'Cũ nhất' },
+                        { value: 'popular', label: 'Phổ biến nhất' },
+                      ]}
+                    />
 
                     <Button
                       type="primary"

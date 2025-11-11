@@ -1,7 +1,6 @@
-export const isUnregisteredOrParticipated = (activity) => {
+export const isRegisterableActivity = (activity) => {
   const state = activity?.state ?? 'guest';
-  if (state === 'guest') return true;
-  return state.startsWith('feedback_');
+  return state === 'guest';
 };
 
-export default isUnregisteredOrParticipated;
+export default isRegisterableActivity;

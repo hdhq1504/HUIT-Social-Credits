@@ -19,3 +19,4 @@ export { default as ScrollToTop } from './ScrollToTop/ScrollToTop';
 export { default as UpcomingActivitiesSection } from './UpcomingActivitiesSection/UpcomingActivitiesSection';
 export { default as AdminRoute } from './AdminRoute/AdminRoute';
 export { default as RichTextEditor } from './RichTextEditor/RichTextEditor';
+export { default as useToast } from './Toast/Toast';

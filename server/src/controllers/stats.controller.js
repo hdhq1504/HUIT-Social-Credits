@@ -4,7 +4,6 @@ import {
   CERTIFICATE_TOTAL_TARGET,
   DEFAULT_POINT_GROUP,
   POINT_GROUPS,
-  getPointGroupLabel,
   normalizePointGroup
 } from "../utils/points.js";
 import { mapAttendanceMethodToApi } from "../utils/attendance.js";
@@ -15,6 +14,25 @@ const GROUP_TWO_KEY = "NHOM_2";
 const GROUP_THREE_KEY = "NHOM_3";
 const COMBINED_GROUP_KEY = "NHOM_23";
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
+const RED_ADDRESS_KEYWORD = "dia chi do";
+
+const normalizeText = (value) => {
+  if (!value) return "";
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ");
+};
+
+const containsRedAddressKeyword = (activity) => {
+  if (!activity) return false;
+  const sources = [activity.tieuDe, activity.moTa];
+  return sources.some((source) => {
+    const normalized = normalizeText(source);
+    return normalized.includes(RED_ADDRESS_KEYWORD);
+  });
+};
 
 export const getProgressSummary = async (req, res) => {
   const userId = req.user?.sub;
@@ -34,7 +52,9 @@ export const getProgressSummary = async (req, res) => {
         hoatDong: {
           select: {
             diemCong: true,
-            nhomDiem: true
+            nhomDiem: true,
+            tieuDe: true,
+            moTa: true
           }
         }
       }
@@ -57,7 +77,7 @@ export const getProgressSummary = async (req, res) => {
     pointTotals[group] += points;
 
     if (!hasRedAddressParticipation && group === GROUP_ONE_KEY) {
-      hasRedAddressParticipation = true;
+      hasRedAddressParticipation = containsRedAddressKeyword(activity);
     }
   });
 
@@ -93,7 +113,7 @@ export const getProgressSummary = async (req, res) => {
       return groupOneRemaining > 0 ? `Còn ${groupOneRemaining} điểm` : "Cần hoàn thành điểm nhóm 1";
     }
     if (!hasRedAddressParticipation) {
-      return "Cần tham gia ít nhất 1 hoạt động thuộc nhóm 1";
+      return "Cần tham gia ít nhất 1 hoạt động 'Địa chỉ đỏ'";
     }
     return "Hoàn thành";
   })();

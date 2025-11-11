@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tabs, Row, Col, Tag, Image, Spin, Empty, Modal, ConfigProvider } from 'antd';
+import { Tabs, Row, Col, Tag, Image, Spin, Empty, Modal, ConfigProvider, Table, Avatar, List } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUser,
@@ -38,6 +38,19 @@ const ATTENDANCE_METHOD_LABELS = {
   qr: 'QR Code',
   photo: 'Chụp ảnh',
   manual: 'Thủ công',
+};
+
+const REGISTRATION_STATUS_DISPLAY = {
+  DANG_KY: { label: 'Đang tham gia', color: 'processing' },
+  DA_THAM_GIA: { label: 'Đã tham gia', color: 'success' },
+  DA_HUY: { label: 'Đã hủy', color: 'default' },
+  VANG_MAT: { label: 'Vắng mặt', color: 'error' },
+};
+
+const FEEDBACK_STATUS_DISPLAY = {
+  CHO_DUYET: { label: 'Chờ duyệt', color: 'processing' },
+  DA_DUYET: { label: 'Đã duyệt', color: 'success' },
+  BI_TU_CHOI: { label: 'Bị từ chối', color: 'error' },
 };
 
 const resolveAttendanceLabel = (method, label) => {
@@ -88,7 +101,6 @@ const getStatusTag = (status) => {
   }
 };
 
-// Component con cho các ô thông tin
 const InfoItem = ({ icon, label, value }) => (
   <div className={cx('activity-detail__item')}>
     <div className={cx('activity-detail__item-icon-wrapper')}>
@@ -100,6 +112,16 @@ const InfoItem = ({ icon, label, value }) => (
     </div>
   </div>
 );
+
+const getInitials = (value = '') =>
+  value
+    .toString()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'SV';
 
 function ActivitiesDetailPage() {
   const { id } = useParams();
@@ -217,6 +239,97 @@ function ActivitiesDetailPage() {
     [buildListItemKey],
   );
 
+  const participantData = useMemo(
+    () =>
+      (activity?.registrations ?? []).map((registration, index) => ({
+        key: registration.id || `registration-${index}`,
+        order: index + 1,
+        ...registration,
+      })),
+    [activity?.registrations],
+  );
+
+  const participantColumns = useMemo(
+    () => [
+      {
+        title: 'STT',
+        dataIndex: 'order',
+        key: 'order',
+        width: 70,
+        align: 'center',
+      },
+      {
+        title: 'Sinh viên',
+        dataIndex: 'user',
+        key: 'user',
+        render: (user) => {
+          if (!user) return <span>--</span>;
+          return (
+            <div className={cx('activity-detail__student-cell')}>
+              <Avatar src={user.avatarUrl} className={cx('activity-detail__student-avatar')}>
+                {getInitials(user.name)}
+              </Avatar>
+              <div className={cx('activity-detail__student-info')}>
+                <span className={cx('activity-detail__student-name')}>{user.name}</span>
+                <span className={cx('activity-detail__student-email')}>{user.email || '---'}</span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        title: 'MSSV',
+        dataIndex: ['user', 'studentCode'],
+        key: 'studentCode',
+        render: (value) => value || '---',
+      },
+      {
+        title: 'Khoa',
+        dataIndex: ['user', 'faculty'],
+        key: 'faculty',
+        render: (value) => value || '---',
+      },
+      {
+        title: 'Lớp',
+        dataIndex: ['user', 'className'],
+        key: 'className',
+        render: (value) => value || '---',
+      },
+      {
+        title: 'Đăng ký lúc',
+        dataIndex: 'registeredAt',
+        key: 'registeredAt',
+        render: (value) => formatDateTime(value) || '--',
+      },
+      {
+        title: 'Trạng thái',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status) => {
+          const meta = REGISTRATION_STATUS_DISPLAY[status] || { label: status || 'Không rõ', color: 'default' };
+          return <Tag color={meta.color}>{meta.label}</Tag>;
+        },
+      },
+    ],
+    [],
+  );
+
+  const feedbackLogs = useMemo(() => {
+    if (!Array.isArray(activity?.registrations)) return [];
+    return activity.registrations
+      .filter((registration) => registration.feedback)
+      .map((registration) => ({
+        key: registration.feedback?.id || `feedback-${registration.id}`,
+        feedback: registration.feedback,
+        user: registration.user,
+      }))
+      .sort((a, b) => {
+        const aTime = a.feedback?.submittedAt ? new Date(a.feedback.submittedAt).getTime() : 0;
+        const bTime = b.feedback?.submittedAt ? new Date(b.feedback.submittedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [activity?.registrations]);
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -311,27 +424,109 @@ function ActivitiesDetailPage() {
           </Row>
         </section>
 
-        <section className={cx('activity-detail__content-box')}>
-          <div className={cx('activity-detail__rich-section')}>
-            <h3 className={cx('activity-detail__list-title')}>Mô tả chi tiết</h3>
-            {safeDescription ? (
-              <div className={cx('activity-detail__rich-text')} dangerouslySetInnerHTML={{ __html: safeDescription }} />
-            ) : (
-              <Empty description="Chưa có mô tả chi tiết" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </div>
-        </section>
-
         <div className={cx('activity-detail__tabs-container')}>
-          <Tabs defaultActiveKey="requirements" className={cx('activity-detail__tabs')}>
-            <TabPane tab="Giới thiệu chi tiết" key="requirements" className={cx('activity-detail__tab-pane')}>
-              <h3 className={cx('activity-detail__list-title')}>Yêu cầu tham gia</h3>
-              {renderListSection(requirementItems, 'Chưa có yêu cầu tham gia', faListCheck, '--primary')}
+          <Tabs defaultActiveKey="details" className={cx('activity-detail__tabs')}>
+            <TabPane tab="Thông tin chi tiết" key="details" className={cx('activity-detail__tab-pane')}>
+              <div className={cx('activity-detail__rich-section')}>
+                <h3 className={cx('activity-detail__list-title')}>Giới thiệu hoạt động</h3>
+                {safeDescription ? (
+                  <div
+                    className={cx('activity-detail__rich-text')}
+                    dangerouslySetInnerHTML={{ __html: safeDescription }}
+                  />
+                ) : (
+                  <Empty description="Chưa có mô tả chi tiết" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                )}
+              </div>
+
+              <div className={cx('activity-detail__details-grid')}>
+                <div className={cx('activity-detail__list-section')}>
+                  <h3 className={cx('activity-detail__list-title')}>Yêu cầu tham gia</h3>
+                  {renderListSection(requirementItems, 'Chưa có yêu cầu tham gia', faListCheck, '--primary')}
+                </div>
+                <div className={cx('activity-detail__list-section')}>
+                  <h3 className={cx('activity-detail__list-title')}>Hướng dẫn tham gia</h3>
+                  {renderListSection(guideSteps, 'Chưa có hướng dẫn tham gia', faClipboardList, '--primary')}
+                </div>
+              </div>
             </TabPane>
 
-            <TabPane tab="Hướng dẫn tham gia" key="guide" className={cx('activity-detail__tab-pane')}>
-              <h3 className={cx('activity-detail__list-title')}>Quy trình tham gia</h3>
-              {renderListSection(guideSteps, 'Chưa có hướng dẫn tham gia', faClipboardList, '--primary')}
+            <TabPane tab="Sinh viên tham gia" key="participants" className={cx('activity-detail__tab-pane')}>
+              <div className={cx('activity-detail__table-wrapper')}>
+                <Table
+                  columns={participantColumns}
+                  dataSource={participantData}
+                  pagination={{ pageSize: 10, showSizeChanger: false }}
+                  locale={{
+                    emptyText: <Empty description="Chưa có sinh viên tham gia" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+                  }}
+                  rowKey="key"
+                />
+              </div>
+            </TabPane>
+
+            <TabPane tab="Nhật ký phản hồi" key="feedback" className={cx('activity-detail__tab-pane')}>
+              {feedbackLogs.length ? (
+                <List
+                  itemLayout="vertical"
+                  dataSource={feedbackLogs}
+                  renderItem={(item) => {
+                    const statusMeta = FEEDBACK_STATUS_DISPLAY[item.feedback?.status] || {
+                      label: item.feedback?.status || 'Không rõ',
+                      color: 'default',
+                    };
+                    return (
+                      <List.Item key={item.key} className={cx('activity-detail__feedback-item')}>
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar src={item.user?.avatarUrl} className={cx('activity-detail__student-avatar')}>
+                              {getInitials(item.user?.name)}
+                            </Avatar>
+                          }
+                          title={
+                            <div className={cx('activity-detail__feedback-header')}>
+                              <span>{item.user?.name || 'Sinh viên'}</span>
+                              <Tag color={statusMeta.color}>{statusMeta.label}</Tag>
+                            </div>
+                          }
+                          description={
+                            <div className={cx('activity-detail__feedback-meta')}>
+                              <span>{item.user?.email || '---'}</span>
+                              <span>{formatDateTime(item.feedback?.submittedAt) || '--'}</span>
+                            </div>
+                          }
+                        />
+
+                        <div className={cx('activity-detail__feedback-content')}>
+                          {item.feedback?.rating ? (
+                            <div className={cx('activity-detail__feedback-rating')}>
+                              Đánh giá: {item.feedback.rating}/5
+                            </div>
+                          ) : null}
+                          <p>{item.feedback?.content || 'Không có nội dung phản hồi.'}</p>
+
+                          {Array.isArray(item.feedback?.attachments) && item.feedback.attachments.length > 0 ? (
+                            <div className={cx('activity-detail__feedback-attachments')}>
+                              {item.feedback.attachments.map((attachment, index) => (
+                                <a
+                                  key={attachment.path || attachment.url || `${item.key}-attachment-${index}`}
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {attachment.fileName || `Tập tin ${index + 1}`}
+                                </a>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </List.Item>
+                    );
+                  }}
+                />
+              ) : (
+                <Empty description="Chưa có phản hồi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              )}
             </TabPane>
           </Tabs>
         </div>

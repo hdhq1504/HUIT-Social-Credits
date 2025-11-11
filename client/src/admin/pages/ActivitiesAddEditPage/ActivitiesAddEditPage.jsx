@@ -28,7 +28,7 @@ import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/
 import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
-import { fileToDataUrl } from '@/utils/file';
+import uploadService from '@/services/uploadService';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -140,15 +140,14 @@ const ActivitiesAddEditPage = () => {
     navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
   }, [navigate]);
 
-  // Mutation cho Create
   const createActivityMutation = useMutation({
     mutationFn: (activityData) => activitiesApi.create(activityData),
     onSuccess: () => {
       openToast({ message: 'Thêm hoạt động mới thành công!', variant: 'success' });
-      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY);
       queryClient.invalidateQueries(ADMIN_DASHBOARD_QUERY_KEY);
-      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang List
-      navigate(ROUTE_PATHS.ADMIN.ACTIVITIES); // Quay về trang List
+      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
+      navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
     },
     onError: (error) => {
       openToast({ message: error.response?.data?.error || 'Tạo hoạt động thất bại', variant: 'danger' });
@@ -159,9 +158,9 @@ const ActivitiesAddEditPage = () => {
     mutationFn: (payload) => activitiesApi.update(payload.id, payload.data),
     onSuccess: () => {
       openToast({ message: 'Cập nhật hoạt động thành công!', variant: 'success' });
-      queryClient.invalidateQueries([ACTIVITIES_QUERY_KEY, 'detail', id]); // Làm mới trang detail
-      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY); // Làm mới trang list
-      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY); // Làm mới Dashboard
+      queryClient.invalidateQueries([ACTIVITIES_QUERY_KEY, 'detail', id]);
+      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
+      queryClient.invalidateQueries(DASHBOARD_QUERY_KEY);
       queryClient.invalidateQueries(ADMIN_DASHBOARD_QUERY_KEY);
       navigate(ROUTE_PATHS.ADMIN.ACTIVITIES);
     },
@@ -180,15 +179,12 @@ const ActivitiesAddEditPage = () => {
       const [fileItem] = coverFileList;
       if (fileItem?.originFileObj) {
         try {
-          const dataUrl = await fileToDataUrl(fileItem.originFileObj);
-          coverImagePayload = {
-            dataUrl,
-            fileName: fileItem.originFileObj.name,
-            mimeType: fileItem.originFileObj.type,
-          };
+          coverImagePayload = await uploadService.uploadActivityCover(fileItem.originFileObj, {
+            activityId: isEditMode ? id : undefined,
+          });
         } catch (error) {
-          console.error('Failed to read cover image file', error);
-          openToast({ message: 'Không thể đọc file ảnh bìa. Vui lòng thử lại.', variant: 'danger' });
+          console.error('Failed to upload cover image', error);
+          openToast({ message: error?.message || 'Không thể tải ảnh bìa. Vui lòng thử lại.', variant: 'danger' });
           return;
         }
       } else if (fileItem?.meta) {
@@ -202,23 +198,17 @@ const ActivitiesAddEditPage = () => {
     }
 
     const payload = {
-      // Map tên từ form -> schema (để khớp với controller)
       tieuDe: values.title,
-      nhomDiem: values.pointGroup, // Phải là 'NHOM_1', 'NHOM_2', 'NHOM_3'
+      nhomDiem: values.pointGroup,
       diemCong: values.points,
       diaDiem: values.location,
       sucChuaToiDa: values.maxCapacity,
-
       moTa: values.description,
       yeuCau: stringToArray(values.requirements),
       huongDan: stringToArray(values.guidelines),
-
-      // Kết hợp ngày + giờ
       batDauLuc: combineDateAndTime(values.startDate, values.startTime),
       ketThucLuc: combineDateAndTime(values.endDate, values.endTime),
-
       attendanceMethod: values.attendanceMethod,
-
       registrationDeadline: values.registrationDeadline ? values.registrationDeadline.toISOString() : null,
       cancellationDeadline: values.cancellationDeadline ? values.cancellationDeadline.toISOString() : null,
     };
@@ -343,11 +333,8 @@ const ActivitiesAddEditPage = () => {
           attendanceMethod: 'qr',
         }}
       >
-        {/* Form container */}
         <div className={cx('activities__container')}>
-          {/* Left column */}
           <div className={cx('activities__left')}>
-            {/* Thông tin cơ bản */}
             <section className={cx('activities__section')}>
               <div className={cx('activities__section-header')}>
                 <FontAwesomeIcon className={cx('activities__section-icon')} icon={faCircleInfo} />
@@ -441,7 +428,6 @@ const ActivitiesAddEditPage = () => {
               </Row>
             </section>
 
-            {/* Cài đặt đăng ký */}
             <section className={cx('activities__section')}>
               <div className={cx('activities__section-header')}>
                 <FontAwesomeIcon className={cx('activities__section-icon')} icon={faUserPlus} />
@@ -505,7 +491,6 @@ const ActivitiesAddEditPage = () => {
               </Row>
             </section>
 
-            {/* Thông tin chi tiết */}
             <section className={cx('activities__section')}>
               <div className={cx('activities__section-header')}>
                 <FontAwesomeIcon className={cx('activities__section-icon')} icon={faFileLines} />
@@ -569,7 +554,6 @@ const ActivitiesAddEditPage = () => {
               </Row>
             </section>
 
-            {/* Upload hình ảnh */}
             <section className={cx('activities__section')}>
               <div className={cx('activities__section-header')}>
                 <FontAwesomeIcon className={cx('activities__section-icon')} icon={faImage} />
@@ -604,7 +588,6 @@ const ActivitiesAddEditPage = () => {
             </section>
           </div>
 
-          {/* Right column / status */}
           <aside className={cx('activities__right')}>
             <div className={cx('activities__status')}>
               <div className={cx('activities__status-header')}>
