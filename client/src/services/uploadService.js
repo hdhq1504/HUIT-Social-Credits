@@ -2,9 +2,18 @@ import { supabase } from '../config/supabase';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+const normalizeBucketName = (value, fallback) => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  return trimmed;
+};
+
 const BUCKETS = {
-  feedback: import.meta.env.VITE_SUPABASE_FEEDBACK_BUCKET || 'feedback-proofs',
-  attendance: import.meta.env.VITE_SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos',
+  feedback: normalizeBucketName(import.meta.env.VITE_SUPABASE_FEEDBACK_BUCKET, 'feedback-proofs'),
+  attendance: normalizeBucketName(import.meta.env.VITE_SUPABASE_ATTENDANCE_BUCKET, 'attendance-photos'),
 };
 
 const ensureFileSize = (file) => {

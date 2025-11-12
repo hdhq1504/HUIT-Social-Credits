@@ -19,6 +19,54 @@ import styles from './RollCallPage.module.scss';
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 6;
 
+const normalizeAttendanceEvidencePayload = ({ metadata, file, dataUrl }) => {
+  if (metadata && typeof metadata === 'object') {
+    const bucket = typeof metadata.bucket === 'string' ? metadata.bucket.trim() : null;
+    const path = typeof metadata.path === 'string' ? metadata.path.trim() : null;
+    if (bucket && path) {
+      const fileName =
+        typeof metadata.fileName === 'string' && metadata.fileName.trim()
+          ? metadata.fileName.trim()
+          : typeof file?.name === 'string'
+            ? file.name
+            : null;
+      const mimeType =
+        typeof metadata.mimeType === 'string' && metadata.mimeType.trim()
+          ? metadata.mimeType
+          : typeof file?.type === 'string' && file.type.trim()
+            ? file.type
+            : null;
+      const size = Number.isFinite(metadata.size)
+        ? metadata.size
+        : Number.isFinite(file?.size)
+          ? file.size
+          : null;
+      const uploadedAt = metadata.uploadedAt ? new Date(metadata.uploadedAt).toISOString() : null;
+      const url = typeof metadata.url === 'string' ? metadata.url : null;
+
+      return {
+        bucket,
+        path,
+        fileName,
+        mimeType,
+        size,
+        uploadedAt,
+        url,
+      };
+    }
+  }
+
+  if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+    return {
+      data: dataUrl,
+      mimeType: typeof file?.type === 'string' ? file.type : null,
+      fileName: typeof file?.name === 'string' ? file.name : null,
+    };
+  }
+
+  return undefined;
+};
+
 function RollCallPage() {
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
@@ -199,10 +247,10 @@ function RollCallPage() {
         }
       }
 
-      let evidencePayload;
+      let evidenceMetadata;
       if (file) {
         try {
-          evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
+          evidenceMetadata = await uploadService.uploadAttendanceEvidence(file, {
             userId,
             activityId: activity.id,
             phase,
@@ -214,14 +262,18 @@ function RollCallPage() {
         }
       }
 
+      const evidencePayload = normalizeAttendanceEvidencePayload({
+        metadata: evidenceMetadata,
+        file,
+        dataUrl: evidenceDataUrl,
+      });
+
       return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
-          evidence:
-            evidencePayload ||
-            (evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined),
+          evidence: evidencePayload,
           face: facePayload,
         },
       });
