@@ -11,12 +11,26 @@ const averagePoint = (points = []) => {
 };
 
 const euclideanDistance = (a, b) => {
-  if (a.length !== b.length) return Infinity;
-  let sum = 0;
-  for (let i = 0; i < a.length; i++) {
-    sum += (a[i] - b[i]) * (a[i] - b[i]);
+  if (!a || !b) return 0;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return 0;
+    let sum = 0;
+    for (let i = 0; i < a.length; i += 1) {
+      const ax = Number(a[i]) || 0;
+      const bx = Number(b[i]) || 0;
+      const diff = ax - bx;
+      sum += diff * diff;
+    }
+    return Math.sqrt(sum);
   }
-  return Math.sqrt(sum);
+
+  const ax = Number(a.x) || 0;
+  const ay = Number(a.y) || 0;
+  const bx = Number(b.x) || 0;
+  const by = Number(b.y) || 0;
+
+  return Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
