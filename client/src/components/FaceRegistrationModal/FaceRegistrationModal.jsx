@@ -8,6 +8,7 @@ import Webcam from 'react-webcam';
 import { useMutation } from '@tanstack/react-query';
 import faceApi from '@api/face.api';
 import * as faceapi from 'face-api.js';
+import faceRecognitionService from '@/services/faceRecognition.service';
 import { estimateFaceOrientation } from '@/utils/faceOrientation';
 import useToast from '../Toast/Toast';
 import styles from './FaceRegistrationModal.module.scss';
@@ -15,6 +16,7 @@ import styles from './FaceRegistrationModal.module.scss';
 const cx = classNames.bind(styles);
 
 const MATCH_DURATION_MS = 1200;
+
 const STEP_SEQUENCE = [
   {
     key: 'front',
@@ -52,9 +54,8 @@ const STEP_SEQUENCE = [
     validate: ({ pitch }) => pitch <= -0.08,
   },
 ];
-const MAX_SAMPLES = STEP_SEQUENCE.length;
 
-const buildInitialOrientation = (overrides = {}) => ({ yaw: 0, pitch: 0, matched: false, ...overrides });
+const MAX_SAMPLES = STEP_SEQUENCE.length;
 
 const buildInitialFaceState = () => ({
   captures: [],
@@ -62,16 +63,31 @@ const buildInitialFaceState = () => ({
   processing: false,
   modelsReady: false,
   progress: 0,
-  orientation: buildInitialOrientation(),
+  orientation: { yaw: 0, pitch: 0, roll: 0, matched: false },
 });
+
+const mergeState = (state, updates = {}) => {
+  let changed = false;
+  const nextState = { ...state };
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (!Object.is(state[key], value)) {
+      nextState[key] = value;
+      changed = true;
+    }
+  });
+
+  return changed ? nextState : state;
+};
 
 const faceRegistrationReducer = (state, action) => {
   switch (action.type) {
     case 'RESET':
       return { ...buildInitialFaceState(), ...(action.payload ?? {}) };
     case 'SET':
-      return { ...state, ...action.payload };
+      return mergeState(state, action.payload ?? {});
     case 'RESET_CAPTURES':
+      if (state.captures.length === 0) return state;
       return { ...state, captures: [] };
     case 'ADD_CAPTURE': {
       const { capture } = action.payload ?? {};
@@ -80,8 +96,26 @@ const faceRegistrationReducer = (state, action) => {
       if (state.captures.some((item) => item.dataUrl === capture.dataUrl)) return state;
       return { ...state, captures: [...state.captures, capture] };
     }
-    case 'SET_ORIENTATION':
-      return { ...state, orientation: buildInitialOrientation(action.payload ?? {}) };
+    case 'SET_ORIENTATION': {
+      const payload = action.payload ?? {};
+      const current = state.orientation ?? { yaw: 0, pitch: 0, roll: 0, matched: false };
+      const next = { ...current };
+      let changed = false;
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (!Object.is(current[key], value)) {
+          next[key] = value;
+          changed = true;
+        }
+      });
+
+      if (!changed) return state;
+      return { ...state, orientation: next };
+    }
+    case 'RESET_ORIENTATION':
+      return mergeState(state, {
+        orientation: { yaw: 0, pitch: 0, roll: 0, matched: false },
+      });
     default:
       return state;
   }
@@ -105,12 +139,24 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     toastRef.current = toast;
   }, [toast]);
 
+  const updateProgress = useCallback((value) => {
+    const safeValue = Math.max(0, Math.min(100, value));
+    progressRef.current = safeValue;
+    dispatch({ type: 'SET', payload: { progress: safeValue } });
+  }, []);
+
+  const setOrientation = useCallback((payload) => {
+    dispatch({ type: 'SET_ORIENTATION', payload });
+  }, []);
+
   const registrationMutation = useMutation({
     mutationFn: (payload) => faceApi.register(payload),
     onSuccess: (data) => {
       toastRef.current({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
       onSuccess?.(data?.profile ?? null);
-      dispatch({ type: 'RESET_CAPTURED' });
+      dispatch({ type: 'RESET_CAPTURES' });
+      dispatch({ type: 'RESET_ORIENTATION' });
+      updateProgress(0);
     },
     onError: (error) => {
       const message = error?.response?.data?.error || 'Không thể đăng ký khuôn mặt. Vui lòng thử lại.';
@@ -124,10 +170,11 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       detectionIntervalRef.current = null;
     }
     matchStartRef.current = null;
-    progressRef.current = 0;
-    dispatch({ type: 'SET', payload: { progress: 0 } });
-    dispatch({ type: 'SET_ORIENTATION' });
-  }, [dispatch]);
+    if (progressRef.current !== 0) {
+      updateProgress(0);
+    }
+    dispatch({ type: 'RESET_ORIENTATION' });
+  }, [updateProgress]);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
@@ -142,7 +189,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       processingRef.current = false;
     }
     wasOpenRef.current = open;
-  }, [dispatch, open, stopDetection]);
+  }, [open, stopDetection]);
 
   const ensureFaceModels = useCallback(async () => {
     if (modelsLoadedRef.current) {
@@ -150,11 +197,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       return;
     }
     try {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-      ]);
+      await faceRecognitionService.ensureModelsLoaded();
       modelsLoadedRef.current = true;
       dispatch({ type: 'SET', payload: { modelsReady: true } });
     } catch (error) {
@@ -162,7 +205,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       toastRef.current({ message: 'Không thể tải mô hình nhận diện khuôn mặt.', variant: 'danger' });
       dispatch({ type: 'SET', payload: { modelsReady: false } });
     }
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -176,7 +219,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, open, ensureFaceModels]);
+  }, [open, ensureFaceModels]);
 
   const addCapture = useCallback(
     (dataUrl, descriptor, { silent } = {}) => {
@@ -194,7 +237,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         });
       }
     },
-    [captures, dispatch],
+    [captures],
   );
 
   const runCapture = useCallback(
@@ -203,24 +246,17 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!webcamRef.current?.video) {
           throw new Error('WEBCAM_NOT_AVAILABLE');
         }
-        if (processing) return false;
+        if (processingRef.current) return false;
 
         const dataUrl = webcamRef.current.getScreenshot();
         if (!dataUrl) {
           throw new Error('CAPTURE_FAILED');
         }
-        dispatch({ type: 'SET', processing: true });
 
-        const detection = await faceapi
-          .detectSingleFace(webcamRef.current.video, detectorOptionsRef.current)
-          .withFaceLandmarks(true)
-          .withFaceDescriptor();
+        processingRef.current = true;
+        dispatch({ type: 'SET', payload: { processing: true } });
 
-        if (!detection) {
-          throw new Error('FACE_NOT_DETECTED');
-        }
-
-        const descriptor = Array.from(detection.descriptor);
+        const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(dataUrl);
         addCapture(dataUrl, descriptor, { silent });
         return true;
       } catch (error) {
@@ -228,16 +264,17 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!silent) {
           const message =
             error.message === 'FACE_NOT_DETECTED'
-              ? 'Không nhận diện được khuôn mặt. Vui lòng thử lại.'
+              ? 'Không tìm thấy khuôn mặt trong ảnh. Vui lòng điều chỉnh góc chụp và thử lại.'
               : 'Chụp ảnh thất bại. Vui lòng thử lại.';
-          toast.error(message);
+          toastRef.current({ message, variant: 'danger' });
         }
         return false;
       } finally {
-        dispatch({ type: 'SET', processing: true });
+        processingRef.current = false;
+        dispatch({ type: 'SET', payload: { processing: false } });
       }
     },
-    [dispatch, processing, toast, addCapture, detectorOptionsRef],
+    [addCapture],
   );
 
   const pendingStep = useMemo(() => {
@@ -245,17 +282,13 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     return STEP_SEQUENCE[captures.length];
   }, [captures.length]);
 
-  const updateProgress = useCallback((value) => {
-    const safeValue = Math.max(0, Math.min(100, value));
-    progressRef.current = safeValue;
-    dispatch({ type: 'SET', payload: { progress: safeValue } });
-  }, []);
-
   useEffect(() => {
-    updateProgress(0);
-    dispatch({ type: 'SET_ORIENTATION', payload: { yaw: orientation.yaw, pitch: orientation.pitch, matched: false } });
     matchStartRef.current = null;
-  }, [captures.length, dispatch, orientation.pitch, orientation.yaw, updateProgress]);
+    updateProgress(0);
+    if (captures.length < MAX_SAMPLES) {
+      dispatch({ type: 'RESET_ORIENTATION' });
+    }
+  }, [captures.length, updateProgress]);
 
   useEffect(() => {
     if (!open || !isCameraReady || !modelsReady || !pendingStep) {
@@ -265,10 +298,10 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
 
     stopDetection();
     let cancelled = false;
-    let isCapturing = false;
+    let captureInFlight = false;
 
     const detect = async () => {
-      if (cancelled || isCapturing || !webcamRef.current?.video) {
+      if (cancelled || captureInFlight || processingRef.current || !webcamRef.current?.video) {
         return;
       }
       const video = webcamRef.current.video;
@@ -279,7 +312,9 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!detectorOptionsRef.current) {
           detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
         }
-        const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
+        const detection = await faceapi
+          .detectSingleFace(video, detectorOptionsRef.current)
+          .withFaceLandmarks(true);
 
         if (cancelled) return;
 
@@ -287,14 +322,14 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
           if (progressRef.current !== 0) {
             updateProgress(0);
           }
-          dispatch({ type: 'SET_ORIENTATION' });
+          setOrientation({ yaw: 0, pitch: 0, roll: 0, matched: false });
           matchStartRef.current = null;
           return;
         }
 
-        const estimatedOrientation = estimateFaceOrientation(detection.landmarks, { mirrored: true });
-        const matched = pendingStep.validate(estimatedOrientation);
-        dispatch({ type: 'SET_ORIENTATION', payload: { ...estimatedOrientation, matched } });
+        const orientationEstimate = estimateFaceOrientation(detection.landmarks, { mirrored: true });
+        const matched = pendingStep.validate(orientationEstimate);
+        setOrientation({ ...orientationEstimate, matched });
 
         if (matched) {
           if (!matchStartRef.current) {
@@ -307,12 +342,12 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
             updateProgress(nextProgress);
           }
 
-          if (ratio >= 1 && !isCapturing && !processingRef.current) {
-            isCapturing = true;
+          if (ratio >= 1 && !captureInFlight) {
+            captureInFlight = true;
             matchStartRef.current = null;
             updateProgress(0);
-            const success = await runCapture({ silent: false, skipErrorToast: false });
-            isCapturing = false;
+            const success = await runCapture({ silent: false });
+            captureInFlight = false;
 
             if (!success) {
               matchStartRef.current = null;
@@ -339,7 +374,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       cancelled = true;
       stopDetection();
     };
-  }, [dispatch, isCameraReady, modelsReady, open, pendingStep, runCapture, stopDetection, updateProgress]);
+  }, [open, isCameraReady, modelsReady, pendingStep, runCapture, setOrientation, stopDetection, updateProgress]);
 
   const handleSubmit = async () => {
     if (captures.length < MAX_SAMPLES || registrationMutation.isPending) return;
@@ -418,20 +453,8 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                   </div>
                   <div className={cx('modal__overlay-hint')}>
                     <div
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        padding: '5px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        zIndex: 10,
-                      }}
+                      className={cx('modal__orientation-values')}
                     >
-                      {/* Hiển thị giá trị Yaw (Nghiêng) và Pitch (Ngẩng) */}
                       <div>Yaw: {orientation.yaw.toFixed(2)}</div>
                       <div>Pitch: {orientation.pitch.toFixed(2)}</div>
                     </div>
