@@ -41,6 +41,8 @@ const formatDateTime = (value, placeholder = 'Chưa đăng nhập') => {
   return dayjs(value).format('HH:mm DD/MM/YYYY');
 };
 
+const toTimeValue = (value) => (value ? dayjs(value).valueOf() : 0);
+
 const buildStatusTag = (isActive) => (
   <Tag className={cx('users-page__status-tag', isActive ? '--active' : '--inactive')}>
     <FontAwesomeIcon icon={faCircleDot} className={cx('users-page__status-icon')} />
@@ -63,7 +65,6 @@ export default function UsersPage() {
   const [roleValue, setRoleValue] = useState('all');
   const [statusValue, setStatusValue] = useState('all');
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
-  const [sortState, setSortState] = useState({ sortBy: 'createdAt', sortOrder: 'descend' });
 
   const debouncedSearch = useDebounce(searchValue, 400);
 
@@ -103,11 +104,9 @@ export default function UsersPage() {
         search: debouncedSearch.trim(),
         role: roleValue,
         status: statusValue,
-        sortBy: sortState.sortBy,
-        sortOrder: sortState.sortOrder === 'ascend' ? 'asc' : 'desc',
       },
     ],
-    [pagination, debouncedSearch, roleValue, statusValue, sortState],
+    [pagination, debouncedSearch, roleValue, statusValue],
   );
 
   const { data, isFetching } = useQuery({
@@ -172,23 +171,6 @@ export default function UsersPage() {
     setRoleValue('all');
     setStatusValue('all');
     setPagination((prev) => ({ current: 1, pageSize: prev.pageSize }));
-    setSortState({ sortBy: 'createdAt', sortOrder: 'descend' });
-  };
-
-  const handleTableChange = (nextPagination, _filters, sorter) => {
-    if (nextPagination?.current && nextPagination?.pageSize) {
-      setPagination({ current: nextPagination.current, pageSize: nextPagination.pageSize });
-    }
-
-    if (Array.isArray(sorter)) return;
-
-    if (!sorter?.order) {
-      setSortState({ sortBy: 'createdAt', sortOrder: 'descend' });
-      return;
-    }
-
-    const nextSortBy = sorter.field || sorter.columnKey || 'createdAt';
-    setSortState({ sortBy: nextSortBy, sortOrder: sorter.order });
   };
 
   const handleSearchChange = (event) => {
@@ -206,11 +188,6 @@ export default function UsersPage() {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  const getSortOrderForColumn = useCallback(
-    (columnKey) => (sortState.sortBy === columnKey ? sortState.sortOrder : null),
-    [sortState],
-  );
-
   const handlePaginationChange = (page, pageSize) => {
     setPagination((prev) => ({ current: pageSize !== prev.pageSize ? 1 : page, pageSize }));
   };
@@ -223,9 +200,7 @@ export default function UsersPage() {
         key: 'index',
         width: 70,
         align: 'center',
-        sorter: true,
-        columnKey: 'createdAt',
-        sortOrder: getSortOrderForColumn('createdAt'),
+        sorter: (a, b) => toTimeValue(a.createdAt) - toTimeValue(b.createdAt),
         render: (_value, _record, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
       },
       {
@@ -233,9 +208,7 @@ export default function UsersPage() {
         dataIndex: 'fullName',
         key: 'fullName',
         width: 280,
-        sorter: true,
-        columnKey: 'fullName',
-        sortOrder: getSortOrderForColumn('fullName'),
+        sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
         render: (_value, record) => (
           <div className={cx('users-page__user-cell')}>
             <Avatar size={44} src={record.avatarUrl} className={cx('users-page__avatar')}>
@@ -253,9 +226,7 @@ export default function UsersPage() {
         dataIndex: 'identifier',
         key: 'identifier',
         width: 160,
-        sorter: true,
-        columnKey: 'identifier',
-        sortOrder: getSortOrderForColumn('identifier'),
+        sorter: (a, b) => mapIdentifier(a).localeCompare(mapIdentifier(b)),
         render: (_value, record) => mapIdentifier(record),
       },
       {
@@ -263,9 +234,7 @@ export default function UsersPage() {
         dataIndex: 'role',
         key: 'role',
         width: 150,
-        sorter: true,
-        columnKey: 'role',
-        sortOrder: getSortOrderForColumn('role'),
+        sorter: (a, b) => (a.role || '').localeCompare(b.role || ''),
         render: (role) => ROLE_LABELS[role] || role || '--',
       },
       {
@@ -273,9 +242,10 @@ export default function UsersPage() {
         dataIndex: 'departmentCode',
         key: 'department',
         width: 200,
-        sorter: true,
-        columnKey: 'departmentCode',
-        sortOrder: getSortOrderForColumn('departmentCode'),
+        sorter: (a, b) =>
+          `${a.departmentCode || ''} ${a.classCode || ''}`.localeCompare(
+            `${b.departmentCode || ''} ${b.classCode || ''}`,
+          ),
         render: (_value, record) => (
           <div className={cx('users-page__meta-cell')}>
             <strong>{record.departmentCode || '--'}</strong>
@@ -288,9 +258,7 @@ export default function UsersPage() {
         dataIndex: 'phoneNumber',
         key: 'phoneNumber',
         width: 160,
-        sorter: true,
-        columnKey: 'phoneNumber',
-        sortOrder: getSortOrderForColumn('phoneNumber'),
+        sorter: (a, b) => (a.phoneNumber || '').localeCompare(b.phoneNumber || ''),
         render: (value) => value || '--',
       },
       {
@@ -298,9 +266,7 @@ export default function UsersPage() {
         dataIndex: 'isActive',
         key: 'status',
         width: 180,
-        sorter: true,
-        columnKey: 'isActive',
-        sortOrder: getSortOrderForColumn('isActive'),
+        sorter: (a, b) => Number(Boolean(a.isActive)) - Number(Boolean(b.isActive)),
         render: (value) => buildStatusTag(Boolean(value)),
       },
       {
@@ -308,9 +274,7 @@ export default function UsersPage() {
         dataIndex: 'lastLoginAt',
         key: 'lastLoginAt',
         width: 220,
-        sorter: true,
-        columnKey: 'lastLoginAt',
-        sortOrder: getSortOrderForColumn('lastLoginAt'),
+        sorter: (a, b) => toTimeValue(a.lastLoginAt) - toTimeValue(b.lastLoginAt),
         render: (value) => formatDateTime(value),
       },
       {
@@ -351,14 +315,7 @@ export default function UsersPage() {
     ];
 
     return baseColumns.map((column) => (column.sorter ? { ...column, sortIcon: renderSortIcon } : column));
-  }, [
-    pagination,
-    getSortOrderForColumn,
-    renderSortIcon,
-    handleEditUser,
-    handleDeleteUser,
-    isDeletingUser,
-  ]);
+  }, [pagination, renderSortIcon, handleEditUser, handleDeleteUser, isDeletingUser]);
 
   const hasUsers = users.length > 0;
   const startIndex = hasUsers ? (pagination.current - 1) * pagination.pageSize + 1 : 0;
@@ -367,58 +324,60 @@ export default function UsersPage() {
   return (
     <>
       {contextHolder}
-      <div className={cx('users-page')}>
+      <div className={cx('users-page__wrapper')}>
         <div className={cx('users-page__filter-bar')}>
           <Input
             size="large"
-          allowClear
-          value={searchValue}
-          onChange={handleSearchChange}
-          placeholder="Tìm kiếm người dùng..."
-          prefix={<FontAwesomeIcon icon={faSearch} />}
-          className={cx('users-page__filter-input')}
-        />
+            allowClear
+            value={searchValue}
+            onChange={handleSearchChange}
+            placeholder="Tìm kiếm người dùng..."
+            prefix={<FontAwesomeIcon icon={faSearch} />}
+            className={cx('users-page__filter-input')}
+          />
 
-        <Select
-          size="large"
-          value={roleValue}
-          onChange={handleRoleChange}
-          options={ROLE_OPTIONS}
-          className={cx('users-page__filter-select')}
-        />
+          <Select
+            size="large"
+            value={roleValue}
+            onChange={handleRoleChange}
+            options={ROLE_OPTIONS}
+            className={cx('users-page__filter-select')}
+          />
 
-        <Select
-          size="large"
-          value={statusValue}
-          onChange={handleStatusChange}
-          options={STATUS_OPTIONS}
-          className={cx('users-page__filter-select')}
-        />
+          <Select
+            size="large"
+            value={statusValue}
+            onChange={handleStatusChange}
+            options={STATUS_OPTIONS}
+            className={cx('users-page__filter-select')}
+          />
 
-        <Button size="large" onClick={handleResetFilters} className={cx('users-page__reset-button')}>
-          Đặt lại
-        </Button>
-      </div>
-
-      <div className={cx('users-page__table-card')}>
-        <div className={cx('users-page__table-header')}>
-          <h3>Danh sách người dùng</h3>
-          <span className={cx('users-page__table-summary')}>
-            {totalItems ? `${totalItems.toLocaleString('vi-VN')} người dùng` : 'Không có dữ liệu'}
-          </span>
+          <Button size="large" onClick={handleResetFilters} className={cx('users-page__reset-button')}>
+            Đặt lại
+          </Button>
         </div>
 
-        <div className={cx('users-page__table')}>
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={users}
-            loading={isFetching}
-            pagination={false}
-            sortDirections={['ascend', 'descend']}
-            onChange={handleTableChange}
-          />
-          <div className={cx('users-page__pagination-bar')}>
+        <div className={cx('users-page__content-box')}>
+          <div className={cx('users-page__content-header')}>
+            <h3>Danh sách người dùng</h3>
+            <span className={cx('users-page__content-summary')}>
+              {totalItems ? `${totalItems.toLocaleString('vi-VN')} người dùng` : 'Không có dữ liệu'}
+            </span>
+          </div>
+
+          <div className={cx('users-page__table-wrapper')}>
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={users}
+              loading={isFetching}
+              pagination={false}
+              sortDirections={['ascend', 'descend']}
+              className={cx('users-page__table')}
+            />
+          </div>
+
+          <div className={cx('users-page__pagination')}>
             <div className={cx('users-page__pagination-summary')}>
               {totalItems
                 ? hasUsers
@@ -436,7 +395,6 @@ export default function UsersPage() {
             />
           </div>
         </div>
-      </div>
       </div>
     </>
   );
