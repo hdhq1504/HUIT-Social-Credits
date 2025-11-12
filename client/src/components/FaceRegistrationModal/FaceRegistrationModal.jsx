@@ -21,21 +21,21 @@ const STEP_SEQUENCE = [
   {
     key: 'front',
     title: 'Nhìn thẳng',
-    description: 'Giữ thẳng đầu, nhìn trực diện vào camera.',
+    description: 'Giữ mặt cân đối trong khung tròn.',
     hint: 'Giữ mặt cân đối trong khung tròn.',
     validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.12 && Math.abs(pitch) <= 0.12,
   },
   {
     key: 'left',
     title: 'Nghiêng trái',
-    description: 'Quay mặt nhẹ sang trái sao cho tai trái tiến gần về phía camera.',
+    description: 'Nghiêng mặt sang trái và giữ ổn định.',
     hint: 'Nghiêng mặt sang trái và giữ ổn định.',
     validate: ({ yaw }) => yaw >= 0.18,
   },
   {
     key: 'right',
     title: 'Nghiêng phải',
-    description: 'Quay mặt nhẹ sang phải và giữ mắt nhìn về camera.',
+    description: 'Nghiêng mặt sang phải và giữ ổn định.',
     hint: 'Nghiêng mặt sang phải và giữ ổn định.',
     validate: ({ yaw }) => yaw <= -0.18,
   },
@@ -49,7 +49,7 @@ const STEP_SEQUENCE = [
   {
     key: 'up',
     title: 'Ngẩng đầu',
-    description: 'Ngẩng đầu nhẹ lên phía trên.',
+    description: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
     hint: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
     validate: ({ pitch }) => pitch <= -0.08,
   },
