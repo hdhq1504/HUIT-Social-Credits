@@ -65,12 +65,26 @@ const buildInitialFaceState = () => ({
   orientation: buildInitialOrientation(),
 });
 
+const mergeState = (state, updates = {}) => {
+  let changed = false;
+  const nextState = { ...state };
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (!Object.is(state[key], value)) {
+      nextState[key] = value;
+      changed = true;
+    }
+  });
+
+  return changed ? nextState : state;
+};
+
 const faceRegistrationReducer = (state, action) => {
   switch (action.type) {
     case 'RESET':
       return { ...buildInitialFaceState(), ...(action.payload ?? {}) };
     case 'SET':
-      return { ...state, ...action.payload };
+      return mergeState(state, action.payload ?? {});
     case 'RESET_CAPTURES':
       return { ...state, captures: [] };
     case 'ADD_CAPTURE': {
@@ -80,8 +94,17 @@ const faceRegistrationReducer = (state, action) => {
       if (state.captures.some((item) => item.dataUrl === capture.dataUrl)) return state;
       return { ...state, captures: [...state.captures, capture] };
     }
-    case 'SET_ORIENTATION':
-      return { ...state, orientation: buildInitialOrientation(action.payload ?? {}) };
+    case 'SET_ORIENTATION': {
+      const nextOrientation = buildInitialOrientation(action.payload ?? {});
+      if (
+        Object.is(state.orientation.yaw, nextOrientation.yaw) &&
+        Object.is(state.orientation.pitch, nextOrientation.pitch) &&
+        Object.is(state.orientation.matched, nextOrientation.matched)
+      ) {
+        return state;
+      }
+      return { ...state, orientation: nextOrientation };
+    }
     default:
       return state;
   }
@@ -101,16 +124,21 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
   const { contextHolder, open: toast } = useToast();
 
   const toastRef = useRef(toast);
+  const orientationRef = useRef(orientation);
   useEffect(() => {
     toastRef.current = toast;
   }, [toast]);
+
+  useEffect(() => {
+    orientationRef.current = orientation;
+  }, [orientation]);
 
   const registrationMutation = useMutation({
     mutationFn: (payload) => faceApi.register(payload),
     onSuccess: (data) => {
       toastRef.current({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
       onSuccess?.(data?.profile ?? null);
-      dispatch({ type: 'RESET_CAPTURED' });
+      dispatch({ type: 'RESET_CAPTURES' });
     },
     onError: (error) => {
       const message = error?.response?.data?.error || 'Không thể đăng ký khuôn mặt. Vui lòng thử lại.';
@@ -124,9 +152,20 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       detectionIntervalRef.current = null;
     }
     matchStartRef.current = null;
+    const hadProgress = !Object.is(progressRef.current, 0);
+    if (hadProgress) {
+      dispatch({ type: 'SET', payload: { progress: 0 } });
+    }
     progressRef.current = 0;
-    dispatch({ type: 'SET', payload: { progress: 0 } });
-    dispatch({ type: 'SET_ORIENTATION' });
+
+    const shouldResetOrientation =
+      !Object.is(orientationRef.current.yaw, 0) ||
+      !Object.is(orientationRef.current.pitch, 0) ||
+      orientationRef.current.matched;
+
+    if (shouldResetOrientation) {
+      dispatch({ type: 'SET_ORIENTATION' });
+    }
   }, [dispatch]);
 
   useEffect(() => {
@@ -209,7 +248,8 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!dataUrl) {
           throw new Error('CAPTURE_FAILED');
         }
-        dispatch({ type: 'SET', processing: true });
+        processingRef.current = true;
+        dispatch({ type: 'SET', payload: { processing: true } });
 
         const detection = await faceapi
           .detectSingleFace(webcamRef.current.video, detectorOptionsRef.current)
@@ -230,14 +270,15 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
             error.message === 'FACE_NOT_DETECTED'
               ? 'Không nhận diện được khuôn mặt. Vui lòng thử lại.'
               : 'Chụp ảnh thất bại. Vui lòng thử lại.';
-          toast.error(message);
+          toastRef.current({ message, variant: 'danger' });
         }
         return false;
       } finally {
-        dispatch({ type: 'SET', processing: true });
+        processingRef.current = false;
+        dispatch({ type: 'SET', payload: { processing: false } });
       }
     },
-    [dispatch, processing, toast, addCapture, detectorOptionsRef],
+    [dispatch, processing, addCapture, detectorOptionsRef],
   );
 
   const pendingStep = useMemo(() => {
