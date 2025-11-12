@@ -294,9 +294,9 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
 
   useEffect(() => {
     updateProgress(0);
-    dispatch({ type: 'SET_ORIENTATION', payload: { yaw: orientation.yaw, pitch: orientation.pitch, matched: false } });
+    dispatch({ type: 'SET_ORIENTATION' });
     matchStartRef.current = null;
-  }, [captures.length, dispatch, orientation.pitch, orientation.yaw, updateProgress]);
+  }, [captures.length, dispatch, updateProgress]);
 
   useEffect(() => {
     if (!open || !isCameraReady || !modelsReady || !pendingStep) {
