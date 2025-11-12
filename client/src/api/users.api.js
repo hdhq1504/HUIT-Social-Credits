@@ -16,6 +16,22 @@ export const usersApi = {
     });
     return data;
   },
+  async create(payload) {
+    const { data } = await http.post('/users', payload);
+    return data;
+  },
+  async detail(id) {
+    const { data } = await http.get(`/users/${id}`);
+    return data;
+  },
+  async update(id, payload) {
+    const { data } = await http.put(`/users/${id}`, payload);
+    return data;
+  },
+  async remove(id) {
+    const { data } = await http.delete(`/users/${id}`);
+    return data;
+  },
 };
 
 export default usersApi;

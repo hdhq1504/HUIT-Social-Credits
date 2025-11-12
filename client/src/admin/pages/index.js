@@ -9,3 +9,4 @@ export { default as ReportsPage } from './ReportsPage/ReportsPage';
 export { default as ScoringPage } from './ScoringPage/ScoringPage';
 export { default as SystemPage } from './SystemPage/SystemPage';
 export { default as UsersPage } from './UsersPage/UsersPage';
+export { default as UsersAddEditPage } from './UsersAddEditPage/UsersAddEditPage';

@@ -1,12 +1,16 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames/bind';
-import { useQuery } from '@tanstack/react-query';
-import { Avatar, Button, Input, Pagination, Select, Table, Tag } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Avatar, Button, Input, Modal, Pagination, Select, Table, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleDot, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faCircleDot, faPenToSquare, faSearch, faSort, faTrashCan, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
 import useDebounce from '@/hooks/useDebounce';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
+import useToast from '@/components/Toast/Toast';
 import styles from './UsersPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -51,6 +55,10 @@ const mapIdentifier = (user) => {
 };
 
 export default function UsersPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
+  const { contextHolder, open: openToast } = useToast();
   const [searchValue, setSearchValue] = useState('');
   const [roleValue, setRoleValue] = useState('all');
   const [statusValue, setStatusValue] = useState('all');
@@ -58,6 +66,33 @@ export default function UsersPage() {
   const [sortState, setSortState] = useState({ sortBy: 'createdAt', sortOrder: 'descend' });
 
   const debouncedSearch = useDebounce(searchValue, 400);
+
+  const handleCreateUser = useCallback(() => {
+    navigate(ROUTE_PATHS.ADMIN.USER_CREATE);
+  }, [navigate]);
+
+  useEffect(() => {
+    setBreadcrumbs([
+      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
+      { label: 'Quản lý người dùng', path: ROUTE_PATHS.ADMIN.USERS },
+    ]);
+    setPageActions([
+      <Button
+        key="create-user"
+        type="primary"
+        icon={<FontAwesomeIcon icon={faUserPlus} />}
+        onClick={handleCreateUser}
+        className={cx('users-page__create-button')}
+      >
+        Thêm người dùng
+      </Button>,
+    ]);
+
+    return () => {
+      setBreadcrumbs(null);
+      setPageActions(null);
+    };
+  }, [handleCreateUser, setBreadcrumbs, setPageActions]);
 
   const queryKey = useMemo(
     () => [
@@ -81,8 +116,56 @@ export default function UsersPage() {
     keepPreviousData: true,
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId) => usersApi.remove(userId),
+    onSuccess: (response) => {
+      openToast({ message: response?.message || 'Đã xóa người dùng.', variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    },
+    onError: (error) => {
+      openToast({ message: error.response?.data?.error || 'Không thể xóa người dùng.', variant: 'danger' });
+    },
+  });
+
   const users = data?.users ?? [];
   const totalItems = data?.pagination?.total ?? 0;
+
+  const handleEditUser = useCallback(
+    (userId) => {
+      navigate(buildPath.adminUserEdit(userId));
+    },
+    [navigate],
+  );
+
+  const handleDeleteUser = useCallback(
+    (record) => {
+      if (!record?.id) return;
+      const displayName = record.fullName || record.email || 'người dùng này';
+      Modal.confirm({
+        title: 'Xóa người dùng',
+        content: (
+          <span>
+            Bạn có chắc chắn muốn xóa <strong>{displayName}</strong> khỏi hệ thống?
+          </span>
+        ),
+        okText: 'Xóa',
+        cancelText: 'Hủy',
+        okButtonProps: { danger: true },
+        centered: true,
+        onOk: () => deleteUserMutation.mutateAsync(record.id),
+      });
+    },
+    [deleteUserMutation],
+  );
+
+  const renderSortIcon = useCallback(
+    ({ sortOrder }) => (
+      <FontAwesomeIcon icon={faSort} className={cx('users-page__sort-icon', { '--active': Boolean(sortOrder) })} />
+    ),
+    [],
+  );
+
+  const isDeletingUser = deleteUserMutation.isLoading;
 
   const handleResetFilters = () => {
     setSearchValue('');
@@ -132,8 +215,8 @@ export default function UsersPage() {
     setPagination((prev) => ({ current: pageSize !== prev.pageSize ? 1 : page, pageSize }));
   };
 
-  const columns = useMemo(
-    () => [
+  const columns = useMemo(() => {
+    const baseColumns = [
       {
         title: 'STT',
         dataIndex: 'index',
@@ -230,19 +313,64 @@ export default function UsersPage() {
         sortOrder: getSortOrderForColumn('lastLoginAt'),
         render: (value) => formatDateTime(value),
       },
-    ],
-    [pagination, getSortOrderForColumn],
-  );
+      {
+        title: 'Thao tác',
+        key: 'actions',
+        width: 160,
+        align: 'center',
+        render: (_value, record) => (
+          <div className={cx('users-page__actions')}>
+            <Tooltip title="Chỉnh sửa">
+              <button
+                type="button"
+                className={cx('users-page__action-button')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleEditUser(record.id);
+                }}
+              >
+                <FontAwesomeIcon icon={faPenToSquare} />
+              </button>
+            </Tooltip>
+            <Tooltip title="Xóa người dùng">
+              <button
+                type="button"
+                className={cx('users-page__action-button', '--delete')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleDeleteUser(record);
+                }}
+                disabled={isDeletingUser}
+              >
+                <FontAwesomeIcon icon={faTrashCan} />
+              </button>
+            </Tooltip>
+          </div>
+        ),
+      },
+    ];
+
+    return baseColumns.map((column) => (column.sorter ? { ...column, sortIcon: renderSortIcon } : column));
+  }, [
+    pagination,
+    getSortOrderForColumn,
+    renderSortIcon,
+    handleEditUser,
+    handleDeleteUser,
+    isDeletingUser,
+  ]);
 
   const hasUsers = users.length > 0;
   const startIndex = hasUsers ? (pagination.current - 1) * pagination.pageSize + 1 : 0;
   const endIndex = hasUsers ? startIndex + users.length - 1 : 0;
 
   return (
-    <div className={cx('users-page')}>
-      <div className={cx('users-page__filter-bar')}>
-        <Input
-          size="large"
+    <>
+      {contextHolder}
+      <div className={cx('users-page')}>
+        <div className={cx('users-page__filter-bar')}>
+          <Input
+            size="large"
           allowClear
           value={searchValue}
           onChange={handleSearchChange}
@@ -309,6 +437,7 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
