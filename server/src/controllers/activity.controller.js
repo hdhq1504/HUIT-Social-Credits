@@ -63,6 +63,11 @@ const normalizeAcademicYearLabel = (value) => {
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
+const FEEDBACK_STATUS_LABELS = {
+  CHO_DUYET: "Chờ duyệt",
+  DA_DUYET: "Đã duyệt",
+  BI_TU_CHOI: "Bị từ chối"
+};
 const buildBucketSet = (...values) =>
   new Set(
     values
@@ -162,8 +167,73 @@ const REGISTRATION_INCLUDE = {
     }
   },
   lichSuDiemDanh: {
-    orderBy: { taoLuc: "desc" }
+    orderBy: { taoLuc: "asc" }
   }
+};
+
+const ADMIN_STUDENT_FIELDS = {
+  id: true,
+  hoTen: true,
+  email: true,
+  avatarUrl: true,
+  maSV: true,
+  maKhoa: true,
+  maLop: true,
+  soDT: true
+};
+
+const ADMIN_REGISTRATION_INCLUDE = {
+  ...REGISTRATION_INCLUDE,
+  nguoiDung: {
+    select: ADMIN_STUDENT_FIELDS
+  },
+  hoatDong: {
+    select: {
+      id: true,
+      tieuDe: true,
+      diemCong: true,
+      nhomDiem: true,
+      batDauLuc: true,
+      ketThucLuc: true,
+      diaDiem: true,
+      phuongThucDiemDanh: true
+    }
+  }
+};
+
+const REGISTRATION_STATUS_LABELS = {
+  DANG_KY: "Chờ duyệt",
+  DA_THAM_GIA: "Đã duyệt",
+  VANG_MAT: "Vắng mặt",
+  DA_HUY: "Đã hủy"
+};
+
+const ATTENDANCE_STATUS_LABELS = {
+  DANG_KY: "Đang xử lý",
+  DA_THAM_GIA: "Hoàn thành",
+  VANG_MAT: "Vắng mặt",
+  DA_HUY: "Đã hủy"
+};
+
+const DEFAULT_REGISTRATION_PAGE_SIZE = 10;
+const MAX_REGISTRATION_PAGE_SIZE = 50;
+
+const ADMIN_STATUS_MAP = {
+  pending: "DANG_KY",
+  approved: "DA_THAM_GIA",
+  rejected: "VANG_MAT",
+  canceled: "DA_HUY"
+};
+
+const normalizePageNumber = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+};
+
+const normalizePageSize = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_REGISTRATION_PAGE_SIZE;
+  return Math.min(parsed, MAX_REGISTRATION_PAGE_SIZE);
 };
 
 const toDate = (value) => (value ? new Date(value) : null);
@@ -201,15 +271,34 @@ const formatDateRange = (start, end) => {
     : `${startTime}, ${datePart} - ${endTime}, ${dateFormatter.format(endDate)}`;
 };
 
+const mapStudentProfile = (user, { includeContact = false } = {}) => {
+  if (!user) return null;
+  const base = {
+    id: user.id,
+    name: sanitizeOptionalText(user.hoTen) || sanitizeOptionalText(user.email) || "Người dùng",
+    email: user.email ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    studentCode: user.maSV ?? null,
+    faculty: user.maKhoa ?? null,
+    className: user.maLop ?? null
+  };
+
+  if (includeContact) {
+    base.phone = user.soDT ?? null;
+  }
+
+  return base;
+};
+
 const mapParticipants = (registrations = []) =>
   registrations
     .filter((reg) => reg.nguoiDung)
     .map((reg) => {
-      const user = reg.nguoiDung;
-      if (user.avatarUrl) {
-        return { id: user.id, name: user.hoTen ?? user.email, src: user.avatarUrl };
+      const student = mapStudentProfile(reg.nguoiDung);
+      if (student?.avatarUrl) {
+        return { id: student.id, name: student.name, src: student.avatarUrl };
       }
-      return { id: user.id, name: user.hoTen ?? user.email ?? "Người dùng" };
+      return { id: student?.id, name: student?.name ?? "Người dùng" };
     });
 
 const normalizeAttachments = (value) => {
@@ -241,6 +330,26 @@ const sanitizeStringArray = (value, maxLength = 500) => {
   return value
     .map((item) => sanitizeOptionalText(item, maxLength))
     .filter((item) => typeof item === "string" && item.length > 0);
+};
+
+const assertAdmin = (req) => {
+  if (req.user?.role !== "ADMIN") {
+    const error = new Error("Forbidden");
+    error.statusCode = 403;
+    throw error;
+  }
+};
+
+const buildRegistrationSearchCondition = (searchTerm) => {
+  if (!searchTerm) return undefined;
+  return {
+    OR: [
+      { nguoiDung: { hoTen: { contains: searchTerm, mode: "insensitive" } } },
+      { nguoiDung: { email: { contains: searchTerm, mode: "insensitive" } } },
+      { nguoiDung: { maSV: { contains: searchTerm, mode: "insensitive" } } },
+      { hoatDong: { tieuDe: { contains: searchTerm, mode: "insensitive" } } }
+    ]
+  };
 };
 
 const RICH_TEXT_ALLOWED_TAGS = Array.from(
@@ -347,6 +456,7 @@ const mapAttendanceEntry = (entry) => {
   return {
     id: entry.id,
     status: entry.trangThai,
+    statusLabel: ATTENDANCE_STATUS_LABELS[entry.trangThai] || entry.trangThai,
     phase: entry.loai === "CHECKOUT" ? "checkout" : "checkin",
     note: entry.ghiChu ?? null,
     capturedAt: entry.taoLuc?.toISOString() ?? null,
@@ -362,6 +472,7 @@ const mapFeedback = (feedback) => {
   return {
     id: feedback.id,
     status: feedback.trangThai,
+    statusLabel: FEEDBACK_STATUS_LABELS[feedback.trangThai] || feedback.trangThai,
     content: feedback.noiDung,
     rating: feedback.danhGia ?? null,
     attachments: normalizeAttachments(feedback.minhChung),
@@ -380,11 +491,14 @@ const computeCheckoutAvailableAt = (activity) => {
 };
 
 const computeFeedbackAvailableAt = (activity, registration) => {
-  const end = toDate(activity?.ketThucLuc);
-  const participationTime = registration?.diemDanhLuc
-    ? new Date(registration.diemDanhLuc)
-    : end || toDate(activity?.batDauLuc) || new Date();
-  const available = participationTime;
+  const baseTime = registration?.duyetLuc
+    ? new Date(registration.duyetLuc)
+    : registration?.diemDanhLuc
+      ? new Date(registration.diemDanhLuc)
+      : toDate(activity?.ketThucLuc) || toDate(activity?.batDauLuc) || new Date();
+
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  const available = new Date(baseTime.getTime() + ONE_DAY_MS);
   return available.toISOString();
 };
 
@@ -402,6 +516,7 @@ const mapRegistration = (registration, activity) => {
     activityId: registration.hoatDongId,
     userId: registration.nguoiDungId,
     status: registration.trangThai,
+    statusLabel: REGISTRATION_STATUS_LABELS[registration.trangThai] || registration.trangThai,
     note: registration.ghiChu ?? null,
     cancelReason: registration.lyDoHuy ?? null,
     registeredAt: registration.dangKyLuc?.toISOString() ?? null,
@@ -423,7 +538,8 @@ const mapRegistration = (registration, activity) => {
       checkoutAvailableAt,
       feedbackAvailableAt
     },
-    feedback: mapFeedback(registration.phanHoi)
+    feedback: mapFeedback(registration.phanHoi),
+    student: mapStudentProfile(registration.nguoiDung, { includeContact: true })
   };
 };
 
@@ -585,51 +701,21 @@ const mapActivity = (activity, registration) => {
       : `${registeredCount}`;
   const coverMeta = mapActivityCover(activity.hinhAnh);
 
-  const participantRegistrations = activeRegistrations.map((item) => {
-    const student = item.nguoiDung
-      ? {
-        id: item.nguoiDung.id,
-        name:
-          sanitizeOptionalText(item.nguoiDung.hoTen) ||
-          sanitizeOptionalText(item.nguoiDung.email) ||
-          "Người dùng",
-        email: item.nguoiDung.email ?? null,
-        avatarUrl: item.nguoiDung.avatarUrl ?? null,
-        studentCode: item.nguoiDung.maSV ?? null,
-        faculty: item.nguoiDung.maKhoa ?? null,
-        className: item.nguoiDung.maLop ?? null
-      }
-      : null;
-
-    return {
-      id: item.id,
-      status: item.trangThai,
-      registeredAt: item.dangKyLuc?.toISOString() ?? null,
-      updatedAt: item.updatedAt?.toISOString() ?? null,
-      checkInAt: item.diemDanhLuc?.toISOString() ?? null,
-      student
-    };
-  });
+  const participantRegistrations = activeRegistrations.map((item) => ({
+    id: item.id,
+    status: item.trangThai,
+    statusLabel: REGISTRATION_STATUS_LABELS[item.trangThai] || item.trangThai,
+    registeredAt: item.dangKyLuc?.toISOString() ?? null,
+    updatedAt: item.updatedAt?.toISOString() ?? null,
+    checkInAt: item.diemDanhLuc?.toISOString() ?? null,
+    student: mapStudentProfile(item.nguoiDung, { includeContact: true })
+  }));
 
   const feedbackLogs = Array.isArray(activity.phanHoi)
-    ? activity.phanHoi.map((feedbackItem) => {
-      const base = mapFeedback(feedbackItem);
-      const student = feedbackItem.nguoiDung
-        ? {
-          id: feedbackItem.nguoiDung.id,
-          name:
-            sanitizeOptionalText(feedbackItem.nguoiDung.hoTen) ||
-            sanitizeOptionalText(feedbackItem.nguoiDung.email) ||
-            "Người dùng",
-          email: feedbackItem.nguoiDung.email ?? null,
-          avatarUrl: feedbackItem.nguoiDung.avatarUrl ?? null,
-          studentCode: feedbackItem.nguoiDung.maSV ?? null,
-          faculty: feedbackItem.nguoiDung.maKhoa ?? null,
-          className: feedbackItem.nguoiDung.maLop ?? null
-        }
-        : null;
-      return { ...base, student };
-    })
+    ? activity.phanHoi.map((feedbackItem) => ({
+      ...mapFeedback(feedbackItem),
+      student: mapStudentProfile(feedbackItem.nguoiDung)
+    }))
     : [];
 
   return {
@@ -694,6 +780,29 @@ const buildActivityResponse = async (activityId, userId) => {
   return mapActivity(activity, registration);
 };
 
+const mapActivitySummaryForRegistration = (activity) => {
+  if (!activity) return null;
+  const defaultAttendanceMethod = getDefaultAttendanceMethod();
+  const attendanceSource = activity.phuongThucDiemDanh || defaultAttendanceMethod;
+  const attendanceMethod =
+    mapAttendanceMethodToApi(attendanceSource) || mapAttendanceMethodToApi(defaultAttendanceMethod);
+  const attendanceMethodLabel =
+    getAttendanceMethodLabel(attendanceMethod) ||
+    getAttendanceMethodLabel(mapAttendanceMethodToApi(defaultAttendanceMethod));
+
+  return {
+    id: activity.id,
+    title: activity.tieuDe,
+    points: activity.diemCong ?? 0,
+    pointGroup: normalizePointGroup(activity.nhomDiem),
+    startTime: activity.batDauLuc?.toISOString() ?? null,
+    endTime: activity.ketThucLuc?.toISOString() ?? null,
+    location: activity.diaDiem ?? null,
+    attendanceMethod,
+    attendanceMethodLabel
+  };
+};
+
 const sanitizeStatusFilter = (value, allowed) => (allowed.includes(value) ? value : undefined);
 
 export const listActivities = async (req, res) => {
@@ -752,6 +861,331 @@ export const getActivity = async (req, res) => {
   const activity = await buildActivityResponse(req.params.id, currentUserId);
   if (!activity) return res.status(404).json({ error: "Hoạt động không tồn tại" });
   res.json({ activity });
+};
+
+export const listActivityRegistrationsAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id: activityId } = req.params;
+
+  const activity = await prisma.hoatDong.findUnique({
+    where: { id: activityId },
+    select: {
+      id: true,
+      tieuDe: true,
+      diemCong: true,
+      nhomDiem: true,
+      batDauLuc: true,
+      ketThucLuc: true,
+      diaDiem: true,
+      phuongThucDiemDanh: true
+    }
+  });
+
+  if (!activity) {
+    return res.status(404).json({ error: "Hoạt động không tồn tại" });
+  }
+
+  const registrations = await prisma.dangKyHoatDong.findMany({
+    where: { hoatDongId: activityId },
+    include: ADMIN_REGISTRATION_INCLUDE,
+    orderBy: [{ dangKyLuc: "asc" }]
+  });
+
+  const activitySummary = mapActivitySummaryForRegistration(activity);
+
+  res.json({
+    activity: activitySummary,
+    registrations: registrations.map((registration) => ({
+      ...mapRegistration(registration, activity),
+      activity: activitySummary
+    }))
+  });
+};
+
+export const listRegistrationsAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { status, faculty, className, activityId, search, page, pageSize } = req.query || {};
+
+  const normalizedStatusKey = typeof status === "string" && status !== "all" ? status.toLowerCase() : undefined;
+  const normalizedStatus = normalizedStatusKey ? ADMIN_STATUS_MAP[normalizedStatusKey] : undefined;
+  const normalizedFaculty = sanitizeOptionalText(faculty, 100);
+  const normalizedClassName = sanitizeOptionalText(className, 100);
+  const normalizedActivityId = typeof activityId === "string" && activityId.trim() ? activityId.trim() : undefined;
+  const searchTerm = sanitizeOptionalText(search, 100);
+
+  const currentPage = normalizePageNumber(page);
+  const take = normalizePageSize(pageSize);
+  const skip = (currentPage - 1) * take;
+
+  const conditions = [];
+
+  if (normalizedStatus) {
+    conditions.push({ trangThai: normalizedStatus });
+  }
+
+  if (normalizedActivityId) {
+    conditions.push({ hoatDongId: normalizedActivityId });
+  }
+
+  if (normalizedFaculty) {
+    conditions.push({ nguoiDung: { maKhoa: normalizedFaculty } });
+  }
+
+  if (normalizedClassName) {
+    conditions.push({ nguoiDung: { maLop: normalizedClassName } });
+  }
+
+  const searchCondition = buildRegistrationSearchCondition(searchTerm);
+  if (searchCondition) {
+    conditions.push(searchCondition);
+  }
+
+  const where = conditions.length ? { AND: conditions } : {};
+
+  const [registrations, total] = await Promise.all([
+    prisma.dangKyHoatDong.findMany({
+      where,
+      include: {
+        ...ADMIN_REGISTRATION_INCLUDE,
+        hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+        nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung
+      },
+      orderBy: [{ dangKyLuc: "desc" }],
+      skip,
+      take
+    }),
+    prisma.dangKyHoatDong.count({ where })
+  ]);
+
+  const [totalAll, pendingCount, approvedCount, rejectedCount, facultiesRaw, classesRaw, activitiesRaw] =
+    await Promise.all([
+      prisma.dangKyHoatDong.count(),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
+      prisma.nguoiDung.findMany({
+        where: { dangKy: { some: {} }, maKhoa: { not: null } },
+        select: { maKhoa: true },
+        distinct: ["maKhoa"]
+      }),
+      prisma.nguoiDung.findMany({
+        where: { dangKy: { some: {} }, maLop: { not: null } },
+        select: { maLop: true },
+        distinct: ["maLop"]
+      }),
+      prisma.hoatDong.findMany({
+        where: { dangKy: { some: {} } },
+        select: { id: true, tieuDe: true }
+      })
+    ]);
+
+  const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
+
+  const faculties = facultiesRaw
+    .map((item) => sanitizeOptionalText(item.maKhoa, 100))
+    .filter(Boolean)
+    .sort(sortAlpha);
+
+  const classes = classesRaw
+    .map((item) => sanitizeOptionalText(item.maLop, 100))
+    .filter(Boolean)
+    .sort(sortAlpha);
+
+  const activities = activitiesRaw
+    .map((item) => ({ id: item.id, title: sanitizeOptionalText(item.tieuDe, 255) || "Hoạt động" }))
+    .sort((a, b) => sortAlpha(a.title, b.title));
+
+  res.json({
+    registrations: registrations.map((registration) => ({
+      ...mapRegistration(registration, registration.hoatDong),
+      activity: mapActivitySummaryForRegistration(registration.hoatDong)
+    })),
+    pagination: {
+      page: currentPage,
+      pageSize: take,
+      total,
+      pageCount: Math.ceil(total / take) || 0
+    },
+    stats: {
+      total: totalAll,
+      pending: pendingCount,
+      approved: approvedCount,
+      rejected: rejectedCount
+    },
+    filterOptions: {
+      faculties,
+      classes,
+      activities
+    }
+  });
+};
+
+export const getRegistrationDetailAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id } = req.params;
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung
+    }
+  });
+
+  if (!registration) {
+    return res.status(404).json({ error: "Đăng ký không tồn tại" });
+  }
+
+  res.json({
+    registration: {
+      ...mapRegistration(registration, registration.hoatDong),
+      activity: mapActivitySummaryForRegistration(registration.hoatDong)
+    }
+  });
+};
+
+export const decideRegistrationAttendance = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id } = req.params;
+  const { decision, note } = req.body || {};
+
+  const normalizedDecision = typeof decision === "string" ? decision.trim().toUpperCase() : "";
+  if (!["APPROVE", "REJECT"].includes(normalizedDecision)) {
+    return res.status(400).json({ error: "Quyết định không hợp lệ" });
+  }
+
+  const reason = sanitizeOptionalText(note, 500);
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung
+    }
+  });
+
+  if (!registration) {
+    return res.status(404).json({ error: "Đăng ký không tồn tại" });
+  }
+
+  const isApproval = normalizedDecision === "APPROVE";
+  const targetStatus = isApproval ? "DA_THAM_GIA" : "VANG_MAT";
+  const now = new Date();
+
+  const updateData = {
+    trangThai: targetStatus,
+    diemDanhBoiId: req.user?.sub || registration.diemDanhBoiId || null
+  };
+
+  if (isApproval) {
+    updateData.duyetLuc = registration.duyetLuc ?? now;
+    if (!registration.diemDanhLuc) {
+      updateData.diemDanhLuc = now;
+    }
+  } else {
+    updateData.duyetLuc = null;
+  }
+
+  if (reason !== null) {
+    updateData.diemDanhGhiChu = reason;
+  }
+
+  const attendanceUpdateData = {
+    trangThai: targetStatus
+  };
+
+  if (reason && !isApproval) {
+    attendanceUpdateData.ghiChu = reason;
+  }
+
+  await prisma.$transaction([
+    prisma.dangKyHoatDong.update({
+      where: { id: registration.id },
+      data: updateData
+    }),
+    prisma.diemDanhNguoiDung.updateMany({
+      where: { dangKyId: registration.id },
+      data: attendanceUpdateData
+    })
+  ]);
+
+  const updated = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung
+    }
+  });
+
+  const activity = updated?.hoatDong;
+  const user = updated?.nguoiDung;
+
+  if (activity && user) {
+    const baseTitle = activity.tieuDe || "hoạt động";
+    const notificationMessage = isApproval
+      ? `Minh chứng điểm danh cho hoạt động "${baseTitle}" đã được duyệt.`
+      : `Minh chứng điểm danh cho hoạt động "${baseTitle}" đã bị từ chối.`;
+    const notificationTitle = isApproval
+      ? "Minh chứng điểm danh được duyệt"
+      : "Minh chứng điểm danh bị từ chối";
+    const notificationType = isApproval ? "success" : "danger";
+    const notificationAction = isApproval ? "ATTENDANCE_APPROVED" : "ATTENDANCE_REJECTED";
+    const emailSubject = isApproval
+      ? `[HUIT Social Credits] Minh chứng được duyệt - "${baseTitle}"`
+      : `[HUIT Social Credits] Minh chứng bị từ chối - "${baseTitle}"`;
+
+    const emailMessageLines = [
+      notificationMessage,
+      `Điểm cộng: ${activity.diemCong ?? 0}`,
+      reason ? `Ghi chú từ quản trị viên: ${reason}` : null
+    ].filter(Boolean);
+
+    await notifyUser({
+      userId: updated.nguoiDungId,
+      user: {
+        id: user.id,
+        email: user.email,
+        hoTen: user.hoTen
+      },
+      title: notificationTitle,
+      message: notificationMessage,
+      type: notificationType,
+      data: { activityId: activity.id, registrationId: updated.id, action: notificationAction },
+      emailSubject,
+      emailMessageLines
+    });
+  }
+
+  res.json({
+    message: isApproval ? "Đã duyệt minh chứng điểm danh" : "Đã từ chối minh chứng điểm danh",
+    registration: {
+      ...mapRegistration(updated, updated?.hoatDong),
+      activity: mapActivitySummaryForRegistration(updated?.hoatDong)
+    }
+  });
 };
 
 export const registerForActivity = async (req, res) => {

@@ -23,6 +23,19 @@
     }
   }
 
+  &__loading,
+  &__empty {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty {
+    color: var(--muted-color);
+    font-weight: 600;
+  }
+
   &__header {
     display: flex;
     flex-wrap: wrap;

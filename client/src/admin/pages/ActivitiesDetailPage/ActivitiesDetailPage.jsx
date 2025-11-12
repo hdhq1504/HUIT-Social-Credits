@@ -241,12 +241,13 @@ function ActivitiesDetailPage() {
 
   const participantData = useMemo(
     () =>
-      (activity?.registrations ?? []).map((registration, index) => ({
+      (activity?.participantRegistrations ?? []).map((registration, index) => ({
         key: registration.id || `registration-${index}`,
         order: index + 1,
         ...registration,
+        user: registration.student || registration.user || null,
       })),
-    [activity?.registrations],
+    [activity?.participantRegistrations],
   );
 
   const participantColumns = useMemo(
@@ -315,20 +316,18 @@ function ActivitiesDetailPage() {
   );
 
   const feedbackLogs = useMemo(() => {
-    if (!Array.isArray(activity?.registrations)) return [];
-    return activity.registrations
-      .filter((registration) => registration.feedback)
-      .map((registration) => ({
-        key: registration.feedback?.id || `feedback-${registration.id}`,
-        feedback: registration.feedback,
-        user: registration.user,
+    if (!Array.isArray(activity?.feedbackLogs)) return [];
+    return activity.feedbackLogs
+      .map((item, index) => ({
+        key: item.id || `feedback-${index}`,
+        ...item,
       }))
       .sort((a, b) => {
-        const aTime = a.feedback?.submittedAt ? new Date(a.feedback.submittedAt).getTime() : 0;
-        const bTime = b.feedback?.submittedAt ? new Date(b.feedback.submittedAt).getTime() : 0;
+        const aTime = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+        const bTime = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
         return bTime - aTime;
       });
-  }, [activity?.registrations]);
+  }, [activity?.feedbackLogs]);
 
   if (isLoading) {
     return (
@@ -471,43 +470,43 @@ function ActivitiesDetailPage() {
                   itemLayout="vertical"
                   dataSource={feedbackLogs}
                   renderItem={(item) => {
-                    const statusMeta = FEEDBACK_STATUS_DISPLAY[item.feedback?.status] || {
-                      label: item.feedback?.status || 'Không rõ',
+                    const statusMeta = FEEDBACK_STATUS_DISPLAY[item.status] || {
+                      label: item.status || 'Không rõ',
                       color: 'default',
                     };
                     return (
                       <List.Item key={item.key} className={cx('activity-detail__feedback-item')}>
                         <List.Item.Meta
                           avatar={
-                            <Avatar src={item.user?.avatarUrl} className={cx('activity-detail__student-avatar')}>
-                              {getInitials(item.user?.name)}
+                            <Avatar src={item.student?.avatarUrl} className={cx('activity-detail__student-avatar')}>
+                              {getInitials(item.student?.name)}
                             </Avatar>
                           }
                           title={
                             <div className={cx('activity-detail__feedback-header')}>
-                              <span>{item.user?.name || 'Sinh viên'}</span>
+                              <span>{item.student?.name || 'Sinh viên'}</span>
                               <Tag color={statusMeta.color}>{statusMeta.label}</Tag>
                             </div>
                           }
                           description={
                             <div className={cx('activity-detail__feedback-meta')}>
-                              <span>{item.user?.email || '---'}</span>
-                              <span>{formatDateTime(item.feedback?.submittedAt) || '--'}</span>
+                              <span>{item.student?.email || '---'}</span>
+                              <span>{formatDateTime(item.submittedAt) || '--'}</span>
                             </div>
                           }
                         />
 
                         <div className={cx('activity-detail__feedback-content')}>
-                          {item.feedback?.rating ? (
+                          {item.rating ? (
                             <div className={cx('activity-detail__feedback-rating')}>
-                              Đánh giá: {item.feedback.rating}/5
+                              Đánh giá: {item.rating}/5
                             </div>
                           ) : null}
-                          <p>{item.feedback?.content || 'Không có nội dung phản hồi.'}</p>
+                          <p>{item.content || 'Không có nội dung phản hồi.'}</p>
 
-                          {Array.isArray(item.feedback?.attachments) && item.feedback.attachments.length > 0 ? (
+                          {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                             <div className={cx('activity-detail__feedback-attachments')}>
-                              {item.feedback.attachments.map((attachment, index) => (
+                              {item.attachments.map((attachment, index) => (
                                 <a
                                   key={attachment.path || attachment.url || `${item.key}-attachment-${index}`}
                                   href={attachment.url}
@@ -518,7 +517,7 @@ function ActivitiesDetailPage() {
                                 </a>
                               ))}
                             </div>
-                          ) : null}
+                            ) : null}
                         </div>
                       </List.Item>
                     );

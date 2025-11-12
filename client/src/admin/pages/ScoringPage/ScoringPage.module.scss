@@ -346,6 +346,20 @@
     overflow-x: auto;
   }
 
+  &__table-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 0;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--muted-color);
+    font-weight: 600;
+  }
+
   &__table {
     width: 100%;
     border-collapse: collapse;

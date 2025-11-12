@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Pagination } from 'antd';
+import { Pagination, Spin } from 'antd';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import { CheckCircle2, Clock3, Filter, Search, Users, XCircle } from 'lucide-react';
 import styles from './ScoringPage.module.scss';
-import { scoringListData } from './ScoringPageData';
+import registrationsApi, { ADMIN_REGISTRATIONS_QUERY_KEY } from '@/api/registrations.api';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
+import useToast from '@/components/Toast/Toast';
 
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 10;
@@ -22,12 +25,63 @@ const getCheckStatusClass = (status) => {
   const normalized = status.toLowerCase();
   if (normalized.includes('đúng')) return 'scoring-page__check-status scoring-page__check-status--success';
   if (normalized.includes('trễ')) return 'scoring-page__check-status scoring-page__check-status--warning';
-  if (normalized.includes('vắng')) return 'scoring-page__check-status scoring-page__check-status--danger';
+  if (normalized.includes('vắng') || normalized.includes('không')) {
+    return 'scoring-page__check-status scoring-page__check-status--danger';
+  }
+  if (normalized.includes('hoàn')) {
+    return 'scoring-page__check-status scoring-page__check-status--success';
+  }
   return 'scoring-page__check-status';
 };
 
+const formatDateTime = (value) => {
+  if (!value) return '---';
+  return dayjs(value).format('HH:mm DD/MM/YYYY');
+};
+
+const formatActivityRange = (activity) => {
+  if (!activity) return '---';
+  const start = activity.startTime ? dayjs(activity.startTime) : null;
+  const end = activity.endTime ? dayjs(activity.endTime) : null;
+  if (start && end) {
+    const sameDay = start.isSame(end, 'day');
+    if (sameDay) {
+      return `${start.format('DD/MM/YYYY')} · ${start.format('HH:mm')} - ${end.format('HH:mm')}`;
+    }
+    return `${start.format('DD/MM/YYYY HH:mm')} - ${end.format('DD/MM/YYYY HH:mm')}`;
+  }
+  if (start) return start.format('DD/MM/YYYY HH:mm');
+  if (end) return end.format('DD/MM/YYYY HH:mm');
+  return '---';
+};
+
+const resolveStatusKey = (status) => {
+  switch (status) {
+    case 'DA_THAM_GIA':
+      return 'approved';
+    case 'VANG_MAT':
+      return 'rejected';
+    case 'DA_HUY':
+      return 'canceled';
+    default:
+      return 'pending';
+  }
+};
+
+const buildAttendanceMap = (attendanceHistory = []) =>
+  attendanceHistory.reduce(
+    (acc, entry) => {
+      if (!acc[entry.phase]) {
+        acc[entry.phase] = entry;
+      }
+      return acc;
+    },
+    { checkin: null, checkout: null },
+  );
+
 function ScoringPage() {
   const navigate = useNavigate();
+  const { contextHolder, open: openToast } = useToast();
   const [filters, setFilters] = useState({
     status: 'all',
     faculty: 'all',
@@ -39,20 +93,76 @@ function ScoringPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const faculties = useMemo(() => ['all', ...new Set(scoringListData.map((item) => item.faculty))], []);
-  const classes = useMemo(() => ['all', ...new Set(scoringListData.map((item) => item.className))], []);
-  const activities = useMemo(() => ['all', ...new Set(scoringListData.map((item) => item.activityTitle))], []);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+      status: filters.status !== 'all' ? filters.status : undefined,
+      faculty: filters.faculty !== 'all' ? filters.faculty : undefined,
+      className: filters.className !== 'all' ? filters.className : undefined,
+      activityId: filters.activity !== 'all' ? filters.activity : undefined,
+      search: searchTerm || undefined,
+    }),
+    [currentPage, filters, searchTerm],
+  );
 
-  const statusCounts = useMemo(() => {
-    return scoringListData.reduce(
-      (acc, item) => {
-        acc.all += 1;
-        acc[item.statusKey] = (acc[item.statusKey] || 0) + 1;
-        return acc;
-      },
-      { all: 0 },
-    );
-  }, []);
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: [ADMIN_REGISTRATIONS_QUERY_KEY, queryParams],
+    queryFn: () => registrationsApi.list(queryParams),
+    keepPreviousData: true,
+  });
+
+  useEffect(() => {
+    if (isError && error) {
+      openToast({
+        message: error.response?.data?.error || 'Không thể tải dữ liệu minh chứng',
+        variant: 'danger',
+      });
+    }
+  }, [isError, error, openToast]);
+
+  const filterOptions = data?.filterOptions ?? {};
+  const faculties = useMemo(
+    () => ['all', ...(filterOptions.faculties ?? [])],
+    [filterOptions.faculties],
+  );
+  const classes = useMemo(
+    () => ['all', ...(filterOptions.classes ?? [])],
+    [filterOptions.classes],
+  );
+  const activities = useMemo(() => filterOptions.activities ?? [], [filterOptions.activities]);
+
+  const stats = useMemo(
+    () => ({
+      total: data?.stats?.total ?? 0,
+      pending: data?.stats?.pending ?? 0,
+      approved: data?.stats?.approved ?? 0,
+      rejected: data?.stats?.rejected ?? 0,
+    }),
+    [data?.stats?.total, data?.stats?.pending, data?.stats?.approved, data?.stats?.rejected],
+  );
+
+  const statusCounts = useMemo(
+    () => ({
+      all: stats.total,
+      pending: stats.pending,
+      approved: stats.approved,
+      rejected: stats.rejected,
+    }),
+    [stats],
+  );
+
+  const registrations = useMemo(() => data?.registrations ?? [], [data?.registrations]);
+  const pagination = data?.pagination ?? { page: currentPage, pageSize: PAGE_SIZE, total: 0 };
+  const totalItems = pagination.total ?? 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.status, filters.faculty, filters.className, filters.activity, searchTerm]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => registrations.some((item) => item.id === id)));
+  }, [registrations]);
 
   const handleStatusChange = useCallback((value) => {
     setFilters((prev) => ({ ...prev, status: value }));
@@ -70,55 +180,27 @@ function ScoringPage() {
     setFilters({ status: 'all', faculty: 'all', className: 'all', activity: 'all' });
     setKeywordInput('');
     setSearchTerm('');
-  }, []);
-
-  const filteredData = useMemo(() => {
-    return scoringListData.filter((item) => {
-      if (filters.status !== 'all' && item.statusKey !== filters.status) return false;
-      if (filters.faculty !== 'all' && item.faculty !== filters.faculty) return false;
-      if (filters.className !== 'all' && item.className !== filters.className) return false;
-      if (filters.activity !== 'all' && item.activityTitle !== filters.activity) return false;
-      if (searchTerm) {
-        const normalizedTerm = searchTerm.toLowerCase();
-        const haystack = `${item.studentName} ${item.studentId} ${item.activityTitle}`.toLowerCase();
-        if (!haystack.includes(normalizedTerm)) return false;
-      }
-      return true;
-    });
-  }, [filters, searchTerm]);
-
-  useEffect(() => {
     setCurrentPage(1);
-  }, [filters, searchTerm]);
-
-  useEffect(() => {
-    setSelectedIds((prev) => prev.filter((id) => filteredData.some((item) => item.id === id)));
-  }, [filteredData]);
-
-  const totalItems = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-
-  const paginatedData = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filteredData.slice(start, start + PAGE_SIZE);
-  }, [filteredData, safePage]);
+  }, []);
 
   const handleSelectRow = useCallback((id) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    const allIds = filteredData.map((item) => item.id);
+    const allIds = registrations.map((item) => item.id);
     setSelectedIds((prev) => (prev.length === allIds.length ? [] : allIds));
-  }, [filteredData]);
+  }, [registrations]);
 
   const handleClearSelection = useCallback(() => setSelectedIds([]), []);
 
-  const allSelected = filteredData.length > 0 && selectedIds.length === filteredData.length;
+  const allSelected = registrations.length > 0 && selectedIds.length === registrations.length;
+  const startIndex = (pagination.page - 1) * pagination.pageSize;
 
   return (
     <section className={cx('scoring-page')}>
+      {contextHolder}
+
       <nav className={cx('scoring-page__breadcrumb')} aria-label="Breadcrumb">
         <Link to={ROUTE_PATHS.ADMIN.DASHBOARD}>Trang chủ</Link>
         <span>/</span>
@@ -211,9 +293,12 @@ function ScoringPage() {
             value={filters.activity}
             onChange={(event) => handleFilterChange('activity', event.target.value)}
           >
+            <option key="all" value="all">
+              Tất cả hoạt động
+            </option>
             {activities.map((activity) => (
-              <option key={activity} value={activity}>
-                {activity === 'all' ? 'Tất cả hoạt động' : activity}
+              <option key={activity.id} value={activity.id}>
+                {activity.title}
               </option>
             ))}
           </select>
@@ -305,84 +390,109 @@ function ScoringPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(item.id)}
-                      onChange={() => handleSelectRow(item.id)}
-                      aria-label={`Chọn hồ sơ của ${item.studentName}`}
-                    />
-                  </td>
-                  <td>{item.stt}</td>
-                  <td>
-                    <div className={cx('scoring-page__student')}>
-                      <img src={item.avatar} alt={item.studentName} className={cx('scoring-page__student-avatar')} />
-                      <div className={cx('scoring-page__student-meta')}>
-                        <span className={cx('scoring-page__student-name')}>{item.studentName}</span>
-                        <span className={cx('scoring-page__student-email')}>{item.studentEmail}</span>
-                      </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={12}>
+                    <div className={cx('scoring-page__table-loading')}>
+                      <Spin />
                     </div>
-                  </td>
-                  <td>{item.studentId}</td>
-                  <td>{item.faculty}</td>
-                  <td>{item.className}</td>
-                  <td>
-                    <div className={cx('scoring-page__activity')}>
-                      <span className={cx('scoring-page__activity-title')}>{item.activityTitle}</span>
-                      <span className={cx('scoring-page__activity-date')}>{item.activityDate}</span>
-                    </div>
-                  </td>
-                  <td className={cx('scoring-page__score')}>+{item.score}</td>
-                  <td>
-                    <div className={cx('scoring-page__check-cell')}>
-                      <span className={cx('scoring-page__check-time')}>{item.checkIn.time}</span>
-                      <span className={cx(getCheckStatusClass(item.checkIn.status))}>{item.checkIn.status}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={cx('scoring-page__check-cell')}>
-                      <span className={cx('scoring-page__check-time')}>{item.checkOut.time}</span>
-                      <span className={cx(getCheckStatusClass(item.checkOut.status))}>{item.checkOut.status}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={cx('scoring-page__status-badge', `scoring-page__status-badge--${item.statusKey}`)}
-                    >
-                      {item.statusLabel}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className={cx('scoring-page__link-button')}
-                      onClick={() => navigate(buildPath.adminScoringDetail(item.id))}
-                    >
-                      Xem chi tiết
-                    </button>
                   </td>
                 </tr>
-              ))}
+              ) : registrations.length ? (
+                registrations.map((item, index) => {
+                  const attendance = buildAttendanceMap(item.attendanceHistory);
+                  const checkInEntry = attendance.checkin;
+                  const checkOutEntry = attendance.checkout;
+                  const student = item.student || {};
+                  const activity = item.activity || {};
+                  const statusKey = resolveStatusKey(item.status);
+
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => handleSelectRow(item.id)}
+                          aria-label={`Chọn hồ sơ của ${student.name || 'sinh viên'}`}
+                        />
+                      </td>
+                      <td>{startIndex + index + 1}</td>
+                      <td>
+                        <div className={cx('scoring-page__student')}>
+                          <img
+                            src={student.avatarUrl || 'https://placehold.co/40x40/eeee/000?text=SV'}
+                            alt={student.name || 'Sinh viên'}
+                            className={cx('scoring-page__student-avatar')}
+                          />
+                          <div className={cx('scoring-page__student-meta')}>
+                            <span className={cx('scoring-page__student-name')}>{student.name || 'Sinh viên'}</span>
+                            <span className={cx('scoring-page__student-email')}>{student.email || '---'}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{student.studentCode || '---'}</td>
+                      <td>{student.faculty || '---'}</td>
+                      <td>{student.className || '---'}</td>
+                      <td>
+                        <div className={cx('scoring-page__activity')}>
+                          <span className={cx('scoring-page__activity-title')}>{activity.title || 'Hoạt động'}</span>
+                          <span className={cx('scoring-page__activity-date')}>{formatActivityRange(activity)}</span>
+                        </div>
+                      </td>
+                      <td className={cx('scoring-page__score')}>+{activity.points ?? 0}</td>
+                      <td>
+                        <div className={cx('scoring-page__check-cell')}>
+                          <span className={cx('scoring-page__check-time')}>{formatDateTime(checkInEntry?.capturedAt)}</span>
+                          <span className={cx(getCheckStatusClass(checkInEntry?.statusLabel || checkInEntry?.status))}>
+                            {checkInEntry?.statusLabel || checkInEntry?.status || 'Chưa cập nhật'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={cx('scoring-page__check-cell')}>
+                          <span className={cx('scoring-page__check-time')}>{formatDateTime(checkOutEntry?.capturedAt)}</span>
+                          <span className={cx(getCheckStatusClass(checkOutEntry?.statusLabel || checkOutEntry?.status))}>
+                            {checkOutEntry?.statusLabel || checkOutEntry?.status || 'Chưa cập nhật'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={cx('scoring-page__status-badge', `scoring-page__status-badge--${statusKey}`)}>
+                          {item.statusLabel || item.status || '---'}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className={cx('scoring-page__link-button')}
+                          onClick={() => navigate(buildPath.adminScoringDetail(item.id))}
+                        >
+                          Xem chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={12}>
+                    <div className={cx('scoring-page__empty')}>Không có hồ sơ phù hợp.</div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        <div className={cx('scoring-page__footer')}>
-          <div className={cx('scoring-page__footer-meta')}>
-            Đã chọn {selectedIds.length} / {totalItems} hồ sơ
-          </div>
-          <Pagination
-            current={safePage}
-            pageSize={PAGE_SIZE}
-            total={totalItems}
-            onChange={setCurrentPage}
-            showSizeChanger={false}
-            hideOnSinglePage
-            className={cx('scoring-page__pagination')}
-          />
-        </div>
+        <Pagination
+          current={pagination.page}
+          total={pagination.total}
+          pageSize={pagination.pageSize}
+          showSizeChanger={false}
+          onChange={(page) => setCurrentPage(page)}
+          className={cx('scoring-page__pagination')}
+        />
       </div>
     </section>
   );
