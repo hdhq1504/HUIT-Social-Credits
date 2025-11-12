@@ -256,9 +256,11 @@ function RollCallPage() {
             phase,
           });
         } catch (error) {
-          const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
-          toast({ message, variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
+          console.warn('Không thể upload ảnh điểm danh lên Supabase, fallback sang base64:', error);
+          const fallbackMessage =
+            'Không thể tải ảnh điểm danh lên máy chủ. Hệ thống sẽ gửi kèm ảnh trực tiếp để xử lý.';
+          toast({ message: fallbackMessage, variant: 'warning' });
+          evidenceMetadata = null;
         }
       }
 

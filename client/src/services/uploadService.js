@@ -93,10 +93,21 @@ export const uploadAttendanceEvidence = async (file, { userId, activityId, phase
     .upload(path, file, {
       cacheControl: '600',
       upsert: false,
+      contentType: file.type || 'image/jpeg',
     });
 
   if (error) {
-    throw new Error(error.message || 'Không thể upload ảnh điểm danh');
+    const uploadError = new Error(error.message || 'Không thể upload ảnh điểm danh');
+    if (error.statusCode || error.status) {
+      uploadError.status = error.statusCode || error.status;
+    }
+    if (error.error) {
+      uploadError.code = error.error;
+    }
+    if (error.error_description || error.msg) {
+      uploadError.details = error.error_description || error.msg;
+    }
+    throw uploadError;
   }
 
   const storagePath = data?.path || path;
