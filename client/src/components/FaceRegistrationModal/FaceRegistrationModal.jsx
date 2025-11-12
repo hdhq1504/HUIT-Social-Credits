@@ -8,6 +8,7 @@ import Webcam from 'react-webcam';
 import { useMutation } from '@tanstack/react-query';
 import faceApi from '@api/face.api';
 import * as faceapi from 'face-api.js';
+import faceRecognitionService from '@/services/faceRecognitionService';
 import { estimateFaceOrientation } from '@/utils/faceOrientation';
 import useToast from '../Toast/Toast';
 import styles from './FaceRegistrationModal.module.scss';
@@ -110,7 +111,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     onSuccess: (data) => {
       toastRef.current({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
       onSuccess?.(data?.profile ?? null);
-      dispatch({ type: 'RESET_CAPTURED' });
+      dispatch({ type: 'RESET_CAPTURES' });
     },
     onError: (error) => {
       const message = error?.response?.data?.error || 'Không thể đăng ký khuôn mặt. Vui lòng thử lại.';
@@ -127,6 +128,8 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     progressRef.current = 0;
     dispatch({ type: 'SET', payload: { progress: 0 } });
     dispatch({ type: 'SET_ORIENTATION' });
+    processingRef.current = false;
+    dispatch({ type: 'SET', payload: { processing: false } });
   }, [dispatch]);
 
   useEffect(() => {
@@ -150,11 +153,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       return;
     }
     try {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-      ]);
+      await faceRecognitionService.ensureModelsLoaded({ withRecognition: true });
       modelsLoadedRef.current = true;
       dispatch({ type: 'SET', payload: { modelsReady: true } });
     } catch (error) {
@@ -203,13 +202,18 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!webcamRef.current?.video) {
           throw new Error('WEBCAM_NOT_AVAILABLE');
         }
-        if (processing) return false;
+        if (processing || processingRef.current) return false;
 
         const dataUrl = webcamRef.current.getScreenshot();
         if (!dataUrl) {
           throw new Error('CAPTURE_FAILED');
         }
-        dispatch({ type: 'SET', processing: true });
+        processingRef.current = true;
+        dispatch({ type: 'SET', payload: { processing: true } });
+
+        if (!detectorOptionsRef.current) {
+          detectorOptionsRef.current = faceRecognitionService.createDetectorOptions();
+        }
 
         const detection = await faceapi
           .detectSingleFace(webcamRef.current.video, detectorOptionsRef.current)
@@ -230,14 +234,15 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
             error.message === 'FACE_NOT_DETECTED'
               ? 'Không nhận diện được khuôn mặt. Vui lòng thử lại.'
               : 'Chụp ảnh thất bại. Vui lòng thử lại.';
-          toast.error(message);
+          toastRef.current({ message, variant: 'danger' });
         }
         return false;
       } finally {
-        dispatch({ type: 'SET', processing: true });
+        processingRef.current = false;
+        dispatch({ type: 'SET', payload: { processing: false } });
       }
     },
-    [dispatch, processing, toast, addCapture, detectorOptionsRef],
+    [dispatch, processing, addCapture],
   );
 
   const pendingStep = useMemo(() => {
@@ -277,7 +282,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       }
       try {
         if (!detectorOptionsRef.current) {
-          detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
+          detectorOptionsRef.current = faceRecognitionService.createDetectorOptions();
         }
         const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
 

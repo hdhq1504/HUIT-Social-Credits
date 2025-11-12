@@ -16,6 +16,7 @@ import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import uploadService from '@/services/uploadService';
+import faceRecognitionService from '@/services/faceRecognitionService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
 
