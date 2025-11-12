@@ -11,6 +11,7 @@ import {
   faGear,
   faHeart,
   faCalendar,
+  faUserGear,
 } from '@fortawesome/free-solid-svg-icons';
 import styles from './AdminSidebar.module.scss';
 
@@ -24,6 +25,7 @@ const iconByKey = {
   feedback: faUsers,
   reports: faChartColumn,
   council: faMedal,
+  users: faUserGear,
   system: faGear,
 };
 

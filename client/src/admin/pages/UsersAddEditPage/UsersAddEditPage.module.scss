@@ -1,0 +1,123 @@
+.users-add-edit-page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+
+  &__card {
+    width: 100%;
+    max-width: 960px;
+    background: var(--white-color);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  &__header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  &__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #4d4d4d;
+    line-height: 1.5;
+  }
+
+  &__form {
+    margin-top: 12px;
+
+    :global(.ant-form-item-label > label) {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    :global(.ant-input),
+    :global(.ant-select-selector),
+    :global(.ant-input-password),
+    :global(.ant-input-affix-wrapper) {
+      border-radius: 10px !important;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+
+    :global(.ant-btn) {
+      height: 44px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    :global(.ant-btn-primary) {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+
+      &:hover,
+      &:focus {
+        background: var(--primary-hover-color);
+        border-color: var(--primary-hover-color);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    &__card {
+      padding: 24px;
+    }
+
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &__icon {
+      width: 48px;
+      height: 48px;
+      font-size: 20px;
+    }
+
+    &__actions {
+      flex-direction: column;
+      align-items: stretch;
+
+      :global(.ant-btn) {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
