@@ -98,6 +98,14 @@
     object-fit: cover;
   }
 
+  &__landmarks {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
   &__overlay {
     position: absolute;
     inset: 0;
@@ -199,6 +207,41 @@
       margin: 0;
       font-size: 0.92rem;
       color: rgba(226, 232, 240, 0.85);
+    }
+  }
+
+  &__status-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  &__status-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.4);
+    font-size: 0.82rem;
+    color: rgba(226, 232, 240, 0.85);
+    transition: all 0.25s ease;
+
+    svg {
+      font-size: 0.8rem;
+    }
+
+    &--done {
+      background: rgba(34, 197, 94, 0.18);
+      color: #bbf7d0;
+
+      svg {
+        color: #4ade80;
+      }
     }
   }
 

@@ -14,47 +14,46 @@ import styles from './FaceRegistrationModal.module.scss';
 
 const cx = classNames.bind(styles);
 
-const MATCH_DURATION_MS = 1200;
-const STEP_SEQUENCE = [
+const ORIENTATION_BUCKETS = [
   {
     key: 'front',
     title: 'Nhìn thẳng',
-    description: 'Giữ thẳng đầu, nhìn trực diện vào camera.',
-    hint: 'Giữ mặt cân đối trong khung tròn.',
+    description: 'Giữ khuôn mặt trực diện camera.',
     validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.12 && Math.abs(pitch) <= 0.12,
   },
   {
     key: 'left',
     title: 'Nghiêng trái',
-    description: 'Quay mặt nhẹ sang trái sao cho tai trái tiến gần về phía camera.',
-    hint: 'Nghiêng mặt sang trái và giữ ổn định.',
+    description: 'Quay nhẹ sang trái để lộ tai trái.',
     validate: ({ yaw }) => yaw >= 0.18,
   },
   {
     key: 'right',
     title: 'Nghiêng phải',
-    description: 'Quay mặt nhẹ sang phải và giữ mắt nhìn về camera.',
-    hint: 'Nghiêng mặt sang phải và giữ ổn định.',
+    description: 'Quay nhẹ sang phải để lộ tai phải.',
     validate: ({ yaw }) => yaw <= -0.18,
   },
   {
     key: 'down',
-    title: 'Cúi đầu',
-    description: 'Cúi cằm nhẹ xuống, vẫn nhìn vào camera.',
-    hint: 'Hạ cằm xuống một chút rồi giữ nguyên.',
+    title: 'Cúi xuống',
+    description: 'Hạ cằm xuống một chút.',
     validate: ({ pitch }) => pitch >= 0.08,
   },
   {
     key: 'up',
-    title: 'Ngẩng đầu',
-    description: 'Ngẩng đầu nhẹ lên phía trên.',
-    hint: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
+    title: 'Ngẩng lên',
+    description: 'Ngẩng cằm hướng lên trên.',
     validate: ({ pitch }) => pitch <= -0.08,
   },
 ];
-const MAX_SAMPLES = STEP_SEQUENCE.length;
 
-const buildInitialOrientation = (overrides = {}) => ({ yaw: 0, pitch: 0, matched: false, ...overrides });
+const MAX_SAMPLES = ORIENTATION_BUCKETS.length;
+
+const buildInitialCoverage = () =>
+  ORIENTATION_BUCKETS.reduce((acc, bucket) => {
+    acc[bucket.key] = false;
+    return acc;
+  }, {});
 
 const buildInitialFaceState = () => ({
   captures: [],
@@ -62,7 +61,7 @@ const buildInitialFaceState = () => ({
   processing: false,
   modelsReady: false,
   progress: 0,
-  orientation: buildInitialOrientation(),
+  coverage: buildInitialCoverage(),
 });
 
 const mergeState = (state, updates = {}) => {
@@ -94,16 +93,20 @@ const faceRegistrationReducer = (state, action) => {
       if (state.captures.some((item) => item.dataUrl === capture.dataUrl)) return state;
       return { ...state, captures: [...state.captures, capture] };
     }
-    case 'SET_ORIENTATION': {
-      const nextOrientation = buildInitialOrientation(action.payload ?? {});
-      if (
-        Object.is(state.orientation.yaw, nextOrientation.yaw) &&
-        Object.is(state.orientation.pitch, nextOrientation.pitch) &&
-        Object.is(state.orientation.matched, nextOrientation.matched)
-      ) {
-        return state;
-      }
-      return { ...state, orientation: nextOrientation };
+    case 'SET_COVERAGE': {
+      const payload = action.payload ?? {};
+      const nextCoverage = { ...state.coverage };
+      let changed = false;
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (!Object.is(nextCoverage[key], value)) {
+          nextCoverage[key] = value;
+          changed = true;
+        }
+      });
+
+      if (!changed) return state;
+      return { ...state, coverage: nextCoverage };
     }
     default:
       return state;
@@ -112,26 +115,46 @@ const faceRegistrationReducer = (state, action) => {
 
 function FaceRegistrationModal({ open, onClose, onSuccess }) {
   const webcamRef = useRef(null);
+  const landmarksCanvasRef = useRef(null);
   const wasOpenRef = useRef(false);
   const processingRef = useRef(false);
   const detectionIntervalRef = useRef(null);
-  const matchStartRef = useRef(null);
   const progressRef = useRef(0);
   const modelsLoadedRef = useRef(false);
   const detectorOptionsRef = useRef(null);
+  const coverageRef = useRef(buildInitialCoverage());
+  const captureLockRef = useRef(false);
   const [state, dispatch] = useReducer(faceRegistrationReducer, null, buildInitialFaceState);
-  const { captures, isCameraReady, processing, modelsReady, progress, orientation } = state;
+  const { captures, isCameraReady, processing, modelsReady, progress, coverage } = state;
   const { contextHolder, open: toast } = useToast();
 
   const toastRef = useRef(toast);
-  const orientationRef = useRef(orientation);
   useEffect(() => {
     toastRef.current = toast;
   }, [toast]);
 
-  useEffect(() => {
-    orientationRef.current = orientation;
-  }, [orientation]);
+  const updateProgress = useCallback(
+    (value) => {
+      const safeValue = Math.max(0, Math.min(100, value));
+      progressRef.current = safeValue;
+      dispatch({ type: 'SET', payload: { progress: safeValue } });
+    },
+    [dispatch],
+  );
+
+  const resetCoverage = useCallback(() => {
+    const freshCoverage = buildInitialCoverage();
+    coverageRef.current = { ...freshCoverage };
+    dispatch({ type: 'SET_COVERAGE', payload: freshCoverage });
+  }, [dispatch]);
+
+  const clearLandmarks = useCallback(() => {
+    const canvas = landmarksCanvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  }, []);
 
   const registrationMutation = useMutation({
     mutationFn: (payload) => faceApi.register(payload),
@@ -139,6 +162,9 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       toastRef.current({ message: data?.message || 'Đăng ký khuôn mặt thành công!', variant: 'success' });
       onSuccess?.(data?.profile ?? null);
       dispatch({ type: 'RESET_CAPTURES' });
+      resetCoverage();
+      updateProgress(0);
+      clearLandmarks();
     },
     onError: (error) => {
       const message = error?.response?.data?.error || 'Không thể đăng ký khuôn mặt. Vui lòng thử lại.';
@@ -151,22 +177,12 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
     }
-    matchStartRef.current = null;
-    const hadProgress = !Object.is(progressRef.current, 0);
-    if (hadProgress) {
-      dispatch({ type: 'SET', payload: { progress: 0 } });
+    if (!Object.is(progressRef.current, 0)) {
+      updateProgress(0);
     }
-    progressRef.current = 0;
-
-    const shouldResetOrientation =
-      !Object.is(orientationRef.current.yaw, 0) ||
-      !Object.is(orientationRef.current.pitch, 0) ||
-      orientationRef.current.matched;
-
-    if (shouldResetOrientation) {
-      dispatch({ type: 'SET_ORIENTATION' });
-    }
-  }, [dispatch]);
+    resetCoverage();
+    clearLandmarks();
+  }, [clearLandmarks, resetCoverage, updateProgress]);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
@@ -281,35 +297,17 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     [dispatch, processing, addCapture, detectorOptionsRef],
   );
 
-  const pendingStep = useMemo(() => {
-    if (captures.length >= STEP_SEQUENCE.length) return null;
-    return STEP_SEQUENCE[captures.length];
-  }, [captures.length]);
-
-  const updateProgress = useCallback((value) => {
-    const safeValue = Math.max(0, Math.min(100, value));
-    progressRef.current = safeValue;
-    dispatch({ type: 'SET', payload: { progress: safeValue } });
-  }, []);
-
   useEffect(() => {
-    updateProgress(0);
-    dispatch({ type: 'SET_ORIENTATION' });
-    matchStartRef.current = null;
-  }, [captures.length, dispatch, updateProgress]);
-
-  useEffect(() => {
-    if (!open || !isCameraReady || !modelsReady || !pendingStep) {
+    if (!open || !isCameraReady || !modelsReady || captures.length >= MAX_SAMPLES) {
       stopDetection();
       return undefined;
     }
 
     stopDetection();
     let cancelled = false;
-    let isCapturing = false;
 
     const detect = async () => {
-      if (cancelled || isCapturing || !webcamRef.current?.video) {
+      if (cancelled || captureLockRef.current || !webcamRef.current?.video) {
         return;
       }
       const video = webcamRef.current.video;
@@ -320,50 +318,63 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!detectorOptionsRef.current) {
           detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
         }
-        const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
+        const detection = await faceapi
+          .detectSingleFace(video, detectorOptionsRef.current)
+          .withFaceLandmarks(true);
 
         if (cancelled) return;
 
         if (!detection || !detection.landmarks) {
-          if (progressRef.current !== 0) {
-            updateProgress(0);
-          }
-          dispatch({ type: 'SET_ORIENTATION' });
-          matchStartRef.current = null;
+          clearLandmarks();
           return;
         }
 
-        const estimatedOrientation = estimateFaceOrientation(detection.landmarks, { mirrored: true });
-        const matched = pendingStep.validate(estimatedOrientation);
-        dispatch({ type: 'SET_ORIENTATION', payload: { ...estimatedOrientation, matched } });
-
-        if (matched) {
-          if (!matchStartRef.current) {
-            matchStartRef.current = performance.now();
-          }
-          const elapsed = performance.now() - matchStartRef.current;
-          const ratio = Math.min(elapsed / MATCH_DURATION_MS, 1);
-          const nextProgress = ratio * 100;
-          if (Math.abs(nextProgress - progressRef.current) >= 1) {
-            updateProgress(nextProgress);
-          }
-
-          if (ratio >= 1 && !isCapturing && !processingRef.current) {
-            isCapturing = true;
-            matchStartRef.current = null;
-            updateProgress(0);
-            const success = await runCapture({ silent: false, skipErrorToast: false });
-            isCapturing = false;
-
-            if (!success) {
-              matchStartRef.current = null;
+        const canvas = landmarksCanvasRef.current;
+        if (canvas) {
+          const context = canvas.getContext('2d');
+          if (context) {
+            const { videoWidth, videoHeight } = video;
+            if (canvas.width !== videoWidth || canvas.height !== videoHeight) {
+              canvas.width = videoWidth;
+              canvas.height = videoHeight;
             }
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            const resizedLandmarks = detection.landmarks.forSize(canvas.width, canvas.height);
+            faceapi.draw.drawFaceLandmarks(canvas, resizedLandmarks, {
+              drawLines: true,
+              lineWidth: 2,
+              color: '#22c55e',
+            });
           }
-        } else {
-          if (progressRef.current !== 0) {
-            updateProgress(0);
+        }
+
+        const estimatedOrientation = estimateFaceOrientation(detection.landmarks, { mirrored: true });
+
+        const nextBucket = ORIENTATION_BUCKETS.find(
+          (bucket) => !coverageRef.current[bucket.key] && bucket.validate(estimatedOrientation),
+        );
+
+        if (!nextBucket || processingRef.current) {
+          return;
+        }
+
+        captureLockRef.current = true;
+        coverageRef.current[nextBucket.key] = true;
+        dispatch({ type: 'SET_COVERAGE', payload: { [nextBucket.key]: true } });
+
+        try {
+          const success = await runCapture({ silent: false });
+          if (!success) {
+            coverageRef.current[nextBucket.key] = false;
+            dispatch({ type: 'SET_COVERAGE', payload: { [nextBucket.key]: false } });
+            return;
           }
-          matchStartRef.current = null;
+
+          const completed = ORIENTATION_BUCKETS.filter((bucket) => coverageRef.current[bucket.key]).length;
+          const nextProgress = (completed / MAX_SAMPLES) * 100;
+          updateProgress(nextProgress);
+        } finally {
+          captureLockRef.current = false;
         }
       } catch (error) {
         if (!cancelled) {
@@ -380,7 +391,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
       cancelled = true;
       stopDetection();
     };
-  }, [dispatch, isCameraReady, modelsReady, open, pendingStep, runCapture, stopDetection, updateProgress]);
+  }, [captures.length, clearLandmarks, dispatch, isCameraReady, modelsReady, open, runCapture, stopDetection, updateProgress]);
 
   const handleSubmit = async () => {
     if (captures.length < MAX_SAMPLES || registrationMutation.isPending) return;
@@ -396,15 +407,14 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
 
   const instructions = useMemo(
     () => [
-      'Thực hiện lần lượt 5 góc chụp: Nhìn thẳng, nghiêng trái, nghiêng phải, cúi đầu, ngẩng đầu.',
-      'Giữ khuôn mặt nằm trọn trong vòng tròn và tránh ánh sáng quá mạnh phía sau.',
-      'Không đeo khẩu trang, kính râm hoặc che khuất khuôn mặt.',
+      'Đưa khuôn mặt vào giữa khung hình và di chuyển nhẹ sang trái, phải, lên và xuống để hệ thống quét đầy đủ.',
+      'Giữ ánh sáng ổn định, tránh che chắn khuôn mặt bằng khẩu trang hoặc kính râm.',
+      'Giữ khoảng cách vừa phải (40-60cm) để điểm mốc được nhận diện chính xác.',
     ],
     [],
   );
 
   const completedCount = captures.length;
-  const activeStep = completedCount >= STEP_SEQUENCE.length ? null : STEP_SEQUENCE[completedCount];
 
   return (
     <Modal
@@ -445,56 +455,49 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                   onUserMedia={() => dispatch({ type: 'SET', payload: { isCameraReady: true } })}
                   onUserMediaError={() => dispatch({ type: 'SET', payload: { isCameraReady: false } })}
                 />
+                <canvas ref={landmarksCanvasRef} className={cx('modal__landmarks')} />
                 <div className={cx('modal__overlay')}>
                   <div
-                    className={cx('modal__progress', orientation.matched && 'modal__progress--active')}
+                    className={cx('modal__progress', progress >= 100 && 'modal__progress--active')}
                     style={{
                       '--progress-angle': `${Math.round((progress / 100) * 360)}deg`,
                     }}
                   >
                     <div className={cx('modal__progress-content')}>
-                      <FontAwesomeIcon icon={orientation.matched ? faCircleCheck : faCamera} />
+                      <FontAwesomeIcon icon={progress >= 100 ? faCircleCheck : faCamera} />
                       <span>{Math.round(progress)}%</span>
                     </div>
                   </div>
                   <div className={cx('modal__overlay-hint')}>
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        padding: '5px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        zIndex: 10,
-                      }}
-                    >
-                      {/* Hiển thị giá trị Yaw (Nghiêng) và Pitch (Ngẩng) */}
-                      <div>Yaw: {orientation.yaw.toFixed(2)}</div>
-                      <div>Pitch: {orientation.pitch.toFixed(2)}</div>
-                    </div>
-
-                    {activeStep ? (
-                      <>
-                        <span className={cx('modal__step-title')}>{activeStep.title}</span>
-                        <p>{activeStep.description}</p>
-                      </>
-                    ) : (
-                      <>
-                        <span className={cx('modal__step-title')}>Hoàn tất</span>
-                        <p>Đã đủ {MAX_SAMPLES} ảnh. Vui lòng bấm hoàn tất đăng ký.</p>
-                      </>
-                    )}
+                    <span className={cx('modal__step-title')}>
+                      {progress >= 100 ? 'Quét hoàn tất' : 'Đang quét khuôn mặt'}
+                    </span>
+                    <p>
+                      {progress >= 100
+                        ? 'Đã thu đủ dữ liệu khuôn mặt. Bấm hoàn tất để đăng ký.'
+                        : 'Di chuyển khuôn mặt nhẹ nhàng để hệ thống ghi nhận đầy đủ các góc.'}
+                    </p>
+                    <ul className={cx('modal__status-list')}>
+                      {ORIENTATION_BUCKETS.map((bucket) => (
+                        <li
+                          key={bucket.key}
+                          className={cx(
+                            'modal__status-item',
+                            coverage[bucket.key] && 'modal__status-item--done',
+                          )}
+                        >
+                          <FontAwesomeIcon icon={coverage[bucket.key] ? faCircleCheck : faCamera} />
+                          <span>{bucket.title}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
             ) : (
               <div className={cx('modal__completed')}>
                 <FontAwesomeIcon icon={faCircleCheck} />
-                <p>Đã đủ {MAX_SAMPLES} ảnh. Sẵn sàng đăng ký!</p>
+                <p>Đã thu đủ dữ liệu khuôn mặt. Sẵn sàng đăng ký!</p>
               </div>
             )}
           </div>
