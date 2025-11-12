@@ -116,11 +116,6 @@ export const removeFiles = async (bucket, paths = []) => {
   }
 };
 
-export const buildFaceSamplePath = (userId) => {
-  const safeUser = userId?.replace(/[^a-zA-Z0-9_-]/g, "");
-  return safeUser ? `face/${safeUser}` : "face";
-};
-
 export const buildAttendancePath = ({ userId, activityId }) => {
   const safeUser = userId?.replace(/[^a-zA-Z0-9_-]/g, "");
   const safeActivity = activityId?.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -134,7 +129,6 @@ export default {
   isSupabaseConfigured,
   uploadBase64Image,
   removeFiles,
-  buildFaceSamplePath,
   buildAttendancePath,
   buildPublicUrl,
 };

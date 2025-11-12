@@ -420,13 +420,13 @@ function CardActivity(props) {
       });
       dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
       dispatch({ type: 'RESET_CAPTURED' });
-      const faceStatus = result?.face?.status || null;
-      const toastVariant =
-        faceStatus === 'REJECTED' ? 'danger' : faceStatus === 'REVIEW' ? 'warning' : 'success';
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
+      const responseMessage = result?.message || fallbackMessage;
+      const normalizedMessage = responseMessage.toLowerCase();
+      const toastVariant = normalizedMessage.includes('vắng') ? 'warning' : 'success';
       openToast({
-        message: result?.message || fallbackMessage,
+        message: responseMessage,
         variant: toastVariant,
       });
       dispatch({

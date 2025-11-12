@@ -4,19 +4,17 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
 import { TextField } from '@mui/material';
 import dayjs from 'dayjs';
-import { ChangePasswordModal, FaceRegistrationModal, Label, useToast } from '@components/index';
+import { ChangePasswordModal, Label, useToast } from '@components/index';
 import Loading from '../Loading/Loading';
 import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';
 import { ROUTE_PATHS } from '@/config/routes.config';
-import faceApi from '@api/face.api';
 import styles from './ProfilePage.module.scss';
 
 const cx = classNames.bind(styles);
 
 function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
-  const [openFaceModal, setOpenFaceModal] = useState(false);
 
   // Lấy thông tin người dùng từ Zustand
   const updateUserStore = useAuthStore((state) => state.updateUser);
@@ -40,19 +38,6 @@ function ProfilePage() {
       const { data } = await http.get('/auth/me');
       return data?.user ?? null;
     },
-  });
-
-  const {
-    data: faceProfile,
-    isFetching: faceProfileLoading,
-    refetch: refetchFaceProfile,
-  } = useQuery({
-    queryKey: ['face-profile'],
-    queryFn: async () => {
-      const data = await faceApi.status();
-      return data;
-    },
-    staleTime: 60 * 1000,
   });
 
   const changePasswordMutation = useMutation({
@@ -110,7 +95,6 @@ function ProfilePage() {
   // Hàm mở/đóng modal
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
-  const handleCloseFaceModal = () => setOpenFaceModal(false);
 
   // Callback sau khi đổi mật khẩu thành công
   const handleChangePasswordSuccess = () => {
@@ -154,21 +138,8 @@ function ProfilePage() {
           <button type="button" className={cx('profile-page__media-button')} onClick={handleOpenModal}>
             Đổi mật khẩu
           </button>
-          <button
-            type="button"
-            className={cx('profile-page__media-button', 'profile-page__media-button--secondary')}
-            onClick={() => setOpenFaceModal(true)}
-          >
-            {faceProfile?.registered ? 'Cập nhật khuôn mặt' : 'Đăng ký khuôn mặt'}
-          </button>
-          <p className={cx('profile-page__face-status')}>
-            {faceProfileLoading
-              ? 'Đang kiểm tra trạng thái khuôn mặt...'
-              : faceProfile?.registered
-                ? `Đã đăng ký ${faceProfile.descriptorsCount || 0} mẫu vào ${
-                    faceProfile.updatedAt ? dayjs(faceProfile.updatedAt).format('DD/MM/YYYY HH:mm') : '---'
-                  }`
-                : 'Bạn chưa đăng ký khuôn mặt.'}
+          <p className={cx('profile-page__media-hint')}>
+            Liên hệ ban quản trị nếu bạn cần hỗ trợ cập nhật thông tin tài khoản hoặc ảnh điểm danh.
           </p>
         </div>
 
@@ -320,15 +291,6 @@ function ProfilePage() {
         onClose={handleCloseModal}
         changePassword={handleChangePassword}
         onSuccess={handleChangePasswordSuccess}
-      />
-
-      <FaceRegistrationModal
-        open={openFaceModal}
-        onClose={handleCloseFaceModal}
-        onSuccess={() => {
-          refetchFaceProfile();
-          setOpenFaceModal(false);
-        }}
       />
     </main>
   );

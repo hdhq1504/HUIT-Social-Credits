@@ -10,7 +10,6 @@ import {
   mapAttendanceMethodToApi,
   normalizeAttendanceMethod
 } from "../utils/attendance.js";
-import { sanitizeDescriptor, computeMatchConfidence, compareDescriptors } from "../utils/face.js";
 import {
   uploadBase64Image,
   buildAttendancePath,
@@ -64,8 +63,6 @@ const normalizeAcademicYearLabel = (value) => {
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
-const FACE_ATTENDANCE_METHOD = "face";
-
 const buildBucketSet = (...values) =>
   new Set(
     values
@@ -344,20 +341,6 @@ const sanitizeAttendanceEvidence = (value) => {
   return { data, mimeType, fileName, metadata: null };
 };
 
-const extractFaceDescriptorPayload = (value) => {
-  if (!value || typeof value !== "object") return null;
-  const source = Array.isArray(value.descriptor)
-    ? value.descriptor
-    : Array.isArray(value.vector)
-      ? value.vector
-      : Array.isArray(value.data)
-        ? value.data
-        : null;
-  const descriptor = sanitizeDescriptor(source);
-  if (!descriptor) return null;
-  return { descriptor };
-};
-
 const mapAttendanceEntry = (entry) => {
   if (!entry) return null;
   const attachmentMeta = mapAttendanceEvidence(entry.anhDinhKem);
@@ -370,11 +353,7 @@ const mapAttendanceEntry = (entry) => {
     attachment: attachmentMeta,
     attachmentUrl: attachmentMeta?.url ?? null,
     attachmentMimeType: attachmentMeta?.mimeType ?? null,
-    attachmentFileName: attachmentMeta?.fileName ?? null,
-    faceMatchStatus: entry.faceMatch ?? null,
-    faceMatchScore:
-      typeof entry.faceScore === "number" && Number.isFinite(entry.faceScore) ? entry.faceScore : null,
-    faceNeedsReview: entry.faceMatch === "REVIEW"
+    attachmentFileName: attachmentMeta?.fileName ?? null
   };
 };
 
@@ -972,7 +951,6 @@ export const markAttendance = async (req, res) => {
   const checkinEntries = history.filter((entry) => entry.loai === "CHECKIN");
   const hasCheckin = checkinEntries.length > 0;
   const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
-  const latestCheckinEntry = hasCheckin ? checkinEntries[checkinEntries.length - 1] : null;
 
   if (!isCheckout && hasCheckin) {
     return res.status(409).json({ error: "Bạn đã điểm danh đầu giờ cho hoạt động này" });
@@ -990,7 +968,6 @@ export const markAttendance = async (req, res) => {
   const attendanceSource = activity.phuongThucDiemDanh || defaultAttendanceMethod;
   const attendanceMethod =
     mapAttendanceMethodToApi(attendanceSource) || mapAttendanceMethodToApi(defaultAttendanceMethod);
-  const isFaceAttendance = attendanceMethod === FACE_ATTENDANCE_METHOD;
 
   const normalizedNote = sanitizeOptionalText(note);
   const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
@@ -1018,99 +995,14 @@ export const markAttendance = async (req, res) => {
       return res.status(500).json({ error: "Không thể lưu ảnh điểm danh. Vui lòng thử lại." });
     }
   }
+  if (attendanceMethod === "photo" && !storedEvidence) {
+    return res.status(400).json({ error: "Vui lòng chụp hoặc tải lên ảnh điểm danh." });
+  }
   const attendanceTime = new Date();
 
   const baseNextStatus = status === "absent" && isCheckout ? "VANG_MAT" : "DA_THAM_GIA";
-  let finalStatus = baseNextStatus;
-  let entryStatus = isCheckout ? baseNextStatus : "DANG_KY";
-  let faceResult = null;
-
-  if (isFaceAttendance) {
-    const facePayload = extractFaceDescriptorPayload(
-      req.body?.face ?? req.body?.faceData ?? req.body?.faceVector ?? req.body,
-    );
-    if (!facePayload?.descriptor) {
-      return res.status(400).json({ error: "Không tìm thấy dữ liệu khuôn mặt hợp lệ" });
-    }
-
-    const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
-    const storedDescriptors = Array.isArray(faceProfile?.descriptors) ? faceProfile.descriptors : [];
-    if (!storedDescriptors.length) {
-      return res
-        .status(400)
-        .json({ error: "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi điểm danh." });
-    }
-
-    const profileMatch = computeMatchConfidence(storedDescriptors, facePayload.descriptor);
-    const score = Math.round(profileMatch.confidence * 10_000) / 100;
-    const matchStatus = profileMatch.status;
-
-    if (matchStatus === "REJECTED") {
-      return res.status(403).json({
-        error: "Không thể xác thực khuôn mặt. Vui lòng thử lại hoặc liên hệ quản trị viên.",
-        face: { status: matchStatus, score }
-      });
-    }
-
-    faceResult = {
-      status: matchStatus,
-      score,
-      descriptor: facePayload.descriptor,
-      profileId: faceProfile.id,
-      distance: profileMatch.distance,
-      comparedAt: new Date().toISOString(),
-      reference: profileMatch.bestDescriptor
-        ? { type: "PROFILE", distance: profileMatch.distance }
-        : null,
-    };
-
-    if (isCheckout) {
-      const checkinDescriptor = latestCheckinEntry?.faceMeta?.descriptor ?? null;
-      const checkinMatchStatus = latestCheckinEntry?.faceMatch ?? null;
-      const crossMatch = checkinDescriptor
-        ? compareDescriptors(checkinDescriptor, facePayload.descriptor)
-        : null;
-
-      if (crossMatch) {
-        faceResult.crossMatch = {
-          status: crossMatch.status,
-          score: Math.round(crossMatch.confidence * 10_000) / 100,
-          distance: crossMatch.distance,
-          referenceAttendanceId: latestCheckinEntry?.id ?? null,
-        };
-      }
-
-      const providedCheckinDescriptor = Array.isArray(checkinDescriptor);
-      const providedCheckoutDescriptor = Array.isArray(facePayload.descriptor);
-      const providedBoth = providedCheckinDescriptor && providedCheckoutDescriptor;
-      const anyFaceProvided = providedCheckinDescriptor || providedCheckoutDescriptor;
-      const checkinApproved = checkinMatchStatus === "APPROVED";
-      const checkoutApproved = matchStatus === "APPROVED";
-      const crossApproved = crossMatch ? crossMatch.status === "APPROVED" : false;
-      const crossRejected = crossMatch ? crossMatch.status === "REJECTED" : false;
-
-      if (!anyFaceProvided || !providedBoth) {
-        finalStatus = "VANG_MAT";
-      } else if (checkinApproved && checkoutApproved && crossApproved) {
-        finalStatus = "DA_THAM_GIA";
-      } else if (crossRejected) {
-        finalStatus = "VANG_MAT";
-      } else {
-        finalStatus = "DANG_KY";
-      }
-
-      entryStatus = finalStatus;
-    } else {
-      entryStatus = "DANG_KY";
-    }
-  }
-
-  const shouldAutoApprove =
-    isCheckout &&
-    finalStatus === "DA_THAM_GIA" &&
-    isFaceAttendance &&
-    faceResult?.status === "APPROVED" &&
-    (!faceResult?.crossMatch || faceResult.crossMatch.status === "APPROVED");
+  const finalStatus = baseNextStatus;
+  const entryStatus = isCheckout ? finalStatus : "DANG_KY";
 
   const registrationUpdate = {
     diemDanhLuc: attendanceTime,
@@ -1137,46 +1029,12 @@ export const markAttendance = async (req, res) => {
         trangThai: entryStatus,
         loai: isCheckout ? "CHECKOUT" : "CHECKIN",
         ghiChu: normalizedNote,
-        anhDinhKem: storedEvidence,
-        faceMatch: faceResult?.status ?? null,
-        faceScore: faceResult?.score ?? null,
-        faceMeta: faceResult
-          ? {
-              profileId: faceResult.profileId,
-              descriptor: faceResult.descriptor,
-              distance: faceResult.distance ?? null,
-              comparedAt: faceResult.comparedAt ?? null,
-              reference: faceResult.reference ?? null,
-              crossMatch: faceResult.crossMatch ?? null,
-            }
-          : null
+        anhDinhKem: storedEvidence
       }
     })
   ]);
 
-  if (shouldAutoApprove) {
-    await prisma.phanHoiHoatDong.upsert({
-      where: { dangKyId: registration.id },
-      update: {
-        trangThai: "DA_DUYET",
-        lydoTuChoi: null
-      },
-      create: {
-        dangKyId: registration.id,
-        nguoiDungId: userId,
-        hoatDongId: activityId,
-        noiDung: "Điểm danh được hệ thống tự động xác nhận.",
-        danhGia: null,
-        minhChung: null,
-        trangThai: "DA_DUYET"
-      }
-    });
-  }
-
   const updated = await buildActivityResponse(activityId, userId);
-  const faceReviewPending =
-    faceResult?.status === "REVIEW" || faceResult?.crossMatch?.status === "REVIEW";
-  const faceRejected = faceResult?.crossMatch?.status === "REJECTED";
   const success = isCheckout ? finalStatus === "DA_THAM_GIA" : true;
 
   let notificationTitle;
@@ -1184,105 +1042,45 @@ export const markAttendance = async (req, res) => {
   let notificationType;
   let notificationAction;
   let emailSubject;
-  let emailMessageLines;
+  const emailMessageLines = [];
   let responseMessage;
 
-  if (isFaceAttendance) {
-    const scoreLabel = faceResult ? ` (độ khớp ${faceResult.score.toFixed(2)}%)` : "";
-    if (isCheckout) {
-      if (finalStatus === "VANG_MAT" || faceRejected) {
-        responseMessage = "Điểm danh không hợp lệ - bạn được ghi nhận vắng mặt";
-        notificationTitle = "Điểm danh không hợp lệ";
-        notificationMessage = `Hệ thống không thể xác thực khuôn mặt của bạn cho hoạt động "${activity.tieuDe}".${scoreLabel}`;
-        notificationType = "danger";
-        notificationAction = "ABSENT";
-        emailSubject = `[HUIT Social Credits] Điểm danh không hợp lệ - "${activity.tieuDe}"`;
-        emailMessageLines = [
-          `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" không trùng khớp với ảnh đầu giờ hoặc hồ sơ khuôn mặt.${scoreLabel}`,
-          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-        ];
-      } else if (faceReviewPending || finalStatus === "DANG_KY") {
-        responseMessage = "Điểm danh cuối giờ đã ghi nhận và đang chờ xác minh";
-        notificationTitle = "Điểm danh cuối giờ cần xác minh";
-        notificationMessage = `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" đang chờ quản trị viên xác minh${scoreLabel}.`;
-        notificationType = "warning";
-        notificationAction = "CHECKOUT_REVIEW";
-        emailSubject = `[HUIT Social Credits] Điểm danh cần xác minh - "${activity.tieuDe}"`;
-        emailMessageLines = [
-          `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" đang chờ quản trị viên xác minh thêm.${scoreLabel}`,
-          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-        ];
-      } else {
-        responseMessage = "Điểm danh cuối giờ thành công, hệ thống đã cộng điểm";
-        notificationTitle = "Điểm danh thành công";
-        notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận và cộng điểm${scoreLabel}.`;
-        notificationType = "success";
-        notificationAction = "ATTENDED";
-        emailSubject = `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`;
-        emailMessageLines = [
-          `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công và cộng điểm.${scoreLabel}`,
-          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-        ];
-      }
+  if (isCheckout) {
+    if (success) {
+      responseMessage = "Điểm danh cuối giờ thành công, hệ thống đã cộng điểm";
+      notificationTitle = "Điểm danh thành công";
+      notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận và cộng điểm.`;
+      notificationType = "success";
+      notificationAction = "ATTENDED";
+      emailSubject = `[HUIT Social Credits] Điểm danh thành công - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công và cộng điểm.`
+      );
     } else {
-      if (faceReviewPending) {
-        responseMessage = "Điểm danh đầu giờ đã ghi nhận và đang chờ xác minh";
-        notificationTitle = "Điểm danh đầu giờ cần xác minh";
-        notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đang chờ xác minh thêm${scoreLabel}.`;
-        notificationType = "warning";
-        notificationAction = "CHECKIN_REVIEW";
-        emailSubject = `[HUIT Social Credits] Điểm danh cần xác minh - "${activity.tieuDe}"`;
-        emailMessageLines = [
-          `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đang chờ xác minh thêm.${scoreLabel}`,
-          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-        ];
-      } else {
-        responseMessage = "Điểm danh đầu giờ thành công";
-        notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
-        notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận${scoreLabel}.`;
-        notificationType = "info";
-        notificationAction = "CHECKIN";
-        emailSubject = `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
-        emailMessageLines = [
-          `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.${scoreLabel}`,
-          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-        ];
-      }
+      responseMessage = "Đã ghi nhận vắng mặt";
+      notificationTitle = "Đã ghi nhận vắng mặt";
+      notificationMessage = `Bạn được ghi nhận vắng mặt tại hoạt động "${activity.tieuDe}".`;
+      notificationType = "danger";
+      notificationAction = "ABSENT";
+      emailSubject = `[HUIT Social Credits] Ghi nhận vắng mặt - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh cho hoạt động "${activity.tieuDe}" ghi nhận bạn vắng mặt.`
+      );
     }
   } else {
-    notificationTitle = isCheckout
-      ? success
-        ? "Điểm danh thành công"
-        : "Đã ghi nhận vắng mặt"
-      : "Đã ghi nhận điểm danh đầu giờ";
-    notificationMessage = isCheckout
-      ? success
-        ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`
-        : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`
-      : `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
-    notificationType = isCheckout ? (success ? "success" : "danger") : "info";
-    notificationAction = isCheckout ? (success ? "ATTENDED" : "ABSENT") : "CHECKIN";
-    emailSubject = isCheckout
-      ? success
-        ? `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`
-        : `[HUIT Social Credits] Thông báo vắng mặt hoạt động "${activity.tieuDe}"`
-      : `[HUIT Social Credits] Xác nhận điểm danh đầu giờ hoạt động "${activity.tieuDe}"`;
-    emailMessageLines = isCheckout
-      ? [
-        success
-          ? `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
-          : `Bạn được ghi nhận vắng mặt cho hoạt động "${activity.tieuDe}".`,
-        normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-      ]
-      : [
-        `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`,
-        normalizedNote ? `Ghi chú: ${normalizedNote}` : null
-      ];
-    responseMessage = isCheckout
-      ? success
-        ? "Điểm danh cuối giờ thành công"
-        : "Đã ghi nhận vắng mặt"
-      : "Điểm danh đầu giờ thành công";
+    responseMessage = "Điểm danh đầu giờ thành công";
+    notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
+    notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
+    notificationType = "info";
+    notificationAction = "CHECKIN";
+    emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ - "${activity.tieuDe}"`;
+    emailMessageLines.push(
+      `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
+    );
+  }
+
+  if (normalizedNote) {
+    emailMessageLines.push(`Ghi chú: ${normalizedNote}`);
   }
 
   await notifyUser({
@@ -1296,23 +1094,9 @@ export const markAttendance = async (req, res) => {
     emailMessageLines
   });
 
-  const responseFace = faceResult
-    ? {
-        status:
-          faceResult.crossMatch?.status === "REJECTED"
-            ? "REJECTED"
-            : faceResult.crossMatch?.status === "REVIEW" && faceResult.status === "APPROVED"
-              ? "REVIEW"
-              : faceResult.status,
-        score: faceResult.score,
-        crossMatch: faceResult.crossMatch ?? null,
-      }
-    : null;
-
   res.json({
     message: responseMessage,
-    activity: updated,
-    face: responseFace
+    activity: updated
   });
 };
 
