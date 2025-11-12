@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames/bind';
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, Button, Input, Select, Table, Tag } from 'antd';
+import { Avatar, Button, Input, Pagination, Select, Table, Tag } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleDot, faSearch } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
+import useDebounce from '@/hooks/useDebounce';
 import styles from './UsersPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -53,8 +54,10 @@ export default function UsersPage() {
   const [searchValue, setSearchValue] = useState('');
   const [roleValue, setRoleValue] = useState('all');
   const [statusValue, setStatusValue] = useState('all');
-  const [filters, setFilters] = useState({ search: '', role: 'all', status: 'all' });
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+  const [sortState, setSortState] = useState({ sortBy: 'createdAt', sortOrder: 'descend' });
+
+  const debouncedSearch = useDebounce(searchValue, 400);
 
   const queryKey = useMemo(
     () => [
@@ -62,12 +65,14 @@ export default function UsersPage() {
       {
         page: pagination.current,
         pageSize: pagination.pageSize,
-        search: filters.search,
-        role: filters.role,
-        status: filters.status,
+        search: debouncedSearch.trim(),
+        role: roleValue,
+        status: statusValue,
+        sortBy: sortState.sortBy,
+        sortOrder: sortState.sortOrder === 'ascend' ? 'asc' : 'desc',
       },
     ],
-    [pagination, filters],
+    [pagination, debouncedSearch, roleValue, statusValue, sortState],
   );
 
   const { data, isFetching } = useQuery({
@@ -79,21 +84,52 @@ export default function UsersPage() {
   const users = data?.users ?? [];
   const totalItems = data?.pagination?.total ?? 0;
 
-  const handleApplyFilters = () => {
-    setPagination((prev) => ({ ...prev, current: 1 }));
-    setFilters({ search: searchValue.trim(), role: roleValue, status: statusValue });
-  };
-
   const handleResetFilters = () => {
     setSearchValue('');
     setRoleValue('all');
     setStatusValue('all');
     setPagination((prev) => ({ current: 1, pageSize: prev.pageSize }));
-    setFilters({ search: '', role: 'all', status: 'all' });
+    setSortState({ sortBy: 'createdAt', sortOrder: 'descend' });
   };
 
-  const handleTableChange = (nextPagination) => {
-    setPagination({ current: nextPagination.current, pageSize: nextPagination.pageSize });
+  const handleTableChange = (nextPagination, _filters, sorter) => {
+    if (nextPagination?.current && nextPagination?.pageSize) {
+      setPagination({ current: nextPagination.current, pageSize: nextPagination.pageSize });
+    }
+
+    if (Array.isArray(sorter)) return;
+
+    if (!sorter?.order) {
+      setSortState({ sortBy: 'createdAt', sortOrder: 'descend' });
+      return;
+    }
+
+    const nextSortBy = sorter.field || sorter.columnKey || 'createdAt';
+    setSortState({ sortBy: nextSortBy, sortOrder: sorter.order });
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchValue(event.target.value);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleRoleChange = (value) => {
+    setRoleValue(value);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleStatusChange = (value) => {
+    setStatusValue(value);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const getSortOrderForColumn = useCallback(
+    (columnKey) => (sortState.sortBy === columnKey ? sortState.sortOrder : null),
+    [sortState],
+  );
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination((prev) => ({ current: pageSize !== prev.pageSize ? 1 : page, pageSize }));
   };
 
   const columns = useMemo(
@@ -104,6 +140,9 @@ export default function UsersPage() {
         key: 'index',
         width: 70,
         align: 'center',
+        sorter: true,
+        columnKey: 'createdAt',
+        sortOrder: getSortOrderForColumn('createdAt'),
         render: (_value, _record, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
       },
       {
@@ -111,6 +150,9 @@ export default function UsersPage() {
         dataIndex: 'fullName',
         key: 'fullName',
         width: 280,
+        sorter: true,
+        columnKey: 'fullName',
+        sortOrder: getSortOrderForColumn('fullName'),
         render: (_value, record) => (
           <div className={cx('users-page__user-cell')}>
             <Avatar size={44} src={record.avatarUrl} className={cx('users-page__avatar')}>
@@ -128,6 +170,9 @@ export default function UsersPage() {
         dataIndex: 'identifier',
         key: 'identifier',
         width: 160,
+        sorter: true,
+        columnKey: 'identifier',
+        sortOrder: getSortOrderForColumn('identifier'),
         render: (_value, record) => mapIdentifier(record),
       },
       {
@@ -135,6 +180,9 @@ export default function UsersPage() {
         dataIndex: 'role',
         key: 'role',
         width: 150,
+        sorter: true,
+        columnKey: 'role',
+        sortOrder: getSortOrderForColumn('role'),
         render: (role) => ROLE_LABELS[role] || role || '--',
       },
       {
@@ -142,6 +190,9 @@ export default function UsersPage() {
         dataIndex: 'departmentCode',
         key: 'department',
         width: 200,
+        sorter: true,
+        columnKey: 'departmentCode',
+        sortOrder: getSortOrderForColumn('departmentCode'),
         render: (_value, record) => (
           <div className={cx('users-page__meta-cell')}>
             <strong>{record.departmentCode || '--'}</strong>
@@ -154,6 +205,9 @@ export default function UsersPage() {
         dataIndex: 'phoneNumber',
         key: 'phoneNumber',
         width: 160,
+        sorter: true,
+        columnKey: 'phoneNumber',
+        sortOrder: getSortOrderForColumn('phoneNumber'),
         render: (value) => value || '--',
       },
       {
@@ -161,6 +215,9 @@ export default function UsersPage() {
         dataIndex: 'isActive',
         key: 'status',
         width: 180,
+        sorter: true,
+        columnKey: 'isActive',
+        sortOrder: getSortOrderForColumn('isActive'),
         render: (value) => buildStatusTag(Boolean(value)),
       },
       {
@@ -168,11 +225,18 @@ export default function UsersPage() {
         dataIndex: 'lastLoginAt',
         key: 'lastLoginAt',
         width: 220,
+        sorter: true,
+        columnKey: 'lastLoginAt',
+        sortOrder: getSortOrderForColumn('lastLoginAt'),
         render: (value) => formatDateTime(value),
       },
     ],
-    [pagination],
+    [pagination, getSortOrderForColumn],
   );
+
+  const hasUsers = users.length > 0;
+  const startIndex = hasUsers ? (pagination.current - 1) * pagination.pageSize + 1 : 0;
+  const endIndex = hasUsers ? startIndex + users.length - 1 : 0;
 
   return (
     <div className={cx('users-page')}>
@@ -181,8 +245,7 @@ export default function UsersPage() {
           size="large"
           allowClear
           value={searchValue}
-          onChange={(event) => setSearchValue(event.target.value)}
-          onPressEnter={handleApplyFilters}
+          onChange={handleSearchChange}
           placeholder="Tìm kiếm người dùng..."
           prefix={<FontAwesomeIcon icon={faSearch} />}
           className={cx('users-page__filter-input')}
@@ -191,7 +254,7 @@ export default function UsersPage() {
         <Select
           size="large"
           value={roleValue}
-          onChange={(value) => setRoleValue(value)}
+          onChange={handleRoleChange}
           options={ROLE_OPTIONS}
           className={cx('users-page__filter-select')}
         />
@@ -199,19 +262,14 @@ export default function UsersPage() {
         <Select
           size="large"
           value={statusValue}
-          onChange={(value) => setStatusValue(value)}
+          onChange={handleStatusChange}
           options={STATUS_OPTIONS}
           className={cx('users-page__filter-select')}
         />
 
-        <div className={cx('users-page__filter-actions')}>
-          <Button size="large" type="primary" onClick={handleApplyFilters} className={cx('users-page__filter-button')}>
-            Lọc
-          </Button>
-          <Button size="large" onClick={handleResetFilters} className={cx('users-page__filter-button')}>
-            Đặt lại
-          </Button>
-        </div>
+        <Button size="large" onClick={handleResetFilters} className={cx('users-page__reset-button')}>
+          Đặt lại
+        </Button>
       </div>
 
       <div className={cx('users-page__table-card')}>
@@ -228,16 +286,27 @@ export default function UsersPage() {
             columns={columns}
             dataSource={users}
             loading={isFetching}
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: totalItems,
-              showSizeChanger: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} trong ${total.toLocaleString('vi-VN')} người dùng`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-            }}
+            pagination={false}
+            sortDirections={['ascend', 'descend']}
             onChange={handleTableChange}
           />
+          <div className={cx('users-page__pagination-bar')}>
+            <div className={cx('users-page__pagination-summary')}>
+              {totalItems
+                ? hasUsers
+                  ? `Đang hiển thị ${startIndex}-${endIndex} trong ${totalItems.toLocaleString('vi-VN')} người dùng`
+                  : 'Không tìm thấy người dùng phù hợp'
+                : 'Không có người dùng'}
+            </div>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={totalItems}
+              pageSizeOptions={['10', '20', '50', '100']}
+              showSizeChanger
+              onChange={handlePaginationChange}
+            />
+          </div>
         </div>
       </div>
     </div>

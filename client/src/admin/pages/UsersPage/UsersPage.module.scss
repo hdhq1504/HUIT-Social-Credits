@@ -10,6 +10,7 @@
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     flex-wrap: wrap;
+    align-items: center;
   }
 
   &__filter-input {
@@ -57,16 +58,21 @@
     }
   }
 
-  &__filter-actions {
-    display: flex;
-    gap: 8px;
-  }
+  &__reset-button {
+    border-radius: 8px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 600 !important;
+    padding: 0 24px !important;
+    height: 44px !important;
+    background: var(--orange-color) !important;
+    border: none !important;
+    color: var(--white-color) !important;
 
-  &__filter-button {
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    padding: 0 20px;
+    &:hover,
+    &:focus {
+      background: #ff7628 !important;
+      color: var(--white-color) !important;
+    }
   }
 
   &__table-card {
@@ -115,6 +121,26 @@
       font-size: 14px;
       color: var(--black-color);
     }
+  }
+
+  &__pagination-bar {
+    margin-top: 16px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    :global(.ant-pagination) {
+      margin: 0;
+    }
+  }
+
+  &__pagination-summary {
+    font-size: 14px;
+    color: var(--muted-color);
+    font-family: 'Montserrat', sans-serif;
   }
 
   &__user-cell {
@@ -194,9 +220,14 @@
       flex-direction: column;
     }
 
-    &__filter-actions {
+    &__reset-button {
       width: 100%;
-      justify-content: flex-end;
+      justify-content: center;
+    }
+
+    &__pagination-bar {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 }
