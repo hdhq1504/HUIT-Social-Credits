@@ -177,33 +177,16 @@ function RollCallPage() {
         }
       }
 
-      let evidencePayload;
-      if (file) {
-        try {
-          evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
-            userId,
-            activityId: activity.id,
-            phase,
-          });
-        } catch (error) {
-          const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
-          toast({ message, variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
-        }
-      }
-
       return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
-          evidence:
-            evidencePayload ||
-            (evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined),
+          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
         },
       });
     },
-    [attendanceMutation, toast, userId],
+    [attendanceMutation, toast],
   );
 
   const handleFeedback = useCallback(

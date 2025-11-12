@@ -7,6 +7,7 @@ export { default as FeedbackPage } from './FeedbackPage/FeedbackPage';
 export { default as FeedbackDetailPage } from './FeedbackDetailPage/FeedbackDetailPage';
 export { default as ReportsPage } from './ReportsPage/ReportsPage';
 export { default as ScoringPage } from './ScoringPage/ScoringPage';
+export { default as ScoringDetailPage } from './ScoringDetailPage/ScoringDetailPage';
 export { default as SystemPage } from './SystemPage/SystemPage';
 export { default as UsersPage } from './UsersPage/UsersPage';
 export { default as UsersAddEditPage } from './UsersAddEditPage/UsersAddEditPage';
