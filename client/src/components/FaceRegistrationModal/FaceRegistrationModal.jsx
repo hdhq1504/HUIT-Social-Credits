@@ -23,14 +23,14 @@ const STEP_SEQUENCE = [
     title: 'Nhìn thẳng',
     description: 'Giữ mặt cân đối trong khung tròn.',
     hint: 'Giữ mặt cân đối trong khung tròn.',
-    validate: ({ yaw, pitch }) => Math.abs(yaw) <= 0.12 && Math.abs(pitch) <= 0.12,
+    validate: ({ yaw, pitch }) => yaw >= -0.2 && pitch >= 0.05,
   },
   {
     key: 'left',
     title: 'Nghiêng trái',
     description: 'Nghiêng mặt sang trái và giữ ổn định.',
     hint: 'Nghiêng mặt sang trái và giữ ổn định.',
-    validate: ({ yaw }) => yaw >= 0.18,
+    validate: ({ yaw }) => yaw <= -0.4,
   },
   {
     key: 'right',
@@ -51,7 +51,7 @@ const STEP_SEQUENCE = [
     title: 'Ngẩng đầu',
     description: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
     hint: 'Ngẩng cằm lên một chút rồi giữ nguyên.',
-    validate: ({ pitch }) => pitch <= -0.08,
+    validate: ({ pitch }) => pitch >= -0.08,
   },
 ];
 
@@ -312,9 +312,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
         if (!detectorOptionsRef.current) {
           detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 });
         }
-        const detection = await faceapi
-          .detectSingleFace(video, detectorOptionsRef.current)
-          .withFaceLandmarks(true);
+        const detection = await faceapi.detectSingleFace(video, detectorOptionsRef.current).withFaceLandmarks(true);
 
         if (cancelled) return;
 
@@ -452,9 +450,7 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
                     </div>
                   </div>
                   <div className={cx('modal__overlay-hint')}>
-                    <div
-                      className={cx('modal__orientation-values')}
-                    >
+                    <div className={cx('modal__orientation-values')}>
                       <div>Yaw: {orientation.yaw.toFixed(2)}</div>
                       <div>Pitch: {orientation.pitch.toFixed(2)}</div>
                     </div>
