@@ -27,6 +27,7 @@ export const ROUTE_PATHS = {
     ACTIVITY_DETAIL: '/admin/activities/:id',
     ACTIVITY_EDIT: '/admin/activities/:id/edit',
     SCORING: '/admin/scoring',
+    SCORING_DETAIL: '/admin/scoring/:id',
     FEEDBACK: '/admin/feedback',
     FEEDBACK_DETAIL: '/admin/feedback/:id',
     REPORTS: '/admin/reports',
@@ -45,6 +46,7 @@ export const buildPath = {
   adminActivityEdit: (id) => `/admin/activities/${id}/edit`,
   adminFeedbackDetail: (id) => `/admin/feedback/${id}`,
   adminUserEdit: (id) => `/admin/users/${id}/edit`,
+  adminScoringDetail: (id) => `/admin/scoring/${id}`,
 };
 
 export default ROUTE_PATHS;

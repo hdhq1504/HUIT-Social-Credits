@@ -17,6 +17,7 @@ import { ROUTE_PATHS } from './config/routes.config';
 import ActivitiesAddEditPage from './admin/pages/ActivitiesAddEditPage/ActivitiesAddEditPage';
 import ActivitiesDetailPage from './admin/pages/ActivitiesDetailPage/ActivitiesDetailPage';
 import FeedbackDetailPage from './admin/pages/FeedbackDetailPage/FeedbackDetailPage';
+import ScoringDetailPage from './admin/pages/ScoringDetailPage/ScoringDetailPage';
 import UsersAddEditPage from './admin/pages/UsersAddEditPage/UsersAddEditPage';
 
 const queryClient = new QueryClient({
@@ -111,6 +112,7 @@ function App() {
               <Route path="activities/create" element={<ActivitiesAddEditPage />} />
               <Route path="activities/:id/edit" element={<ActivitiesAddEditPage />} />
               <Route path="activities/:id" element={<ActivitiesDetailPage />} />
+              <Route path="scoring/:id" element={<ScoringDetailPage />} />
               <Route path="feedback/:id" element={<FeedbackDetailPage />} />
               <Route path="users/create" element={<UsersAddEditPage />} />
               <Route path="users/:id/edit" element={<UsersAddEditPage />} />
