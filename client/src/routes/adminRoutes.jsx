@@ -7,6 +7,7 @@ import {
   ReportsPage,
   CouncilPage,
   SystemPage,
+  UsersPage,
 } from '@/admin/pages';
 
 const lastPathSegment = (path) => path.split('/').pop();
@@ -64,6 +65,15 @@ export const adminRoutes = [
       key: 'council',
       label: 'Hội đồng xét điểm',
       icon: 'TeamOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.USERS), // 'users'
+    component: UsersPage,
+    meta: {
+      key: 'users',
+      label: 'Quản lý người dùng',
+      icon: 'UserGearOutlined',
     },
   },
   {

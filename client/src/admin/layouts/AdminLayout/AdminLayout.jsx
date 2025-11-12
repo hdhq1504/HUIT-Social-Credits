@@ -23,6 +23,7 @@ const iconByKey = {
   MessageOutlined: 'feedback',
   BarChartOutlined: 'reports',
   TeamOutlined: 'council',
+  UserGearOutlined: 'users',
   SettingOutlined: 'system',
 };
 
