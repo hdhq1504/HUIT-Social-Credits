@@ -41,7 +41,6 @@ model NguoiDung {
   phanHoi                     PhanHoiHoatDong[]
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
-  faceProfile                 FaceProfile?
 
   @@index([email])
   @@index([maSV])
@@ -166,17 +165,6 @@ model DiemDanhNguoiDung {
   @@index([dangKyId])
   @@index([nguoiDungId])
   @@index([hoatDongId])
-}
-
-model FaceProfile {
-  id          String   @id @default(cuid())
-  nguoiDungId String   @unique
-  descriptors Json
-  samples     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
 }
 
 model PhanHoiHoatDong {
