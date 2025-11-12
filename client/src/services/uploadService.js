@@ -4,6 +4,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const BUCKETS = {
   feedback: import.meta.env.VITE_SUPABASE_FEEDBACK_BUCKET || 'feedback-proofs',
+  attendance: import.meta.env.VITE_SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos',
 };
 
 const ensureFileSize = (file) => {
@@ -30,6 +31,14 @@ const buildFeedbackPath = (userId, activityId, file) => {
   const owner = sanitizeSegment(userId, 'user');
   const activity = sanitizeSegment(activityId, 'general');
   return `feedback/${activity}/${owner}-${Date.now()}-${randomId()}.${ext}`;
+};
+
+const buildAttendancePath = ({ userId, activityId, phase, file }) => {
+  const ext = file.name?.split('.').pop()?.toLowerCase() || 'dat';
+  const owner = sanitizeSegment(userId, 'user');
+  const activity = sanitizeSegment(activityId, 'general');
+  const step = sanitizeSegment(phase, 'checkin');
+  return `attendance/${activity}/${owner}/${Date.now()}-${step}-${randomId()}.${ext}`;
 };
 
 const getPublicUrl = (bucket, path) => {
@@ -65,6 +74,35 @@ export const uploadFeedbackEvidence = async (file, { userId, activityId }) => {
   };
 };
 
+export const uploadAttendanceEvidence = async (file, { userId, activityId, phase }) => {
+  ensureFileSize(file);
+  const bucket = BUCKETS.attendance;
+  const path = buildAttendancePath({ userId, activityId, phase, file });
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, {
+      cacheControl: '600',
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(error.message || 'Không thể upload ảnh điểm danh');
+  }
+
+  const storagePath = data?.path || path;
+  return {
+    bucket,
+    path: storagePath,
+    url: getPublicUrl(bucket, storagePath),
+    fileName: file.name,
+    mimeType: file.type || null,
+    size: file.size,
+    uploadedAt: new Date().toISOString(),
+    phase: phase || null,
+  };
+};
+
 export const uploadMultipleFeedbackEvidence = async (files, options) => {
   if (!Array.isArray(files) || files.length === 0) {
     return [];
@@ -76,6 +114,7 @@ export const uploadMultipleFeedbackEvidence = async (files, options) => {
 const uploadService = {
   uploadFeedbackEvidence,
   uploadMultipleFeedbackEvidence,
+  uploadAttendanceEvidence,
 };
 
 export default uploadService;

@@ -12,6 +12,7 @@ import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import useRegistrationFilters from '@/hooks/useRegistrationFilters';
 import uploadService from '@/services/uploadService';
+import faceRecognitionService from '@/services/faceRecognition.service';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './RollCallPage.module.scss';
 
@@ -178,6 +179,26 @@ function RollCallPage() {
         }
       }
 
+      let facePayload;
+      if (activity?.attendanceMethod === 'face') {
+        if (!evidenceDataUrl) {
+          toast({ message: 'Vui lòng chụp ảnh khuôn mặt rõ ràng để điểm danh.', variant: 'danger' });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+        try {
+          const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(evidenceDataUrl);
+          facePayload = { descriptor };
+        } catch (error) {
+          const code = error?.message || '';
+          const message =
+            code === 'FACE_NOT_DETECTED'
+              ? 'Không nhận diện được khuôn mặt trong ảnh. Vui lòng chụp lại với ánh sáng tốt hơn.'
+              : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
+          toast({ message, variant: 'danger' });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+      }
+
       let evidencePayload;
       if (file) {
         try {
@@ -201,6 +222,7 @@ function RollCallPage() {
           evidence:
             evidencePayload ||
             (evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined),
+          face: facePayload,
         },
       });
     },
