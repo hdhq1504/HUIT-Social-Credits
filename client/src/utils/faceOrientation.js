@@ -11,21 +11,16 @@ const averagePoint = (points = []) => {
 };
 
 const euclideanDistance = (a, b) => {
-  if (!a || !b) return 0;
-  const dx = (a.x ?? 0) - (b.x ?? 0);
-  const dy = (a.y ?? 0) - (b.y ?? 0);
-  return Math.sqrt(dx * dx + dy * dy);
+  if (a.length !== b.length) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    sum += (a[i] - b[i]) * (a[i] - b[i]);
+  }
+  return Math.sqrt(sum);
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-/**
- * Estimate yaw/pitch orientation for the current face landmarks.
- * Returns values roughly in range [-1, 1] where:
- *   - yaw > 0: face rotated towards the left shoulder (from viewer perspective)
- *   - yaw < 0: face rotated towards the right shoulder
- *   - pitch > 0: face looking down, pitch < 0: face looking up
- */
 export const estimateFaceOrientation = (landmarks, { mirrored = true } = {}) => {
   if (!landmarks) {
     return { yaw: 0, pitch: 0, roll: 0 };

@@ -4,8 +4,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const BUCKETS = {
   feedback: import.meta.env.VITE_SUPABASE_FEEDBACK_BUCKET || 'feedback-proofs',
-  activities: import.meta.env.VITE_SUPABASE_ACTIVITY_BUCKET || 'activities-covers',
-  attendance: import.meta.env.VITE_SUPABASE_ATTENDANCE_BUCKET || 'attendance-proofs',
 };
 
 const ensureFileSize = (file) => {
@@ -32,20 +30,6 @@ const buildFeedbackPath = (userId, activityId, file) => {
   const owner = sanitizeSegment(userId, 'user');
   const activity = sanitizeSegment(activityId, 'general');
   return `feedback/${activity}/${owner}-${Date.now()}-${randomId()}.${ext}`;
-};
-
-const buildActivityCoverPath = (activityId, file) => {
-  const ext = file.name?.split('.').pop()?.toLowerCase() || 'jpg';
-  const activity = sanitizeSegment(activityId, 'general');
-  return `activities/${activity}/${Date.now()}-${randomId()}.${ext}`;
-};
-
-const buildAttendancePath = ({ userId, activityId, phase, file }) => {
-  const ext = file.name?.split('.').pop()?.toLowerCase() || 'jpg';
-  const owner = sanitizeSegment(userId, 'user');
-  const activity = sanitizeSegment(activityId, 'general');
-  const phaseSegment = sanitizeSegment(phase, 'checkin');
-  return `attendance/${activity}/${phaseSegment}-${owner}-${Date.now()}-${randomId()}.${ext}`;
 };
 
 const getPublicUrl = (bucket, path) => {
@@ -89,65 +73,7 @@ export const uploadMultipleFeedbackEvidence = async (files, options) => {
   return Promise.all(uploads);
 };
 
-export const uploadActivityCover = async (file, { activityId } = {}) => {
-  ensureFileSize(file);
-  const bucket = BUCKETS.activities;
-  const path = buildActivityCoverPath(activityId, file);
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-
-  if (error) {
-    throw new Error(error.message || 'Không thể upload ảnh hoạt động');
-  }
-
-  const storagePath = data?.path || path;
-  return {
-    bucket,
-    path: storagePath,
-    url: getPublicUrl(bucket, storagePath),
-    fileName: file.name,
-    mimeType: file.type || null,
-    size: file.size,
-    uploadedAt: new Date().toISOString(),
-  };
-};
-
-export const uploadAttendanceEvidence = async (file, { userId, activityId, phase } = {}) => {
-  ensureFileSize(file);
-  const bucket = BUCKETS.attendance;
-  const path = buildAttendancePath({ userId, activityId, phase, file });
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-
-  if (error) {
-    throw new Error(error.message || 'Không thể upload ảnh điểm danh');
-  }
-
-  const storagePath = data?.path || path;
-  return {
-    bucket,
-    path: storagePath,
-    url: getPublicUrl(bucket, storagePath),
-    fileName: file.name,
-    mimeType: file.type || null,
-    size: file.size,
-    uploadedAt: new Date().toISOString(),
-  };
-};
-
 const uploadService = {
-  uploadActivityCover,
-  uploadAttendanceEvidence,
   uploadFeedbackEvidence,
   uploadMultipleFeedbackEvidence,
 };

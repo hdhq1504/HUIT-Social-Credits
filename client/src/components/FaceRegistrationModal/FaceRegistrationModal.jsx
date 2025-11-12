@@ -7,7 +7,6 @@ import { faCamera, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
 import { useMutation } from '@tanstack/react-query';
 import faceApi from '@api/face.api';
-import faceRecognitionService from '@/services/faceRecognitionService';
 import * as faceapi from 'face-api.js';
 import { estimateFaceOrientation } from '@/utils/faceOrientation';
 import useToast from '../Toast/Toast';
@@ -153,8 +152,8 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
     try {
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        // SỬA DÒNG NÀY:
         faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
       ]);
       modelsLoadedRef.current = true;
       dispatch({ type: 'SET', payload: { modelsReady: true } });
@@ -199,43 +198,46 @@ function FaceRegistrationModal({ open, onClose, onSuccess }) {
   );
 
   const runCapture = useCallback(
-    async ({ silent = false, skipErrorToast = false } = {}) => {
-      if (processingRef.current || !webcamRef.current) return false;
-
-      const dataUrl = webcamRef.current.getScreenshot();
-      if (!dataUrl) {
-        if (!skipErrorToast) {
-          toastRef.current({
-            message: 'Không thể chụp ảnh. Hãy đảm bảo camera đang hoạt động.',
-            variant: 'danger',
-          });
-        }
-        return false;
-      }
-
-      processingRef.current = true;
-      dispatch({ type: 'SET', payload: { processing: true } });
-
+    async ({ silent = false } = {}) => {
       try {
-        const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(dataUrl);
+        if (!webcamRef.current?.video) {
+          throw new Error('WEBCAM_NOT_AVAILABLE');
+        }
+        if (processing) return false;
+
+        const dataUrl = webcamRef.current.getScreenshot();
+        if (!dataUrl) {
+          throw new Error('CAPTURE_FAILED');
+        }
+        dispatch({ type: 'SET', processing: true });
+
+        const detection = await faceapi
+          .detectSingleFace(webcamRef.current.video, detectorOptionsRef.current)
+          .withFaceLandmarks(true)
+          .withFaceDescriptor();
+
+        if (!detection) {
+          throw new Error('FACE_NOT_DETECTED');
+        }
+
+        const descriptor = Array.from(detection.descriptor);
         addCapture(dataUrl, descriptor, { silent });
         return true;
       } catch (error) {
-        const code = error?.message || '';
-        if (!skipErrorToast) {
+        console.error('Face capture error:', error);
+        if (!silent) {
           const message =
-            code === 'FACE_NOT_DETECTED'
-              ? 'Không tìm thấy khuôn mặt trong ảnh. Vui lòng điều chỉnh góc chụp và thử lại.'
-              : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
-          toastRef.current({ message, variant: 'danger' });
+            error.message === 'FACE_NOT_DETECTED'
+              ? 'Không nhận diện được khuôn mặt. Vui lòng thử lại.'
+              : 'Chụp ảnh thất bại. Vui lòng thử lại.';
+          toast.error(message);
         }
         return false;
       } finally {
-        processingRef.current = false;
-        dispatch({ type: 'SET', payload: { processing: false } });
+        dispatch({ type: 'SET', processing: true });
       }
     },
-    [addCapture, dispatch],
+    [dispatch, processing, toast, addCapture, detectorOptionsRef],
   );
 
   const pendingStep = useMemo(() => {

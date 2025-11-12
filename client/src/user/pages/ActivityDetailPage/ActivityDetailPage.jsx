@@ -2,12 +2,12 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight, faClipboardList, faEnvelope, faPhone } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRight, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label } from '@components/index';
-import useToast from '../../../components/Toast/Toast';
-import Loading from '../../../user/pages/Loading/Loading';
+import useToast from '@/components/Toast/Toast';
+import Loading from '@/user/pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
@@ -15,7 +15,6 @@ import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
-import faceRecognitionService from '@/services/faceRecognitionService';
 import uploadService from '@/services/uploadService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
@@ -561,37 +560,6 @@ function ActivityDetailPage() {
                     </div>
 
                     {renderActionButton()}
-                  </aside>
-                  <aside className={cx('activity-detail__organizer')}>
-                    <h3 className={cx('activity-detail__organizer-title')}>Ban tổ chức</h3>
-
-                    <div className={cx('activity-detail__organizer-profile')}>
-                      <img
-                        src="https://placehold.co/48x48"
-                        alt="Organizer avatar"
-                        className={cx('activity-detail__organizer-avatar')}
-                      />
-                      <div className={cx('activity-detail__organizer-info')}>
-                        <div className={cx('activity-detail__organizer-name')}>Thầy: Nguyễn Văn Minh</div>
-                        <div className={cx('activity-detail__organizer-role')}>Trưởng ban tổ chức</div>
-                      </div>
-                    </div>
-
-                    <div className={cx('activity-detail__organizer-contact')}>
-                      <div className={cx('activity-detail__contact-item')}>
-                        <FontAwesomeIcon icon={faPhone} className={cx('activity-detail__contact-icon')} />
-                        <span className={cx('activity-detail__contact-text')}>0987.654.321</span>
-                      </div>
-                      <div className={cx('activity-detail__contact-item')}>
-                        <FontAwesomeIcon icon={faEnvelope} className={cx('activity-detail__contact-icon')} />
-                        <span className={cx('activity-detail__contact-text')}>minh.nv@huit.edu.vn</span>
-                      </div>
-                    </div>
-
-                    <button className={cx('activity-detail__organizer-button')}>
-                      <FontAwesomeIcon icon={faEnvelope} />
-                      <span>Liên hệ ngay</span>
-                    </button>
                   </aside>
                 </Col>
               </Row>

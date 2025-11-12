@@ -200,7 +200,13 @@ function CardActivity(props) {
   );
 
   useEffect(() => {
-    dispatch({ type: 'SET', payload: { uiState: false } });
+    // ===== CẬP NHẬT (FIX 1/2) =====
+    // Lỗi gốc: dispatch({ type: 'SET', payload: { uiState: false } });
+    // Gán `uiState` bằng `false` (boolean) đã làm hỏng logic
+    // và gây ra vòng lặp vô tận.
+    //
+    // Sửa lại: Đồng bộ `uiState` nội bộ với `state` prop.
+    dispatch({ type: 'SET', payload: { uiState: state } });
   }, [state]);
 
   useEffect(() => {
@@ -208,6 +214,10 @@ function CardActivity(props) {
   }, [derivedNextAttendancePhase]);
 
   // EFFECT: quản lý timer checkout mở
+  // ===== CẬP NHẬT (FIX 2/2) =====
+  // Thêm các điều kiện `if (!checkoutAvailable)` và `if (checkoutAvailable)`
+  // trước khi dispatch để đảm bảo state chỉ được set khi nó thực sự thay đổi.
+  // Thêm `checkoutAvailable` và `dispatch` vào mảng phụ thuộc.
   useEffect(() => {
     // Clear existing timer
     if (checkoutTimerRef.current) {
@@ -217,27 +227,39 @@ function CardActivity(props) {
 
     // Nếu đã checkout thì mở luôn
     if (attendanceSummary?.hasCheckout) {
-      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      if (!checkoutAvailable) {
+        // <--- CHỈ DISPATCH NẾU STATE KHÁC
+        dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      }
       checkoutReminderShownRef.current = true;
       return undefined;
     }
 
     // Nếu người dùng chưa ở trạng thái chờ checkout -> không cần timer
     if (uiState !== 'confirm_out') {
-      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      if (!checkoutAvailable) {
+        // <--- CHỈ DISPATCH NẾU STATE KHÁC
+        dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      }
       checkoutReminderShownRef.current = false;
       return undefined;
     }
 
     if (!checkoutAvailableTimestamp) {
-      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      if (!checkoutAvailable) {
+        // <--- CHỈ DISPATCH NẾU STATE KHÁC
+        dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      }
       return undefined;
     }
 
     const now = Date.now();
     // Nếu đã vượt timestamp -> mở và show reminder 1 lần
     if (now >= checkoutAvailableTimestamp) {
-      dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      if (!checkoutAvailable) {
+        // <--- CHỈ DISPATCH NẾU STATE KHÁC
+        dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
+      }
       if (!checkoutReminderShownRef.current) {
         openToast({ message: 'Điểm danh cuối giờ đã mở, đừng quên hoàn tất nhé!', variant: 'info' });
         checkoutReminderShownRef.current = true;
@@ -246,7 +268,10 @@ function CardActivity(props) {
     }
 
     // Chưa tới thời điểm -> set timeout
-    dispatch({ type: 'SET', payload: { checkoutAvailable: false } });
+    if (checkoutAvailable) {
+      // <--- CHỈ DISPATCH NẾU STATE KHÁC
+      dispatch({ type: 'SET', payload: { checkoutAvailable: false } });
+    }
     checkoutTimerRef.current = setTimeout(() => {
       dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       if (!checkoutReminderShownRef.current) {
@@ -262,7 +287,8 @@ function CardActivity(props) {
         checkoutTimerRef.current = null;
       }
     };
-  }, [attendanceSummary?.hasCheckout, checkoutAvailableTimestamp, openToast, uiState]);
+    // Thêm `checkoutAvailable` và `dispatch` vào dependencies
+  }, [attendanceSummary?.hasCheckout, checkoutAvailableTimestamp, openToast, uiState, checkoutAvailable, dispatch]);
 
   // Cleanup on unmount
   useEffect(
@@ -302,7 +328,9 @@ function CardActivity(props) {
     dispatch({ type: 'SET', payload: { modalVariant: 'cancel', registerModalOpen: true } });
   };
 
-  const handleCloseRegister = () => dispatch({ type: 'SET', payload: { registerModalOpen: true } });
+  // ===== CẬP NHẬT (FIX LOGIC) =====
+  // Sửa lại: set registerModalOpen: false để đóng modal
+  const handleCloseRegister = () => dispatch({ type: 'SET', payload: { registerModalOpen: false } });
 
   // Xử lý xác nhận register / cancel register
   const handleConfirmRegister = async (payload) => {
@@ -317,7 +345,9 @@ function CardActivity(props) {
         openToast({ message: 'Hủy đăng ký thành công!', variant: 'success' });
       } else {
         await onRegistered?.({ activity, ...payload });
-        dispatch({ type: 'SET', payload: { uiState: 'registered' } });
+        // ===== CẬP NHẬT (FIX LOGIC) =====
+        // Thêm: đóng modal sau khi đăng ký thành công
+        dispatch({ type: 'SET', payload: { registerModalOpen: false } });
         if (autoSwitchStateOnRegister) {
           dispatch({ type: 'SET', payload: { uiState: 'registered' } });
           onStateChange?.('registered');
@@ -376,8 +406,11 @@ function CardActivity(props) {
 
     const phaseToSend = attendanceStep || 'checkin';
 
+    // ===== CẬP NHẬT (FIX LOGIC) =====
+    // Chuyển set isAttendanceSubmitting: true lên trước
+    dispatch({ type: 'SET', payload: { isAttendanceSubmitting: true } });
     try {
-      dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+      // Bỏ dispatch({ type: 'SET', payload: { checkModalOpen: false } }); ở đây
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
@@ -385,7 +418,7 @@ function CardActivity(props) {
         dataUrl: evidenceDataUrl,
         phase: phaseToSend,
       });
-      dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+      dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
       dispatch({ type: 'RESET_CAPTURED' });
       const faceStatus = result?.face?.status || null;
       const toastVariant = faceStatus === 'REVIEW' ? 'warning' : 'success';
@@ -409,6 +442,10 @@ function CardActivity(props) {
         onStateChange?.('confirm_out');
       } else {
         checkoutReminderShownRef.current = true;
+        // ===== CẬP NHẬT (FIX LOGIC) =====
+        // Thêm: Chuyển state sau khi checkout thành công
+        dispatch({ type: 'SET', payload: { uiState: 'details_only' } });
+        onStateChange?.('details_only');
       }
     } catch (error) {
       if (error?.message === 'ATTENDANCE_ABORTED') return;
@@ -429,13 +466,18 @@ function CardActivity(props) {
     dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
-      dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
+      // ===== CẬP NHẬT (FIX LOGIC) =====
+      // Sửa: Gán isFeedbackSubmitting: false và đóng modal
+      dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false, feedbackModalOpen: false } });
       onStateChange?.('feedback_reviewing');
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
     } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
-    } finally {
+      // ===== CẬP NHẬT (FIX LOGIC) =====
+      // Thêm: set isFeedbackSubmitting: false khi có lỗi
       dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false } });
+    } finally {
+      // Bỏ dispatch(isFeedbackSubmitting: false) ở đây vì đã xử lý ở trên
     }
   };
 
@@ -724,7 +766,9 @@ function CardActivity(props) {
 
       {/* Register modal: truyền props cần thiết, confirmLoading từ state */}
       <RegisterModal
-        open={checkModalOpen}
+        // ===== CẬP NHẬT (FIX LOGIC) =====
+        // Lỗi gõ phím: `open={checkModalOpen}` -> `open={registerModalOpen}`
+        open={registerModalOpen}
         onCancel={handleCloseRegister}
         onConfirm={handleConfirmRegister}
         variant={modalVariant}

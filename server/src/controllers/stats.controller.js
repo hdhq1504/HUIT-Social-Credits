@@ -113,7 +113,7 @@ export const getProgressSummary = async (req, res) => {
       return groupOneRemaining > 0 ? `Còn ${groupOneRemaining} điểm` : "Cần hoàn thành điểm nhóm 1";
     }
     if (!hasRedAddressParticipation) {
-      return "Cần tham gia ít nhất 1 hoạt động 'Địa chỉ đỏ'";
+      return "Tham gia ít nhất 1 hoạt động Địa chỉ đỏ";
     }
     return "Hoàn thành";
   })();

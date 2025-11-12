@@ -1,6 +1,4 @@
 const DESCRIPTOR_LENGTH = 128;
-const MAX_DESCRIPTOR_ABS_VALUE = 10;
-const PRECISION = 1_000_000;
 
 const clamp = (value, min, max) => {
   if (Number.isNaN(value)) return min;
@@ -9,22 +7,27 @@ const clamp = (value, min, max) => {
   return value;
 };
 
+const euclideanDistance = (a, b) => {
+  if (a.length !== b.length) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    sum += (a[i] - b[i]) * (a[i] - b[i]);
+  }
+  return Math.sqrt(sum);
+};
+
 export const sanitizeDescriptor = (value) => {
   if (!Array.isArray(value) || value.length !== DESCRIPTOR_LENGTH) {
     return null;
   }
-
   const sanitized = [];
   for (let i = 0; i < DESCRIPTOR_LENGTH; i += 1) {
     const raw = Number(value[i]);
     if (!Number.isFinite(raw)) {
       return null;
     }
-    const limited = clamp(raw, -MAX_DESCRIPTOR_ABS_VALUE, MAX_DESCRIPTOR_ABS_VALUE);
-    const rounded = Math.round(limited * PRECISION) / PRECISION;
-    sanitized.push(rounded);
+    sanitized.push(raw);
   }
-
   return sanitized;
 };
 
@@ -62,50 +65,29 @@ export const sanitizeSamples = (value, maxItems = 5) => {
     .slice(0, maxItems);
 };
 
-const dotProduct = (a, b) => {
-  let dot = 0;
-  for (let i = 0; i < DESCRIPTOR_LENGTH; i += 1) {
-    dot += a[i] * b[i];
-  }
-  return dot;
-};
-
-const magnitude = (arr) => Math.sqrt(arr.reduce((sum, value) => sum + value * value, 0));
-
-export const computeCosineSimilarity = (a, b) => {
-  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  if (a.length !== DESCRIPTOR_LENGTH || b.length !== DESCRIPTOR_LENGTH) return 0;
-  const magA = magnitude(a);
-  const magB = magnitude(b);
-  if (magA === 0 || magB === 0) return 0;
-  return clamp(dotProduct(a, b) / (magA * magB), -1, 1);
-};
-
 export const computeMatchConfidence = (storedDescriptors, targetDescriptor) => {
   const descriptors = sanitizeDescriptorCollection(storedDescriptors);
   const target = sanitizeDescriptor(targetDescriptor);
   if (!descriptors.length || !target) return { confidence: 0, bestDescriptor: null };
 
-  let best = -Infinity;
+  let minDistance = Infinity;
   let bestDescriptor = null;
+
   for (const descriptor of descriptors) {
-    const similarity = computeCosineSimilarity(descriptor, target);
-    if (similarity > best) {
-      best = similarity;
+    const distance = euclideanDistance(descriptor, target);
+    if (distance < minDistance) {
+      minDistance = distance;
       bestDescriptor = descriptor;
     }
   }
 
-  const confidence = clamp((best + 1) / 2, 0, 1);
-  return { confidence, bestDescriptor };
+  const confidence = clamp(1 - (minDistance / 1.2), 0, 1);
+  return { confidence, bestDescriptor, distance: minDistance };
 };
 
-export const deriveMatchStatus = (confidence) => {
-  if (typeof confidence !== "number" || Number.isNaN(confidence)) {
-    return "REJECTED";
-  }
-  if (confidence >= 0.7) return "APPROVED";
-  if (confidence >= 0.5) return "REVIEW";
+export const deriveMatchStatus = (distance) => {
+  if (distance < 0.4) return "APPROVED";
+  if (distance < 0.6) return "REVIEW";
   return "REJECTED";
 };
 
@@ -113,7 +95,6 @@ export default {
   sanitizeDescriptor,
   sanitizeDescriptorCollection,
   sanitizeSamples,
-  computeCosineSimilarity,
   computeMatchConfidence,
   deriveMatchStatus
 };

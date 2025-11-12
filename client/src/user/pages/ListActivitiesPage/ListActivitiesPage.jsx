@@ -3,14 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { ConfigProvider, Row, Col, Typography, Select, Pagination, Grid, Empty } from 'antd';
 import { CardActivity } from '@components/index';
-import SearchBar from '../../../user/layouts/SearchBar/SearchBar';
+import SearchBar from '@/user/layouts/SearchBar/SearchBar';
 import activitiesApi from '@api/activities.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useDebounce from '@/hooks/useDebounce';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import styles from './ListActivitiesPage.module.scss';
-// ⬇️ Bỏ import lọc theo state đăng ký để hiển thị tất cả
-// import { isUnregisteredOrParticipated } from '@utils/activityState';
 
 const cx = classNames.bind(styles);
 const { Text } = Typography;
@@ -109,8 +107,8 @@ function ListActivitiesPage() {
 
     if (sortBy === 'latest') {
       result = result.sort((a, b) => {
-        const ta = new Date(a.createdAt || a.startTime || 0).getTime();
-        const tb = new Date(b.createdAt || b.startTime || 0).getTime();
+        const ta = new Date(a.startTime || 0).getTime();
+        const tb = new Date(b.startTime || 0).getTime();
         return tb - ta;
       });
     } else if (sortBy === 'points_desc') {

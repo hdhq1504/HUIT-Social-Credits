@@ -28,7 +28,7 @@ import activitiesApi, { ACTIVITIES_QUERY_KEY, DASHBOARD_QUERY_KEY } from '@/api/
 import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
-import uploadService from '@/services/uploadService';
+import { fileToDataUrl } from '@/utils/file';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -177,14 +177,18 @@ const ActivitiesAddEditPage = () => {
       }
     } else {
       const [fileItem] = coverFileList;
+
       if (fileItem?.originFileObj) {
         try {
-          coverImagePayload = await uploadService.uploadActivityCover(fileItem.originFileObj, {
-            activityId: isEditMode ? id : undefined,
-          });
+          const dataUrl = await fileToDataUrl(fileItem.originFileObj);
+          coverImagePayload = {
+            dataUrl: dataUrl,
+            fileName: fileItem.originFileObj.name,
+            mimeType: fileItem.originFileObj.type,
+          };
         } catch (error) {
-          console.error('Failed to upload cover image', error);
-          openToast({ message: error?.message || 'Không thể tải ảnh bìa. Vui lòng thử lại.', variant: 'danger' });
+          console.error('Failed to read file as dataUrl', error);
+          openToast({ message: error?.message || 'Không thể đọc file ảnh. Vui lòng thử lại.', variant: 'danger' });
           return;
         }
       } else if (fileItem?.meta) {
@@ -216,6 +220,7 @@ const ActivitiesAddEditPage = () => {
     if (coverImagePayload !== undefined) {
       payload.coverImage = coverImagePayload;
     }
+
     if (isEditMode) {
       updateActivityMutation.mutate({ id, data: payload });
     } else {

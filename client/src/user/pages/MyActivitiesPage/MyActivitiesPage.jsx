@@ -9,7 +9,7 @@ import {
   faClock,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Calendar, ConfigProvider, DatePicker, Empty, Input, Pagination, Select, Tabs } from 'antd';
+import { Button, Calendar, ConfigProvider, DatePicker, Empty, Input, Pagination, Tabs } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -21,7 +21,6 @@ import { fileToDataUrl } from '@utils/file';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import useRegistrationFilters from '@/hooks/useRegistrationFilters';
-import faceRecognitionService from '@/services/faceRecognitionService';
 import uploadService from '@/services/uploadService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './MyActivitiesPage.module.scss';
@@ -235,54 +234,16 @@ function MyActivitiesPage() {
         }
       }
 
-      let facePayload;
-      if (activity?.attendanceMethod === 'face') {
-        if (!evidenceDataUrl) {
-          toast({ message: 'Vui lòng chụp ảnh khuôn mặt rõ ràng để điểm danh.', variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
-        }
-        try {
-          const descriptor = await faceRecognitionService.extractDescriptorFromDataUrl(evidenceDataUrl);
-          facePayload = { descriptor };
-        } catch (error) {
-          const code = error?.message || '';
-          const message =
-            code === 'FACE_NOT_DETECTED'
-              ? 'Không nhận diện được khuôn mặt trong ảnh. Vui lòng chụp lại với ánh sáng tốt hơn.'
-              : 'Không thể xử lý ảnh khuôn mặt. Vui lòng thử lại.';
-          toast({ message, variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
-        }
-      }
-
-      let evidencePayload;
-      if (file) {
-        try {
-          evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
-            userId,
-            activityId: activity.id,
-            phase,
-          });
-        } catch (error) {
-          const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
-          toast({ message, variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
-        }
-      }
-
       return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
-          evidence:
-            evidencePayload ||
-            (evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined),
-          facePayload,
+          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
         },
       });
     },
-    [attendanceMutation, toast, userId],
+    [attendanceMutation, toast],
   );
 
   const handleFeedback = useCallback(
