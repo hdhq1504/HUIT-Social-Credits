@@ -4,6 +4,7 @@ import {
   CERTIFICATE_TOTAL_TARGET,
   DEFAULT_POINT_GROUP,
   POINT_GROUPS,
+  getPointGroupLabel,
   normalizePointGroup
 } from "../utils/points.js";
 import { mapAttendanceMethodToApi } from "../utils/attendance.js";
@@ -32,6 +33,46 @@ const containsRedAddressKeyword = (activity) => {
     const normalized = normalizeText(source);
     return normalized.includes(RED_ADDRESS_KEYWORD);
   });
+};
+
+const sanitizeIdentifier = (value) => {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  return trimmed || null;
+};
+
+const buildReportFilters = (query = {}) => {
+  const yearId = sanitizeIdentifier(query.yearId ?? query.namHocId ?? query.year);
+  const semesterId = sanitizeIdentifier(query.semesterId ?? query.hocKyId ?? query.semester);
+  return { yearId, semesterId };
+};
+
+const formatYearLabel = (year) => {
+  if (!year) return "Năm học";
+  const candidates = [year.ten, year.nienKhoa, year.ma];
+  const label = candidates.find((candidate) => {
+    if (!candidate) return false;
+    const trimmed = String(candidate).trim();
+    return Boolean(trimmed);
+  });
+  return label ? String(label).trim() : "Năm học";
+};
+
+const formatSemesterLabel = (semester) => {
+  if (!semester) return "Học kỳ";
+  const candidates = [semester.ten, semester.ma];
+  const label = candidates.find((candidate) => {
+    if (!candidate) return false;
+    const trimmed = String(candidate).trim();
+    return Boolean(trimmed);
+  });
+  return label ? String(label).trim() : "Học kỳ";
+};
+
+const safeTrim = (value) => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed || null;
 };
 
 export const getProgressSummary = async (req, res) => {
@@ -363,4 +404,300 @@ export const getAdminDashboardOverview = async (req, res) => {
   const feedbacks = mapFeedbackSummaries(pendingFeedbackList);
 
   res.json({ overview, chart, upcoming, feedbacks });
+};
+
+export const getAdminReportsSummary = async (req, res) => {
+  if (req.user?.role !== "ADMIN") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const filters = buildReportFilters(req.query);
+  const activityFilter = { isPublished: true };
+  if (filters.semesterId) {
+    activityFilter.hocKyId = filters.semesterId;
+  }
+  if (filters.yearId) {
+    activityFilter.namHocId = filters.yearId;
+  }
+
+  const [years, semesters, participations] = await Promise.all([
+    prisma.namHoc.findMany({
+      orderBy: { batDau: "asc" }
+    }),
+    prisma.hocKy.findMany({
+      orderBy: { batDau: "asc" },
+      select: {
+        id: true,
+        ten: true,
+        ma: true,
+        thuTu: true,
+        namHocId: true
+      }
+    }),
+    prisma.dangKyHoatDong.findMany({
+      where: {
+        trangThai: "DA_THAM_GIA",
+        hoatDong: activityFilter
+      },
+      select: {
+        id: true,
+        dangKyLuc: true,
+        nguoiDung: {
+          select: {
+            id: true,
+            hoTen: true,
+            email: true,
+            maSV: true,
+            maLop: true,
+            maKhoa: true
+          }
+        },
+        hoatDong: {
+          select: {
+            id: true,
+            tieuDe: true,
+            diemCong: true,
+            nhomDiem: true,
+            batDauLuc: true,
+            namHocId: true,
+            hocKyId: true
+          }
+        }
+      }
+    })
+  ]);
+
+  const participantIds = new Set();
+  const activityIds = new Set();
+  const classMap = new Map();
+  const studentMap = new Map();
+  const categoryMap = new Map();
+  const facultyMap = new Map();
+  const activityMap = new Map();
+  const timelineMap = new Map();
+
+  let totalPoints = 0;
+
+  participations.forEach((entry) => {
+    const student = entry.nguoiDung;
+    const activity = entry.hoatDong;
+    if (!student || !activity) return;
+
+    const numericPoints = Number(activity.diemCong) || 0;
+    const classCode = safeTrim(student.maLop) ?? "Chưa cập nhật";
+    const facultyCode = safeTrim(student.maKhoa) ?? "Chưa cập nhật";
+    const studentName = safeTrim(student.hoTen) ?? safeTrim(student.email) ?? "Sinh viên";
+    const studentId = student.id;
+
+    totalPoints += numericPoints;
+    participantIds.add(studentId);
+    activityIds.add(activity.id);
+
+    if (!classMap.has(classCode)) {
+      classMap.set(classCode, {
+        classCode,
+        faculty: facultyCode,
+        totalPoints: 0,
+        participationCount: 0,
+        studentIds: new Set()
+      });
+    }
+    const classEntry = classMap.get(classCode);
+    classEntry.totalPoints += numericPoints;
+    classEntry.participationCount += 1;
+    classEntry.studentIds.add(studentId);
+
+    if (!studentMap.has(studentId)) {
+      studentMap.set(studentId, {
+        id: studentId,
+        studentCode: safeTrim(student.maSV),
+        name: studentName,
+        email: safeTrim(student.email),
+        classCode,
+        faculty: facultyCode,
+        totalPoints: 0,
+        activityCount: 0
+      });
+    }
+    const studentEntry = studentMap.get(studentId);
+    studentEntry.totalPoints += numericPoints;
+    studentEntry.activityCount += 1;
+
+    const groupKey = normalizePointGroup(activity.nhomDiem ?? DEFAULT_POINT_GROUP);
+    if (!categoryMap.has(groupKey)) {
+      categoryMap.set(groupKey, {
+        id: groupKey,
+        label: getPointGroupLabel(groupKey),
+        totalPoints: 0,
+        activityCount: 0
+      });
+    }
+    const categoryEntry = categoryMap.get(groupKey);
+    categoryEntry.totalPoints += numericPoints;
+    categoryEntry.activityCount += 1;
+
+    if (!facultyMap.has(facultyCode)) {
+      facultyMap.set(facultyCode, {
+        faculty: facultyCode,
+        totalPoints: 0,
+        participationCount: 0,
+        studentIds: new Set()
+      });
+    }
+    const facultyEntry = facultyMap.get(facultyCode);
+    facultyEntry.totalPoints += numericPoints;
+    facultyEntry.participationCount += 1;
+    facultyEntry.studentIds.add(studentId);
+
+    if (!activityMap.has(activity.id)) {
+      activityMap.set(activity.id, {
+        id: activity.id,
+        title: safeTrim(activity.tieuDe) ?? "Hoạt động",
+        pointGroup: groupKey,
+        pointGroupLabel: getPointGroupLabel(groupKey),
+        basePoints: Number(activity.diemCong) || 0,
+        totalPoints: 0,
+        participantCount: 0,
+        yearId: activity.namHocId ?? null,
+        semesterId: activity.hocKyId ?? null
+      });
+    }
+    const activityEntry = activityMap.get(activity.id);
+    activityEntry.totalPoints += numericPoints;
+    activityEntry.participantCount += 1;
+
+    const attendanceDate = activity.batDauLuc
+      ? new Date(activity.batDauLuc)
+      : entry.dangKyLuc
+        ? new Date(entry.dangKyLuc)
+        : null;
+    if (attendanceDate && !Number.isNaN(attendanceDate.getTime())) {
+      const year = attendanceDate.getFullYear();
+      const month = attendanceDate.getMonth() + 1;
+      const key = `${year}-${String(month).padStart(2, "0")}`;
+      if (!timelineMap.has(key)) {
+        timelineMap.set(key, {
+          key,
+          year,
+          month,
+          label: `T${month}/${year}`,
+          totalPoints: 0,
+          registrations: 0
+        });
+      }
+      const bucket = timelineMap.get(key);
+      bucket.totalPoints += numericPoints;
+      bucket.registrations += 1;
+    }
+  });
+
+  const overview = {
+    totalPoints,
+    totalParticipants: participantIds.size,
+    totalActivities: activityIds.size,
+    averagePointsPerStudent:
+      participantIds.size > 0
+        ? Math.round((totalPoints / participantIds.size) * 100) / 100
+        : 0
+  };
+
+  const classRanking = Array.from(classMap.values())
+    .map((entry) => ({
+      classCode: entry.classCode,
+      faculty: entry.faculty,
+      totalPoints: entry.totalPoints,
+      studentCount: entry.studentIds.size,
+      participationCount: entry.participationCount,
+      averagePoints:
+        entry.studentIds.size > 0
+          ? Math.round((entry.totalPoints / entry.studentIds.size) * 100) / 100
+          : 0
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints);
+
+  const studentRanking = Array.from(studentMap.values())
+    .map((entry) => ({
+      ...entry,
+      averagePoints:
+        entry.activityCount > 0
+          ? Math.round((entry.totalPoints / entry.activityCount) * 100) / 100
+          : 0
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints)
+    .slice(0, 50);
+
+  const categorySummary = Array.from(categoryMap.values())
+    .map((entry) => ({
+      ...entry,
+      percent:
+        totalPoints > 0 ? Math.round((entry.totalPoints / totalPoints) * 1000) / 10 : 0
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints);
+
+  const facultySummary = Array.from(facultyMap.values())
+    .map((entry) => ({
+      faculty: entry.faculty,
+      totalPoints: entry.totalPoints,
+      studentCount: entry.studentIds.size,
+      participationCount: entry.participationCount,
+      averagePoints:
+        entry.studentIds.size > 0
+          ? Math.round((entry.totalPoints / entry.studentIds.size) * 100) / 100
+          : 0
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints);
+
+  const topActivities = Array.from(activityMap.values())
+    .map((entry) => ({
+      ...entry,
+      averagePointsPerParticipant:
+        entry.participantCount > 0
+          ? Math.round((entry.totalPoints / entry.participantCount) * 100) / 100
+          : 0
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints)
+    .slice(0, 10);
+
+  const timeline = Array.from(timelineMap.values()).sort((a, b) => {
+    if (a.year === b.year) return a.month - b.month;
+    return a.year - b.year;
+  });
+
+  const yearOptions = years.map((year) => ({
+    id: year.id,
+    label: formatYearLabel(year),
+    code: safeTrim(year.ma),
+    startDate: year.batDau?.toISOString?.() ?? null,
+    endDate: year.ketThuc?.toISOString?.() ?? null,
+    isActive: Boolean(year.isActive)
+  }));
+
+  const semesterOptions = semesters.map((semester) => ({
+    id: semester.id,
+    label: formatSemesterLabel(semester),
+    code: safeTrim(semester.ma),
+    order: semester.thuTu ?? null,
+    yearId: semester.namHocId
+  }));
+
+  res.json({
+    overview,
+    byClass: classRanking,
+    byStudent: studentRanking,
+    byCategory: categorySummary,
+    byFaculty: facultySummary,
+    byActivity: topActivities,
+    timeline,
+    totals: {
+      participants: participantIds.size,
+      activities: activityIds.size,
+      records: participations.length
+    },
+    filters: {
+      years: yearOptions,
+      semesters: semesterOptions,
+      applied: filters
+    },
+    generatedAt: new Date().toISOString()
+  });
 };

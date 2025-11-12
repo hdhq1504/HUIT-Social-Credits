@@ -22,7 +22,6 @@ const COUNT_LABELS = {
   registrations: 'Đăng ký',
   checkIns: 'Điểm danh',
   feedbacks: 'Phản hồi',
-  faceProfiles: 'Hồ sơ khuôn mặt',
   notifications: 'Thông báo',
 };
 

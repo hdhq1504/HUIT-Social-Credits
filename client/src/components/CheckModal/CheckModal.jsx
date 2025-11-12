@@ -337,7 +337,7 @@ function CheckModal({
                 <FontAwesomeIcon icon={faCamera} />
               </div>
               <div className={cx('check-modal__camera-box-title')}>Camera sẵn sàng</div>
-              <div className={cx('check-modal__camera-box-hint')}>Đảm bảo khuôn mặt hiển thị rõ trong khung hình</div>
+              <div className={cx('check-modal__camera-box-hint')}>Đảm bảo bạn hiển thị rõ trong khung hình</div>
             </div>
           )}
 

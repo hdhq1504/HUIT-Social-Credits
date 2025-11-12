@@ -124,8 +124,7 @@ function RollCallPage() {
         typeof rawMessage === 'string' && rawMessage.trim()
           ? rawMessage.trim()
           : 'Không thể điểm danh hoạt động. Vui lòng thử lại.';
-      const requiresFaceProfile = message.toLowerCase().includes('đăng ký khuôn mặt');
-      toast({ message, variant: requiresFaceProfile ? 'warning' : 'danger' });
+      toast({ message, variant: 'danger' });
       if (error && typeof error === 'object') {
         try {
           Object.defineProperty(error, 'handledByToast', { value: true, configurable: true, writable: true });

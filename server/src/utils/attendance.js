@@ -1,20 +1,21 @@
 const ATTENDANCE_METHOD_MAP = {
   QR: "qr",
   PHOTO: "photo",
-  MANUAL: "manual",
-  FACE: "face"
+  MANUAL: "manual"
 };
 
 const LABEL_MAP = {
   qr: "QR Code",
   photo: "Chụp ảnh",
-  manual: "Thủ công",
-  face: "Nhận diện khuôn mặt"
+  manual: "Thủ công"
 };
 
 export const normalizeAttendanceMethod = (value) => {
   if (!value) return null;
   const normalized = String(value).trim().toLowerCase();
+  if (normalized === "face") {
+    return "PHOTO";
+  }
   const entry = Object.entries(ATTENDANCE_METHOD_MAP).find(([, apiValue]) => apiValue === normalized);
   if (entry) {
     return entry[0];
@@ -25,6 +26,9 @@ export const normalizeAttendanceMethod = (value) => {
 
 export const mapAttendanceMethodToApi = (value) => {
   if (!value) return null;
+  if (String(value).trim().toLowerCase() === "face") {
+    return "photo";
+  }
   if (ATTENDANCE_METHOD_MAP[value]) {
     return ATTENDANCE_METHOD_MAP[value];
   }

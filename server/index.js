@@ -10,7 +10,6 @@ import notificationRoutes from "./src/routes/notification.routes.js";
 import statsRoutes from "./src/routes/stats.routes.js";
 import academicRoutes from "./src/routes/academic.routes.js";
 import feedbackRoutes from "./src/routes/feedback.routes.js";
-import faceRecognitionRoutes from "./src/routes/faceRecognition.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import systemRoutes from "./src/routes/system.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
@@ -33,7 +32,6 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/academics", academicRoutes);
 app.use("/api/feedback", feedbackRoutes);
-app.use("/api/face", faceRecognitionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/system", systemRoutes);
 

@@ -16,7 +16,6 @@ const BACKUP_COLLECTIONS = [
   { key: "registrations", model: "dangKyHoatDong" },
   { key: "checkIns", model: "diemDanhNguoiDung" },
   { key: "feedbacks", model: "phanHoiHoatDong" },
-  { key: "faceProfiles", model: "faceProfile" },
   { key: "notifications", model: "thongBao" }
 ];
 
@@ -84,7 +83,6 @@ export const restoreBackup = async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.thongBao.deleteMany();
-      await tx.faceProfile.deleteMany();
       await tx.diemDanhNguoiDung.deleteMany();
       await tx.phanHoiHoatDong.deleteMany();
       await tx.dangKyHoatDong.deleteMany();
@@ -113,9 +111,6 @@ export const restoreBackup = async (req, res) => {
       }
       if (normalized.feedbacks.length) {
         await tx.phanHoiHoatDong.createMany({ data: normalized.feedbacks });
-      }
-      if (normalized.faceProfiles.length) {
-        await tx.faceProfile.createMany({ data: normalized.faceProfiles });
       }
       if (normalized.notifications.length) {
         await tx.thongBao.createMany({ data: normalized.notifications });
