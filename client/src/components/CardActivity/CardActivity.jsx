@@ -421,7 +421,8 @@ function CardActivity(props) {
       dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
       dispatch({ type: 'RESET_CAPTURED' });
       const faceStatus = result?.face?.status || null;
-      const toastVariant = faceStatus === 'REVIEW' ? 'warning' : 'success';
+      const toastVariant =
+        faceStatus === 'REJECTED' ? 'danger' : faceStatus === 'REVIEW' ? 'warning' : 'success';
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
       openToast({

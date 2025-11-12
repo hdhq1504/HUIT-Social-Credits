@@ -16,6 +16,7 @@ import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import uploadService from '@/services/uploadService';
+import faceRecognitionService from '@/services/faceRecognition.service';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
 
@@ -132,7 +133,10 @@ function ActivityDetailPage() {
       setIsCheckOpen(false);
       setAttendancePhase('checkin');
       const message = data?.message || 'Điểm danh thành công!';
-      toast({ message, variant: 'success' });
+      const faceStatus = data?.face?.status || null;
+      const variant =
+        faceStatus === 'REJECTED' ? 'danger' : faceStatus === 'REVIEW' ? 'warning' : 'success';
+      toast({ message, variant });
     },
     onError: (error) => {
       const rawMessage = error.response?.data?.error;

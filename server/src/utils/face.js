@@ -1,4 +1,7 @@
-const DESCRIPTOR_LENGTH = 128;
+export const DESCRIPTOR_LENGTH = 128;
+
+export const MATCH_APPROVED_THRESHOLD = 0.4;
+export const MATCH_REVIEW_THRESHOLD = 0.6;
 
 const clamp = (value, min, max) => {
   if (Number.isNaN(value)) return min;
@@ -7,7 +10,7 @@ const clamp = (value, min, max) => {
   return value;
 };
 
-const euclideanDistance = (a, b) => {
+export const euclideanDistance = (a, b) => {
   if (a.length !== b.length) return Infinity;
   let sum = 0;
   for (let i = 0; i < a.length; i++) {
@@ -65,10 +68,19 @@ export const sanitizeSamples = (value, maxItems = 5) => {
     .slice(0, maxItems);
 };
 
+export const deriveMatchStatus = (distance) => {
+  if (!Number.isFinite(distance)) return "REJECTED";
+  if (distance <= MATCH_APPROVED_THRESHOLD) return "APPROVED";
+  if (distance <= MATCH_REVIEW_THRESHOLD) return "REVIEW";
+  return "REJECTED";
+};
+
 export const computeMatchConfidence = (storedDescriptors, targetDescriptor) => {
   const descriptors = sanitizeDescriptorCollection(storedDescriptors);
   const target = sanitizeDescriptor(targetDescriptor);
-  if (!descriptors.length || !target) return { confidence: 0, bestDescriptor: null };
+  if (!descriptors.length || !target) {
+    return { confidence: 0, bestDescriptor: null, distance: Infinity, status: "REJECTED" };
+  }
 
   let minDistance = Infinity;
   let bestDescriptor = null;
@@ -81,14 +93,21 @@ export const computeMatchConfidence = (storedDescriptors, targetDescriptor) => {
     }
   }
 
-  const confidence = clamp(1 - (minDistance / 1.2), 0, 1);
-  return { confidence, bestDescriptor, distance: minDistance };
+  const confidence = clamp(1 - minDistance / 1.2, 0, 1);
+  const status = deriveMatchStatus(minDistance);
+  return { confidence, bestDescriptor, distance: minDistance, status };
 };
 
-export const deriveMatchStatus = (distance) => {
-  if (distance < 0.4) return "APPROVED";
-  if (distance < 0.6) return "REVIEW";
-  return "REJECTED";
+export const compareDescriptors = (a, b) => {
+  const left = sanitizeDescriptor(a);
+  const right = sanitizeDescriptor(b);
+  if (!left || !right) {
+    return { confidence: 0, distance: Infinity, status: "REJECTED" };
+  }
+  const distance = euclideanDistance(left, right);
+  const confidence = clamp(1 - distance / 1.2, 0, 1);
+  const status = deriveMatchStatus(distance);
+  return { confidence, distance, status };
 };
 
 export default {
@@ -96,5 +115,7 @@ export default {
   sanitizeDescriptorCollection,
   sanitizeSamples,
   computeMatchConfidence,
-  deriveMatchStatus
+  deriveMatchStatus,
+  compareDescriptors,
+  euclideanDistance,
 };

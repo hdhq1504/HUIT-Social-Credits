@@ -10,7 +10,7 @@ import {
   mapAttendanceMethodToApi,
   normalizeAttendanceMethod
 } from "../utils/attendance.js";
-import { sanitizeDescriptor, computeMatchConfidence, deriveMatchStatus } from "../utils/face.js";
+import { sanitizeDescriptor, computeMatchConfidence, compareDescriptors } from "../utils/face.js";
 import {
   uploadBase64Image,
   buildAttendancePath,
@@ -94,7 +94,7 @@ const mapAttendanceEvidence = (value) =>
   });
 
 const sanitizeAttendanceEvidenceMetadata = (value) =>
-  sanitizeAttendanceEvidenceMetadata(value, {
+  sanitizeStorageMetadata(value, {
     allowedBuckets: ATTENDANCE_BUCKET_SET,
     fallbackBucket: env.SUPABASE_ATTENDANCE_BUCKET,
   });
@@ -936,7 +936,7 @@ export const markAttendance = async (req, res) => {
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
     include: {
       hoatDong: true,
-      lichSuDiemDanh: true
+      lichSuDiemDanh: { orderBy: { taoLuc: "asc" } }
     }
   });
 
@@ -969,8 +969,10 @@ export const markAttendance = async (req, res) => {
   const isCheckout = normalizedPhase === "checkout";
 
   const history = registration.lichSuDiemDanh ?? [];
-  const hasCheckin = history.some((entry) => entry.loai === "CHECKIN");
+  const checkinEntries = history.filter((entry) => entry.loai === "CHECKIN");
+  const hasCheckin = checkinEntries.length > 0;
   const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
+  const latestCheckinEntry = hasCheckin ? checkinEntries[checkinEntries.length - 1] : null;
 
   if (!isCheckout && hasCheckin) {
     return res.status(409).json({ error: "Bạn đã điểm danh đầu giờ cho hoạt động này" });
@@ -1024,7 +1026,9 @@ export const markAttendance = async (req, res) => {
   let faceResult = null;
 
   if (isFaceAttendance) {
-    const facePayload = extractFaceDescriptorPayload(req.body?.face ?? req.body?.faceData ?? req.body?.faceVector ?? req.body);
+    const facePayload = extractFaceDescriptorPayload(
+      req.body?.face ?? req.body?.faceData ?? req.body?.faceVector ?? req.body,
+    );
     if (!facePayload?.descriptor) {
       return res.status(400).json({ error: "Không tìm thấy dữ liệu khuôn mặt hợp lệ" });
     }
@@ -1037,9 +1041,9 @@ export const markAttendance = async (req, res) => {
         .json({ error: "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi điểm danh." });
     }
 
-    const { confidence } = computeMatchConfidence(storedDescriptors, facePayload.descriptor);
-    const score = Math.round(confidence * 10_000) / 100; // percent with 2 decimals
-    const matchStatus = deriveMatchStatus(confidence);
+    const profileMatch = computeMatchConfidence(storedDescriptors, facePayload.descriptor);
+    const score = Math.round(profileMatch.confidence * 10_000) / 100;
+    const matchStatus = profileMatch.status;
 
     if (matchStatus === "REJECTED") {
       return res.status(403).json({
@@ -1048,26 +1052,65 @@ export const markAttendance = async (req, res) => {
       });
     }
 
-    if (isCheckout) {
-      if (matchStatus === "APPROVED") {
-        finalStatus = "DA_THAM_GIA";
-      } else if (matchStatus === "REVIEW") {
-        finalStatus = "DANG_KY";
-      }
-      entryStatus = finalStatus;
-    } else {
-      entryStatus = "DANG_KY";
-    }
-
     faceResult = {
       status: matchStatus,
       score,
       descriptor: facePayload.descriptor,
-      profileId: faceProfile.id
+      profileId: faceProfile.id,
+      distance: profileMatch.distance,
+      comparedAt: new Date().toISOString(),
+      reference: profileMatch.bestDescriptor
+        ? { type: "PROFILE", distance: profileMatch.distance }
+        : null,
     };
+
+    if (isCheckout) {
+      const checkinDescriptor = latestCheckinEntry?.faceMeta?.descriptor ?? null;
+      const checkinMatchStatus = latestCheckinEntry?.faceMatch ?? null;
+      const crossMatch = checkinDescriptor
+        ? compareDescriptors(checkinDescriptor, facePayload.descriptor)
+        : null;
+
+      if (crossMatch) {
+        faceResult.crossMatch = {
+          status: crossMatch.status,
+          score: Math.round(crossMatch.confidence * 10_000) / 100,
+          distance: crossMatch.distance,
+          referenceAttendanceId: latestCheckinEntry?.id ?? null,
+        };
+      }
+
+      const providedCheckinDescriptor = Array.isArray(checkinDescriptor);
+      const providedCheckoutDescriptor = Array.isArray(facePayload.descriptor);
+      const providedBoth = providedCheckinDescriptor && providedCheckoutDescriptor;
+      const anyFaceProvided = providedCheckinDescriptor || providedCheckoutDescriptor;
+      const checkinApproved = checkinMatchStatus === "APPROVED";
+      const checkoutApproved = matchStatus === "APPROVED";
+      const crossApproved = crossMatch ? crossMatch.status === "APPROVED" : false;
+      const crossRejected = crossMatch ? crossMatch.status === "REJECTED" : false;
+
+      if (!anyFaceProvided || !providedBoth) {
+        finalStatus = "VANG_MAT";
+      } else if (checkinApproved && checkoutApproved && crossApproved) {
+        finalStatus = "DA_THAM_GIA";
+      } else if (crossRejected) {
+        finalStatus = "VANG_MAT";
+      } else {
+        finalStatus = "DANG_KY";
+      }
+
+      entryStatus = finalStatus;
+    } else {
+      entryStatus = "DANG_KY";
+    }
   }
 
-  const shouldAutoApprove = isCheckout && finalStatus === 'DA_THAM_GIA' && isFaceAttendance && faceResult?.status === 'APPROVED';
+  const shouldAutoApprove =
+    isCheckout &&
+    finalStatus === "DA_THAM_GIA" &&
+    isFaceAttendance &&
+    faceResult?.status === "APPROVED" &&
+    (!faceResult?.crossMatch || faceResult.crossMatch.status === "APPROVED");
 
   const registrationUpdate = {
     diemDanhLuc: attendanceTime,
@@ -1098,7 +1141,14 @@ export const markAttendance = async (req, res) => {
         faceMatch: faceResult?.status ?? null,
         faceScore: faceResult?.score ?? null,
         faceMeta: faceResult
-          ? { profileId: faceResult.profileId, descriptor: faceResult.descriptor }
+          ? {
+              profileId: faceResult.profileId,
+              descriptor: faceResult.descriptor,
+              distance: faceResult.distance ?? null,
+              comparedAt: faceResult.comparedAt ?? null,
+              reference: faceResult.reference ?? null,
+              crossMatch: faceResult.crossMatch ?? null,
+            }
           : null
       }
     })
@@ -1124,7 +1174,9 @@ export const markAttendance = async (req, res) => {
   }
 
   const updated = await buildActivityResponse(activityId, userId);
-  const faceReviewPending = faceResult?.status === "REVIEW";
+  const faceReviewPending =
+    faceResult?.status === "REVIEW" || faceResult?.crossMatch?.status === "REVIEW";
+  const faceRejected = faceResult?.crossMatch?.status === "REJECTED";
   const success = isCheckout ? finalStatus === "DA_THAM_GIA" : true;
 
   let notificationTitle;
@@ -1138,7 +1190,18 @@ export const markAttendance = async (req, res) => {
   if (isFaceAttendance) {
     const scoreLabel = faceResult ? ` (độ khớp ${faceResult.score.toFixed(2)}%)` : "";
     if (isCheckout) {
-      if (faceReviewPending) {
+      if (finalStatus === "VANG_MAT" || faceRejected) {
+        responseMessage = "Điểm danh không hợp lệ - bạn được ghi nhận vắng mặt";
+        notificationTitle = "Điểm danh không hợp lệ";
+        notificationMessage = `Hệ thống không thể xác thực khuôn mặt của bạn cho hoạt động "${activity.tieuDe}".${scoreLabel}`;
+        notificationType = "danger";
+        notificationAction = "ABSENT";
+        emailSubject = `[HUIT Social Credits] Điểm danh không hợp lệ - "${activity.tieuDe}"`;
+        emailMessageLines = [
+          `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" không trùng khớp với ảnh đầu giờ hoặc hồ sơ khuôn mặt.${scoreLabel}`,
+          normalizedNote ? `Ghi chú: ${normalizedNote}` : null
+        ];
+      } else if (faceReviewPending || finalStatus === "DANG_KY") {
         responseMessage = "Điểm danh cuối giờ đã ghi nhận và đang chờ xác minh";
         notificationTitle = "Điểm danh cuối giờ cần xác minh";
         notificationMessage = `Điểm danh cuối giờ cho hoạt động "${activity.tieuDe}" đang chờ quản trị viên xác minh${scoreLabel}.`;
@@ -1150,14 +1213,14 @@ export const markAttendance = async (req, res) => {
           normalizedNote ? `Ghi chú: ${normalizedNote}` : null
         ];
       } else {
-        responseMessage = "Điểm danh cuối giờ thành công";
+        responseMessage = "Điểm danh cuối giờ thành công, hệ thống đã cộng điểm";
         notificationTitle = "Điểm danh thành công";
-        notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận${scoreLabel}.`;
+        notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận và cộng điểm${scoreLabel}.`;
         notificationType = "success";
         notificationAction = "ATTENDED";
         emailSubject = `[HUIT Social Credits] Xác nhận điểm danh hoạt động "${activity.tieuDe}"`;
         emailMessageLines = [
-          `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.${scoreLabel}`,
+          `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công và cộng điểm.${scoreLabel}`,
           normalizedNote ? `Ghi chú: ${normalizedNote}` : null
         ];
       }
@@ -1233,15 +1296,23 @@ export const markAttendance = async (req, res) => {
     emailMessageLines
   });
 
+  const responseFace = faceResult
+    ? {
+        status:
+          faceResult.crossMatch?.status === "REJECTED"
+            ? "REJECTED"
+            : faceResult.crossMatch?.status === "REVIEW" && faceResult.status === "APPROVED"
+              ? "REVIEW"
+              : faceResult.status,
+        score: faceResult.score,
+        crossMatch: faceResult.crossMatch ?? null,
+      }
+    : null;
+
   res.json({
     message: responseMessage,
     activity: updated,
-    face: faceResult
-      ? {
-        status: faceResult.status,
-        score: faceResult.score
-      }
-      : null
+    face: responseFace
   });
 };
 
