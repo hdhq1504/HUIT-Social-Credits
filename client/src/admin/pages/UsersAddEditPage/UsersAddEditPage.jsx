@@ -59,7 +59,12 @@ const UsersAddEditPage = () => {
     ];
     setBreadcrumbs(breadcrumbs);
     setPageActions([
-      <Button key="back" onClick={handleBackToList} icon={<FontAwesomeIcon icon={faArrowLeft} />}>Quay lại</Button>,
+      {
+        key: 'back-to-users',
+        label: 'Quay lại danh sách',
+        icon: <FontAwesomeIcon icon={faArrowLeft} />,
+        onClick: handleBackToList,
+      },
     ]);
 
     return () => {
@@ -78,22 +83,6 @@ const UsersAddEditPage = () => {
     queryKey: [USERS_QUERY_KEY, 'detail', id],
     queryFn: () => usersApi.detail(id),
     enabled: isEditMode,
-    onSuccess: (response) => {
-      const user = response?.user;
-      if (user) {
-        form.setFieldsValue({
-          fullName: user.fullName || '',
-          email: user.email || '',
-          role: user.role || 'SINHVIEN',
-          studentCode: user.studentCode || '',
-          staffCode: user.staffCode || '',
-          classCode: user.classCode || '',
-          departmentCode: user.departmentCode || '',
-          phoneNumber: user.phoneNumber || '',
-          isActive: Boolean(user.isActive),
-        });
-      }
-    },
     onError: (error) => {
       openToast({
         message: error.response?.data?.error || 'Không thể tải thông tin người dùng.',
@@ -102,6 +91,26 @@ const UsersAddEditPage = () => {
       handleBackToList();
     },
   });
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    const user = detailQuery.data?.user;
+    if (!user) return;
+
+    form.setFieldsValue({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      role: user.role || 'SINHVIEN',
+      studentCode: user.studentCode || '',
+      staffCode: user.staffCode || '',
+      classCode: user.classCode || '',
+      departmentCode: user.departmentCode || '',
+      phoneNumber: user.phoneNumber || '',
+      isActive: Boolean(user.isActive),
+      password: '',
+      confirmPassword: '',
+    });
+  }, [detailQuery.data, form, isEditMode]);
 
   const createMutation = useMutation({
     mutationFn: (payload) => usersApi.create(payload),

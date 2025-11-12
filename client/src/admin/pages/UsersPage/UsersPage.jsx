@@ -78,15 +78,14 @@ export default function UsersPage() {
       { label: 'Quản lý người dùng', path: ROUTE_PATHS.ADMIN.USERS },
     ]);
     setPageActions([
-      <Button
-        key="create-user"
-        type="primary"
-        icon={<FontAwesomeIcon icon={faUserPlus} />}
-        onClick={handleCreateUser}
-        className={cx('users-page__create-button')}
-      >
-        Thêm người dùng
-      </Button>,
+      {
+        key: 'create-user',
+        label: 'Thêm người dùng mới',
+        type: 'primary',
+        icon: <FontAwesomeIcon icon={faUserPlus} />,
+        onClick: handleCreateUser,
+        className: styles['users-page__create-button'],
+      },
     ]);
 
     return () => {
