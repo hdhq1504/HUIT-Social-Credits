@@ -19,6 +19,36 @@ const ensureClient = () => {
   return supabaseClient;
 };
 
+const bucketPromises = new Map();
+
+export const ensureBucket = async (
+  bucket,
+  options = { public: false },
+) => {
+  if (!bucket) return null;
+  const client = ensureClient();
+  if (bucketPromises.has(bucket)) {
+    return bucketPromises.get(bucket);
+  }
+  const creation = (async () => {
+    const { error } = await client.storage.createBucket(bucket, options);
+    if (error && error.statusCode !== 409) {
+      const bucketError = new Error(error.message || "SUPABASE_BUCKET_FAILED");
+      bucketError.code = "SUPABASE_BUCKET_FAILED";
+      throw bucketError;
+    }
+    return true;
+  })();
+  bucketPromises.set(bucket, creation);
+  try {
+    await creation;
+  } catch (error) {
+    bucketPromises.delete(bucket);
+    throw error;
+  }
+  return creation;
+};
+
 const parseDataUrl = (dataUrl) => {
   if (typeof dataUrl !== "string") {
     throw new Error("INVALID_DATA_URL");
@@ -127,6 +157,7 @@ export const buildAttendancePath = ({ userId, activityId }) => {
 
 export default {
   isSupabaseConfigured,
+  ensureBucket,
   uploadBase64Image,
   removeFiles,
   buildAttendancePath,

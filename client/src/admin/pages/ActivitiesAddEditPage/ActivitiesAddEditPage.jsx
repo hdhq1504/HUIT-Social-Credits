@@ -458,8 +458,7 @@ const ActivitiesAddEditPage = () => {
                   >
                     <Select placeholder="Chọn phương thức">
                       <Option value="qr">QR Code</Option>
-                      <Option value="photo">Chụp ảnh</Option>
-                      <Option value="manual">Thủ công</Option>
+                      <Option value="photo">Nhận diện khuôn mặt</Option>
                     </Select>
                   </Form.Item>
                 </Col>

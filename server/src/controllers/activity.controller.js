@@ -11,6 +11,13 @@ import {
   normalizeAttendanceMethod
 } from "../utils/attendance.js";
 import {
+  evaluateFaceMatch,
+  FACE_MATCH_CONSTANTS,
+  normalizeDescriptor,
+  normalizeDescriptorCollection,
+  summarizeFaceProfile
+} from "../utils/face.js";
+import {
   uploadBase64Image,
   buildAttendancePath,
   isSupabaseConfigured,
@@ -60,8 +67,8 @@ const normalizeAcademicYearLabel = (value) => {
   return null;
 };
 
-const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
-const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT"];
+const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA", "CHO_DUYET"];
+const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT", "CHO_DUYET"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
 const FEEDBACK_STATUS_LABELS = {
   CHO_DUYET: "Chờ duyệt",
@@ -205,14 +212,76 @@ const REGISTRATION_STATUS_LABELS = {
   DANG_KY: "Chờ duyệt",
   DA_THAM_GIA: "Đã duyệt",
   VANG_MAT: "Vắng mặt",
-  DA_HUY: "Đã hủy"
+  DA_HUY: "Đã hủy",
+  CHO_DUYET: "Chờ duyệt điểm danh"
 };
 
 const ATTENDANCE_STATUS_LABELS = {
   DANG_KY: "Đang xử lý",
   DA_THAM_GIA: "Hoàn thành",
   VANG_MAT: "Vắng mặt",
-  DA_HUY: "Đã hủy"
+  DA_HUY: "Đã hủy",
+  CHO_DUYET: "Chờ duyệt"
+};
+
+const FACE_MATCH_LABELS = {
+  APPROVED: "Khớp khuôn mặt",
+  REVIEW: "Cần kiểm tra",
+  REJECTED: "Không khớp",
+};
+
+const summarizeFaceHistoryRaw = (entries = []) => {
+  const relevant = entries.filter(
+    (entry) => entry && (entry.loai === "CHECKIN" || entry.loai === "CHECKOUT")
+  );
+  const statuses = relevant.map((entry) => entry.faceMatch ?? null);
+  const approvedCount = statuses.filter((status) => status === "APPROVED").length;
+  const reviewCount = statuses.filter((status) => status === "REVIEW").length;
+  const rejectedCount = statuses.filter((status) => status === "REJECTED").length;
+  const missingCount = statuses.filter((status) => status === null).length;
+  const hasCheckin = relevant.some((entry) => entry.loai === "CHECKIN");
+  const hasCheckout = relevant.some((entry) => entry.loai === "CHECKOUT");
+  const requiresReview =
+    reviewCount > 0 ||
+    missingCount > 0 ||
+    (hasCheckout && approvedCount === 1 && rejectedCount === 0);
+
+  return {
+    approvedCount,
+    reviewCount,
+    rejectedCount,
+    missingCount,
+    hasCheckin,
+    hasCheckout,
+    requiresReview,
+  };
+};
+
+const summarizeFaceHistoryMapped = (entries = []) => {
+  const relevant = entries.filter(
+    (entry) => entry && (entry.phase === "checkin" || entry.phase === "checkout")
+  );
+  const statuses = relevant.map((entry) => entry.faceMatch ?? null);
+  const approvedCount = statuses.filter((status) => status === "APPROVED").length;
+  const reviewCount = statuses.filter((status) => status === "REVIEW").length;
+  const rejectedCount = statuses.filter((status) => status === "REJECTED").length;
+  const missingCount = statuses.filter((status) => status === null).length;
+  const hasCheckin = relevant.some((entry) => entry.phase === "checkin");
+  const hasCheckout = relevant.some((entry) => entry.phase === "checkout");
+  const requiresReview =
+    reviewCount > 0 ||
+    missingCount > 0 ||
+    (hasCheckout && approvedCount === 1 && rejectedCount === 0);
+
+  return {
+    approvedCount,
+    reviewCount,
+    rejectedCount,
+    missingCount,
+    hasCheckin,
+    hasCheckout,
+    requiresReview,
+  };
 };
 
 const DEFAULT_REGISTRATION_PAGE_SIZE = 10;
@@ -463,7 +532,11 @@ const mapAttendanceEntry = (entry) => {
     attachment: attachmentMeta,
     attachmentUrl: attachmentMeta?.url ?? null,
     attachmentMimeType: attachmentMeta?.mimeType ?? null,
-    attachmentFileName: attachmentMeta?.fileName ?? null
+    attachmentFileName: attachmentMeta?.fileName ?? null,
+    faceMatch: entry.faceMatch ?? null,
+    faceMatchLabel: entry.faceMatch ? FACE_MATCH_LABELS[entry.faceMatch] || entry.faceMatch : null,
+    faceScore: entry.faceScore ?? null,
+    faceMeta: entry.faceMeta ?? null
   };
 };
 
@@ -511,6 +584,7 @@ const mapRegistration = (registration, activity) => {
   const hasCheckout = attendanceHistory.some((entry) => entry.phase === "checkout");
   const checkoutAvailableAt = computeCheckoutAvailableAt(activity);
   const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
+  const faceSummary = summarizeFaceHistoryMapped(attendanceHistory);
   return {
     id: registration.id,
     activityId: registration.hoatDongId,
@@ -536,7 +610,8 @@ const mapRegistration = (registration, activity) => {
       hasCheckout,
       nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
       checkoutAvailableAt,
-      feedbackAvailableAt
+      feedbackAvailableAt,
+      face: faceSummary
     },
     feedback: mapFeedback(registration.phanHoi),
     student: mapStudentProfile(registration.nguoiDung, { includeContact: true })
@@ -643,6 +718,8 @@ const determineState = (activity, registration) => {
       return "canceled";
     case "VANG_MAT":
       return "absent";
+    case "CHO_DUYET":
+      return "attendance_review";
     case "DA_THAM_GIA": {
       const feedback = registration.phanHoi;
       if (!feedback) {
@@ -667,7 +744,7 @@ const determineState = (activity, registration) => {
   }
 };
 
-const mapActivity = (activity, registration) => {
+const mapActivity = (activity, registration, options = {}) => {
   if (!activity) return null;
 
   const start = toDate(activity.batDauLuc);
@@ -686,6 +763,8 @@ const mapActivity = (activity, registration) => {
   const attendanceMethodLabel =
     getAttendanceMethodLabel(attendanceMethod) ||
     getAttendanceMethodLabel(mapAttendanceMethodToApi(defaultAttendanceMethod));
+  const faceEnrollment =
+    options.faceEnrollment ?? summarizeFaceProfile(options.faceProfile ?? null);
   const storedSemester = normalizeSemesterLabel(semesterRef?.ten);
   const storedAcademicYear = normalizeAcademicYearLabel(academicYearRef);
   const fallbackSemesterInfo = deriveSemesterInfo(activity.batDauLuc ?? activity.ketThucLuc);
@@ -757,13 +836,15 @@ const mapActivity = (activity, registration) => {
     attendanceMethodLabel,
     registrationDeadline: activity.hanDangKy?.toISOString() ?? null,
     cancellationDeadline: activity.hanHuyDangKy?.toISOString() ?? null,
+    requiresFaceEnrollment: attendanceMethod === "photo",
+    faceEnrollment,
     state: determineState(activity, registration),
     registration: mapRegistration(registration, activity)
   };
 };
 
 const buildActivityResponse = async (activityId, userId) => {
-  const [activity, registration] = await Promise.all([
+  const [activity, registration, faceProfile] = await Promise.all([
     prisma.hoatDong.findUnique({
       where: { id: activityId },
       include: ACTIVITY_INCLUDE
@@ -773,11 +854,13 @@ const buildActivityResponse = async (activityId, userId) => {
         where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
         include: REGISTRATION_INCLUDE
       })
-      : null
+      : null,
+    userId ? prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } }) : null
   ]);
 
   if (!activity) return null;
-  return mapActivity(activity, registration);
+  const faceEnrollment = summarizeFaceProfile(faceProfile);
+  return mapActivity(activity, registration, { faceEnrollment });
 };
 
 const mapActivitySummaryForRegistration = (activity) => {
@@ -840,6 +923,7 @@ export const listActivities = async (req, res) => {
   });
 
   let registrationMap = new Map();
+  let faceProfileSummary = null;
   if (currentUserId && activities.length) {
     const registrations = await prisma.dangKyHoatDong.findMany({
       where: {
@@ -849,10 +933,14 @@ export const listActivities = async (req, res) => {
       include: REGISTRATION_INCLUDE,
     });
     registrationMap = new Map(registrations.map((registration) => [registration.hoatDongId, registration]));
+    const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: currentUserId } });
+    faceProfileSummary = summarizeFaceProfile(faceProfile);
   }
 
   res.json({
-    activities: activities.map((activity) => mapActivity(activity, registrationMap.get(activity.id))),
+    activities: activities.map((activity) =>
+      mapActivity(activity, registrationMap.get(activity.id), { faceEnrollment: faceProfileSummary })
+    ),
   });
 };
 
@@ -1337,7 +1425,15 @@ export const cancelActivityRegistration = async (req, res) => {
 export const markAttendance = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
-  const { note, status, evidence, phase } = req.body || {};
+  const {
+    note,
+    status,
+    evidence,
+    phase,
+    faceDescriptor,
+    faceDescriptors,
+    faceError,
+  } = req.body || {};
 
   const user = await prisma.nguoiDung.findUnique({
     where: { id: userId },
@@ -1403,6 +1499,17 @@ export const markAttendance = async (req, res) => {
   const attendanceMethod =
     mapAttendanceMethodToApi(attendanceSource) || mapAttendanceMethodToApi(defaultAttendanceMethod);
 
+  let faceProfile = null;
+  if (attendanceMethod === "photo") {
+    faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
+    if (!faceProfile) {
+      return res.status(409).json({
+        error:
+          "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trong trang Thông tin sinh viên trước khi điểm danh.",
+      });
+    }
+  }
+
   const normalizedNote = sanitizeOptionalText(note);
   const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
   let storedEvidence = null;
@@ -1432,28 +1539,101 @@ export const markAttendance = async (req, res) => {
   if (attendanceMethod === "photo" && !storedEvidence) {
     return res.status(400).json({ error: "Vui lòng chụp hoặc tải lên ảnh điểm danh." });
   }
+
+  let descriptorSource = null;
+  let normalizedDescriptor = null;
+  if (attendanceMethod === "photo") {
+    const directDescriptor = normalizeDescriptor(faceDescriptor);
+    if (directDescriptor) {
+      normalizedDescriptor = directDescriptor;
+      descriptorSource = "faceDescriptor";
+    } else {
+      const descriptorCollection = normalizeDescriptorCollection(faceDescriptors);
+      if (descriptorCollection.length) {
+        normalizedDescriptor = descriptorCollection[0];
+        descriptorSource = "faceDescriptors";
+      }
+    }
+  }
+
+  let faceMatchResult = null;
+  let referenceDescriptors = [];
+  if (attendanceMethod === "photo") {
+    referenceDescriptors = normalizeDescriptorCollection(faceProfile?.descriptors || []);
+    if (faceError) {
+      faceMatchResult = { status: "REVIEW", score: null, reason: "client_error" };
+    } else if (!referenceDescriptors.length) {
+      faceMatchResult = { status: "REVIEW", score: null, reason: "empty_profile" };
+    } else if (!normalizedDescriptor) {
+      faceMatchResult = { status: "REVIEW", score: null, reason: "missing_descriptor" };
+    } else {
+      faceMatchResult = evaluateFaceMatch({
+        descriptor: normalizedDescriptor,
+        profileDescriptors: referenceDescriptors,
+      });
+    }
+  }
+
   const attendanceTime = new Date();
 
-  const baseNextStatus = status === "absent" && isCheckout ? "VANG_MAT" : "DA_THAM_GIA";
-  const finalStatus = baseNextStatus;
-  const entryStatus = isCheckout ? finalStatus : "DANG_KY";
+  const nextHistory = [
+    ...history,
+    { loai: isCheckout ? "CHECKOUT" : "CHECKIN", faceMatch: faceMatchResult?.status ?? null },
+  ];
+
+  const faceSummary = attendanceMethod === "photo" ? summarizeFaceHistoryRaw(nextHistory) : null;
+
+  let finalStatus = registration.trangThai;
+  let entryStatus = "DANG_KY";
+  if (attendanceMethod === "photo") {
+    if (!isCheckout) {
+      if (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED") {
+        entryStatus = "CHO_DUYET";
+      }
+    } else if (faceSummary?.approvedCount >= 2) {
+      finalStatus = "DA_THAM_GIA";
+      entryStatus = "DA_THAM_GIA";
+    } else if (faceSummary?.requiresReview || (faceSummary?.approvedCount || 0) > 0) {
+      finalStatus = "CHO_DUYET";
+      entryStatus = "CHO_DUYET";
+    } else {
+      finalStatus = "VANG_MAT";
+      entryStatus = "VANG_MAT";
+    }
+  } else if (isCheckout) {
+    finalStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";
+    entryStatus = finalStatus;
+  }
 
   const registrationUpdate = {
     diemDanhLuc: attendanceTime,
     diemDanhGhiChu: normalizedNote,
-    diemDanhBoiId: userId
+    diemDanhBoiId: userId,
   };
   if (isCheckout) {
     registrationUpdate.trangThai = finalStatus;
-    if (finalStatus === 'DA_THAM_GIA') {
+    if (finalStatus === "DA_THAM_GIA") {
       registrationUpdate.duyetLuc = attendanceTime;
     }
   }
 
+  const faceMeta =
+    attendanceMethod === "photo"
+      ? {
+          descriptorSource,
+          descriptorLength: normalizedDescriptor?.length ?? null,
+          referenceCount: referenceDescriptors.length,
+          reason: faceMatchResult?.reason ?? null,
+          faceError: faceError ? String(faceError).slice(0, 100) : null,
+          matchThreshold: FACE_MATCH_CONSTANTS.MATCH_THRESHOLD,
+          reviewThreshold: FACE_MATCH_CONSTANTS.REVIEW_THRESHOLD,
+        }
+      : null;
+
   await prisma.$transaction([
     prisma.dangKyHoatDong.update({
       where: { id: registration.id },
-      data: registrationUpdate
+      data: registrationUpdate,
     }),
     prisma.diemDanhNguoiDung.create({
       data: {
@@ -1463,9 +1643,12 @@ export const markAttendance = async (req, res) => {
         trangThai: entryStatus,
         loai: isCheckout ? "CHECKOUT" : "CHECKIN",
         ghiChu: normalizedNote,
-        anhDinhKem: storedEvidence
-      }
-    })
+        anhDinhKem: storedEvidence,
+        faceMatch: faceMatchResult?.status ?? null,
+        faceScore: faceMatchResult?.score ?? null,
+        faceMeta,
+      },
+    }),
   ]);
 
   const updated = await buildActivityResponse(activityId, userId);
@@ -1480,7 +1663,7 @@ export const markAttendance = async (req, res) => {
   let responseMessage;
 
   if (isCheckout) {
-    if (success) {
+    if (finalStatus === "DA_THAM_GIA") {
       responseMessage = "Điểm danh cuối giờ thành công, hệ thống đã cộng điểm";
       notificationTitle = "Điểm danh thành công";
       notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận và cộng điểm.`;
@@ -1490,6 +1673,22 @@ export const markAttendance = async (req, res) => {
       emailMessageLines.push(
         `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công và cộng điểm.`
       );
+    } else if (finalStatus === "CHO_DUYET") {
+      responseMessage = "Ảnh điểm danh cần xác minh. Vui lòng chờ ban quản trị duyệt.";
+      notificationTitle = "Điểm danh đang chờ duyệt";
+      notificationMessage = `Hệ thống cần xác minh ảnh điểm danh của bạn cho hoạt động "${activity.tieuDe}".`;
+      notificationType = "warning";
+      notificationAction = "ATTENDANCE_REVIEW";
+      emailSubject = `[HUIT Social Credits] Điểm danh chờ duyệt - "${activity.tieuDe}"`;
+      if (faceSummary?.approvedCount === 1 && (faceSummary?.rejectedCount ?? 0) === 0) {
+        emailMessageLines.push(
+          "Hệ thống chỉ nhận diện trùng khớp một trong hai ảnh điểm danh. Ban quản trị sẽ kiểm tra thủ công."
+        );
+      } else {
+        emailMessageLines.push(
+          "Hệ thống chưa thể xác minh tự động ảnh điểm danh. Ban quản trị sẽ kiểm tra thủ công trong thời gian sớm nhất."
+        );
+      }
     } else {
       responseMessage = "Đã ghi nhận vắng mặt";
       notificationTitle = "Đã ghi nhận vắng mặt";
@@ -1502,15 +1701,27 @@ export const markAttendance = async (req, res) => {
       );
     }
   } else {
-    responseMessage = "Điểm danh đầu giờ thành công";
-    notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
-    notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
-    notificationType = "info";
-    notificationAction = "CHECKIN";
-    emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ - "${activity.tieuDe}"`;
-    emailMessageLines.push(
-      `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
-    );
+    if (attendanceMethod === "photo" && (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED")) {
+      responseMessage = "Đã ghi nhận điểm danh đầu giờ, hệ thống đang chờ xác minh khuôn mặt.";
+      notificationTitle = "Điểm danh đầu giờ chờ xác minh";
+      notificationMessage = `Ảnh điểm danh đầu giờ của bạn cho hoạt động "${activity.tieuDe}" cần được kiểm tra thêm.`;
+      notificationType = "warning";
+      notificationAction = "CHECKIN_REVIEW";
+      emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ chờ xác minh - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Hệ thống chưa thể xác nhận tự động ảnh điểm danh đầu giờ cho hoạt động "${activity.tieuDe}". Ban quản trị sẽ xem xét.`
+      );
+    } else {
+      responseMessage = "Điểm danh đầu giờ thành công";
+      notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
+      notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
+      notificationType = "info";
+      notificationAction = "CHECKIN";
+      emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
+      );
+    }
   }
 
   if (normalizedNote) {
@@ -1940,10 +2151,13 @@ export const listMyActivities = async (req, res) => {
     })
     : registrations;
 
+  const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
+  const faceEnrollmentSummary = summarizeFaceProfile(faceProfile);
+
   res.json({
     registrations: filtered.map((registration) => ({
       ...mapRegistration(registration, registration.hoatDong),
-      activity: mapActivity(registration.hoatDong, registration)
+      activity: mapActivity(registration.hoatDong, registration, { faceEnrollment: faceEnrollmentSummary })
     }))
   });
 };

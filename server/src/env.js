@@ -21,4 +21,5 @@ export const env = {
   SUPABASE_ATTENDANCE_BUCKET: process.env.SUPABASE_ATTENDANCE_BUCKET || 'attendance-photos',
   SUPABASE_FEEDBACK_BUCKET: process.env.SUPABASE_FEEDBACK_BUCKET || 'feedback-proofs',
   SUPABASE_ACTIVITY_BUCKET: process.env.SUPABASE_ACTIVITY_BUCKET || 'activity-covers',
+  SUPABASE_FACE_BUCKET: process.env.SUPABASE_FACE_BUCKET || 'face-profiles',
 };

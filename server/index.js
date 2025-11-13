@@ -13,6 +13,7 @@ import feedbackRoutes from "./src/routes/feedback.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import systemRoutes from "./src/routes/system.routes.js";
 import registrationRoutes from "./src/routes/registration.routes.js";
+import faceProfileRoutes from "./src/routes/face-profile.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/system", systemRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/face-profiles", faceProfileRoutes);
 
 app.use(errorHandler);
 

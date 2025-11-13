@@ -18,6 +18,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { CardActivity, Label, useToast } from '@components/index';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
+import { computeDescriptorFromDataUrl } from '@/services/faceApiService';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import useRegistrationFilters from '@/hooks/useRegistrationFilters';
@@ -220,7 +221,7 @@ function MyActivitiesPage() {
   );
 
   const handleAttendance = useCallback(
-    async ({ activity, dataUrl, file, phase }) => {
+    async ({ activity, dataUrl, file, phase, faceDescriptor, faceError }) => {
       if (!activity?.id) return;
 
       let evidenceDataUrl = dataUrl ?? null;
@@ -233,12 +234,42 @@ function MyActivitiesPage() {
         }
       }
 
+      const isPhotoAttendance = activity?.attendanceMethod === 'photo';
+      let descriptorPayload = null;
+      let faceErrorPayload = faceError ?? null;
+
+      if (isPhotoAttendance) {
+        if (faceDescriptor && typeof faceDescriptor === 'object') {
+          try {
+            descriptorPayload = Array.from(faceDescriptor);
+          } catch {
+            descriptorPayload = Array.isArray(faceDescriptor) ? faceDescriptor : null;
+          }
+        }
+
+        if (!descriptorPayload && !faceErrorPayload && evidenceDataUrl) {
+          try {
+            const computedDescriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+            if (computedDescriptor?.length) {
+              descriptorPayload = computedDescriptor;
+            } else {
+              faceErrorPayload = 'NO_FACE_DETECTED';
+            }
+          } catch (error) {
+            console.error('Không thể phân tích khuôn mặt khi điểm danh', error);
+            faceErrorPayload = 'ANALYSIS_FAILED';
+          }
+        }
+      }
+
       return attendanceMutation.mutateAsync({
         id: activity.id,
         payload: {
           status: 'present',
           phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+          ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
+          ...(faceErrorPayload ? { faceError: faceErrorPayload } : {}),
         },
       });
     },

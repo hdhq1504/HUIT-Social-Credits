@@ -36,8 +36,7 @@ const { TabPane } = Tabs;
 
 const ATTENDANCE_METHOD_LABELS = {
   qr: 'QR Code',
-  photo: 'Chụp ảnh',
-  manual: 'Thủ công',
+  photo: 'Nhận diện khuôn mặt',
 };
 
 const REGISTRATION_STATUS_DISPLAY = {
@@ -45,6 +44,7 @@ const REGISTRATION_STATUS_DISPLAY = {
   DA_THAM_GIA: { label: 'Đã tham gia', color: 'success' },
   DA_HUY: { label: 'Đã hủy', color: 'default' },
   VANG_MAT: { label: 'Vắng mặt', color: 'error' },
+  CHO_DUYET: { label: 'Chờ duyệt điểm danh', color: 'warning' },
 };
 
 const FEEDBACK_STATUS_DISPLAY = {
