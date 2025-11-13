@@ -2,10 +2,11 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import classNames from 'classnames/bind';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Avatar, Button, Input, Modal, Pagination, Select, Table, Tag, Tooltip } from 'antd';
+import { Avatar, Button, Input, Modal, Pagination, Select, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleDot, faPenToSquare, faSearch, faSort, faTrashCan, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
+import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
 import useDebounce from '@/hooks/useDebounce';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
@@ -44,7 +45,7 @@ const formatDateTime = (value, placeholder = 'Chưa đăng nhập') => {
 const toTimeValue = (value) => (value ? dayjs(value).valueOf() : 0);
 
 const buildStatusTag = (isActive) => (
-  <Tag className={cx('users-page__status-tag', isActive ? '--active' : '--inactive')}>
+  <Tag className={cx('users-page__status-tag', isActive ? 'users-page__status-tag--active' : 'users-page__status-tag--inactive')}>
     <FontAwesomeIcon icon={faCircleDot} className={cx('users-page__status-icon')} />
     {isActive ? 'Đang hoạt động' : 'Ngưng hoạt động'}
   </Tag>
@@ -158,7 +159,10 @@ export default function UsersPage() {
 
   const renderSortIcon = useCallback(
     ({ sortOrder }) => (
-      <FontAwesomeIcon icon={faSort} className={cx('users-page__sort-icon', { '--active': Boolean(sortOrder) })} />
+      <FontAwesomeIcon
+        icon={faSort}
+        className={cx('users-page__sort-icon', { 'users-page__sort-icon--active': Boolean(sortOrder) })}
+      />
     ),
     [],
   );
@@ -191,8 +195,8 @@ export default function UsersPage() {
     setPagination((prev) => ({ current: pageSize !== prev.pageSize ? 1 : page, pageSize }));
   };
 
-  const columns = useMemo(() => {
-    const baseColumns = [
+  const columns = useMemo(
+    () => [
       {
         title: 'STT',
         dataIndex: 'index',
@@ -200,7 +204,6 @@ export default function UsersPage() {
         width: 70,
         align: 'center',
         sorter: (a, b) => toTimeValue(a.createdAt) - toTimeValue(b.createdAt),
-        render: (_value, _record, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
       },
       {
         title: 'Thông tin người dùng',
@@ -208,17 +211,6 @@ export default function UsersPage() {
         key: 'fullName',
         width: 280,
         sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
-        render: (_value, record) => (
-          <div className={cx('users-page__user-cell')}>
-            <Avatar size={44} src={record.avatarUrl} className={cx('users-page__avatar')}>
-              {(record.fullName || record.email || '?').charAt(0).toUpperCase()}
-            </Avatar>
-            <div className={cx('users-page__user-info')}>
-              <strong>{record.fullName || '--'}</strong>
-              <span>{record.email || '--'}</span>
-            </div>
-          </div>
-        ),
       },
       {
         title: 'Mã định danh',
@@ -226,7 +218,6 @@ export default function UsersPage() {
         key: 'identifier',
         width: 160,
         sorter: (a, b) => mapIdentifier(a).localeCompare(mapIdentifier(b)),
-        render: (_value, record) => mapIdentifier(record),
       },
       {
         title: 'Vai trò',
@@ -234,23 +225,14 @@ export default function UsersPage() {
         key: 'role',
         width: 150,
         sorter: (a, b) => (a.role || '').localeCompare(b.role || ''),
-        render: (role) => ROLE_LABELS[role] || role || '--',
       },
       {
         title: 'Khoa / Lớp',
-        dataIndex: 'departmentCode',
+        dataIndex: 'department',
         key: 'department',
         width: 200,
         sorter: (a, b) =>
-          `${a.departmentCode || ''} ${a.classCode || ''}`.localeCompare(
-            `${b.departmentCode || ''} ${b.classCode || ''}`,
-          ),
-        render: (_value, record) => (
-          <div className={cx('users-page__meta-cell')}>
-            <strong>{record.departmentCode || '--'}</strong>
-            <span>{record.classCode || '--'}</span>
-          </div>
-        ),
+          `${a.departmentCode || ''} ${a.classCode || ''}`.localeCompare(`${b.departmentCode || ''} ${b.classCode || ''}`),
       },
       {
         title: 'Số điện thoại',
@@ -258,7 +240,6 @@ export default function UsersPage() {
         key: 'phoneNumber',
         width: 160,
         sorter: (a, b) => (a.phoneNumber || '').localeCompare(b.phoneNumber || ''),
-        render: (value) => value || '--',
       },
       {
         title: 'Trạng thái',
@@ -266,7 +247,6 @@ export default function UsersPage() {
         key: 'status',
         width: 180,
         sorter: (a, b) => Number(Boolean(a.isActive)) - Number(Boolean(b.isActive)),
-        render: (value) => buildStatusTag(Boolean(value)),
       },
       {
         title: 'Lần đăng nhập cuối',
@@ -274,47 +254,74 @@ export default function UsersPage() {
         key: 'lastLoginAt',
         width: 220,
         sorter: (a, b) => toTimeValue(a.lastLoginAt) - toTimeValue(b.lastLoginAt),
-        render: (value) => formatDateTime(value),
       },
       {
         title: 'Thao tác',
         key: 'actions',
         width: 160,
         align: 'center',
-        render: (_value, record) => (
-          <div className={cx('users-page__actions')}>
-            <Tooltip title="Chỉnh sửa">
-              <button
-                type="button"
-                className={cx('users-page__action-button')}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleEditUser(record.id);
-                }}
-              >
-                <FontAwesomeIcon icon={faPenToSquare} />
-              </button>
-            </Tooltip>
-            <Tooltip title="Xóa người dùng">
-              <button
-                type="button"
-                className={cx('users-page__action-button', '--delete')}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleDeleteUser(record);
-                }}
-                disabled={isDeletingUser}
-              >
-                <FontAwesomeIcon icon={faTrashCan} />
-              </button>
-            </Tooltip>
-          </div>
-        ),
       },
-    ];
+    ],
+    [],
+  );
 
-    return baseColumns.map((column) => (column.sorter ? { ...column, sortIcon: renderSortIcon } : column));
-  }, [pagination, renderSortIcon, handleEditUser, handleDeleteUser, isDeletingUser]);
+  const columnRenderers = useMemo(
+    () => ({
+      index: ({ index }) => (pagination.current - 1) * pagination.pageSize + index + 1,
+      fullName: ({ record }) => (
+        <div className={cx('users-page__user-cell')}>
+          <Avatar size={44} src={record.avatarUrl} className={cx('users-page__avatar')}>
+            {(record.fullName || record.email || '?').charAt(0).toUpperCase()}
+          </Avatar>
+          <div className={cx('users-page__user-info')}>
+            <strong>{record.fullName || '--'}</strong>
+            <span>{record.email || '--'}</span>
+          </div>
+        </div>
+      ),
+      identifier: ({ record }) => mapIdentifier(record),
+      role: ({ value }) => ROLE_LABELS[value] || value || '--',
+      department: ({ record }) => (
+        <div className={cx('users-page__meta-cell')}>
+          <strong>{record.departmentCode || '--'}</strong>
+          <span>{record.classCode || '--'}</span>
+        </div>
+      ),
+      phoneNumber: ({ value }) => value || '--',
+      status: ({ value }) => buildStatusTag(Boolean(value)),
+      lastLoginAt: ({ value }) => formatDateTime(value),
+      actions: ({ record }) => (
+        <div className={cx('users-page__actions')}>
+          <Tooltip title="Chỉnh sửa">
+            <button
+              type="button"
+              className={cx('users-page__action-button')}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleEditUser(record.id);
+              }}
+            >
+              <FontAwesomeIcon icon={faPenToSquare} />
+            </button>
+          </Tooltip>
+          <Tooltip title="Xóa người dùng">
+            <button
+              type="button"
+              className={cx('users-page__action-button', 'users-page__action-button--delete')}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDeleteUser(record);
+              }}
+              disabled={isDeletingUser}
+            >
+              <FontAwesomeIcon icon={faTrashCan} />
+            </button>
+          </Tooltip>
+        </div>
+      ),
+    }),
+    [handleDeleteUser, handleEditUser, isDeletingUser, pagination],
+  );
 
   const hasUsers = users.length > 0;
   const startIndex = hasUsers ? (pagination.current - 1) * pagination.pageSize + 1 : 0;
@@ -323,7 +330,7 @@ export default function UsersPage() {
   return (
     <>
       {contextHolder}
-      <div className={cx('users-page__wrapper')}>
+      <div className={cx('users-page')}>
         <div className={cx('users-page__filter-bar')}>
           <Input
             size="large"
@@ -332,7 +339,7 @@ export default function UsersPage() {
             onChange={handleSearchChange}
             placeholder="Tìm kiếm người dùng..."
             prefix={<FontAwesomeIcon icon={faSearch} />}
-            className={cx('users-page__filter-input')}
+            className={cx('users-page__filter-search')}
           />
 
           <Select
@@ -356,7 +363,7 @@ export default function UsersPage() {
           </Button>
         </div>
 
-        <div className={cx('users-page__content-box')}>
+        <div className={cx('users-page__content')}>
           <div className={cx('users-page__content-header')}>
             <h3>Danh sách người dùng</h3>
             <span className={cx('users-page__content-summary')}>
@@ -365,13 +372,14 @@ export default function UsersPage() {
           </div>
 
           <div className={cx('users-page__table-wrapper')}>
-            <Table
+            <AdminTable
               rowKey="id"
               columns={columns}
               dataSource={users}
               loading={isFetching}
               pagination={false}
-              sortDirections={['ascend', 'descend']}
+              columnRenderers={columnRenderers}
+              sortIcon={renderSortIcon}
               className={cx('users-page__table')}
             />
           </div>

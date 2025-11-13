@@ -1,56 +1,55 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Avatar, Button, Pagination, Spin, Table, Tag, Tooltip, Typography, Input, Select } from 'antd';
+import { Avatar, Button, Input, Pagination, Select, Tag, Tooltip, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faArrowRotateRight,
+  faCalendarAlt,
   faCheckCircle,
   faClock,
-  faTimesCircle,
   faEye,
-  faCalendarAlt,
-  faArrowRotateRight,
+  faSort,
+  faTimesCircle,
 } from '@fortawesome/free-solid-svg-icons';
-import styles from './ScoringPage.module.scss';
+import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import registrationsApi, { ADMIN_REGISTRATIONS_QUERY_KEY } from '@/api/registrations.api.js';
 import { buildPath } from '@/config/routes.config.js';
 import useToast from '@/components/Toast/Toast.jsx';
 import useDebounce from '@/hooks/useDebounce.jsx';
+import styles from './ScoringPage.module.scss';
 
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 10;
 
-const checkStatusMap = {
-  'đúng giờ': {
-    color: 'success',
-    icon: <FontAwesomeIcon icon={faCheckCircle} />,
-    label: 'Đúng giờ',
-  },
-  'trễ giờ': {
-    color: 'warning',
-    icon: <FontAwesomeIcon icon={faClock} />,
-    label: 'Trễ giờ',
-  },
-  'vắng mặt': {
-    color: 'error',
-    icon: <FontAwesomeIcon icon={faTimesCircle} />,
-    label: 'Vắng mặt',
-  },
+const ATTENDANCE_TONES = {
+  DANG_KY: { tone: 'warning', icon: faClock, label: 'Đang xử lý' },
+  DA_THAM_GIA: { tone: 'success', icon: faCheckCircle, label: 'Hoàn thành' },
+  VANG_MAT: { tone: 'danger', icon: faTimesCircle, label: 'Vắng mặt' },
+  DA_HUY: { tone: 'neutral', icon: faTimesCircle, label: 'Đã hủy' },
 };
 
-const renderCheckStatus = (time, status) => {
-  const statusKey = status?.toLowerCase() || 'vắng mặt';
-  const statusProps = checkStatusMap[statusKey] || checkStatusMap['vắng mặt'];
-  const timeStr = time ? dayjs(time).format('HH:mm:ss') : '--:--:--';
+const REGISTRATION_STATUS_META = {
+  DANG_KY: { color: 'warning', icon: faClock, label: 'Chờ duyệt' },
+  DA_THAM_GIA: { color: 'success', icon: faCheckCircle, label: 'Đạt' },
+  VANG_MAT: { color: 'error', icon: faTimesCircle, label: 'Không đạt' },
+  DA_HUY: { color: 'default', icon: faTimesCircle, label: 'Đã hủy' },
+};
 
+const getAttendanceEntry = (history, phase) => history?.find((item) => item.phase === phase) || null;
+
+const renderAttendanceStatus = (entry) => {
+  const meta = entry ? ATTENDANCE_TONES[entry.status] || ATTENDANCE_TONES.VANG_MAT : null;
+  const timeStr = entry?.capturedAt ? dayjs(entry.capturedAt).format('HH:mm:ss') : '--:--:--';
+  const tone = meta?.tone || 'neutral';
   return (
-    <div className={cx('check-status')}>
-      <Typography.Text className={cx('check-time')}>{timeStr}</Typography.Text>
-      <Typography.Text className={cx('check-label', `check-label--${statusKey.replace(' ', '-')}`)}>
-        {statusProps.icon}
-        {statusProps.label}
+    <div className={cx('scoring-page__check-status')}>
+      <Typography.Text className={cx('scoring-page__check-time')}>{timeStr}</Typography.Text>
+      <Typography.Text className={cx('scoring-page__check-label', `scoring-page__check-label--${tone}`)}>
+        {meta ? <FontAwesomeIcon icon={meta.icon} /> : null}
+        {entry?.statusLabel || meta?.label || 'Chưa cập nhật'}
       </Typography.Text>
     </div>
   );
@@ -59,39 +58,33 @@ const renderCheckStatus = (time, status) => {
 function ScoringPage() {
   const navigate = useNavigate();
   const { contextHolder, open: openToast } = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({ status: 'all' });
+  const [filters, setFilters] = useState({ status: 'all', faculty: undefined, className: undefined, activityId: undefined });
+  const [filterOptions, setFilterOptions] = useState({ faculties: [], classes: [], activities: [] });
+  const [statusCounts, setStatusCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE, total: 0 });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [selectedFaculty, setSelectedFaculty] = useState();
-  const [selectedClass, setSelectedClass] = useState();
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
-  const [selectedActivity, setSelectedActivity] = useState();
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const queryParams = useMemo(() => {
     const params = {
-      page: currentPage,
-      limit: PAGE_SIZE,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+      search: debouncedSearchTerm || undefined,
     };
-    if (debouncedSearchTerm) {
-      params.search = debouncedSearchTerm;
-    }
-    if (filters.status && filters.status !== 'all') {
-      params.status = filters.status;
-    }
+
+    if (filters.status && filters.status !== 'all') params.status = filters.status;
+    if (filters.faculty) params.faculty = filters.faculty;
+    if (filters.className) params.className = filters.className;
+    if (filters.activityId) params.activityId = filters.activityId;
+
     return params;
-  }, [currentPage, debouncedSearchTerm, filters.status]);
+  }, [pagination.current, pagination.pageSize, debouncedSearchTerm, filters]);
 
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: [ADMIN_REGISTRATIONS_QUERY_KEY, queryParams],
-    queryFn: () => registrationsApi.getAllRegistrations(queryParams),
-    placeholderData: (previousData) => previousData,
-  });
-
-  const { data: statusCountsData } = useQuery({
-    queryKey: [ADMIN_REGISTRATIONS_QUERY_KEY, 'statusCounts'],
-    queryFn: registrationsApi.getRegistrationStatusCounts,
+    queryFn: () => registrationsApi.list(queryParams),
+    keepPreviousData: true,
   });
 
   useEffect(() => {
@@ -104,170 +97,137 @@ function ScoringPage() {
     }
   }, [error, openToast]);
 
-  const statusCounts = useMemo(() => {
-    const counts = statusCountsData || {};
-    let total = 0;
-    Object.values(counts).forEach((val) => {
-      total += val;
+  useEffect(() => {
+    const pageInfo = data?.pagination;
+    if (pageInfo) {
+      setPagination((prev) => ({
+        current: pageInfo.page ?? prev.current,
+        pageSize: pageInfo.pageSize ?? prev.pageSize,
+        total: pageInfo.total ?? prev.total,
+      }));
+    }
+
+    const stats = data?.stats ?? {};
+    const faculties = (data?.filterOptions?.faculties ?? []).map((value) => ({ label: value, value }));
+    const classes = (data?.filterOptions?.classes ?? []).map((value) => ({ label: value, value }));
+    const activities = (data?.filterOptions?.activities ?? []).map((item) => ({ label: item.title, value: item.id }));
+    setFilterOptions({ faculties, classes, activities });
+
+    const totalCount =
+      stats.total ?? (stats.pending ?? 0) + (stats.approved ?? 0) + (stats.rejected ?? 0);
+    setStatusCounts({
+      all: totalCount,
+      pending: stats.pending ?? 0,
+      approved: stats.approved ?? 0,
+      rejected: stats.rejected ?? 0,
     });
-    return { ...counts, all: total };
-  }, [statusCountsData]);
+  }, [data]);
+
+
+  const registrations = data?.registrations ?? [];
+
+  useEffect(() => {
+    if (!registrations.length) {
+      setSelectedRowKeys([]);
+      return;
+    }
+    setSelectedRowKeys((prev) => prev.filter((key) => registrations.some((item) => item.id === key)));
+  }, [registrations]);
 
   const handleStatusFilterChange = useCallback((statusValue) => {
-    setFilters((prev) => ({ ...prev, status: statusValue }));
-    setCurrentPage(1);
+    setFilters((prev) => ({ ...prev, status: statusValue ?? 'all' }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   }, []);
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleResetFilters = () => {
     setSearchTerm('');
-    setFilters({ status: 'all' });
-    setCurrentPage(1);
+    setFilters({ status: 'all', faculty: undefined, className: undefined, activityId: undefined });
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  const onSelectChange = (newSelectedRowKeys) => {
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-
-  const handleSelectChange = (setter) => (value) => {
-    setter(value || undefined);
+  const handleSelectChange = (key) => (value) => {
+    setFilters((prev) => ({ ...prev, [key]: value || undefined }));
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const rowSelection = {
     selectedRowKeys,
-    onChange: onSelectChange,
+    onChange: setSelectedRowKeys,
   };
 
-  const columns = [
-    {
-      title: 'STT',
-      key: 'stt',
-      width: 60,
-      align: 'center',
-      render: (_, __, index) => (pagination.page - 1) * pagination.pageSize + index + 1,
-    },
-    {
-      title: 'Tên sinh viên',
-      dataIndex: 'HoTen',
-      key: 'hoTen',
-      width: 250,
-      sorter: (a, b) => (a.HoTen || '').localeCompare(b.HoTen || ''),
-      render: (_, record) => (
-        <div className={cx('student-info')}>
-          <Avatar src={record.AnhDaiDien || '/images/profile.png'} />
-          <div className={cx('student-details')}>
-            <Typography.Text className={cx('student-name')}>{record.HoTen || 'N/A'}</Typography.Text>
-            <Typography.Text type="secondary" className={cx('student-email')}>
-              {record.Email || 'N/A'}
+  const renderSortIcon = useCallback(
+    ({ sortOrder }) => (
+      <FontAwesomeIcon
+        icon={faSort}
+        className={cx('scoring-page__sort-icon', { 'scoring-page__sort-icon--active': Boolean(sortOrder) })}
+      />
+    ),
+    [],
+  );
+
+  const columns = useMemo(
+    () => [
+      { title: 'STT', dataIndex: 'index', key: 'index', width: 60, align: 'center' },
+      { title: 'Tên sinh viên', dataIndex: ['student', 'name'], key: 'student', width: 250 },
+      { title: 'MSSV', dataIndex: ['student', 'studentCode'], key: 'studentCode', width: 110, sorter: (a, b) => (a.student?.studentCode || '').localeCompare(b.student?.studentCode || '') },
+      { title: 'Khoa', dataIndex: ['student', 'faculty'], key: 'faculty', width: 180, sorter: (a, b) => (a.student?.faculty || '').localeCompare(b.student?.faculty || '') },
+      { title: 'Lớp', dataIndex: ['student', 'className'], key: 'className', width: 100, sorter: (a, b) => (a.student?.className || '').localeCompare(b.student?.className || '') },
+      { title: 'Hoạt động', dataIndex: ['activity', 'title'], key: 'activity', width: 250, sorter: (a, b) => (a.activity?.title || '').localeCompare(b.activity?.title || '') },
+      { title: 'Điểm', dataIndex: ['activity', 'points'], key: 'points', width: 80, align: 'center', sorter: (a, b) => (a.activity?.points || 0) - (b.activity?.points || 0) },
+      { title: 'Check-in', dataIndex: 'checkIn', key: 'checkIn', width: 130 },
+      { title: 'Check out', dataIndex: 'checkOut', key: 'checkOut', width: 130 },
+      { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, align: 'center', sorter: (a, b) => (a.status || '').localeCompare(b.status || '') },
+      { title: 'Hành động', key: 'action', width: 100, align: 'center' },
+    ],
+    [],
+  );
+
+  const columnRenderers = useMemo(
+    () => ({
+      index: ({ index }) => (pagination.current - 1) * pagination.pageSize + index + 1,
+      student: ({ record }) => (
+        <div className={cx('scoring-page__student')}>
+          <Avatar src={record.student?.avatarUrl || '/images/profile.png'} />
+          <div className={cx('scoring-page__student-details')}>
+            <Typography.Text className={cx('scoring-page__student-name')}>{record.student?.name || 'N/A'}</Typography.Text>
+            <Typography.Text type="secondary" className={cx('scoring-page__student-email')}>
+              {record.student?.email || 'N/A'}
             </Typography.Text>
           </div>
         </div>
       ),
-    },
-    {
-      title: 'MSSV',
-      dataIndex: 'MSSV',
-      key: 'mssv',
-      width: 110,
-      sorter: (a, b) => (a.MSSV || '').localeCompare(b.MSSV || ''),
-    },
-    {
-      title: 'Khoa',
-      dataIndex: 'Khoa',
-      key: 'khoa',
-      width: 180,
-      sorter: (a, b) => (a.Khoa || '').localeCompare(b.Khoa || ''),
-    },
-    {
-      title: 'Lớp',
-      dataIndex: 'Lop',
-      key: 'lop',
-      width: 100,
-      sorter: (a, b) => (a.Lop || '').localeCompare(b.Lop || ''),
-    },
-    {
-      title: 'Hoạt động',
-      dataIndex: 'TenHoatDong',
-      key: 'hoatDong',
-      width: 250,
-      sorter: (a, b) => (a.TenHoatDong || '').localeCompare(b.TenHoatDong || ''),
-      render: (tenHoatDong, record) => (
-        <div className={cx('activity-info')}>
-          <Typography.Text className={cx('activity-name')}>{tenHoatDong}</Typography.Text>
-          <Typography.Text type="secondary" className={cx('activity-date')}>
+      studentCode: ({ record }) => record.student?.studentCode || '--',
+      faculty: ({ record }) => record.student?.faculty || '--',
+      className: ({ record }) => record.student?.className || '--',
+      activity: ({ record }) => (
+        <div className={cx('scoring-page__activity')}>
+          <Typography.Text className={cx('scoring-page__activity-name')}>{record.activity?.title || '--'}</Typography.Text>
+          <Typography.Text type="secondary" className={cx('scoring-page__activity-date')}>
             <FontAwesomeIcon icon={faCalendarAlt} />
-            {dayjs(record.ThoiGianBatDau).format('DD/MM/YYYY')}
+            {record.activity?.startTime ? dayjs(record.activity.startTime).format('DD/MM/YYYY') : '--/--/----'}
           </Typography.Text>
         </div>
       ),
-    },
-    {
-      title: 'Điểm',
-      dataIndex: 'Diem',
-      key: 'diem',
-      width: 80,
-      align: 'center',
-      sorter: (a, b) => (a.Diem || 0) - (b.Diem || 0),
-      render: (diem) => <Typography.Text className={cx('score')}>{diem > 0 ? `+${diem}` : diem || 0}</Typography.Text>,
-    },
-    {
-      title: 'Check-in',
-      dataIndex: 'CheckIn',
-      key: 'checkIn',
-      width: 130,
-      render: (checkIn, record) => renderCheckStatus(checkIn, record.TrangThaiCheckIn),
-    },
-    {
-      title: 'Check out',
-      dataIndex: 'CheckOut',
-      key: 'checkOut',
-      width: 130,
-      render: (checkOut, record) => renderCheckStatus(checkOut, record.TrangThaiCheckOut),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'statusLabel',
-      key: 'trangThai',
-      width: 120,
-      align: 'center',
-      render: (statusLabel, record) => {
-        const statusKey = record.status || 'pending';
-        const tagMap = {
-          pending: {
-            color: 'warning',
-            icon: <FontAwesomeIcon icon={faClock} />,
-            label: 'Chờ duyệt',
-          },
-          approved: {
-            color: 'success',
-            icon: <FontAwesomeIcon icon={faCheckCircle} />,
-            label: 'Đạt',
-          },
-          rejected: {
-            color: 'error',
-            icon: <FontAwesomeIcon icon={faTimesCircle} />,
-            label: 'Không đạt',
-          },
-        };
-        const tagProps = tagMap[statusKey] || tagMap.pending;
+      points: ({ record }) => {
+        const points = Number.isFinite(Number(record.activity?.points)) ? Number(record.activity.points) : 0;
+        return <Typography.Text className={cx('scoring-page__score')}>{points > 0 ? `+${points}` : points}</Typography.Text>;
+      },
+      checkIn: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkin')),
+      checkOut: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkout')),
+      status: ({ record }) => {
+        const meta = REGISTRATION_STATUS_META[record.status] || REGISTRATION_STATUS_META.DANG_KY;
         return (
-          <Tag icon={tagProps.icon} color={tagProps.color}>
-            {statusLabel || tagProps.label}
+          <Tag icon={<FontAwesomeIcon icon={meta.icon} />} color={meta.color} className={cx('scoring-page__status-tag')}>
+            {record.statusLabel || meta.label}
           </Tag>
         );
       },
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      width: 100,
-      align: 'center',
-      render: (_, record) => (
+      action: ({ record }) => (
         <Tooltip title="Xem chi tiết">
           <Button
             type="text"
@@ -276,63 +236,68 @@ function ScoringPage() {
           />
         </Tooltip>
       ),
-    },
-  ];
+    }),
+    [navigate, pagination],
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { label: `Tất cả (${statusCounts.all ?? 0})`, value: 'all' },
+      { label: `Chờ duyệt (${statusCounts.pending ?? 0})`, value: 'pending' },
+      { label: `Đạt (${statusCounts.approved ?? 0})`, value: 'approved' },
+      { label: `Không đạt (${statusCounts.rejected ?? 0})`, value: 'rejected' },
+    ],
+    [statusCounts],
+  );
 
   return (
     <section className={cx('scoring-page')}>
       {contextHolder}
 
-      <div className={cx('filter-bar')}>
+      <div className={cx('scoring-page__filter-bar')}>
         <Input
           placeholder="Tìm kiếm hoạt động, sinh viên..."
-          className={cx('filter-bar__search')}
+          className={cx('scoring-page__filter-search')}
           value={searchTerm}
           onChange={handleSearchChange}
           allowClear
         />
         <Select
           placeholder="Khoa"
-          className={cx('filter-bar__select')}
+          className={cx('scoring-page__filter-select')}
           allowClear
-          value={selectedFaculty}
-          options={filters.faculties || []}
+          value={filters.faculty}
+          options={filterOptions.faculties}
           optionFilterProp="label"
-          onChange={handleSelectChange(setSelectedFaculty)}
+          onChange={handleSelectChange('faculty')}
         />
         <Select
           placeholder="Lớp"
-          className={cx('filter-bar__select')}
+          className={cx('scoring-page__filter-select')}
           allowClear
-          value={selectedClass}
-          options={filters.classes || []}
+          value={filters.className}
+          options={filterOptions.classes}
           optionFilterProp="label"
-          onChange={handleSelectChange(setSelectedClass)}
+          onChange={handleSelectChange('className')}
         />
         <Select
           placeholder="Hoạt động"
-          className={cx('filter-bar__select')}
+          className={cx('scoring-page__filter-select')}
           allowClear
           showSearch
-          value={selectedActivity}
-          options={filters.activities || []}
+          value={filters.activityId}
+          options={filterOptions.activities}
           optionFilterProp="label"
-          onChange={handleSelectChange(setSelectedActivity)}
+          onChange={handleSelectChange('activityId')}
         />
         <Select
-          size="large"
           allowClear
           placeholder="Trạng thái"
-          className={cx('filter-bar__select')}
+          className={cx('scoring-page__filter-select')}
           value={filters.status === 'all' ? undefined : filters.status}
-          options={[
-            { label: `Tất cả (${statusCounts.all ?? 0})`, value: 'all' },
-            { label: `Chờ duyệt (${statusCounts.pending ?? 0})`, value: 'pending' },
-            { label: `Đạt (${statusCounts.approved ?? 0})`, value: 'approved' },
-            { label: `Không đạt (${statusCounts.rejected ?? 0})`, value: 'rejected' },
-          ]}
+          options={statusOptions}
           optionFilterProp="label"
-          onChange={(val) => handleStatusFilterChange(val ?? 'all')}
+          onChange={handleStatusFilterChange}
         />
 
         <Button type="primary" icon={<FontAwesomeIcon icon={faArrowRotateRight} />} onClick={handleResetFilters}>
@@ -341,31 +306,33 @@ function ScoringPage() {
       </div>
 
       <div className={cx('scoring-page__container')}>
-        <div className={cx('scoring-page__container-header')}>
+        <div className={cx('scoring-page__header')}>
           <h3>Danh sách minh chứng</h3>
         </div>
 
-        <Spin spinning={isLoading || isFetching}>
-          <Table
-            rowSelection={rowSelection}
-            columns={columns}
-            dataSource={data?.items || []}
-            pagination={false}
-            rowKey="id"
-          />
-        </Spin>
+        <AdminTable
+          rowSelection={rowSelection}
+          columns={columns}
+          dataSource={registrations}
+          loading={isLoading || isFetching}
+          pagination={false}
+          rowKey="id"
+          columnRenderers={columnRenderers}
+          sortIcon={renderSortIcon}
+          className={cx('scoring-page__table')}
+        />
 
-        <div className={cx('scoring-page__container-footer')}>
-          <Typography.Text className={cx('selection-info')}>
+        <div className={cx('scoring-page__footer')}>
+          <Typography.Text className={cx('scoring-page__selection-info')}>
             Đã chọn <Typography.Text strong>{selectedRowKeys.length}</Typography.Text> trong{' '}
             <Typography.Text strong>{pagination.total}</Typography.Text> kết quả
           </Typography.Text>
           <Pagination
-            current={pagination.page}
+            current={pagination.current}
             total={pagination.total}
             pageSize={pagination.pageSize}
             showSizeChanger={false}
-            onChange={(page) => setCurrentPage(page)}
+            onChange={(page) => setPagination((prev) => ({ ...prev, current: page }))}
           />
         </div>
       </div>
