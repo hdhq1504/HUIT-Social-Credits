@@ -478,7 +478,6 @@ function CardActivity(props) {
     });
 
     if (attendanceMethod !== 'photo') {
-      onCapture?.({ file, previewUrl, dataUrl });
       return;
     }
 
@@ -576,7 +575,6 @@ function CardActivity(props) {
       },
     });
 
-    onCapture?.({ file, previewUrl, dataUrl, faceDescriptor: descriptor, faceError: descriptorError });
   };
 
   // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
