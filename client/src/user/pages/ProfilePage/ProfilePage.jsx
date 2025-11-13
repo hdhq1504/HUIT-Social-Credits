@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import classNames from 'classnames/bind';
+import { Modal, Alert, Progress, Spin, message } from 'antd';
+import Webcam from 'react-webcam';
 import { TextField } from '@mui/material';
 import dayjs from 'dayjs';
 import { ChangePasswordModal, Label, useToast } from '@components/index';
@@ -9,12 +11,297 @@ import Loading from '../Loading/Loading';
 import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';
 import { ROUTE_PATHS } from '@/config/routes.config';
+import faceProfileApi from '@api/faceProfile.api';
+import { fileToDataUrl } from '@utils/file';
+import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
 import styles from './ProfilePage.module.scss';
 
 const cx = classNames.bind(styles);
 
+const MIN_FACE_SAMPLES = 3;
+const MAX_FACE_SAMPLES = 5;
+
+function FaceEnrollmentModal({
+  open,
+  onCancel,
+  onSave,
+  isSaving,
+  isModelsLoading,
+  modelsReady,
+  modelError,
+}) {
+  const [samples, setSamples] = useState([]);
+  const [captureError, setCaptureError] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const webcamRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const samplesRef = useRef([]);
+
+  useEffect(() => {
+    samplesRef.current = samples;
+  }, [samples]);
+
+  useEffect(() => {
+    if (open) {
+      setSamples([]);
+      setCaptureError(null);
+      setIsAnalyzing(false);
+    }
+  }, [open]);
+
+  const handleCapture = async () => {
+    if (isAnalyzing) return;
+    if (samplesRef.current.length >= MAX_FACE_SAMPLES) {
+      message.warning(`Bạn chỉ có thể lưu tối đa ${MAX_FACE_SAMPLES} ảnh mẫu.`);
+      return;
+    }
+    if (!modelsReady) {
+      setCaptureError('Mô hình nhận diện đang tải. Vui lòng thử lại sau giây lát.');
+      return;
+    }
+    const screenshot = webcamRef.current?.getScreenshot();
+    if (!screenshot) {
+      message.error('Không thể chụp ảnh. Hãy kiểm tra lại camera hoặc thử lại.');
+      return;
+    }
+    setIsAnalyzing(true);
+    try {
+      const descriptor = await computeDescriptorFromDataUrl(screenshot);
+      if (!descriptor?.length) {
+        setCaptureError('Không phát hiện khuôn mặt rõ ràng. Hãy điều chỉnh ánh sáng và thử lại.');
+        return;
+      }
+      setSamples((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          dataUrl: screenshot,
+          descriptor,
+        },
+      ]);
+      setCaptureError(null);
+    } catch (error) {
+      console.error('Không thể phân tích khuôn mặt từ camera', error);
+      setCaptureError('Không thể phân tích khuôn mặt. Vui lòng thử lại.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSelectFiles = async (event) => {
+    const fileList = Array.from(event.target.files || []);
+    if (!fileList.length || isAnalyzing) return;
+
+    let workingCount = samplesRef.current.length;
+    if (workingCount >= MAX_FACE_SAMPLES) {
+      message.warning(`Bạn chỉ có thể lưu tối đa ${MAX_FACE_SAMPLES} ảnh mẫu.`);
+      if (event.target) event.target.value = '';
+      return;
+    }
+
+    if (!modelsReady) {
+      setCaptureError('Mô hình nhận diện đang tải. Vui lòng chờ hoàn tất trước khi tải ảnh.');
+      if (event.target) event.target.value = '';
+      return;
+    }
+
+    setIsAnalyzing(true);
+    let added = 0;
+    let finalError = null;
+    try {
+      for (const file of fileList) {
+        if (workingCount >= MAX_FACE_SAMPLES) {
+          message.warning(`Bạn chỉ có thể lưu tối đa ${MAX_FACE_SAMPLES} ảnh mẫu.`);
+          break;
+        }
+        const dataUrl = await fileToDataUrl(file);
+        const descriptor = await computeDescriptorFromDataUrl(dataUrl);
+        if (!descriptor?.length) {
+          finalError = 'Không phát hiện khuôn mặt trong ảnh vừa chọn. Hãy thử ảnh khác.';
+          continue;
+        }
+        workingCount += 1;
+        added += 1;
+        setSamples((prev) => [
+          ...prev,
+          {
+            id: Date.now() + workingCount,
+            dataUrl,
+            descriptor,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Không thể phân tích khuôn mặt từ ảnh tải lên', error);
+      finalError = 'Không thể phân tích khuôn mặt từ ảnh đã chọn. Vui lòng thử ảnh khác.';
+    } finally {
+      setIsAnalyzing(false);
+      if (event.target) {
+        event.target.value = '';
+      }
+      if (finalError) {
+        setCaptureError(finalError);
+      } else if (added) {
+        setCaptureError(null);
+      }
+    }
+  };
+
+  const handleRemoveSample = (id) => {
+    setSamples((prev) => prev.filter((sample) => sample.id !== id));
+  };
+
+  const handleSubmit = async () => {
+    if (isAnalyzing) return;
+    if (samples.length < MIN_FACE_SAMPLES) {
+      setCaptureError(`Hãy cung cấp tối thiểu ${MIN_FACE_SAMPLES} ảnh khuôn mặt rõ nét.`);
+      return;
+    }
+    try {
+      await onSave({
+        descriptors: samples.map((sample) => sample.descriptor),
+        samples: samples.map((sample) => sample.dataUrl),
+      });
+    } catch (error) {
+      const messageText = error?.message || 'Không thể lưu hồ sơ khuôn mặt. Vui lòng thử lại.';
+      setCaptureError(messageText);
+    }
+  };
+
+  const progressPercent = Math.min(100, Math.round((samples.length / MIN_FACE_SAMPLES) * 100));
+
+  return (
+    <Modal
+      open={open}
+      title="Đăng ký khuôn mặt"
+      onCancel={() => {
+        if (!isSaving && !isAnalyzing) {
+          onCancel();
+        }
+      }}
+      onOk={handleSubmit}
+      okText="Lưu hồ sơ"
+      cancelText="Hủy"
+      okButtonProps={{
+        loading: isSaving,
+        disabled:
+          isModelsLoading || !modelsReady || isAnalyzing || samples.length < MIN_FACE_SAMPLES,
+      }}
+      cancelButtonProps={{ disabled: isSaving || isAnalyzing }}
+      maskClosable={!(isSaving || isAnalyzing)}
+      destroyOnClose
+      centered
+      className={cx('profile-page__face-modal')}
+    >
+      <div className={cx('profile-page__face-modal-body')}>
+        <Alert
+          type="info"
+          message={`Chụp hoặc tải lên tối thiểu ${MIN_FACE_SAMPLES} ảnh khuôn mặt ở các góc độ khác nhau để tăng độ chính xác.`}
+          showIcon
+        />
+
+        {modelError && (
+          <Alert
+            type="error"
+            message={modelError}
+            showIcon
+            className={cx('profile-page__face-modal-alert')}
+          />
+        )}
+
+        <div className={cx('profile-page__face-modal-camera')}>
+          <div className={cx('profile-page__face-modal-preview')}>
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              screenshotFormat="image/jpeg"
+              imageSmoothing
+              className={cx('profile-page__face-modal-webcam')}
+              videoConstraints={{ facingMode: 'user' }}
+            />
+            {(isModelsLoading || isAnalyzing) && (
+              <div className={cx('profile-page__face-modal-overlay')}>
+                <Spin tip={isModelsLoading ? 'Đang tải mô hình...' : 'Đang xử lý ảnh...'} />
+              </div>
+            )}
+          </div>
+
+          <div className={cx('profile-page__face-modal-actions')}>
+            <button
+              type="button"
+              className={cx('profile-page__face-modal-button')}
+              onClick={handleCapture}
+              disabled={!modelsReady || isModelsLoading || isAnalyzing}
+            >
+              Chụp ảnh
+            </button>
+            <button
+              type="button"
+              className={cx('profile-page__face-modal-button', 'profile-page__face-modal-button--secondary')}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isModelsLoading || isAnalyzing}
+            >
+              Tải ảnh lên
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className={cx('profile-page__face-modal-file')}
+              onChange={handleSelectFiles}
+            />
+          </div>
+        </div>
+
+        <div className={cx('profile-page__face-modal-progress')}>
+          <Progress percent={progressPercent} showInfo={false} />
+          <span>
+            Đã có {samples.length}/{MIN_FACE_SAMPLES} ảnh tối thiểu (tối đa {MAX_FACE_SAMPLES} ảnh).
+          </span>
+        </div>
+
+        {captureError && (
+          <Alert
+            type="warning"
+            message={captureError}
+            showIcon
+            className={cx('profile-page__face-modal-alert')}
+          />
+        )}
+
+        <div className={cx('profile-page__face-modal-samples')}>
+          {samples.length === 0 ? (
+            <p className={cx('profile-page__face-modal-empty')}>
+              Chưa có ảnh mẫu. Hãy chụp hoặc tải ảnh khuôn mặt của bạn.
+            </p>
+          ) : (
+            samples.map((sample) => (
+              <div key={sample.id} className={cx('profile-page__face-modal-sample')}>
+                <img src={sample.dataUrl} alt="Ảnh mẫu khuôn mặt" />
+                <button
+                  type="button"
+                  className={cx('profile-page__face-modal-remove')}
+                  onClick={() => handleRemoveSample(sample.id)}
+                  disabled={isAnalyzing || isSaving}
+                >
+                  Xóa
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function ProfilePage() {
   const [openModal, setOpenModal] = useState(false);
+  const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
+  const [isFaceModelsLoading, setIsFaceModelsLoading] = useState(false);
+  const [faceModelsReady, setFaceModelsReady] = useState(false);
+  const [faceModelError, setFaceModelError] = useState(null);
 
   // Lấy thông tin người dùng từ Zustand
   const updateUserStore = useAuthStore((state) => state.updateUser);
@@ -40,11 +327,25 @@ function ProfilePage() {
     },
   });
 
+  const {
+    data: faceProfile,
+    isLoading: loadingFaceProfile,
+    refetch: refetchFaceProfile,
+    isFetching: isFetchingFaceProfile,
+  } = useQuery({
+    queryKey: ['face-profile'],
+    queryFn: faceProfileApi.get,
+  });
+
   const changePasswordMutation = useMutation({
     mutationFn: async ({ currentPassword, newPassword }) => {
       const { data } = await http.post('/auth/change-password', { currentPassword, newPassword });
       return data;
     },
+  });
+
+  const faceProfileMutation = useMutation({
+    mutationFn: (payload) => faceProfileApi.upsert(payload),
   });
 
   const handleChangePassword = async ({ currentPassword, newPassword }) => {
@@ -53,6 +354,72 @@ function ProfilePage() {
     } catch (error) {
       const message = error?.response?.data?.error || 'Không thể đổi mật khẩu. Vui lòng thử lại.';
       throw new Error(message);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isFaceModalOpen) {
+      setFaceModelsReady(false);
+      setFaceModelError(null);
+      setIsFaceModelsLoading(true);
+      ensureModelsLoaded()
+        .then(() => {
+          if (!cancelled) {
+            setFaceModelsReady(true);
+            setFaceModelError(null);
+          }
+        })
+        .catch((error) => {
+          console.error('Không thể tải mô hình nhận diện khuôn mặt', error);
+          if (!cancelled) {
+            setFaceModelsReady(false);
+            setFaceModelError('Không thể tải mô hình nhận diện khuôn mặt. Kiểm tra kết nối mạng và thử lại.');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsFaceModelsLoading(false);
+          }
+        });
+    } else {
+      setFaceModelsReady(false);
+      setFaceModelError(null);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFaceModalOpen]);
+
+  const faceEnrollmentSummary = faceProfile ?? { enrolled: false, sampleCount: 0, updatedAt: null };
+  const faceUpdatedAtLabel = faceEnrollmentSummary.updatedAt
+    ? dayjs(faceEnrollmentSummary.updatedAt).format('HH:mm DD/MM/YYYY')
+    : null;
+  const isFaceProfileLoading = loadingFaceProfile || isFetchingFaceProfile;
+  const isSavingFaceProfile = faceProfileMutation.isPending;
+
+  const handleOpenFaceEnrollment = () => {
+    setFaceModelError(null);
+    setIsFaceModalOpen(true);
+  };
+
+  const handleCloseFaceEnrollment = () => {
+    if (!isSavingFaceProfile) {
+      setIsFaceModalOpen(false);
+    }
+  };
+
+  const handleSaveFaceProfile = async ({ descriptors, samples }) => {
+    try {
+      await faceProfileMutation.mutateAsync({ descriptors, samples });
+      await refetchFaceProfile();
+      openToast({ message: 'Cập nhật hồ sơ khuôn mặt thành công!', variant: 'success' });
+      setIsFaceModalOpen(false);
+    } catch (error) {
+      const messageText =
+        error?.response?.data?.error || error?.message || 'Không thể cập nhật hồ sơ khuôn mặt. Vui lòng thử lại.';
+      throw new Error(messageText);
     }
   };
 
@@ -141,6 +508,49 @@ function ProfilePage() {
           <p className={cx('profile-page__media-hint')}>
             Liên hệ ban quản trị nếu bạn cần hỗ trợ cập nhật thông tin tài khoản hoặc ảnh điểm danh.
           </p>
+
+          <div className={cx('profile-page__face-card')}>
+            <div className={cx('profile-page__face-header')}>
+              <h5 className={cx('profile-page__face-title')}>Hồ sơ khuôn mặt</h5>
+              {isFaceProfileLoading ? (
+                <Spin size="small" />
+              ) : (
+                <span
+                  className={cx('profile-page__face-status', {
+                    'profile-page__face-status--enrolled': faceEnrollmentSummary.enrolled,
+                  })}
+                >
+                  {faceEnrollmentSummary.enrolled ? 'Đã đăng ký' : 'Chưa đăng ký'}
+                </span>
+              )}
+            </div>
+            <p className={cx('profile-page__face-description')}>
+              Cung cấp tối thiểu {MIN_FACE_SAMPLES} ảnh khuôn mặt rõ nét để hệ thống xác minh điểm danh tự động.
+            </p>
+            <ul className={cx('profile-page__face-meta')}>
+              <li>
+                Ảnh đã lưu:{' '}
+                <strong>
+                  {faceEnrollmentSummary.sampleCount ?? 0}/{MAX_FACE_SAMPLES}
+                </strong>
+              </li>
+              <li>Tối thiểu yêu cầu {MIN_FACE_SAMPLES} ảnh.</li>
+              {faceUpdatedAtLabel && <li>Cập nhật lần cuối: {faceUpdatedAtLabel}</li>}
+            </ul>
+            <button
+              type="button"
+              className={cx('profile-page__face-button')}
+              onClick={handleOpenFaceEnrollment}
+              disabled={isSavingFaceProfile}
+            >
+              {faceEnrollmentSummary.enrolled ? 'Cập nhật ảnh khuôn mặt' : 'Đăng ký khuôn mặt'}
+            </button>
+            <p className={cx('profile-page__face-hint')}>
+              {faceEnrollmentSummary.enrolled
+                ? 'Bạn có thể cập nhật hồ sơ bất cứ lúc nào để tăng độ chính xác.'
+                : 'Hãy đăng ký hồ sơ khuôn mặt trước khi tham gia điểm danh.'}
+            </p>
+          </div>
         </div>
 
         <section className={cx('profile-page__form')}>
@@ -291,6 +701,16 @@ function ProfilePage() {
         onClose={handleCloseModal}
         changePassword={handleChangePassword}
         onSuccess={handleChangePasswordSuccess}
+      />
+
+      <FaceEnrollmentModal
+        open={isFaceModalOpen}
+        onCancel={handleCloseFaceEnrollment}
+        onSave={handleSaveFaceProfile}
+        isSaving={isSavingFaceProfile}
+        isModelsLoading={isFaceModelsLoading}
+        modelsReady={faceModelsReady}
+        modelError={faceModelError}
       />
     </main>
   );

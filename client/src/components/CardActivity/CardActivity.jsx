@@ -13,6 +13,7 @@ import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
 import { formatDateTime } from '@utils/datetime';
+import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -155,6 +156,12 @@ function CardActivity(props) {
   const { contextHolder, open: openToast } = useToast();
   const checkoutTimerRef = useRef(null);
   const checkoutReminderShownRef = useRef(false);
+
+  useEffect(() => {
+    if (attendanceMethod === 'photo') {
+      ensureModelsLoaded().catch(() => {});
+    }
+  }, [attendanceMethod]);
 
   const activity = {
     id,
@@ -405,6 +412,13 @@ function CardActivity(props) {
 
   // Attendance handling (mở modal chụp/submit)
   const handleOpenAttendance = (phase = attendanceStep ?? 'checkin') => {
+    if (props.requiresFaceEnrollment && !props.faceEnrollment?.enrolled) {
+      openToast({
+        message: 'Bạn cần đăng ký khuôn mặt trong trang Thông tin sinh viên trước khi điểm danh.',
+        variant: 'danger',
+      });
+      return;
+    }
     dispatch({
       type: 'SET',
       payload: { capturedEvidence: null, attendanceStep: phase, checkModalOpen: true },
@@ -448,6 +462,22 @@ function CardActivity(props) {
     // Chuyển set isAttendanceSubmitting: true lên trước
     dispatch({ type: 'SET', payload: { isAttendanceSubmitting: true } });
     try {
+      let faceDescriptorPayload = null;
+      let faceAnalysisError = null;
+      if (attendanceMethod === 'photo') {
+        try {
+          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+          if (descriptor && descriptor.length) {
+            faceDescriptorPayload = descriptor;
+          } else {
+            faceAnalysisError = 'NO_FACE_DETECTED';
+          }
+        } catch (error) {
+          console.error('Không thể phân tích khuôn mặt', error);
+          faceAnalysisError = 'ANALYSIS_FAILED';
+        }
+      }
+
       // Bỏ dispatch({ type: 'SET', payload: { checkModalOpen: false } }); ở đây
       const result = await onConfirmPresent?.({
         activity,
@@ -455,6 +485,8 @@ function CardActivity(props) {
         previewUrl: payload.previewUrl,
         dataUrl: evidenceDataUrl,
         phase: phaseToSend,
+        faceDescriptor: faceDescriptorPayload,
+        faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
       dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
       dispatch({ type: 'RESET_CAPTURED' });
@@ -467,25 +499,30 @@ function CardActivity(props) {
         message: responseMessage,
         variant: toastVariant,
       });
+      const updatedActivity = result?.activity;
+      const nextPhaseFromApi = updatedActivity?.registration?.attendanceSummary?.nextPhase;
+      const nextCheckoutAvailableAt = updatedActivity?.registration?.attendanceSummary?.checkoutAvailableAt;
+      const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'confirm_out' : 'details_only');
+      const nextAttendanceStep = nextPhaseFromApi || (phaseToSend === 'checkin' ? 'checkout' : 'checkin');
+      const nextCheckoutAvailable = nextCheckoutAvailableAt
+        ? Date.now() >= new Date(nextCheckoutAvailableAt).getTime()
+        : phaseToSend === 'checkin'
+          ? checkoutAvailableTimestamp
+            ? Date.now() >= checkoutAvailableTimestamp
+            : true
+          : true;
+
+      checkoutReminderShownRef.current = phaseToSend !== 'checkin';
+
       dispatch({
         type: 'SET',
-        payload: { attendanceStep: phaseToSend === 'checkin' ? 'checkout' : 'checkin' },
+        payload: {
+          attendanceStep: nextAttendanceStep,
+          checkoutAvailable: nextCheckoutAvailable,
+          uiState: nextState,
+        },
       });
-      if (phaseToSend === 'checkin') {
-        checkoutReminderShownRef.current = false;
-        const nextAvailability = checkoutAvailableTimestamp ? Date.now() >= checkoutAvailableTimestamp : true;
-        dispatch({
-          type: 'SET',
-          payload: { checkoutAvailable: nextAvailability, uiState: 'confirm_out' },
-        });
-        onStateChange?.('confirm_out');
-      } else {
-        checkoutReminderShownRef.current = true;
-        // ===== CẬP NHẬT (FIX LOGIC) =====
-        // Thêm: Chuyển state sau khi checkout thành công
-        dispatch({ type: 'SET', payload: { uiState: 'details_only' } });
-        onStateChange?.('details_only');
-      }
+      onStateChange?.(nextState);
     } catch (error) {
       if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,6 +16,7 @@ import { sanitizeHtml } from '@/utils/sanitize';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import uploadService from '@/services/uploadService';
+import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
 
@@ -23,8 +24,7 @@ const cx = classNames.bind(styles);
 
 const ATTENDANCE_METHOD_BADGES = {
   qr: { label: 'QR Code', className: 'activity-detail__checkin-badge--qr' },
-  photo: { label: 'Chụp ảnh', className: 'activity-detail__checkin-badge--photo' },
-  manual: { label: 'Thủ công', className: 'activity-detail__checkin-badge--manual' },
+  photo: { label: 'Nhận diện khuôn mặt', className: 'activity-detail__checkin-badge--photo' },
 };
 
 function ActivityDetailPage() {
@@ -35,6 +35,8 @@ function ActivityDetailPage() {
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
+  const [faceModelsReady, setFaceModelsReady] = useState(false);
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
 
@@ -68,6 +70,24 @@ function ActivityDetailPage() {
   const notFound = isError && error?.response?.status === 404;
   const viewState = activity?.state ?? 'guest';
 
+  useEffect(() => {
+    let mounted = true;
+    if (activity?.attendanceMethod === 'photo') {
+      ensureModelsLoaded()
+        .then(() => {
+          if (mounted) setFaceModelsReady(true);
+        })
+        .catch(() => {
+          if (mounted) setFaceModelsReady(false);
+        });
+    } else {
+      setFaceModelsReady(false);
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [activity?.attendanceMethod]);
+
   const capacityInfo = useMemo(() => {
     if (!activity) return { current: 0, total: 0, hasLimit: false };
     const current = activity.participantsCount ?? 0;
@@ -85,7 +105,7 @@ function ActivityDetailPage() {
     const method = activity.attendanceMethod;
     const base = ATTENDANCE_METHOD_BADGES[method] || {
       label: activity.attendanceMethodLabel || method,
-      className: 'activity-detail__checkin-badge--manual',
+      className: 'activity-detail__checkin-badge--photo',
     };
     return {
       label: activity.attendanceMethodLabel || base.label,
@@ -212,21 +232,51 @@ function ActivityDetailPage() {
       }
     }
 
+    let faceDescriptorPayload = null;
+    let faceAnalysisError = null;
+    if (activity?.attendanceMethod === 'photo') {
+      setIsAnalyzingFace(true);
+      try {
+        const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+        if (descriptor && descriptor.length) {
+          faceDescriptorPayload = descriptor;
+        } else {
+          faceAnalysisError = 'NO_FACE_DETECTED';
+        }
+      } catch (error) {
+        console.error('Không thể phân tích khuôn mặt', error);
+        faceAnalysisError = 'ANALYSIS_FAILED';
+      } finally {
+        setIsAnalyzingFace(false);
+      }
+    }
+
+    const payload = {
+      status: 'present',
+      phase: attendancePhase,
+      evidence:
+        evidencePayload ||
+        (evidenceDataUrl
+          ? {
+              data: evidenceDataUrl,
+              mimeType: file?.type,
+              fileName: file?.name,
+            }
+          : undefined),
+    };
+
+    if (activity?.attendanceMethod === 'photo') {
+      if (faceDescriptorPayload) {
+        payload.faceDescriptor = faceDescriptorPayload;
+      }
+      if (!faceDescriptorPayload && faceAnalysisError) {
+        payload.faceError = faceAnalysisError;
+      }
+    }
+
     attendanceMutation.mutate({
       id,
-      payload: {
-        status: 'present',
-        phase: attendancePhase,
-        evidence:
-          evidencePayload ||
-          (evidenceDataUrl
-            ? {
-                data: evidenceDataUrl,
-                mimeType: file?.type,
-                fileName: file?.name,
-              }
-            : undefined),
-      },
+      payload,
     });
   };
 
@@ -304,6 +354,20 @@ function ActivityDetailPage() {
 
     const nextPhase = activity?.registration?.attendanceSummary?.nextPhase ?? 'checkin';
     const openAttendance = (phase = nextPhase) => {
+      if (activity?.requiresFaceEnrollment && !activity?.faceEnrollment?.enrolled) {
+        toast({
+          message: 'Bạn cần đăng ký khuôn mặt trong trang Thông tin sinh viên trước khi điểm danh.',
+          variant: 'danger',
+        });
+        return;
+      }
+      if (activity?.attendanceMethod === 'photo' && !faceModelsReady) {
+        toast({
+          message: 'Hệ thống đang tải mô hình nhận diện khuôn mặt. Vui lòng thử lại sau giây lát.',
+          variant: 'warning',
+        });
+        return;
+      }
       setAttendancePhase(phase);
       setIsCheckOpen(true);
     };
@@ -358,6 +422,17 @@ function ActivityDetailPage() {
           >
             Hoàn tất
           </Button>
+        );
+      case 'attendance_review':
+        return (
+          <>
+            <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>
+              Chờ duyệt điểm danh
+            </Button>
+            <p className={cx('activity-detail__sidebar-hint')}>
+              Hệ thống đang xác minh ảnh điểm danh của bạn. Ban quản trị sẽ phản hồi sớm nhất có thể.
+            </p>
+          </>
         );
       case 'attendance_closed':
         return (
@@ -564,12 +639,17 @@ function ActivityDetailPage() {
                           </span>
                         ) : (
                           <span
-                            className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--manual')}
+                            className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--photo')}
                           >
                             Đang cập nhật
                           </span>
                         )}
                       </div>
+                      {activity?.requiresFaceEnrollment && !activity?.faceEnrollment?.enrolled && (
+                        <p className={cx('activity-detail__sidebar-hint')}>
+                          Bạn cần <Link to={ROUTE_PATHS.USER.PROFILE}>đăng ký khuôn mặt</Link> trước khi thực hiện điểm danh.
+                        </p>
+                      )}
                     </div>
 
                     {renderActionButton()}
@@ -600,7 +680,7 @@ function ActivityDetailPage() {
                       await activitiesApi.cancel(item.id, { reason, note });
                       await invalidateActivityQueries(['activities', 'related', id]);
                     }}
-                    onConfirmPresent={async ({ dataUrl, file, phase }) => {
+                    onConfirmPresent={async ({ dataUrl, file, phase, faceDescriptor, faceError }) => {
                       let evidenceDataUrl = dataUrl ?? null;
                       if (!evidenceDataUrl && file) {
                         try {
@@ -618,12 +698,37 @@ function ActivityDetailPage() {
                         throw new Error('ATTENDANCE_ABORTED');
                       }
 
+                      let descriptorPayload = faceDescriptor ?? null;
+                      let descriptorError = faceError ?? null;
+
+                      if (item?.attendanceMethod === 'photo') {
+                        if (!descriptorPayload && evidenceDataUrl && !descriptorError) {
+                          try {
+                            const computedDescriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+                            if (computedDescriptor?.length) {
+                              descriptorPayload = computedDescriptor;
+                            } else {
+                              descriptorError = 'NO_FACE_DETECTED';
+                            }
+                          } catch (analysisError) {
+                            console.error('Không thể phân tích khuôn mặt', analysisError);
+                            descriptorError = descriptorError || 'ANALYSIS_FAILED';
+                          }
+                        }
+
+                        if (!descriptorPayload && !descriptorError) {
+                          descriptorError = 'NO_FACE_DETECTED';
+                        }
+                      }
+
                       const result = await activitiesApi.attendance(item.id, {
                         status: 'present',
                         phase,
                         evidence: evidenceDataUrl
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
+                        ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
+                        ...(descriptorError ? { faceError: descriptorError } : {}),
                       });
                       await invalidateActivityQueries(['activities', 'related', id]);
                       return result;
@@ -683,7 +788,7 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
-        confirmLoading={attendanceMutation.isPending}
+        confirmLoading={attendanceMutation.isPending || isAnalyzingFace}
         phase={attendancePhase}
       />
 

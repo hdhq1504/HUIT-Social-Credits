@@ -36,6 +36,7 @@ const STATUS_CATEGORY_MAP = {
   attendance_open: 'ongoing',
   confirm_in: 'ongoing',
   confirm_out: 'ongoing',
+  attendance_review: 'ongoing',
   upcoming: 'upcoming',
   registered: 'upcoming',
   attendance_closed: 'upcoming',

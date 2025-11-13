@@ -41,6 +41,7 @@ model NguoiDung {
   phanHoi                     PhanHoiHoatDong[]
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
+  faceProfile                 FaceProfile?
 
   @@index([email])
   @@index([maSV])
@@ -153,6 +154,9 @@ model DiemDanhNguoiDung {
   loai        AttendancePhase @default(CHECKIN)
   ghiChu      String?
   anhDinhKem  Json?
+  faceMatch   FaceMatchStatus?
+  faceScore   Float?
+  faceMeta    Json?
   taoLuc      DateTime        @default(now())
 
   dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
@@ -221,6 +225,7 @@ enum TrangThaiDangKy {
   DA_HUY
   DA_THAM_GIA
   VANG_MAT
+  CHO_DUYET
 }
 
 enum TrangThaiPhanHoi {
@@ -243,5 +248,21 @@ enum NhomDiem {
 enum AttendanceMethod {
   QR
   PHOTO
-  MANUAL
+}
+
+enum FaceMatchStatus {
+  APPROVED
+  REVIEW
+  REJECTED
+}
+
+model FaceProfile {
+  id          String   @id @default(cuid())
+  nguoiDungId String   @unique
+  descriptors Json
+  samples     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
 }
