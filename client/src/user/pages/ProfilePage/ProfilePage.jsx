@@ -214,6 +214,7 @@ function FaceEnrollmentModal({
             <Webcam
               ref={webcamRef}
               audio={false}
+              mirrored
               screenshotFormat="image/jpeg"
               imageSmoothing
               className={cx('profile-page__face-modal-webcam')}
