@@ -93,6 +93,36 @@ function ActivityDetailPage() {
     };
   }, [activity?.attendanceMethod, activity?.attendanceMethodLabel]);
 
+  const registrationDeadlineLabel = useMemo(() => {
+    if (!activity?.registrationDeadline) return null;
+    const formatted = formatDateTime(activity.registrationDeadline);
+    return formatted !== '--' ? formatted : null;
+  }, [activity?.registrationDeadline]);
+
+  const cancellationDeadlineLabel = useMemo(() => {
+    if (!activity?.cancellationDeadline) return null;
+    const formatted = formatDateTime(activity.cancellationDeadline);
+    return formatted !== '--' ? formatted : null;
+  }, [activity?.cancellationDeadline]);
+
+  const feedbackTimes = useMemo(() => {
+    const history = activity?.registration?.attendanceHistory || [];
+    const findPhase = (phase) => history.find((entry) => entry.phase === phase);
+    const formatValue = (value) => {
+      if (!value) return null;
+      const formatted = formatDateTime(value);
+      return formatted !== '--' ? formatted : null;
+    };
+
+    const checkin =
+      formatValue(findPhase('checkin')?.capturedAt) ||
+      formatValue(activity?.registration?.checkInAt);
+
+    const checkout = formatValue(findPhase('checkout')?.capturedAt);
+
+    return { checkin, checkout };
+  }, [activity?.registration?.attendanceHistory, activity?.registration?.checkInAt]);
+
   const handleOpenRegister = () => {
     setModalVariant('confirm');
     setIsRegisterOpen(true);
@@ -638,6 +668,10 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
+        registrationDeadline={registrationDeadlineLabel}
+        cancellationDeadline={cancellationDeadlineLabel}
+        attendanceMethod={activity?.attendanceMethod}
+        attendanceMethodLabel={activity?.attendanceMethodLabel}
       />
 
       <CheckModal
@@ -677,6 +711,8 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
+        checkinTime={feedbackTimes.checkin}
+        checkoutTime={feedbackTimes.checkout}
       />
     </section>
   );

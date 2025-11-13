@@ -266,6 +266,10 @@ function CheckModal({
 
   const webcamKey = deviceId || 'default';
 
+  const hasPreview = Boolean(previewUrl);
+  const canShowCamera = !hasPreview && isCameraOn && hasVideoInput;
+  const shouldShowPlaceholder = !hasPreview && (!isCameraOn || !hasVideoInput);
+
   return (
     <Modal
       open={open}
@@ -305,44 +309,45 @@ function CheckModal({
         </div>
 
         {/* Camera / preview area */}
-        <div className={cx('check-modal__camera-box', !previewUrl && 'camera-box--idle')}>
-          {/* Khi camera ON và có thiết bị video */}
-          {!previewUrl && isCameraOn && hasVideoInput && (
-            <div className={cx('check-modal__webcam-wrap')}>
-              <Webcam
-                key={webcamKey}
-                ref={webcamRef}
-                audio={false}
-                screenshotFormat="image/jpeg"
-                videoConstraints={videoConstraints}
-                className={cx('check-modal__webcam')}
-                mirrored={false}
-                playsInline
-                onUserMedia={() => {
-                  const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
-                  const stream = videoEl?.srcObject || webcamRef.current?.stream;
-                  if (stream) activeStreamRef.current = stream;
-                }}
-                onUserMediaError={(e) => {
-                  message.error('Không thể truy cập camera: ' + (e?.message || 'Lỗi không xác định'));
-                }}
-              />
-            </div>
-          )}
-
-          {/* Idle state (chưa mở camera) */}
-          {!previewUrl && (!isCameraOn || !hasVideoInput) && (
-            <div className={cx('check-modal__camera-box-empty')}>
-              <div className={cx('check-modal__camera-box-icon')}>
-                <FontAwesomeIcon icon={faCamera} />
+        <div className={cx('check-modal__camera-box')}>
+          <div className={cx('check-modal__camera-frame', hasPreview && 'has-preview')}>
+            {canShowCamera && (
+              <div className={cx('check-modal__webcam-wrap')}>
+                <Webcam
+                  key={webcamKey}
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={videoConstraints}
+                  className={cx('check-modal__webcam')}
+                  mirrored={false}
+                  playsInline
+                  onUserMedia={() => {
+                    const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
+                    const stream = videoEl?.srcObject || webcamRef.current?.stream;
+                    if (stream) activeStreamRef.current = stream;
+                  }}
+                  onUserMediaError={(e) => {
+                    message.error('Không thể truy cập camera: ' + (e?.message || 'Lỗi không xác định'));
+                  }}
+                />
               </div>
-              <div className={cx('check-modal__camera-box-title')}>Camera sẵn sàng</div>
-              <div className={cx('check-modal__camera-box-hint')}>Đảm bảo bạn hiển thị rõ trong khung hình</div>
-            </div>
-          )}
+            )}
 
-          {/* Preview image */}
-          {previewUrl && <img className={cx('check-modal__camera-box-preview')} src={previewUrl} alt="preview" />}
+            {shouldShowPlaceholder && (
+              <div className={cx('check-modal__camera-empty')}>
+                <div className={cx('check-modal__camera-icon')}>
+                  <FontAwesomeIcon icon={faCamera} />
+                </div>
+                <div className={cx('check-modal__camera-title')}>Camera sẵn sàng</div>
+                <div className={cx('check-modal__camera-hint')}>Đảm bảo bạn hiển thị rõ trong khung hình</div>
+              </div>
+            )}
+
+            {hasPreview && (
+              <img className={cx('check-modal__camera-preview')} src={previewUrl} alt="preview" />
+            )}
+          </div>
 
           {/* Actions (chụp / đổi camera / upload / gửi) */}
           <div className={cx('check-modal__actions')}>
@@ -395,16 +400,16 @@ function CheckModal({
               </>
             )}
           </div>
-
-          {/* Fallback input file */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
         </div>
+
+        {/* Fallback input file */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
       </div>
     </Modal>
   );

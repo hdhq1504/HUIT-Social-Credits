@@ -9,6 +9,12 @@ import styles from './RegisterModal.module.scss';
 const { TextArea } = Input;
 const cx = classNames.bind(styles);
 
+const ATTENDANCE_METHOD_STYLES = {
+  qr: { className: 'register-confirm__chip--qr', fallbackLabel: 'QR Code' },
+  photo: { className: 'register-confirm__chip--photo', fallbackLabel: 'Chụp ảnh' },
+  manual: { className: 'register-confirm__chip--manual', fallbackLabel: 'Thủ công' },
+};
+
 function RegisterModal({
   open,
   onConfirm,
@@ -19,6 +25,10 @@ function RegisterModal({
   pointsLabel,
   dateTime,
   location,
+  registrationDeadline,
+  cancellationDeadline,
+  attendanceMethod,
+  attendanceMethodLabel,
   reasons = ['Bận lịch đột xuất', 'Trùng lịch thi/học', 'Lý do sức khỏe', 'Khác'],
   showConflictAlert = false,
   confirmLoading = false,
@@ -27,6 +37,21 @@ function RegisterModal({
   const modalTitle = isCancel ? 'Xác nhận hủy hoạt động' : 'Xác nhận đăng ký hoạt động';
   const [reason, setReason] = useState();
   const [note, setNote] = useState('');
+
+  const normalizedRegistrationDeadline =
+    registrationDeadline && registrationDeadline !== '--' ? registrationDeadline : null;
+  const normalizedCancellationDeadline =
+    cancellationDeadline && cancellationDeadline !== '--' ? cancellationDeadline : null;
+
+  const attendanceChip = (() => {
+    if (!attendanceMethod && !attendanceMethodLabel) return null;
+    const methodKey = attendanceMethod?.toLowerCase?.();
+    const map = (methodKey && ATTENDANCE_METHOD_STYLES[methodKey]) || null;
+    return {
+      label: attendanceMethodLabel || map?.fallbackLabel || attendanceMethod || 'Đang cập nhật',
+      className: map?.className || 'register-confirm__chip--default',
+    };
+  })();
 
   const handleConfirm = () => {
     onConfirm?.({ variant, reason, note });
@@ -70,15 +95,38 @@ function RegisterModal({
 
         <div className={cx('register-confirm__notice')}>
           <div className={cx('register-confirm__notice-row')}>
+            <span className={cx('register-confirm__notice-label')}>Hạn đăng ký:</span>
+            <span
+              className={cx(
+                'register-confirm__notice-value',
+                !normalizedRegistrationDeadline && 'register-confirm__notice-muted',
+              )}
+            >
+              {normalizedRegistrationDeadline || 'Đang cập nhật'}
+            </span>
+          </div>
+          <div className={cx('register-confirm__notice-row')}>
             <span className={cx('register-confirm__notice-label')}>Hạn hủy:</span>
-            <span className={cx('register-confirm__notice-danger')}>Chỉ hủy trước ≥3 ngày</span>
+            <span
+              className={cx(
+                'register-confirm__notice-value',
+                normalizedCancellationDeadline
+                  ? 'register-confirm__notice-danger'
+                  : 'register-confirm__notice-muted',
+              )}
+            >
+              {normalizedCancellationDeadline || 'Đang cập nhật'}
+            </span>
           </div>
           <div className={cx('register-confirm__notice-row')}>
             <span className={cx('register-confirm__notice-label')}>Check-in:</span>
-            <div className={cx('register-confirm__checkin')}>
-              <span className={cx('register-confirm__chip--primary')}>QR</span>
-              <span className={cx('register-confirm__chip--orange')}>Thủ công</span>
-            </div>
+            {attendanceChip ? (
+              <span className={cx('register-confirm__chip', attendanceChip.className)}>
+                {attendanceChip.label}
+              </span>
+            ) : (
+              <span className={cx('register-confirm__notice-muted')}>Đang cập nhật</span>
+            )}
           </div>
         </div>
 
