@@ -2150,10 +2150,13 @@ export const listMyActivities = async (req, res) => {
     })
     : registrations;
 
+  const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
+  const faceEnrollmentSummary = summarizeFaceProfile(faceProfile);
+
   res.json({
     registrations: filtered.map((registration) => ({
       ...mapRegistration(registration, registration.hoatDong),
-      activity: mapActivity(registration.hoatDong, registration)
+      activity: mapActivity(registration.hoatDong, registration, { faceEnrollment: faceEnrollmentSummary })
     }))
   });
 };
