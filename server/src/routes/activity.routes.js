@@ -11,7 +11,7 @@ import {
   updateActivity,
   deleteActivity,
   listActivityRegistrationsAdmin
-} from '../controllers/activity.controller.js';
+} from '../controllers/activity/index.js';
 import { optionalAuth, requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();

@@ -36,6 +36,7 @@ function ActivityDetailPage() {
   const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
+  const [isMatchingFace, setIsMatchingFace] = useState(false);
   const [faceModelsReady, setFaceModelsReady] = useState(false);
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
@@ -177,6 +178,10 @@ function ActivityDetailPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: ({ id: activityId, payload }) => activitiesApi.attendance(activityId, payload),
+    onMutate: ({ payload }) => {
+      const hasFacePayload = Boolean(payload?.faceDescriptor) || Boolean(payload?.faceDescriptors?.length);
+      setIsMatchingFace(hasFacePayload);
+    },
     onSuccess: async (data) => {
       await invalidateActivityQueries(['activity', id]);
       setIsCheckOpen(false);
@@ -191,6 +196,9 @@ function ActivityDetailPage() {
           ? rawMessage.trim()
           : 'Điểm danh thất bại. Vui lòng thử lại.';
       toast({ message, variant: 'danger' });
+    },
+    onSettled: () => {
+      setIsMatchingFace(false);
     },
   });
 
@@ -268,6 +276,7 @@ function ActivityDetailPage() {
     if (activity?.attendanceMethod === 'photo') {
       if (faceDescriptorPayload) {
         payload.faceDescriptor = faceDescriptorPayload;
+        payload.faceDescriptors = [faceDescriptorPayload];
       }
       if (!faceDescriptorPayload && faceAnalysisError) {
         payload.faceError = faceAnalysisError;
@@ -727,7 +736,9 @@ function ActivityDetailPage() {
                         evidence: evidenceDataUrl
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
-                        ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
+                        ...(descriptorPayload
+                          ? { faceDescriptor: descriptorPayload, faceDescriptors: [descriptorPayload] }
+                          : {}),
                         ...(descriptorError ? { faceError: descriptorError } : {}),
                       });
                       await invalidateActivityQueries(['activities', 'related', id]);
@@ -788,7 +799,8 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
-        confirmLoading={attendanceMutation.isPending || isAnalyzingFace}
+        confirmLoading={attendanceMutation.isPending || isAnalyzingFace || isMatchingFace}
+        matchingLoading={isMatchingFace}
         phase={attendancePhase}
       />
 

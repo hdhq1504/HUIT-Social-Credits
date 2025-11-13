@@ -47,6 +47,7 @@ const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailab
   feedbackModalOpen: false,
   isRegisterProcessing: false,
   isAttendanceSubmitting: false,
+  isMatchingFace: false,
   isFeedbackSubmitting: false,
   attendanceStep,
   checkoutAvailable,
@@ -148,6 +149,7 @@ function CardActivity(props) {
     feedbackModalOpen,
     isRegisterProcessing,
     isAttendanceSubmitting,
+    isMatchingFace,
     isFeedbackSubmitting,
     attendanceStep,
     checkoutAvailable,
@@ -346,7 +348,7 @@ function CardActivity(props) {
     [],
   );
 
-  const isAttendanceBusy = isAttendanceSubmitting || attendanceLoading;
+  const isAttendanceBusy = isAttendanceSubmitting || isMatchingFace || attendanceLoading;
   const hasCheckin = attendanceSummary?.hasCheckin;
   const hasCheckout = attendanceSummary?.hasCheckout;
   const isCheckoutReady = checkoutAvailable || hasCheckout;
@@ -426,7 +428,7 @@ function CardActivity(props) {
   };
 
   const handleCloseAttendance = () => {
-    dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+    dispatch({ type: 'SET', payload: { checkModalOpen: false, isMatchingFace: false, isAttendanceSubmitting: false } });
     dispatch({ type: 'RESET_CAPTURED' });
   };
 
@@ -479,6 +481,10 @@ function CardActivity(props) {
       }
 
       // Bỏ dispatch({ type: 'SET', payload: { checkModalOpen: false } }); ở đây
+      if (attendanceMethod === 'photo') {
+        dispatch({ type: 'SET', payload: { isMatchingFace: Boolean(faceDescriptorPayload) } });
+      }
+
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
@@ -486,6 +492,7 @@ function CardActivity(props) {
         dataUrl: evidenceDataUrl,
         phase: phaseToSend,
         faceDescriptor: faceDescriptorPayload,
+        faceDescriptors: faceDescriptorPayload ? [faceDescriptorPayload] : undefined,
         faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
       dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
@@ -527,7 +534,7 @@ function CardActivity(props) {
       if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
-      dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false } });
+      dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false, isMatchingFace: false } });
     }
   };
 
@@ -876,6 +883,7 @@ function CardActivity(props) {
         dateTime={dateTime}
         location={location}
         confirmLoading={isAttendanceBusy}
+        matchingLoading={isMatchingFace}
         phase={attendanceStep}
       />
 

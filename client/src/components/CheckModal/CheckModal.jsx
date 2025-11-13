@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Modal, Tag, message } from 'antd';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faLocationDot, faCamera, faRotate, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCalendar,
+  faLocationDot,
+  faCamera,
+  faRotate,
+  faCircleCheck,
+  faSpinner,
+} from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
 import styles from './CheckModal.module.scss';
 
@@ -21,6 +28,7 @@ function CheckModal({
   dateTime,
   location,
   confirmLoading = false,
+  matchingLoading = false,
 }) {
   // Local state for preview / file / dataUrl
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -347,6 +355,17 @@ function CheckModal({
             {hasPreview && (
               <img className={cx('check-modal__camera-preview')} src={previewUrl} alt="preview" />
             )}
+
+            {confirmLoading && (
+              <div className={cx('check-modal__loading-overlay')}>
+                <FontAwesomeIcon icon={faSpinner} spin className={cx('check-modal__loading-icon')} />
+                <div className={cx('check-modal__loading-text')}>
+                  {matchingLoading
+                    ? 'Đang đối chiếu khuôn mặt với ảnh đã đăng ký...'
+                    : 'Đang xử lý ảnh điểm danh...'}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions (chụp / đổi camera / upload / gửi) */}
@@ -385,7 +404,11 @@ function CheckModal({
               </>
             ) : (
               <>
-                <button className={cx('check-modal__cancel-button')} onClick={handleRetake}>
+                <button
+                  className={cx('check-modal__cancel-button')}
+                  onClick={handleRetake}
+                  disabled={confirmLoading}
+                >
                   <FontAwesomeIcon icon={faCamera} style={{ marginRight: 8 }} />
                   Chụp lại
                 </button>
@@ -395,7 +418,11 @@ function CheckModal({
                   disabled={isReadingFile || !file || !dataUrl || confirmLoading}
                 >
                   <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
-                  {confirmLoading ? 'Đang gửi...' : 'Gửi điểm danh'}
+                  {confirmLoading
+                    ? matchingLoading
+                      ? 'Đang đối chiếu khuôn mặt...'
+                      : 'Đang gửi...'
+                    : 'Gửi điểm danh'}
                 </button>
               </>
             )}

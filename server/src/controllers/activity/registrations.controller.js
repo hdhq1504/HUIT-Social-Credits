@@ -1,0 +1,478 @@
+import {
+  prisma,
+  ADMIN_REGISTRATION_INCLUDE,
+  ACTIVE_REG_STATUSES,
+  ADMIN_STATUS_MAP,
+  mapActivitySummaryForRegistration,
+  mapRegistration,
+  buildActivityResponse,
+  sanitizeOptionalText,
+  normalizePageNumber,
+  normalizePageSize,
+  buildRegistrationSearchCondition,
+  assertAdmin,
+  formatDateRange,
+} from "./shared.js";
+import { notifyUser } from "../../utils/notification.service.js";
+
+export const listActivityRegistrationsAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id: activityId } = req.params;
+
+  const activity = await prisma.hoatDong.findUnique({
+    where: { id: activityId },
+    select: {
+      id: true,
+      tieuDe: true,
+      diemCong: true,
+      nhomDiem: true,
+      batDauLuc: true,
+      ketThucLuc: true,
+      diaDiem: true,
+      phuongThucDiemDanh: true,
+    },
+  });
+
+  if (!activity) {
+    return res.status(404).json({ error: "Hoạt động không tồn tại" });
+  }
+
+  const registrations = await prisma.dangKyHoatDong.findMany({
+    where: { hoatDongId: activityId },
+    include: ADMIN_REGISTRATION_INCLUDE,
+    orderBy: [{ dangKyLuc: "asc" }],
+  });
+
+  const activitySummary = mapActivitySummaryForRegistration(activity);
+
+  res.json({
+    activity: activitySummary,
+    registrations: registrations.map((registration) => ({
+      ...mapRegistration(registration, activity),
+      activity: activitySummary,
+    })),
+  });
+};
+
+export const listRegistrationsAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { status, faculty, className, activityId, search, page, pageSize } = req.query || {};
+
+  const normalizedStatusKey = typeof status === "string" && status !== "all" ? status.toLowerCase() : undefined;
+  const normalizedStatus = normalizedStatusKey ? ADMIN_STATUS_MAP[normalizedStatusKey] : undefined;
+  const normalizedFaculty = sanitizeOptionalText(faculty, 100);
+  const normalizedClassName = sanitizeOptionalText(className, 100);
+  const normalizedActivityId = typeof activityId === "string" && activityId.trim() ? activityId.trim() : undefined;
+  const searchTerm = sanitizeOptionalText(search, 100);
+
+  const currentPage = normalizePageNumber(page);
+  const take = normalizePageSize(pageSize);
+  const skip = (currentPage - 1) * take;
+
+  const conditions = [];
+
+  if (normalizedStatus) {
+    conditions.push({ trangThai: normalizedStatus });
+  }
+
+  if (normalizedActivityId) {
+    conditions.push({ hoatDongId: normalizedActivityId });
+  }
+
+  if (normalizedFaculty) {
+    conditions.push({ nguoiDung: { maKhoa: normalizedFaculty } });
+  }
+
+  if (normalizedClassName) {
+    conditions.push({ nguoiDung: { maLop: normalizedClassName } });
+  }
+
+  const searchCondition = buildRegistrationSearchCondition(searchTerm);
+  if (searchCondition) {
+    conditions.push(searchCondition);
+  }
+
+  const where = conditions.length ? { AND: conditions } : {};
+
+  const [registrations, total] = await Promise.all([
+    prisma.dangKyHoatDong.findMany({
+      where,
+      include: {
+        ...ADMIN_REGISTRATION_INCLUDE,
+        hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+        nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung,
+      },
+      orderBy: [{ dangKyLuc: "desc" }],
+      skip,
+      take,
+    }),
+    prisma.dangKyHoatDong.count({ where }),
+  ]);
+
+  const [totalAll, pendingCount, approvedCount, rejectedCount, facultiesRaw, classesRaw, activitiesRaw] =
+    await Promise.all([
+      prisma.dangKyHoatDong.count(),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
+      prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
+      prisma.nguoiDung.findMany({
+        where: { dangKy: { some: {} }, maKhoa: { not: null } },
+        select: { maKhoa: true },
+        distinct: ["maKhoa"],
+      }),
+      prisma.nguoiDung.findMany({
+        where: { dangKy: { some: {} }, maLop: { not: null } },
+        select: { maLop: true },
+        distinct: ["maLop"],
+      }),
+      prisma.hoatDong.findMany({
+        where: { dangKy: { some: {} } },
+        select: { id: true, tieuDe: true },
+      }),
+    ]);
+
+  const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
+
+  const faculties = facultiesRaw
+    .map((item) => sanitizeOptionalText(item.maKhoa, 100))
+    .filter(Boolean)
+    .sort(sortAlpha);
+
+  const classes = classesRaw
+    .map((item) => sanitizeOptionalText(item.maLop, 100))
+    .filter(Boolean)
+    .sort(sortAlpha);
+
+  const activities = activitiesRaw
+    .map((item) => ({ id: item.id, title: sanitizeOptionalText(item.tieuDe, 255) || "Hoạt động" }))
+    .sort((a, b) => sortAlpha(a.title, b.title));
+
+  res.json({
+    registrations: registrations.map((registration) => ({
+      ...mapRegistration(registration, registration.hoatDong),
+      activity: mapActivitySummaryForRegistration(registration.hoatDong),
+    })),
+    pagination: {
+      page: currentPage,
+      pageSize: take,
+      total,
+      pageCount: Math.ceil(total / take) || 0,
+    },
+    stats: {
+      total: totalAll,
+      pending: pendingCount,
+      approved: approvedCount,
+      rejected: rejectedCount,
+    },
+    filterOptions: {
+      faculties,
+      classes,
+      activities,
+    },
+  });
+};
+
+export const getRegistrationDetailAdmin = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id } = req.params;
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung,
+    },
+  });
+
+  if (!registration) {
+    return res.status(404).json({ error: "Đăng ký không tồn tại" });
+  }
+
+  res.json({
+    registration: {
+      ...mapRegistration(registration, registration.hoatDong),
+      activity: mapActivitySummaryForRegistration(registration.hoatDong),
+    },
+  });
+};
+
+export const decideRegistrationAttendance = async (req, res) => {
+  try {
+    assertAdmin(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id } = req.params;
+  const { decision, note } = req.body || {};
+
+  const normalizedDecision = typeof decision === "string" ? decision.trim().toUpperCase() : "";
+  if (!["APPROVE", "REJECT"].includes(normalizedDecision)) {
+    return res.status(400).json({ error: "Quyết định không hợp lệ" });
+  }
+
+  const reason = sanitizeOptionalText(note, 500);
+
+  const registration = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung,
+    },
+  });
+
+  if (!registration) {
+    return res.status(404).json({ error: "Đăng ký không tồn tại" });
+  }
+
+  const isApproval = normalizedDecision === "APPROVE";
+  const targetStatus = isApproval ? "DA_THAM_GIA" : "VANG_MAT";
+  const now = new Date();
+
+  const updateData = {
+    trangThai: targetStatus,
+    diemDanhBoiId: req.user?.sub || registration.diemDanhBoiId || null,
+  };
+
+  if (isApproval) {
+    updateData.duyetLuc = registration.duyetLuc ?? now;
+    if (!registration.diemDanhLuc) {
+      updateData.diemDanhLuc = now;
+    }
+  } else {
+    updateData.duyetLuc = null;
+  }
+
+  if (reason !== null) {
+    updateData.diemDanhGhiChu = reason;
+  }
+
+  const attendanceUpdateData = {
+    trangThai: targetStatus,
+  };
+
+  if (reason && !isApproval) {
+    attendanceUpdateData.ghiChu = reason;
+  }
+
+  await prisma.$transaction([
+    prisma.dangKyHoatDong.update({
+      where: { id: registration.id },
+      data: updateData,
+    }),
+    prisma.diemDanhNguoiDung.updateMany({
+      where: { dangKyId: registration.id },
+      data: attendanceUpdateData,
+    }),
+  ]);
+
+  const updated = await prisma.dangKyHoatDong.findUnique({
+    where: { id },
+    include: {
+      ...ADMIN_REGISTRATION_INCLUDE,
+      hoatDong: ADMIN_REGISTRATION_INCLUDE.hoatDong,
+      nguoiDung: ADMIN_REGISTRATION_INCLUDE.nguoiDung,
+    },
+  });
+
+  const activity = updated?.hoatDong;
+  const user = updated?.nguoiDung;
+
+  if (activity && user) {
+    const baseTitle = activity.tieuDe || "hoạt động";
+    const notificationMessage = isApproval
+      ? `Minh chứng điểm danh cho hoạt động "${baseTitle}" đã được duyệt.`
+      : `Minh chứng điểm danh cho hoạt động "${baseTitle}" đã bị từ chối.`;
+    const notificationTitle = isApproval
+      ? "Minh chứng điểm danh được duyệt"
+      : "Minh chứng điểm danh bị từ chối";
+    const notificationType = isApproval ? "success" : "danger";
+
+    await notifyUser({
+      userId: user.id,
+      user,
+      title: notificationTitle,
+      message: notificationMessage,
+      type: notificationType,
+      data: { activityId: activity.id, action: "ATTENDANCE_REVIEW_DECISION" },
+      emailSubject: isApproval
+        ? `[HUIT Social Credits] Minh chứng điểm danh được duyệt - "${baseTitle}"`
+        : `[HUIT Social Credits] Minh chứng điểm danh bị từ chối - "${baseTitle}"`,
+      emailMessageLines: [
+        notificationMessage,
+        reason ? `Ghi chú: ${reason}` : null,
+      ],
+    });
+  }
+
+  res.json({
+    message: isApproval ? "Đã duyệt minh chứng điểm danh" : "Đã từ chối minh chứng điểm danh",
+    registration: {
+      ...mapRegistration(updated, activity),
+      activity: activity ? mapActivitySummaryForRegistration(activity) : null,
+    },
+  });
+};
+
+export const registerForActivity = async (req, res) => {
+  const userId = req.user?.sub;
+  const { id: activityId } = req.params;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true },
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
+
+  const activity = await prisma.hoatDong.findUnique({ where: { id: activityId, isPublished: true } });
+  if (!activity) return res.status(404).json({ error: "Hoạt động không tồn tại" });
+
+  const activeCount = await prisma.dangKyHoatDong.count({
+    where: {
+      hoatDongId: activityId,
+      trangThai: { in: ACTIVE_REG_STATUSES },
+    },
+  });
+
+  if (typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0 && activeCount >= activity.sucChuaToiDa) {
+    return res.status(409).json({ error: "Hoạt động đã đủ số lượng" });
+  }
+
+  const existing = await prisma.dangKyHoatDong.findUnique({
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+  });
+
+  if (existing && existing.trangThai !== "DA_HUY") {
+    return res.status(409).json({ error: "Bạn đã đăng ký hoạt động này" });
+  }
+
+  if (existing) {
+    await prisma.dangKyHoatDong.update({
+      where: { id: existing.id },
+      data: {
+        trangThai: "DANG_KY",
+        ghiChu: req.body?.note ?? existing.ghiChu,
+        lyDoHuy: null,
+        dangKyLuc: new Date(),
+        diemDanhLuc: null,
+        diemDanhBoiId: null,
+        diemDanhGhiChu: null,
+      },
+    });
+  } else {
+    await prisma.dangKyHoatDong.create({
+      data: {
+        nguoiDungId: userId,
+        hoatDongId: activityId,
+        ghiChu: req.body?.note ?? null,
+      },
+    });
+  }
+
+  const updated = await buildActivityResponse(activityId, userId);
+
+  const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
+  const detailLines = [
+    scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
+    activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null,
+  ];
+
+  await notifyUser({
+    userId,
+    user,
+    title: "Đăng ký hoạt động thành công",
+    message: `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
+    type: "success",
+    data: { activityId, action: "REGISTERED" },
+    emailSubject: `[HUIT Social Credits] Xác nhận đăng ký hoạt động "${activity.tieuDe}"`,
+    emailMessageLines: [
+      `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
+      ...detailLines,
+    ],
+  });
+
+  res.status(201).json({
+    message: "Đăng ký hoạt động thành công",
+    activity: updated,
+  });
+};
+
+export const cancelActivityRegistration = async (req, res) => {
+  const userId = req.user?.sub;
+  const { id: activityId } = req.params;
+  const { reason, note } = req.body || {};
+
+  const user = await prisma.nguoiDung.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, hoTen: true },
+  });
+  if (!user) return res.status(404).json({ error: "Người dùng không tồn tại" });
+
+  const existing = await prisma.dangKyHoatDong.findUnique({
+    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+    include: { hoatDong: true },
+  });
+
+  if (!existing || existing.trangThai === "DA_HUY") {
+    return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
+  }
+
+  const activity = existing.hoatDong;
+
+  await prisma.dangKyHoatDong.update({
+    where: { id: existing.id },
+    data: {
+      trangThai: "DA_HUY",
+      lyDoHuy: reason ?? null,
+      ghiChu: note ?? existing.ghiChu,
+    },
+  });
+
+  const updated = await buildActivityResponse(activityId, userId);
+
+  if (activity) {
+    const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
+    const detailLines = [
+      scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
+      activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null,
+      reason ? `Lý do hủy: ${String(reason).trim()}` : null,
+    ];
+
+    await notifyUser({
+      userId,
+      user,
+      title: "Bạn đã hủy đăng ký hoạt động",
+      message: `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
+      type: "warning",
+      data: { activityId, action: "CANCELED" },
+      emailSubject: `[HUIT Social Credits] Xác nhận hủy đăng ký hoạt động "${activity.tieuDe}"`,
+      emailMessageLines: [
+        `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
+        ...detailLines,
+      ],
+    });
+  }
+
+  res.json({
+    message: "Hủy đăng ký thành công",
+    activity: updated,
+  });
+};

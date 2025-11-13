@@ -212,7 +212,7 @@ function RollCallPage() {
           status: 'present',
           phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
-          ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
+          ...(descriptorPayload ? { faceDescriptor: descriptorPayload, faceDescriptors: [descriptorPayload] } : {}),
           ...(faceErrorPayload ? { faceError: faceErrorPayload } : {}),
         },
       });

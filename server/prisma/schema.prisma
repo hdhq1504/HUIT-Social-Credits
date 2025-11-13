@@ -157,6 +157,7 @@ model DiemDanhNguoiDung {
   faceMatch   FaceMatchStatus?
   faceScore   Float?
   faceMeta    Json?
+  descriptors Json?
   taoLuc      DateTime        @default(now())
 
   dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
