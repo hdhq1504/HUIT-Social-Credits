@@ -49,16 +49,16 @@ const cx = classNames.bind(styles);
 const { Paragraph, Text } = Typography;
 
 const STATUS_META = {
-  CHO_DUYET: { label: 'Chờ duyệt', className: '--pending' },
-  DA_DUYET: { label: 'Đã duyệt', className: '--approved' },
-  BI_TU_CHOI: { label: 'Từ chối', className: '--rejected' },
+  CHO_DUYET: { label: 'Chờ duyệt', className: 'feedback-detail__status-tag--pending' },
+  DA_DUYET: { label: 'Đã duyệt', className: 'feedback-detail__status-tag--approved' },
+  BI_TU_CHOI: { label: 'Từ chối', className: 'feedback-detail__status-tag--rejected' },
 };
 
 const buildStatusTag = (status, label = '') => {
   const meta = STATUS_META[status] || STATUS_META.CHO_DUYET;
   return (
-    <Tag className={cx('status-tag', meta.className)}>
-      <FontAwesomeIcon icon={faCircleDot} className={cx('status-tag__dot')} />
+    <Tag className={cx('feedback-detail__status-tag', meta.className)}>
+      <FontAwesomeIcon icon={faCircleDot} className={cx('feedback-detail__status-dot')} />
       {label || meta.label}
     </Tag>
   );
@@ -396,7 +396,9 @@ function FeedbackDetailPage() {
 
                         return (
                           <List.Item
-                            className={cx('attachment-item', { '--disabled': disabled })}
+                            className={cx('feedback-detail__attachment-item', {
+                              'feedback-detail__attachment-item--disabled': disabled,
+                            })}
                             actions={[
                               <Button
                                 key="download"

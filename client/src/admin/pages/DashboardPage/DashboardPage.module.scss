@@ -351,15 +351,15 @@
       flex-shrink: 0;
       font-size: 14px;
 
-      &.--complete {
+      &--complete {
         background: rgba(25, 120, 135, 0.12);
         color: var(--success-color);
       }
-      &.--register {
+      &--register {
         background: rgba(220, 119, 0, 0.12);
         color: var(--warning-color);
       }
-      &.--create {
+      &--create {
         background: rgba(220, 53, 69, 0.12);
         color: var(--danger-color);
       }

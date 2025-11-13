@@ -159,18 +159,18 @@ export default function DashboardPage() {
         case 'COMPLETED':
           return {
             icon: faCheck,
-            className: '--complete',
+            className: 'dashboard__recent-icon-wrapper--complete',
           };
         case 'REGISTERED':
           return {
             icon: faUsers,
-            className: '--register',
+            className: 'dashboard__recent-icon-wrapper--register',
           };
         case 'CREATED':
         default:
           return {
             icon: faPlus,
-            className: '--create',
+            className: 'dashboard__recent-icon-wrapper--create',
           };
       }
     };

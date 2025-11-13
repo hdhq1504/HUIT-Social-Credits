@@ -72,7 +72,7 @@ const getStatusTag = (status) => {
     case 'confirm_in':
     case 'confirm_out':
       return (
-        <Tag className={cx('activity-detail__status-tag', '--ongoing')}>
+        <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ongoing')}>
           <FontAwesomeIcon icon={faCircleDot} />
           Đang diễn ra
         </Tag>
@@ -81,7 +81,7 @@ const getStatusTag = (status) => {
     case 'registered':
     case 'attendance_closed':
       return (
-        <Tag className={cx('activity-detail__status-tag', '--upcoming')}>
+        <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--upcoming')}>
           <FontAwesomeIcon icon={faCircleDot} />
           Sắp diễn ra
         </Tag>
@@ -91,7 +91,7 @@ const getStatusTag = (status) => {
     case 'feedback_reviewing':
     case 'feedback_accepted':
       return (
-        <Tag className={cx('activity-detail__status-tag', '--ended')}>
+        <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ended')}>
           <FontAwesomeIcon icon={faCircleDot} />
           Đã kết thúc
         </Tag>
@@ -441,11 +441,21 @@ function ActivitiesDetailPage() {
               <div className={cx('activity-detail__details-grid')}>
                 <div className={cx('activity-detail__list-section')}>
                   <h3 className={cx('activity-detail__list-title')}>Yêu cầu tham gia</h3>
-                  {renderListSection(requirementItems, 'Chưa có yêu cầu tham gia', faListCheck, '--primary')}
+                  {renderListSection(
+                    requirementItems,
+                    'Chưa có yêu cầu tham gia',
+                    faListCheck,
+                    'activity-detail__list-icon--primary',
+                  )}
                 </div>
                 <div className={cx('activity-detail__list-section')}>
                   <h3 className={cx('activity-detail__list-title')}>Hướng dẫn tham gia</h3>
-                  {renderListSection(guideSteps, 'Chưa có hướng dẫn tham gia', faClipboardList, '--primary')}
+                  {renderListSection(
+                    guideSteps,
+                    'Chưa có hướng dẫn tham gia',
+                    faClipboardList,
+                    'activity-detail__list-icon--primary',
+                  )}
                 </div>
               </div>
             </TabPane>

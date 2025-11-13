@@ -177,9 +177,9 @@ export default function SystemPage() {
       </section>
 
       <div className={cx('system-page__grid')}>
-        <section className={cx('system-page__card', '--backup')}>
+        <section className={cx('system-page__card', 'system-page__card--backup')}>
           <div className={cx('system-page__card-header')}>
-            <div className={cx('system-page__card-icon', '--backup')}>
+            <div className={cx('system-page__card-icon', 'system-page__card-icon--backup')}>
               <FontAwesomeIcon icon={faDownload} />
             </div>
             <div>
@@ -231,9 +231,9 @@ export default function SystemPage() {
           </div>
         </section>
 
-        <section className={cx('system-page__card', '--restore')}>
+        <section className={cx('system-page__card', 'system-page__card--restore')}>
           <div className={cx('system-page__card-header')}>
-            <div className={cx('system-page__card-icon', '--restore')}>
+            <div className={cx('system-page__card-icon', 'system-page__card-icon--restore')}>
               <FontAwesomeIcon icon={faUpload} />
             </div>
             <div>
@@ -266,7 +266,7 @@ export default function SystemPage() {
                 {restoreCounts.map((item) => (
                   <li key={item.key} className={cx('system-page__stat-item')}>
                     <span className={cx('system-page__stat-label')}>{item.label}</span>
-                    <span className={cx('system-page__stat-value', '--accent')}>{item.value}</span>
+                    <span className={cx('system-page__stat-value', 'system-page__stat-value--accent')}>{item.value}</span>
                   </li>
                 ))}
               </ul>
@@ -284,7 +284,7 @@ export default function SystemPage() {
 
           <div className={cx('system-page__card-footer')}>
             {lastRestore?.restoredAt && (
-              <span className={cx('system-page__timestamp', '--restore')}>
+              <span className={cx('system-page__timestamp', 'system-page__timestamp--restore')}>
                 <FontAwesomeIcon icon={faClockRotateLeft} />
                 Khôi phục gần nhất: {formatDateTime(lastRestore.restoredAt)}
               </span>

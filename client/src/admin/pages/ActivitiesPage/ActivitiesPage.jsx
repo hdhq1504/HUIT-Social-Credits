@@ -2,11 +2,12 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Table, Input, Select, DatePicker, Tag, Tooltip, Modal, ConfigProvider } from 'antd';
+import { Input, Select, DatePicker, Tag, Tooltip, Modal, ConfigProvider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faPenToSquare, faTrashAlt, faSort, faCircleDot, faSearch } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
+import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
 import { buildPath } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
@@ -16,47 +17,9 @@ import styles from './ActivitiesPage.module.scss';
 const cx = classNames.bind(styles);
 const { Option } = Select;
 
-// Hàm helper để định dạng ngày giờ
 const formatDateTime = (isoString) => {
   if (!isoString) return '--';
   return dayjs(isoString).format('HH:mm DD/MM/YYYY');
-};
-
-// Hàm helper cho tag trạng thái
-const getStatusTag = (status) => {
-  switch (status) {
-    case 'ongoing':
-    case 'attendance_open':
-    case 'confirm_in':
-    case 'confirm_out':
-      return (
-        <Tag className={cx('activities-list__status-tag', '--ongoing')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('dot-icon')} />
-          Đang diễn ra
-        </Tag>
-      );
-    case 'upcoming':
-    case 'registered':
-    case 'attendance_closed':
-      return (
-        <Tag className={cx('activities-list__status-tag', '--upcoming')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('dot-icon')} />
-          Sắp diễn ra
-        </Tag>
-      );
-    case 'ended':
-    case 'feedback_pending':
-    case 'feedback_reviewing':
-    case 'feedback_accepted':
-      return (
-        <Tag className={cx('activities-list__status-tag', '--ended')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('dot-icon')} />
-          Đã kết thúc
-        </Tag>
-      );
-    default:
-      return <Tag>{status}</Tag>;
-  }
 };
 
 const STATUS_CATEGORY_MAP = {
@@ -92,17 +55,44 @@ const deriveStatusCategory = (activity) => {
   return 'upcoming';
 };
 
-// Hàm helper cho tag nhóm
 const GROUP_TAG_CLASS = {
-  NHOM_1: '--nhom-1',
-  NHOM_2: '--nhom-2',
-  NHOM_3: '--nhom-3',
+  NHOM_1: 'activities-page__group-tag--nhom-1',
+  NHOM_2: 'activities-page__group-tag--nhom-2',
+  NHOM_3: 'activities-page__group-tag--nhom-3',
 };
 
 const getGroupTag = (groupId, groupLabel) => {
   const label = groupLabel || groupId || '--';
   const tagClass = GROUP_TAG_CLASS[groupId] || GROUP_TAG_CLASS.NHOM_2;
-  return <Tag className={cx('activities-list__group-tag', tagClass)}>{label}</Tag>;
+  return <Tag className={cx('activities-page__group-tag', tagClass)}>{label}</Tag>;
+};
+
+const getStatusTag = (status) => {
+  switch (status) {
+    case 'ongoing':
+      return (
+        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--ongoing')}>
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
+          Đang diễn ra
+        </Tag>
+      );
+    case 'upcoming':
+      return (
+        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--upcoming')}>
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
+          Sắp diễn ra
+        </Tag>
+      );
+    case 'ended':
+      return (
+        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--ended')}>
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
+          Đã kết thúc
+        </Tag>
+      );
+    default:
+      return <Tag>{status}</Tag>;
+  }
 };
 
 export default function ActivitiesPage() {
@@ -180,25 +170,18 @@ export default function ActivitiesPage() {
     }
   }, [activityToDelete, deleteMutation]);
 
-  const onSelectChange = (newSelectedRowKeys) => {
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-
   const rowSelection = {
     selectedRowKeys,
-    onChange: onSelectChange,
+    onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
   };
 
   const columns = useMemo(
     () => [
       {
         title: 'STT',
-        dataIndex: 'stt',
-        key: 'stt',
+        dataIndex: 'index',
+        key: 'index',
         width: 60,
-        render: (_, record, index) => {
-          return (pagination.current - 1) * pagination.pageSize + index + 1;
-        },
       },
       {
         title: 'Tên hoạt động',
@@ -206,12 +189,6 @@ export default function ActivitiesPage() {
         key: 'title',
         width: 350,
         sorter: (a, b) => a.title.localeCompare(b.title),
-        render: (text, record) => (
-          <div className={cx('activities-list__activity-name')}>
-            <strong>{text}</strong>
-            <p>{record.location || 'Chưa cập nhật địa điểm'}</p>
-          </div>
-        ),
       },
       {
         title: 'Nhóm hoạt động',
@@ -219,7 +196,6 @@ export default function ActivitiesPage() {
         key: 'pointGroup',
         width: 150,
         sorter: (a, b) => a.pointGroupLabel.localeCompare(b.pointGroupLabel),
-        render: (_, record) => getGroupTag(record.pointGroup, record.pointGroupLabel),
       },
       {
         title: 'Học kỳ',
@@ -227,7 +203,6 @@ export default function ActivitiesPage() {
         key: 'semester',
         width: 110,
         sorter: (a, b) => (a.semester || '').localeCompare(b.semester || ''),
-        render: (value) => value || '--',
       },
       {
         title: 'Năm học',
@@ -235,7 +210,6 @@ export default function ActivitiesPage() {
         key: 'academicYear',
         width: 130,
         sorter: (a, b) => (a.academicYear || '').localeCompare(b.academicYear || ''),
-        render: (value) => value || '--',
       },
       {
         title: 'Điểm',
@@ -244,7 +218,6 @@ export default function ActivitiesPage() {
         width: 80,
         align: 'center',
         sorter: (a, b) => a.points - b.points,
-        render: (points) => <strong className={cx('activities-list__points')}>+{points}</strong>,
       },
       {
         title: 'Số lượng',
@@ -253,18 +226,12 @@ export default function ActivitiesPage() {
         width: 100,
         align: 'center',
         sorter: (a, b) => a.participantsCount - b.participantsCount,
-        render: (_, record) => (
-          <span>
-            {record.participantsCount}/{record.maxCapacity || 'Không giới hạn'}
-          </span>
-        ),
       },
       {
         title: 'Thời gian bắt đầu',
         dataIndex: 'startTime',
         key: 'startTime',
         width: 180,
-        render: (isoString) => formatDateTime(isoString),
         sorter: (a, b) => new Date(a.startTime) - new Date(b.startTime),
       },
       {
@@ -272,7 +239,6 @@ export default function ActivitiesPage() {
         dataIndex: 'endTime',
         key: 'endTime',
         width: 180,
-        render: (isoString) => formatDateTime(isoString),
         sorter: (a, b) => new Date(a.endTime) - new Date(b.endTime),
       },
       {
@@ -281,70 +247,114 @@ export default function ActivitiesPage() {
         key: 'state',
         width: 150,
         sorter: (a, b) => deriveStatusCategory(a).localeCompare(deriveStatusCategory(b)),
-        render: (_, record) => getStatusTag(deriveStatusCategory(record)),
       },
       {
         title: 'Hành động',
         key: 'actions',
         width: 120,
         align: 'center',
-        render: (_, record) => (
-          <div className={cx('activities-list__actions')}>
-            <Tooltip title="Xem chi tiết">
-              <button
-                className={cx('activities-list__action-btn', '--view')}
-                onClick={() => navigate(buildPath.adminActivityDetail(record.id))}
-              >
-                <FontAwesomeIcon icon={faEye} />
-              </button>
-            </Tooltip>
-            <Tooltip title="Chỉnh sửa">
-              <button
-                className={cx('activities-list__action-btn', '--edit')}
-                onClick={() => navigate(buildPath.adminActivityEdit(record.id))}
-              >
-                <FontAwesomeIcon icon={faPenToSquare} />
-              </button>
-            </Tooltip>
-            <Tooltip title="Xóa">
-              <button
-                type="button"
-                className={cx('activities-list__action-btn', '--delete')}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  handleOpenDeleteModal(record);
-                }}
-                disabled={deleteMutation.isLoading}
-              >
-                <FontAwesomeIcon icon={faTrashAlt} />
-              </button>
-            </Tooltip>
-          </div>
-        ),
       },
     ],
-    [pagination, navigate, handleOpenDeleteModal, deleteMutation.isLoading],
+    [],
+  );
+
+  const columnRenderers = useMemo(
+    () => ({
+      index: ({ index }) => (pagination.current - 1) * pagination.pageSize + index + 1,
+      title: ({ value, record }) => (
+        <div className={cx('activities-page__activity')}>
+          <strong className={cx('activities-page__activity-title')}>{value || 'Chưa đặt tên'}</strong>
+          <p className={cx('activities-page__activity-location')}>{record.location || 'Chưa cập nhật địa điểm'}</p>
+        </div>
+      ),
+      pointGroup: ({ record }) => getGroupTag(record.pointGroup, record.pointGroupLabel),
+      semester: ({ value }) => value || '--',
+      academicYear: ({ value }) => value || '--',
+      points: ({ value }) => {
+        const resolvedValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+        return <strong className={cx('activities-page__points')}>+{resolvedValue}</strong>;
+      },
+      capacity: ({ record }) => {
+        const joined = Number.isFinite(Number(record.participantsCount))
+          ? Number(record.participantsCount)
+          : 0;
+        const capacityLabel = record.maxCapacity || 'Không giới hạn';
+        return (
+          <span>
+            {joined}/{capacityLabel}
+          </span>
+        );
+      },
+      startTime: ({ value }) => formatDateTime(value),
+      endTime: ({ value }) => formatDateTime(value),
+      state: ({ record }) => getStatusTag(deriveStatusCategory(record)),
+      actions: ({ record }) => (
+        <div className={cx('activities-page__actions')}>
+          <Tooltip title="Xem chi tiết">
+            <button
+              type="button"
+              className={cx('activities-page__action-button', 'activities-page__action-button--view')}
+              onClick={() => navigate(buildPath.adminActivityDetail(record.id))}
+            >
+              <FontAwesomeIcon icon={faEye} />
+            </button>
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <button
+              type="button"
+              className={cx('activities-page__action-button', 'activities-page__action-button--edit')}
+              onClick={() => navigate(buildPath.adminActivityEdit(record.id))}
+            >
+              <FontAwesomeIcon icon={faPenToSquare} />
+            </button>
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <button
+              type="button"
+              className={cx('activities-page__action-button', 'activities-page__action-button--delete')}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleOpenDeleteModal(record);
+              }}
+              disabled={deleteMutation.isLoading}
+            >
+              <FontAwesomeIcon icon={faTrashAlt} />
+            </button>
+          </Tooltip>
+        </div>
+      ),
+    }),
+    [deleteMutation.isLoading, handleOpenDeleteModal, navigate, pagination],
+  );
+
+  const renderSortIcon = useCallback(
+    ({ sortOrder }) => (
+      <FontAwesomeIcon
+        icon={faSort}
+        className={cx('activities-page__sort-icon', { 'activities-page__sort-icon--active': sortOrder })}
+      />
+    ),
+    [],
   );
 
   return (
     <ConfigProvider locale={viVN}>
       {contextHolder}
-      <div className={cx('activities-page__wrapper')}>
-        {/* Filter Bar */}
-        <div className={cx('activities-list__filter-bar')}>
+      <div className={cx('activities-page')}>
+        <div className={cx('activities-page__filter-bar')}>
           <Input
             placeholder="Tìm kiếm hoạt động..."
-            className={cx('activities-list__search-input')}
+            className={cx('activities-page__filter-search')}
             prefix={<FontAwesomeIcon icon={faSearch} />}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
           <Select
             placeholder="Nhóm hoạt động"
-            className={cx('activities-list__select')}
+            className={cx('activities-page__filter-select')}
             value={selectedGroup}
-            onChange={(value) => setSelectedGroup(value)}
+            onChange={setSelectedGroup}
           >
             <Option value="all">Tất cả nhóm</Option>
             <Option value="NHOM_1">Nhóm 1</Option>
@@ -353,9 +363,9 @@ export default function ActivitiesPage() {
           </Select>
           <Select
             placeholder="Trạng thái"
-            className={cx('activities-list__select')}
+            className={cx('activities-page__filter-select')}
             value={selectedStatus}
-            onChange={(value) => setSelectedStatus(value)}
+            onChange={setSelectedStatus}
           >
             <Option value="all">Tất cả trạng thái</Option>
             <Option value="ongoing">Đang diễn ra</Option>
@@ -364,34 +374,24 @@ export default function ActivitiesPage() {
           </Select>
           <DatePicker
             placeholder="Lọc theo ngày"
-            className={cx('activities-list__date-input')}
+            className={cx('activities-page__filter-date')}
             locale={viVN}
             value={selectedDate}
-            onChange={(date) => setSelectedDate(date)}
+            onChange={setSelectedDate}
             allowClear
           />
         </div>
 
-        {/* Table Content */}
-        <div className={cx('activities-list__content-box')}>
-          <div className={cx('activities-list__header')}>
+        <div className={cx('activities-page__content')}>
+          <div className={cx('activities-page__content-header')}>
             <h3>Danh sách hoạt động</h3>
           </div>
-          <Table
+          <AdminTable
             rowKey="id"
             loading={isLoading}
-            columns={columns.map((col) => ({
-              ...col,
-              sortIcon: ({ sortOrder }) => (
-                <FontAwesomeIcon
-                  icon={faSort}
-                  className={cx('activities-list__sort-icon', {
-                    '--active': sortOrder,
-                  })}
-                />
-              ),
-            }))}
+            columns={columns}
             dataSource={filteredActivities}
+            columnRenderers={columnRenderers}
             rowSelection={rowSelection}
             pagination={{
               current: pagination.current,
@@ -402,7 +402,8 @@ export default function ActivitiesPage() {
               },
               showSizeChanger: false,
             }}
-            className={cx('activities-list__table')}
+            sortIcon={renderSortIcon}
+            className={cx('activities-page__table')}
           />
         </div>
       </div>

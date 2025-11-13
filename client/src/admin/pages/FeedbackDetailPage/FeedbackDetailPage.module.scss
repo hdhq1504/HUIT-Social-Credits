@@ -118,7 +118,7 @@
   }
 }
 
-.status-tag {
+.feedback-detail__status-tag {
   font-family: 'Montserrat';
   font-size: 13px;
   font-weight: 500;
@@ -133,17 +133,17 @@
     font-size: 8px;
   }
 
-  &.--pending {
+  &--pending {
     background: rgba(219, 123, 0, 0.12);
     color: var(--warning-color);
   }
 
-  &.--approved {
+  &--approved {
     background: rgba(25, 135, 84, 0.12);
     color: var(--success-color);
   }
 
-  &.--rejected {
+  &--rejected {
     background: rgba(220, 53, 69, 0.12);
     color: var(--danger-color);
   }
@@ -356,10 +356,10 @@
   padding: 16px;
 }
 
-.attachment-item {
+.feedback-detail__attachment-item {
   padding: 8px 12px;
 
-  &.--disabled {
+  &--disabled {
     opacity: 0.6;
     pointer-events: none;
   }
