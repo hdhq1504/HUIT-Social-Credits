@@ -220,11 +220,6 @@
       color: var(--danger-color);
     }
 
-    &:hover,
-    &:focus {
-      transform: translateY(-2px);
-    }
-
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;

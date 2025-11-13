@@ -1,15 +1,24 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input, Select, DatePicker, Tag, Tooltip, Modal, ConfigProvider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faPenToSquare, faTrashAlt, faSort, faCircleDot, faSearch } from '@fortawesome/free-solid-svg-icons';
+import {
+  faEye,
+  faPenToSquare,
+  faTrashAlt,
+  faSort,
+  faCircleDot,
+  faSearch,
+  faPlus,
+} from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
-import { buildPath } from '@/config/routes.config';
+import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
 import useDebounce from '@/hooks/useDebounce';
 import styles from './ActivitiesPage.module.scss';
@@ -99,6 +108,7 @@ export default function ActivitiesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { contextHolder, open: openToast } = useToast();
+  const { setPageActions } = useContext(AdminPageContext);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,6 +117,21 @@ export default function ActivitiesPage() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [activityToDelete, setActivityToDelete] = useState(null);
   const debouncedSearch = useDebounce(searchTerm, 400);
+
+  useEffect(() => {
+    setPageActions([
+      {
+        key: 'add',
+        label: 'Thêm mới hoạt động mới',
+        icon: <FontAwesomeIcon icon={faPlus} />,
+        type: 'primary',
+        className: 'admin-navbar__add-button',
+        onClick: () => navigate(ROUTE_PATHS.ADMIN.ACTIVITY_CREATE),
+      },
+    ]);
+
+    return () => setPageActions(null);
+  }, [setPageActions, navigate]);
 
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ACTIVITIES_QUERY_KEY,
@@ -275,9 +300,7 @@ export default function ActivitiesPage() {
         return <strong className={cx('activities-page__points')}>+{resolvedValue}</strong>;
       },
       capacity: ({ record }) => {
-        const joined = Number.isFinite(Number(record.participantsCount))
-          ? Number(record.participantsCount)
-          : 0;
+        const joined = Number.isFinite(Number(record.participantsCount)) ? Number(record.participantsCount) : 0;
         const capacityLabel = record.maxCapacity || 'Không giới hạn';
         return (
           <span>

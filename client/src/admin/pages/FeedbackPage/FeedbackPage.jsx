@@ -192,7 +192,7 @@ function FeedbackPage() {
         align: 'center',
       },
       {
-        title: 'Tên sinh viên',
+        title: 'Họ tên',
         dataIndex: ['student', 'name'],
         key: 'student',
         width: 260,

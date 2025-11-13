@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Avatar, Button, Input, Pagination, Select, Tag, Tooltip, Typography } from 'antd';
@@ -14,9 +14,10 @@ import {
   faSort,
   faTimesCircle,
 } from '@fortawesome/free-solid-svg-icons';
+import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import registrationsApi, { ADMIN_REGISTRATIONS_QUERY_KEY } from '@/api/registrations.api.js';
-import { buildPath } from '@/config/routes.config.js';
+import { ROUTE_PATHS, buildPath } from '@/config/routes.config.js';
 import useToast from '@/components/Toast/Toast.jsx';
 import useDebounce from '@/hooks/useDebounce.jsx';
 import styles from './ScoringPage.module.scss';
@@ -64,7 +65,20 @@ function ScoringPage() {
   const [statusCounts, setStatusCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
   const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE, total: 0 });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const { setBreadcrumbs, setPageActions } = useContext(AdminPageContext);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  useEffect(() => {
+    setBreadcrumbs([
+      { label: 'Trang chủ', path: ROUTE_PATHS.ADMIN.DASHBOARD },
+      { label: 'Điểm & Minh chứng', path: ROUTE_PATHS.ADMIN.FEEDBACK },
+    ]);
+    setPageActions([]);
+    return () => {
+      setBreadcrumbs(null);
+      setPageActions(null);
+    };
+  }, [setBreadcrumbs, setPageActions]);
 
   const queryParams = useMemo(() => {
     const params = {
