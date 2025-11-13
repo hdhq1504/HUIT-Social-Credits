@@ -153,9 +153,6 @@ model DiemDanhNguoiDung {
   loai        AttendancePhase @default(CHECKIN)
   ghiChu      String?
   anhDinhKem  Json?
-  faceMatch   FaceMatchStatus?
-  faceScore   Float?
-  faceMeta    Json?
   taoLuc      DateTime        @default(now())
 
   dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
@@ -247,10 +244,4 @@ enum AttendanceMethod {
   QR
   PHOTO
   MANUAL
-}
-
-enum FaceMatchStatus {
-  APPROVED
-  REVIEW
-  REJECTED
 }
