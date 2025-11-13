@@ -12,6 +12,7 @@ import CheckModal from '../CheckModal/CheckModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
+import { formatDateTime } from '@utils/datetime';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -96,8 +97,12 @@ function CardActivity(props) {
     pointGroup,
     pointGroupLabel,
     showConflictAlert = false,
-    checkinTime = '08:00, 15/11/2024',
-    checkoutTime = '17:00, 15/11/2024',
+    checkinTime: checkinTimeProp,
+    checkoutTime: checkoutTimeProp,
+    attendanceMethod,
+    attendanceMethodLabel,
+    registrationDeadline,
+    cancellationDeadline,
     attendanceLoading = false,
     registration,
     loading = false,
@@ -174,6 +179,39 @@ function CardActivity(props) {
   );
 
   const normalizedGroupLabel = modalGroupLabelProp ?? pointGroupLabel ?? groupLabelMap[pointGroup];
+
+  const formattedRegistrationDeadline = useMemo(() => {
+    if (!registrationDeadline) return null;
+    const formatted = formatDateTime(registrationDeadline);
+    return formatted !== '--' ? formatted : null;
+  }, [registrationDeadline]);
+
+  const formattedCancellationDeadline = useMemo(() => {
+    if (!cancellationDeadline) return null;
+    const formatted = formatDateTime(cancellationDeadline);
+    return formatted !== '--' ? formatted : null;
+  }, [cancellationDeadline]);
+
+  const [feedbackCheckinTime, feedbackCheckoutTime] = useMemo(() => {
+    const history = registration?.attendanceHistory || [];
+    const findPhase = (phase) => history.find((entry) => entry.phase === phase);
+    const formatValue = (value) => {
+      if (!value) return null;
+      const formatted = formatDateTime(value);
+      return formatted !== '--' ? formatted : null;
+    };
+
+    const checkinValue =
+      formatValue(findPhase('checkin')?.capturedAt) ||
+      formatValue(registration?.checkInAt) ||
+      (typeof checkinTimeProp === 'string' ? checkinTimeProp : null);
+
+    const checkoutValue =
+      formatValue(findPhase('checkout')?.capturedAt) ||
+      (typeof checkoutTimeProp === 'string' ? checkoutTimeProp : null);
+
+    return [checkinValue, checkoutValue];
+  }, [registration?.attendanceHistory, registration?.checkInAt, checkinTimeProp, checkoutTimeProp]);
 
   const skeletonContent = (
     <div
@@ -778,6 +816,10 @@ function CardActivity(props) {
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
         location={location}
+        registrationDeadline={formattedRegistrationDeadline}
+        cancellationDeadline={formattedCancellationDeadline}
+        attendanceMethod={attendanceMethod}
+        attendanceMethodLabel={attendanceMethodLabel}
         showConflictAlert={showConflictAlert}
         confirmLoading={isRegisterProcessing}
         {...registerModalProps}
@@ -808,8 +850,8 @@ function CardActivity(props) {
         campaignName={title}
         groupLabel={normalizedGroupLabel}
         pointsLabel="Chưa được cộng điểm"
-        checkinTime={checkinTime}
-        checkoutTime={checkoutTime}
+        checkinTime={feedbackCheckinTime}
+        checkoutTime={feedbackCheckoutTime}
         submitLoading={isFeedbackSubmitting}
       />
     </div>

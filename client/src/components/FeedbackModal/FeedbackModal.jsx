@@ -65,6 +65,9 @@ function FeedbackModal({
     });
   };
 
+  const resolvedCheckinTime = checkinTime && checkinTime !== '--' ? checkinTime : 'Chưa điểm danh';
+  const resolvedCheckoutTime = checkoutTime && checkoutTime !== '--' ? checkoutTime : 'Chưa điểm danh';
+
   return (
     <Modal
       open={open}
@@ -94,11 +97,11 @@ function FeedbackModal({
               </li>
               <li className={cx('feedback__row-item')}>
                 <span className={cx('feedback__label')}>Check-in:</span>
-                <span className={cx('feedback__time-value')}>{checkinTime}</span>
+                <span className={cx('feedback__time-value')}>{resolvedCheckinTime}</span>
               </li>
               <li className={cx('feedback__row-item')}>
                 <span className={cx('feedback__label')}>Check-out:</span>
-                <span className={cx('feedback__time-value')}>{checkoutTime}</span>
+                <span className={cx('feedback__time-value')}>{resolvedCheckoutTime}</span>
               </li>
             </ul>
           </div>
