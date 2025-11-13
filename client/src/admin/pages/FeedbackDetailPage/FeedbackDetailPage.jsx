@@ -105,7 +105,7 @@ function FeedbackDetailPage() {
   });
 
   const feedback = data?.feedback;
-  const stats = data?.stats ?? {};
+  const stats = data?.stats;
 
   const decideMutation = useMutation({
     mutationFn: feedbackApi.decide,
@@ -181,12 +181,13 @@ function FeedbackDetailPage() {
     decideMutation.isLoading,
   ]);
 
-  const statsCards = useMemo(
-    () => [
+  const statsCards = useMemo(() => {
+    const safeStats = stats ?? {};
+    return [
       {
         key: 'total',
         label: 'Tổng minh chứng',
-        value: formatNumber(stats.total, isLoading ? '--' : 0),
+        value: formatNumber(safeStats.total, isLoading ? '--' : 0),
         color: '#00008B',
         icon: faFileLines,
         bg: '#e8edff',
@@ -194,7 +195,7 @@ function FeedbackDetailPage() {
       {
         key: 'pending',
         label: 'Chờ duyệt',
-        value: formatNumber(stats.pending, isLoading ? '--' : 0),
+        value: formatNumber(safeStats.pending, isLoading ? '--' : 0),
         color: '#DB7B00',
         icon: faHourglassHalf,
         bg: '#fff3e0',
@@ -202,7 +203,7 @@ function FeedbackDetailPage() {
       {
         key: 'approved',
         label: 'Đã duyệt',
-        value: formatNumber(stats.approved, isLoading ? '--' : 0),
+        value: formatNumber(safeStats.approved, isLoading ? '--' : 0),
         color: '#198754',
         icon: faCircleCheck,
         bg: '#e6f8ee',
@@ -210,14 +211,13 @@ function FeedbackDetailPage() {
       {
         key: 'rejected',
         label: 'Từ chối',
-        value: formatNumber(stats.rejected, isLoading ? '--' : 0),
+        value: formatNumber(safeStats.rejected, isLoading ? '--' : 0),
         color: '#DC3545',
         icon: faCircleXmark,
         bg: '#fdeaea',
       },
-    ],
-    [stats, isLoading],
-  );
+    ];
+  }, [stats, isLoading]);
 
   const attachments = feedback?.attachments ?? [];
 

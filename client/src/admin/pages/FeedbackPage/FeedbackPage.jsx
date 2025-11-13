@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Avatar, Button, ConfigProvider, Empty, Input, Modal, Pagination, Select, Tag, Tooltip } from 'antd';
+import { Avatar, Button, ConfigProvider, Empty, Input, Modal, Pagination, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowRotateRight,
@@ -17,6 +17,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import viVN from 'antd/locale/vi_VN';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
+import AdminSearchBar from '@/admin/layouts/AdminSearchBar/AdminSearchBar';
 import feedbackApi, { FEEDBACK_LIST_QUERY_KEY } from '@/api/feedback.api';
 import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
@@ -102,10 +103,78 @@ function FeedbackPage() {
     keepPreviousData: true,
   });
 
-  const stats = data?.stats ?? {};
-  const filters = data?.filters ?? {};
-  const feedbacks = data?.feedbacks ?? [];
+  const stats = data?.stats;
+  const filterData = data?.filters ?? {};
+  const feedbacks = useMemo(() => data?.feedbacks ?? [], [data?.feedbacks]);
   const totalItems = data?.pagination?.total ?? 0;
+
+  const facultyOptions = useMemo(() => {
+    const raw = Array.isArray(filterData.faculties) ? filterData.faculties : [];
+    return raw.map((faculty) => {
+      const rawValue = faculty?.value ?? faculty?.code ?? faculty?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      const label = faculty?.label ?? value ?? 'Khoa';
+      const classes = Array.isArray(faculty?.classes)
+        ? faculty.classes.map((klass) => {
+            const classRawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+            const classValue = classRawValue != null ? String(classRawValue) : undefined;
+            return {
+              value: classValue,
+              label: klass?.label ?? classValue ?? 'Lớp',
+            };
+          })
+        : [];
+      return { value, label, classes };
+    });
+  }, [filterData.faculties]);
+
+  const fallbackClassOptions = useMemo(() => {
+    const raw = Array.isArray(filterData.classes) ? filterData.classes : [];
+    return raw.map((klass) => {
+      const rawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      return {
+        value,
+        label: klass?.label ?? value ?? 'Lớp',
+      };
+    });
+  }, [filterData.classes]);
+
+  const allClassOptions = useMemo(() => {
+    const knownValues = new Set(
+      facultyOptions.flatMap((faculty) => faculty.classes.map((klass) => klass.value).filter(Boolean)),
+    );
+    return [
+      ...facultyOptions.flatMap((faculty) => faculty.classes),
+      ...fallbackClassOptions.filter((klass) => klass.value && !knownValues.has(klass.value)),
+    ];
+  }, [facultyOptions, fallbackClassOptions]);
+
+  const classOptions = useMemo(() => {
+    if (!selectedFaculty) return allClassOptions;
+    const matchedFaculty = facultyOptions.find((faculty) => faculty.value === selectedFaculty);
+    return matchedFaculty?.classes ?? allClassOptions;
+  }, [selectedFaculty, allClassOptions, facultyOptions]);
+
+  const activityOptions = useMemo(() => {
+    const raw = Array.isArray(filterData.activities) ? filterData.activities : [];
+    return raw.map((activity) => {
+      const rawValue = activity?.value ?? activity?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      return {
+        value,
+        label: activity?.label ?? activity?.title ?? value ?? 'Hoạt động',
+      };
+    });
+  }, [filterData.activities]);
+
+  const statusOptions = useMemo(() => {
+    const raw = Array.isArray(filterData.statuses) ? filterData.statuses : [];
+    return raw.map((status) => ({
+      value: status?.value ?? status,
+      label: status?.label ?? status,
+    }));
+  }, [filterData.statuses]);
 
   useEffect(() => {
     if (!feedbacks.length) {
@@ -114,6 +183,20 @@ function FeedbackPage() {
     }
     setSelectedRowKeys((prev) => prev.filter((key) => feedbacks.some((item) => item.id === key)));
   }, [feedbacks]);
+
+  useEffect(() => {
+    if (!selectedFaculty) return;
+    const matchedFaculty = facultyOptions.find((faculty) => faculty.value === selectedFaculty);
+    if (!matchedFaculty) {
+      if (selectedClass) {
+        setSelectedClass(undefined);
+      }
+      return;
+    }
+    if (selectedClass && !matchedFaculty.classes.some((klass) => klass.value === selectedClass)) {
+      setSelectedClass(undefined);
+    }
+  }, [selectedFaculty, selectedClass, facultyOptions]);
 
   const decideMutation = useMutation({
     mutationFn: feedbackApi.decide,
@@ -151,6 +234,12 @@ function FeedbackPage() {
     setter(value || undefined);
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
+
+  const handleFacultyChange = useCallback((value) => {
+    setSelectedFaculty(value || undefined);
+    setSelectedClass(undefined);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, []);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -380,55 +469,75 @@ function FeedbackPage() {
           ))}
         </section>
 
-        <div className={cx('feedback-page__filter-bar')}>
-          <Input
-            placeholder="Tìm kiếm hoạt động, sinh viên..."
-            className={cx('feedback-page__filter-search')}
-            value={searchTerm}
-            onChange={handleSearchChange}
-            allowClear
-          />
-          <Select
-            placeholder="Khoa"
-            className={cx('feedback-page__filter-select')}
-            allowClear
-            value={selectedFaculty}
-            options={filters.faculties || []}
-            optionFilterProp="label"
-            onChange={handleSelectChange(setSelectedFaculty)}
-          />
-          <Select
-            placeholder="Lớp"
-            className={cx('feedback-page__filter-select')}
-            allowClear
-            value={selectedClass}
-            options={filters.classes || []}
-            optionFilterProp="label"
-            onChange={handleSelectChange(setSelectedClass)}
-          />
-          <Select
-            placeholder="Hoạt động"
-            className={cx('feedback-page__filter-select')}
-            allowClear
-            showSearch
-            value={selectedActivity}
-            options={filters.activities || []}
-            optionFilterProp="label"
-            onChange={handleSelectChange(setSelectedActivity)}
-          />
-          <Select
-            placeholder="Trạng thái"
-            className={cx('feedback-page__filter-select')}
-            allowClear
-            value={selectedStatus}
-            options={filters.statuses || []}
-            optionFilterProp="label"
-            onChange={handleSelectChange(setSelectedStatus)}
-          />
-          <Button type="primary" icon={<FontAwesomeIcon icon={faArrowRotateRight} />} onClick={handleResetFilters}>
-            Đặt lại
-          </Button>
-        </div>
+        <AdminSearchBar
+          className={cx('feedback-page__filter-bar')}
+          search={{
+            placeholder: 'Tìm kiếm hoạt động, sinh viên...',
+            value: searchTerm,
+            onChange: handleSearchChange,
+          }}
+          filters={[
+            {
+              key: 'faculty',
+              kind: 'select',
+              props: {
+                placeholder: 'Khoa',
+                allowClear: true,
+                value: selectedFaculty,
+                options: facultyOptions,
+                optionFilterProp: 'label',
+                onChange: handleFacultyChange,
+              },
+            },
+            {
+              key: 'className',
+              kind: 'select',
+              props: {
+                placeholder: 'Lớp',
+                allowClear: true,
+                value: selectedClass,
+                options: classOptions,
+                optionFilterProp: 'label',
+                onChange: handleSelectChange(setSelectedClass),
+                disabled: Boolean(selectedFaculty) && classOptions.length === 0,
+              },
+            },
+            {
+              key: 'activity',
+              kind: 'select',
+              props: {
+                placeholder: 'Hoạt động',
+                allowClear: true,
+                showSearch: true,
+                value: selectedActivity,
+                options: activityOptions,
+                optionFilterProp: 'label',
+                onChange: handleSelectChange(setSelectedActivity),
+              },
+            },
+            {
+              key: 'status',
+              kind: 'select',
+              props: {
+                placeholder: 'Trạng thái',
+                allowClear: true,
+                value: selectedStatus,
+                options: statusOptions,
+                optionFilterProp: 'label',
+                onChange: handleSelectChange(setSelectedStatus),
+              },
+            },
+          ]}
+          actions={[
+            {
+              key: 'reset',
+              kind: 'button',
+              label: 'Đặt lại',
+              icon: <FontAwesomeIcon icon={faArrowRotateRight} />,
+              props: { type: 'primary', onClick: handleResetFilters },
+            },
+          ]}
+        />
 
         <div className={cx('feedback-page__content')}>
           <div className={cx('feedback-page__content-header')}>

@@ -4,6 +4,7 @@ import { env } from "../env.js";
 import { notifyUser } from "../utils/notification.service.js";
 import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "../utils/points.js";
 import { deriveSemesterInfo, resolveAcademicPeriodForDate } from "../utils/academic.js";
+import { fetchFacultyClassFilters } from "../utils/facultyFilters.js";
 import {
   getAttendanceMethodLabel,
   getDefaultAttendanceMethod,
@@ -967,43 +968,23 @@ export const listRegistrationsAdmin = async (req, res) => {
     prisma.dangKyHoatDong.count({ where })
   ]);
 
-  const [totalAll, pendingCount, approvedCount, rejectedCount, facultiesRaw, classesRaw, activitiesRaw] =
-    await Promise.all([
-      prisma.dangKyHoatDong.count(),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
-      prisma.nguoiDung.findMany({
-        where: { dangKy: { some: {} }, maKhoa: { not: null } },
-        select: { maKhoa: true },
-        distinct: ["maKhoa"]
-      }),
-      prisma.nguoiDung.findMany({
-        where: { dangKy: { some: {} }, maLop: { not: null } },
-        select: { maLop: true },
-        distinct: ["maLop"]
-      }),
-      prisma.hoatDong.findMany({
-        where: { dangKy: { some: {} } },
-        select: { id: true, tieuDe: true }
-      })
-    ]);
+  const [totalAll, pendingCount, approvedCount, rejectedCount, facultyData, activitiesRaw] = await Promise.all([
+    prisma.dangKyHoatDong.count(),
+    prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
+    prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
+    prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
+    fetchFacultyClassFilters(),
+    prisma.hoatDong.findMany({
+      where: { dangKy: { some: {} } },
+      select: { id: true, tieuDe: true }
+    })
+  ]);
 
-  const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
-
-  const faculties = facultiesRaw
-    .map((item) => sanitizeOptionalText(item.maKhoa, 100))
-    .filter(Boolean)
-    .sort(sortAlpha);
-
-  const classes = classesRaw
-    .map((item) => sanitizeOptionalText(item.maLop, 100))
-    .filter(Boolean)
-    .sort(sortAlpha);
+  const { faculties = [], classes = [] } = facultyData || {};
 
   const activities = activitiesRaw
     .map((item) => ({ id: item.id, title: sanitizeOptionalText(item.tieuDe, 255) || "Hoạt động" }))
-    .sort((a, b) => sortAlpha(a.title, b.title));
+    .sort((a, b) => a.title.localeCompare(b.title, "vi", { sensitivity: "base" }));
 
   res.json({
     registrations: registrations.map((registration) => ({

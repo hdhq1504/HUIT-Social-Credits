@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { env } from "../env.js";
 import { mapStorageListForResponse } from "../utils/storageMapper.js";
+import { fetchFacultyClassFilters } from "../utils/facultyFilters.js";
 
 const STATUS_LABELS = {
   CHO_DUYET: "Chờ duyệt",
@@ -175,50 +176,45 @@ const getFeedbackStats = async () => {
 };
 
 const buildFilterOptions = async () => {
-  const [facultiesRaw, classesRaw, activitiesRaw] = await Promise.all([
-    prisma.nguoiDung.findMany({
-      where: { phanHoi: { some: {} }, maKhoa: { not: null } },
-      select: { maKhoa: true },
-      distinct: ["maKhoa"]
-    }),
-    prisma.nguoiDung.findMany({
-      where: { phanHoi: { some: {} }, maLop: { not: null } },
-      select: { maLop: true },
-      distinct: ["maLop"]
-    }),
+  const [{ faculties, classes }, activitiesRaw] = await Promise.all([
+    fetchFacultyClassFilters(),
     prisma.hoatDong.findMany({
       where: { phanHoi: { some: {} } },
       select: { id: true, tieuDe: true }
     })
   ]);
 
-  const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
-
-  const faculties = facultiesRaw
-    .map((item) => normalizeString(item.maKhoa))
-    .filter(Boolean)
-    .sort(sortAlpha)
-    .map((value) => ({ value, label: value }));
-
-  const classes = classesRaw
-    .map((item) => normalizeString(item.maLop))
-    .filter(Boolean)
-    .sort(sortAlpha)
-    .map((value) => ({ value, label: value }));
-
   const activities = activitiesRaw
     .map((item) => ({
       value: item.id,
       label: normalizeString(item.tieuDe) || "Hoạt động"
     }))
-    .sort((a, b) => sortAlpha(a.label, b.label));
+    .sort((a, b) => a.label.localeCompare(b.label, "vi", { sensitivity: "base" }));
+
+  const mappedFaculties = (faculties || []).map((faculty) => ({
+    value: faculty.value,
+    label: faculty.label,
+    classes: (faculty.classes || []).map((klass) => ({
+      value: klass.value,
+      label: klass.label,
+      code: klass.code,
+      facultyCode: klass.facultyCode
+    }))
+  }));
+
+  const mappedClasses = (classes || []).map((klass) => ({
+    value: klass.value,
+    label: klass.label,
+    code: klass.code,
+    facultyCode: klass.facultyCode
+  }));
 
   const statuses = Array.from(ALLOWED_STATUSES).map((value) => ({
     value,
     label: STATUS_LABELS[value]
   }));
 
-  return { faculties, classes, activities, statuses };
+  return { faculties: mappedFaculties, classes: mappedClasses, activities, statuses };
 };
 
 const buildListWhereClause = ({ search, faculty, className, activityId, status }) => {

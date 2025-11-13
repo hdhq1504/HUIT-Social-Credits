@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Avatar, Button, Input, Pagination, Select, Tag, Tooltip, Typography } from 'antd';
+import { Avatar, Button, Pagination, Tag, Tooltip, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,6 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
+import AdminSearchBar from '@/admin/layouts/AdminSearchBar/AdminSearchBar';
 import registrationsApi, { ADMIN_REGISTRATIONS_QUERY_KEY } from '@/api/registrations.api.js';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config.js';
 import useToast from '@/components/Toast/Toast.jsx';
@@ -61,7 +62,7 @@ function ScoringPage() {
   const { contextHolder, open: openToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ status: 'all', faculty: undefined, className: undefined, activityId: undefined });
-  const [filterOptions, setFilterOptions] = useState({ faculties: [], classes: [], activities: [] });
+  const [filterOptions, setFilterOptions] = useState({ faculties: [], allClasses: [], activities: [] });
   const [statusCounts, setStatusCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
   const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE, total: 0 });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -93,7 +94,7 @@ function ScoringPage() {
     if (filters.activityId) params.activityId = filters.activityId;
 
     return params;
-  }, [pagination.current, pagination.pageSize, debouncedSearchTerm, filters]);
+  }, [pagination, debouncedSearchTerm, filters]);
 
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: [ADMIN_REGISTRATIONS_QUERY_KEY, queryParams],
@@ -122,10 +123,47 @@ function ScoringPage() {
     }
 
     const stats = data?.stats ?? {};
-    const faculties = (data?.filterOptions?.faculties ?? []).map((value) => ({ label: value, value }));
-    const classes = (data?.filterOptions?.classes ?? []).map((value) => ({ label: value, value }));
+
+    const rawFaculties = Array.isArray(data?.filterOptions?.faculties) ? data.filterOptions.faculties : [];
+    const normalizedFaculties = rawFaculties.map((item) => {
+      const rawValue = item?.value ?? item?.code ?? item?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      const label = item?.label ?? value ?? 'Khoa';
+      const classes = Array.isArray(item?.classes)
+        ? item.classes.map((klass) => {
+            const classRawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+            const classValue = classRawValue != null ? String(classRawValue) : undefined;
+            return {
+              value: classValue,
+              label: klass?.label ?? classValue ?? 'Lớp',
+            };
+          })
+        : [];
+      return { value, label, classes };
+    });
+
+    const fallbackClasses = Array.isArray(data?.filterOptions?.classes)
+      ? data.filterOptions.classes.map((klass) => {
+          const rawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+          const value = rawValue != null ? String(rawValue) : undefined;
+          return {
+            value,
+            label: klass?.label ?? value ?? 'Lớp',
+          };
+        })
+      : [];
+
+    const knownClassValues = new Set(
+      normalizedFaculties.flatMap((faculty) => faculty.classes.map((klass) => klass.value).filter(Boolean)),
+    );
+
+    const allClasses = [
+      ...normalizedFaculties.flatMap((faculty) => faculty.classes),
+      ...fallbackClasses.filter((klass) => klass.value && !knownClassValues.has(klass.value)),
+    ];
+
     const activities = (data?.filterOptions?.activities ?? []).map((item) => ({ label: item.title, value: item.id }));
-    setFilterOptions({ faculties, classes, activities });
+    setFilterOptions({ faculties: normalizedFaculties, allClasses, activities });
 
     const totalCount =
       stats.total ?? (stats.pending ?? 0) + (stats.approved ?? 0) + (stats.rejected ?? 0);
@@ -138,7 +176,18 @@ function ScoringPage() {
   }, [data]);
 
 
-  const registrations = data?.registrations ?? [];
+  const registrations = useMemo(() => data?.registrations ?? [], [data?.registrations]);
+
+  const classOptions = useMemo(() => {
+    if (!filters.faculty) {
+      return filterOptions.allClasses;
+    }
+    const matchedFaculty = filterOptions.faculties.find((item) => item.value === filters.faculty);
+    if (matchedFaculty && Array.isArray(matchedFaculty.classes) && matchedFaculty.classes.length) {
+      return matchedFaculty.classes;
+    }
+    return filterOptions.allClasses;
+  }, [filters.faculty, filterOptions.allClasses, filterOptions.faculties]);
 
   useEffect(() => {
     if (!registrations.length) {
@@ -147,6 +196,20 @@ function ScoringPage() {
     }
     setSelectedRowKeys((prev) => prev.filter((key) => registrations.some((item) => item.id === key)));
   }, [registrations]);
+
+  useEffect(() => {
+    if (!filters.faculty) return;
+    const matchedFaculty = filterOptions.faculties.find((item) => item.value === filters.faculty);
+    if (!matchedFaculty) {
+      if (filters.className) {
+        setFilters((prev) => ({ ...prev, className: undefined }));
+      }
+      return;
+    }
+    if (filters.className && !matchedFaculty.classes.some((klass) => klass.value === filters.className)) {
+      setFilters((prev) => ({ ...prev, className: undefined }));
+    }
+  }, [filters.faculty, filters.className, filterOptions.faculties]);
 
   const handleStatusFilterChange = useCallback((statusValue) => {
     setFilters((prev) => ({ ...prev, status: statusValue ?? 'all' }));
@@ -163,6 +226,15 @@ function ScoringPage() {
     setFilters({ status: 'all', faculty: undefined, className: undefined, activityId: undefined });
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
+
+  const handleFacultyChange = useCallback((value) => {
+    setFilters((prev) => ({
+      ...prev,
+      faculty: value || undefined,
+      className: value ? undefined : prev.className,
+    }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, []);
 
   const handleSelectChange = (key) => (value) => {
     setFilters((prev) => ({ ...prev, [key]: value || undefined }));
@@ -268,56 +340,75 @@ function ScoringPage() {
     <section className={cx('scoring-page')}>
       {contextHolder}
 
-      <div className={cx('scoring-page__filter-bar')}>
-        <Input
-          placeholder="Tìm kiếm hoạt động, sinh viên..."
-          className={cx('scoring-page__filter-search')}
-          value={searchTerm}
-          onChange={handleSearchChange}
-          allowClear
-        />
-        <Select
-          placeholder="Khoa"
-          className={cx('scoring-page__filter-select')}
-          allowClear
-          value={filters.faculty}
-          options={filterOptions.faculties}
-          optionFilterProp="label"
-          onChange={handleSelectChange('faculty')}
-        />
-        <Select
-          placeholder="Lớp"
-          className={cx('scoring-page__filter-select')}
-          allowClear
-          value={filters.className}
-          options={filterOptions.classes}
-          optionFilterProp="label"
-          onChange={handleSelectChange('className')}
-        />
-        <Select
-          placeholder="Hoạt động"
-          className={cx('scoring-page__filter-select')}
-          allowClear
-          showSearch
-          value={filters.activityId}
-          options={filterOptions.activities}
-          optionFilterProp="label"
-          onChange={handleSelectChange('activityId')}
-        />
-        <Select
-          allowClear
-          placeholder="Trạng thái"
-          className={cx('scoring-page__filter-select')}
-          value={filters.status === 'all' ? undefined : filters.status}
-          options={statusOptions}
-          optionFilterProp="label"
-          onChange={handleStatusFilterChange}
-        />
-
-        <Button type="primary" icon={<FontAwesomeIcon icon={faArrowRotateRight} />} onClick={handleResetFilters}>
-          Đặt lại
-        </Button>
-      </div>
+      <AdminSearchBar
+        className={cx('scoring-page__filter-bar')}
+        search={{
+          placeholder: 'Tìm kiếm hoạt động, sinh viên...',
+          value: searchTerm,
+          onChange: handleSearchChange,
+        }}
+        filters={[
+          {
+            key: 'faculty',
+            kind: 'select',
+            props: {
+              placeholder: 'Khoa',
+              allowClear: true,
+              value: filters.faculty,
+              options: filterOptions.faculties,
+              optionFilterProp: 'label',
+              onChange: handleFacultyChange,
+            },
+          },
+          {
+            key: 'className',
+            kind: 'select',
+            props: {
+              placeholder: 'Lớp',
+              allowClear: true,
+              value: filters.className,
+              options: classOptions,
+              optionFilterProp: 'label',
+              onChange: handleSelectChange('className'),
+              disabled: Boolean(filters.faculty) && classOptions.length === 0,
+            },
+          },
+          {
+            key: 'activity',
+            kind: 'select',
+            props: {
+              placeholder: 'Hoạt động',
+              allowClear: true,
+              showSearch: true,
+              value: filters.activityId,
+              options: filterOptions.activities,
+              optionFilterProp: 'label',
+              onChange: handleSelectChange('activityId'),
+            },
+          },
+          {
+            key: 'status',
+            kind: 'select',
+            props: {
+              placeholder: 'Trạng thái',
+              allowClear: true,
+              value: filters.status === 'all' ? undefined : filters.status,
+              options: statusOptions,
+              optionFilterProp: 'label',
+              onChange: handleStatusFilterChange,
+            },
+          },
+        ]}
+        actions={[
+          {
+            key: 'reset',
+            kind: 'button',
+            label: 'Đặt lại',
+            icon: <FontAwesomeIcon icon={faArrowRotateRight} />,
+            props: { type: 'primary', onClick: handleResetFilters },
+          },
+        ]}
+      />
 
       <div className={cx('scoring-page__container')}>
         <div className={cx('scoring-page__header')}>

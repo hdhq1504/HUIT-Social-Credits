@@ -26,6 +26,8 @@ model NguoiDung {
   maCB                        String?             @db.VarChar(50)
   maLop                       String?             @db.VarChar(50)
   maKhoa                      String?             @db.VarChar(255)
+  lopId                       String?
+  khoaId                      String?
   soDT                        String?             @db.VarChar(30)
   ngaySinh                    DateTime?
   avatarUrl                   String?             @db.VarChar(255)
@@ -41,24 +43,29 @@ model NguoiDung {
   phanHoi                     PhanHoiHoatDong[]
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
+  lop                         Lop?                @relation("SinhVienLop", fields: [lopId], references: [id])
+  khoa                        Khoa?               @relation("NguoiDungKhoa", fields: [khoaId], references: [id])
+  lopChuNhiem                 Lop[]               @relation("ChuNhiemLop")
 
   @@index([email])
   @@index([maSV])
   @@index([maCB])
   @@index([vaiTro, isActive])
   @@index([resetPasswordTokenExpiresAt])
+  @@index([lopId])
+  @@index([khoaId])
 }
 
 model NamHoc {
-  id        String    @id @default(cuid())
-  ma        String    @unique
-  nienKhoa  String    @unique
+  id        String     @id @default(cuid())
+  ma        String     @unique
+  nienKhoa  String     @unique
   ten       String?
   batDau    DateTime
   ketThuc   DateTime
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   hocKy     HocKy[]
   hoatDong  HoatDong[] @relation("HoatDongNamHoc")
 
@@ -67,19 +74,19 @@ model NamHoc {
 }
 
 model HocKy {
-  id        String    @id @default(cuid())
-  ma        String    @unique
+  id        String     @id @default(cuid())
+  ma        String     @unique
   ten       String
   thuTu     Int?
   moTa      String?
   batDau    DateTime
   ketThuc   DateTime
-  isActive  Boolean   @default(true)
+  isActive  Boolean    @default(true)
   namHocId  String
-  namHoc    NamHoc    @relation(fields: [namHocId], references: [id], onDelete: Cascade)
+  namHoc    NamHoc     @relation(fields: [namHocId], references: [id], onDelete: Cascade)
   hoatDong  HoatDong[] @relation("HoatDongHocKy")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@index([namHocId, isActive, thuTu])
   @@index([batDau, ketThuc])
@@ -197,10 +204,42 @@ model ThongBao {
   daDocLuc    DateTime?
   createdAt   DateTime  @default(now())
 
-  nguoiDung   NguoiDung @relation(fields: [nguoiDungId], references: [id])
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id])
 
   @@index([nguoiDungId, daDoc])
   @@index([nguoiDungId, createdAt])
+}
+
+model Khoa {
+  id        String      @id @default(cuid())
+  ma        String      @unique
+  ten       String
+  moTa      String?
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  lop       Lop[]
+  nguoiDung NguoiDung[] @relation("NguoiDungKhoa")
+
+  @@index([isActive, ten])
+  @@index([ten])
+}
+
+model Lop {
+  id         String      @id @default(cuid())
+  ma         String      @unique
+  ten        String?
+  khoaId     String
+  chuNhiemId String?
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  khoa       Khoa        @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  chuNhiem   NguoiDung?  @relation("ChuNhiemLop", fields: [chuNhiemId], references: [id])
+  sinhVien   NguoiDung[] @relation("SinhVienLop")
+
+  @@index([khoaId, isActive])
+  @@index([chuNhiemId])
 }
 
 enum VaiTro {

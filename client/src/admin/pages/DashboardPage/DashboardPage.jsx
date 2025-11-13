@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useQuery } from '@tanstack/react-query';
@@ -16,16 +16,16 @@ import {
   faPlus,
   faSpinner,
   faCheck,
+  faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import AdminSearchBar from '../../layouts/AdminSearchBar/AdminSearchBar';
 import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
 import statsApi, { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
+import classesApi, { CLASS_FILTERS_QUERY_KEY } from '@/api/classes.api';
 import { formatDateTime } from '@/utils/datetime';
 import styles from './DashboardPage.module.scss';
-import { useMemo } from 'react';
-
 const cx = classNames.bind(styles);
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -38,6 +38,14 @@ const formatPercentChange = (value) => {
 
 export default function DashboardPage() {
   const [year, setYear] = useState(dayjs().year());
+  const [dashboardFilters, setDashboardFilters] = useState({
+    keyword: '',
+    semester: undefined,
+    academicYear: undefined,
+    faculty: undefined,
+    className: undefined,
+  });
+  const { faculty: selectedFaculty, className: selectedClass } = dashboardFilters;
   const { setPageActions } = useContext(AdminPageContext);
   const navigate = useNavigate();
 
@@ -51,6 +59,11 @@ export default function DashboardPage() {
     queryFn: statsApi.getAdminDashboard,
   });
 
+  const { data: classFilterData, isLoading: isLoadingClassFilters } = useQuery({
+    queryKey: CLASS_FILTERS_QUERY_KEY,
+    queryFn: classesApi.getFilters,
+  });
+
   const availableYears = useMemo(() => {
     if (!dashboardData?.chart) return [];
     return Object.keys(dashboardData.chart)
@@ -59,12 +72,131 @@ export default function DashboardPage() {
       .sort((a, b) => a - b);
   }, [dashboardData?.chart]);
 
+  const semesterOptions = useMemo(
+    () => [
+      { value: 'hk1', label: 'Học kỳ 1' },
+      { value: 'hk2', label: 'Học kỳ 2' },
+      { value: 'hk3', label: 'Học kỳ Hè' },
+    ],
+    [],
+  );
+
+  const academicYearOptions = useMemo(
+    () => [
+      { value: '2024-2025', label: '2024–2025' },
+      { value: '2025-2026', label: '2025–2026' },
+    ],
+    [],
+  );
+
+  const normalizedFaculties = useMemo(() => {
+    const raw = Array.isArray(classFilterData?.filters?.faculties)
+      ? classFilterData.filters.faculties
+      : [];
+    return raw.map((faculty) => {
+      const rawValue = faculty?.value ?? faculty?.code ?? faculty?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      const label = faculty?.label ?? value ?? 'Khoa';
+      const classes = Array.isArray(faculty?.classes)
+        ? faculty.classes.map((klass) => {
+            const classRawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+            const classValue = classRawValue != null ? String(classRawValue) : undefined;
+            return {
+              value: classValue,
+              label: klass?.label ?? classValue ?? 'Lớp',
+            };
+          })
+        : [];
+      return { value, label, classes };
+    });
+  }, [classFilterData?.filters?.faculties]);
+
+  const fallbackClassOptions = useMemo(() => {
+    const raw = Array.isArray(classFilterData?.filters?.classes)
+      ? classFilterData.filters.classes
+      : [];
+    return raw.map((klass) => {
+      const rawValue = klass?.value ?? klass?.code ?? klass?.id ?? null;
+      const value = rawValue != null ? String(rawValue) : undefined;
+      return {
+        value,
+        label: klass?.label ?? value ?? 'Lớp',
+      };
+    });
+  }, [classFilterData?.filters?.classes]);
+
+  const allClassOptions = useMemo(() => {
+    const knownValues = new Set(
+      normalizedFaculties.flatMap((faculty) => faculty.classes.map((klass) => klass.value).filter(Boolean)),
+    );
+    const items = [
+      ...normalizedFaculties.flatMap((faculty) => faculty.classes),
+      ...fallbackClassOptions.filter((klass) => klass.value && !knownValues.has(klass.value)),
+    ];
+    return items.filter((klass) => klass.value);
+  }, [normalizedFaculties, fallbackClassOptions]);
+
+  const facultyOptions = useMemo(
+    () =>
+      normalizedFaculties
+        .map((faculty) => ({ value: faculty.value, label: faculty.label }))
+        .filter((option) => option.value),
+    [normalizedFaculties],
+  );
+
+  const classOptions = useMemo(() => {
+    if (!selectedFaculty) {
+      return allClassOptions;
+    }
+    const matchedFaculty = normalizedFaculties.find((faculty) => faculty.value === selectedFaculty);
+    return matchedFaculty?.classes ?? allClassOptions;
+  }, [selectedFaculty, normalizedFaculties, allClassOptions]);
+
+  const handleDashboardSubmit = useCallback(() => {
+    // TODO: Đồng bộ bộ lọc với dữ liệu thống kê khi API sẵn sàng
+  }, []);
+
+  const handleFilterChange = useCallback(
+    (key) => (value) => {
+      setDashboardFilters((prev) => ({ ...prev, [key]: value ?? undefined }));
+    },
+    [],
+  );
+
+  const handleFacultyChange = useCallback(
+    (value) => {
+      setDashboardFilters((prev) => ({
+        ...prev,
+        faculty: value ?? undefined,
+        className: undefined,
+      }));
+    },
+    [],
+  );
+
+  const handleSearchChange = useCallback((event) => {
+    setDashboardFilters((prev) => ({ ...prev, keyword: event.target.value }));
+  }, []);
+
   useEffect(() => {
     if (!availableYears.length) return;
     if (!availableYears.includes(year)) {
       setYear(availableYears[availableYears.length - 1]);
     }
   }, [availableYears, year]);
+
+  useEffect(() => {
+    if (!selectedFaculty) return;
+    const matchedFaculty = normalizedFaculties.find((faculty) => faculty.value === selectedFaculty);
+    if (!matchedFaculty) {
+      setDashboardFilters((prev) => ({ ...prev, faculty: undefined, className: undefined }));
+      return;
+    }
+
+    if (selectedClass && !matchedFaculty.classes.some((klass) => klass.value === selectedClass)) {
+      setDashboardFilters((prev) => ({ ...prev, className: undefined }));
+    }
+  }, [selectedFaculty, selectedClass, normalizedFaculties, setDashboardFilters]);
 
   const chartRows = useMemo(() => {
     if (!dashboardData?.chart || !year) return [];
@@ -208,10 +340,74 @@ export default function DashboardPage() {
     <div className={cx('dashboard')}>
       {/* Filter search bar */}
       <AdminSearchBar
-        facultyOptions={[
-          { value: 'all', label: 'Tất cả khoa' },
-          { value: 'cntt', label: 'Công nghệ thông tin' },
-          { value: 'kt', label: 'Quản trị kinh doanh' },
+        appearance="subtle"
+        onSubmit={handleDashboardSubmit}
+        search={{
+          placeholder: 'Tìm kiếm hoạt động, sinh viên...',
+          value: dashboardFilters.keyword,
+          onChange: handleSearchChange,
+        }}
+        filters={[
+          {
+            key: 'semester',
+            kind: 'select',
+            props: {
+              placeholder: 'Chọn học kỳ',
+              allowClear: true,
+              value: dashboardFilters.semester,
+              options: semesterOptions,
+              onChange: handleFilterChange('semester'),
+            },
+          },
+          {
+            key: 'academicYear',
+            kind: 'select',
+            props: {
+              placeholder: 'Chọn năm học',
+              allowClear: true,
+              value: dashboardFilters.academicYear,
+              options: academicYearOptions,
+              onChange: handleFilterChange('academicYear'),
+            },
+          },
+          {
+            key: 'faculty',
+            kind: 'select',
+            props: {
+              placeholder: 'Chọn khoa',
+              allowClear: true,
+              value: selectedFaculty,
+              options: facultyOptions,
+              loading: isLoadingClassFilters,
+              optionFilterProp: 'label',
+              showSearch: true,
+              onChange: handleFacultyChange,
+            },
+          },
+          {
+            key: 'className',
+            kind: 'select',
+            props: {
+              placeholder: 'Chọn lớp',
+              allowClear: true,
+              value: selectedClass,
+              options: classOptions,
+              loading: isLoadingClassFilters,
+              optionFilterProp: 'label',
+              showSearch: true,
+              onChange: handleFilterChange('className'),
+              disabled: Boolean(selectedFaculty) && classOptions.length === 0,
+            },
+          },
+        ]}
+        actions={[
+          {
+            key: 'submit',
+            kind: 'button',
+            label: 'Lọc',
+            icon: <FontAwesomeIcon icon={faSearch} />,
+            props: { htmlType: 'submit' },
+          },
         ]}
       />
 

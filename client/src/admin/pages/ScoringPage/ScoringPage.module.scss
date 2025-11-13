@@ -6,52 +6,7 @@
   color: var(--black-color);
 
   &__filter-bar {
-    display: flex;
-    gap: 12px;
-    padding: 16px 20px;
-    background: var(--primary-color);
-    border-radius: 10px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    flex-wrap: wrap;
-
-    :global(.ant-input-affix-wrapper),
-    :global(.ant-select-selector) {
-      border-radius: 8px !important;
-      height: 42px !important;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 14px;
-      align-items: center;
-    }
-
-    :global(.ant-input-affix-wrapper) {
-      padding: 10px 14px;
-    }
-
-    :global(.ant-btn) {
-      height: 42px;
-      border-radius: 8px;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 500;
-      font-size: 14px;
-      background: var(--orange-color);
-      border-color: var(--orange-color);
-
-      &:hover {
-        background: #d74400 !important;
-        border-color: #d74400 !important;
-      }
-    }
-  }
-
-  &__filter-search {
-    flex: 1;
-    min-width: 220px;
-  }
-
-  &__filter-select {
-    min-width: 180px;
-    width: auto;
   }
 
   &__container {
