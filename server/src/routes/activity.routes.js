@@ -10,8 +10,8 @@ import {
   createActivity,
   updateActivity,
   deleteActivity,
-  listActivityRegistrationsAdmin
-} from '../controllers/activity.controller.js';
+  listActivityRegistrationsAdmin,
+} from '../controllers/activity/index.js';
 import { optionalAuth, requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();

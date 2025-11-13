@@ -85,6 +85,22 @@ const storeFaceSamples = async (userId, dataUrls) => {
   }
 };
 
+const shouldIncludeDescriptors = (query) => {
+  const includeParam = typeof query?.include === "string" ? query.include : null;
+  if (includeParam) {
+    const parts = includeParam.split(",").map((item) => item.trim().toLowerCase());
+    if (parts.includes("descriptors")) return true;
+  }
+  const flag = query?.includeDescriptors ?? query?.descriptors;
+  if (typeof flag === "string") {
+    return flag.toLowerCase() === "true";
+  }
+  if (typeof flag === "boolean") {
+    return flag;
+  }
+  return false;
+};
+
 export const getMyFaceProfile = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Không xác định được người dùng" });
@@ -92,12 +108,15 @@ export const getMyFaceProfile = async (req, res) => {
   const profile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: userId } });
   const summary = summarizeFaceProfile(profile);
   const storedSamples = sanitizeFaceSamples(profile?.samples ?? []);
+  const includeDescriptors = shouldIncludeDescriptors(req.query);
+  const normalizedDescriptors = includeDescriptors ? normalizeDescriptorCollection(profile?.descriptors ?? []) : undefined;
 
   res.json({
     profile: {
       ...summary,
       thresholds: FACE_MATCH_CONSTANTS,
       samples: storedSamples,
+      ...(includeDescriptors ? { descriptors: normalizedDescriptors } : {}),
     },
   });
 };
@@ -181,6 +200,7 @@ export const upsertMyFaceProfile = async (req, res) => {
       ...summary,
       thresholds: FACE_MATCH_CONSTANTS,
       samples: storedSamples,
+      descriptors: normalizeDescriptorCollection(profile?.descriptors ?? []),
     },
   });
 };

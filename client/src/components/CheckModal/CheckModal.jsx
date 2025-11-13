@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Modal, Tag, message } from 'antd';
+import { Modal, Tag, message, Spin } from 'antd';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot, faCamera, faRotate, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
@@ -21,6 +21,8 @@ function CheckModal({
   dateTime,
   location,
   confirmLoading = false,
+  analysisLoading = false,
+  analysisResult = null,
 }) {
   // Local state for preview / file / dataUrl
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -349,6 +351,32 @@ function CheckModal({
             )}
           </div>
 
+          {(analysisLoading || analysisResult) && (
+            <div
+              className={cx(
+                'check-modal__analysis',
+                analysisResult?.tone ? `is-${analysisResult.tone}` : null,
+                analysisResult?.status === 'approved' && 'is-approved',
+              )}
+            >
+              {analysisLoading ? (
+                <>
+                  <Spin size="small" />
+                  <span>Đang đối chiếu ảnh với hồ sơ khuôn mặt…</span>
+                </>
+              ) : (
+                <>
+                  {typeof analysisResult?.score === 'number' && Number.isFinite(analysisResult.score) && (
+                    <span className={cx('check-modal__analysis-score')}>
+                      Sai khác: {analysisResult.score.toFixed(3)}
+                    </span>
+                  )}
+                  <span>{analysisResult?.message}</span>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Actions (chụp / đổi camera / upload / gửi) */}
           <div className={cx('check-modal__actions')}>
             {captureStage !== 'checkout' ? (
@@ -392,7 +420,14 @@ function CheckModal({
                 <button
                   className={cx('check-modal__confirm-button')}
                   onClick={handleSubmit}
-                  disabled={isReadingFile || !file || !dataUrl || confirmLoading}
+                  disabled={
+                    isReadingFile ||
+                    !file ||
+                    !dataUrl ||
+                    confirmLoading ||
+                    analysisLoading ||
+                    analysisResult?.blockSubmission
+                  }
                 >
                   <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
                   {confirmLoading ? 'Đang gửi...' : 'Gửi điểm danh'}

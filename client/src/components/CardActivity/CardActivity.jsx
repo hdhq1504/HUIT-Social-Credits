@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { buildPath } from '@/config/routes.config';
@@ -13,7 +14,9 @@ import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
 import { formatDateTime } from '@utils/datetime';
+import faceProfileApi from '@api/faceProfile.api';
 import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
+import { evaluateFaceMatch, normalizeDescriptorCollection } from '@/services/faceMatcherService';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -50,6 +53,8 @@ const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailab
   isFeedbackSubmitting: false,
   attendanceStep,
   checkoutAvailable,
+  isFaceProcessing: false,
+  faceMatchNotice: null,
 });
 
 const cardActivityReducer = (prevState, action) => {
@@ -57,7 +62,12 @@ const cardActivityReducer = (prevState, action) => {
     case 'SET':
       return { ...prevState, ...action.payload };
     case 'RESET_CAPTURED':
-      return { ...prevState, capturedEvidence: null };
+      return {
+        ...prevState,
+        capturedEvidence: null,
+        faceMatchNotice: null,
+        isFaceProcessing: false,
+      };
     default:
       return prevState;
   }
@@ -151,17 +161,29 @@ function CardActivity(props) {
     isFeedbackSubmitting,
     attendanceStep,
     checkoutAvailable,
+    isFaceProcessing,
+    faceMatchNotice,
   } = localState;
   const navigate = useNavigate();
   const { contextHolder, open: openToast } = useToast();
   const checkoutTimerRef = useRef(null);
   const checkoutReminderShownRef = useRef(false);
+  const captureTokenRef = useRef(0);
 
   useEffect(() => {
     if (attendanceMethod === 'photo') {
       ensureModelsLoaded().catch(() => {});
     }
   }, [attendanceMethod]);
+
+  const shouldLoadFaceProfile = attendanceMethod === 'photo' && state !== 'guest';
+  const faceProfileQuery = useQuery({
+    queryKey: ['face-profile', 'with-descriptors'],
+    queryFn: () => faceProfileApi.get({ includeDescriptors: true }),
+    staleTime: 5 * 60 * 1000,
+    enabled: shouldLoadFaceProfile,
+  });
+  const faceProfile = faceProfileQuery.data;
 
   const activity = {
     id,
@@ -419,19 +441,143 @@ function CardActivity(props) {
       });
       return;
     }
+    captureTokenRef.current = 0;
     dispatch({
       type: 'SET',
-      payload: { capturedEvidence: null, attendanceStep: phase, checkModalOpen: true },
+      payload: {
+        capturedEvidence: null,
+        attendanceStep: phase,
+        checkModalOpen: true,
+        faceMatchNotice: null,
+        isFaceProcessing: false,
+      },
     });
   };
 
   const handleCloseAttendance = () => {
-    dispatch({ type: 'SET', payload: { checkModalOpen: false } });
+    captureTokenRef.current = 0;
+    dispatch({ type: 'SET', payload: { checkModalOpen: false, faceMatchNotice: null, isFaceProcessing: false } });
     dispatch({ type: 'RESET_CAPTURED' });
   };
 
-  const handleCaptured = ({ file, previewUrl, dataUrl }) =>
-    dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
+  const handleRetake = () => {
+    captureTokenRef.current = 0;
+    dispatch({ type: 'RESET_CAPTURED' });
+  };
+
+  const handleCaptured = async ({ file, previewUrl, dataUrl }) => {
+    const token = Date.now();
+    captureTokenRef.current = token;
+    dispatch({
+      type: 'SET',
+      payload: {
+        capturedEvidence: { file, previewUrl, dataUrl, descriptor: null, faceError: null },
+        isFaceProcessing: attendanceMethod === 'photo',
+        faceMatchNotice: null,
+      },
+    });
+
+    if (attendanceMethod !== 'photo') {
+      onCapture?.({ file, previewUrl, dataUrl });
+      return;
+    }
+
+    let descriptor = null;
+    let descriptorError = null;
+    let notice = null;
+
+    let currentProfile = faceProfile;
+    if (attendanceMethod === 'photo' && shouldLoadFaceProfile && !currentProfile) {
+      try {
+        const refetched = await faceProfileQuery.refetch();
+        currentProfile = refetched.data ?? null;
+      } catch (error) {
+        console.error('Không thể tải hồ sơ khuôn mặt để đối chiếu', error);
+      }
+    }
+
+    try {
+      await ensureModelsLoaded();
+      const computed = await computeDescriptorFromDataUrl(dataUrl);
+      if (computed?.length) {
+        descriptor = computed;
+        const profileDescriptors = normalizeDescriptorCollection(currentProfile?.descriptors || []);
+        if (!profileDescriptors.length) {
+          notice = {
+            status: 'profile_missing',
+            tone: 'warning',
+            message: 'Không tìm thấy hồ sơ khuôn mặt để đối chiếu. Ảnh sẽ được gửi lên hệ thống.',
+          };
+        } else {
+          const matchResult = evaluateFaceMatch({
+            descriptor: computed,
+            profileDescriptors,
+            thresholds: currentProfile?.thresholds,
+          });
+          switch (matchResult.status) {
+            case 'APPROVED':
+              notice = {
+                status: 'approved',
+                tone: 'success',
+                message: 'Ảnh điểm danh khớp với hồ sơ khuôn mặt. Bạn có thể gửi để ghi nhận.',
+                score: matchResult.score,
+              };
+              break;
+            case 'REJECTED':
+              notice = {
+                status: 'rejected',
+                tone: 'warning',
+                message:
+                  'Hệ thống chưa nhận diện được sự khớp chính xác. Ảnh sẽ được ban quản trị kiểm tra thủ công.',
+                score: matchResult.score,
+              };
+              break;
+            default:
+              notice = {
+                status: 'review',
+                tone: 'warning',
+                message:
+                  'Ảnh điểm danh chưa được xác nhận tự động. Ban quản trị sẽ xác minh trong thời gian sớm nhất.',
+                score: matchResult.score,
+              };
+              break;
+          }
+        }
+      } else {
+        descriptorError = 'NO_FACE_DETECTED';
+        notice = {
+          status: 'no_face',
+          tone: 'danger',
+          message: 'Không phát hiện khuôn mặt rõ ràng trong ảnh. Vui lòng chụp lại.',
+          blockSubmission: true,
+        };
+      }
+    } catch (error) {
+      console.error('Không thể phân tích khuôn mặt khi chụp ảnh điểm danh', error);
+      descriptorError = 'ANALYSIS_FAILED';
+      notice = {
+        status: 'analysis_failed',
+        tone: 'danger',
+        message: 'Không thể phân tích khuôn mặt. Vui lòng thử lại.',
+        blockSubmission: true,
+      };
+    }
+
+    if (captureTokenRef.current !== token) {
+      return;
+    }
+
+    dispatch({
+      type: 'SET',
+      payload: {
+        capturedEvidence: { file, previewUrl, dataUrl, descriptor, faceError: descriptorError },
+        isFaceProcessing: false,
+        faceMatchNotice: notice,
+      },
+    });
+
+    onCapture?.({ file, previewUrl, dataUrl, faceDescriptor: descriptor, faceError: descriptorError });
+  };
 
   // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
   const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
@@ -465,16 +611,22 @@ function CardActivity(props) {
       let faceDescriptorPayload = null;
       let faceAnalysisError = null;
       if (attendanceMethod === 'photo') {
-        try {
-          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-          if (descriptor && descriptor.length) {
-            faceDescriptorPayload = descriptor;
-          } else {
-            faceAnalysisError = 'NO_FACE_DETECTED';
+        if (capturedEvidence?.descriptor?.length) {
+          faceDescriptorPayload = capturedEvidence.descriptor;
+        } else if (capturedEvidence?.faceError) {
+          faceAnalysisError = capturedEvidence.faceError;
+        } else {
+          try {
+            const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+            if (descriptor && descriptor.length) {
+              faceDescriptorPayload = descriptor;
+            } else {
+              faceAnalysisError = 'NO_FACE_DETECTED';
+            }
+          } catch (error) {
+            console.error('Không thể phân tích khuôn mặt', error);
+            faceAnalysisError = 'ANALYSIS_FAILED';
           }
-        } catch (error) {
-          console.error('Không thể phân tích khuôn mặt', error);
-          faceAnalysisError = 'ANALYSIS_FAILED';
         }
       }
 
@@ -488,7 +640,10 @@ function CardActivity(props) {
         faceDescriptor: faceDescriptorPayload,
         faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
-      dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
+      dispatch({
+        type: 'SET',
+        payload: { checkModalOpen: false, faceMatchNotice: null, isFaceProcessing: false },
+      }); // Đóng modal khi thành công
       dispatch({ type: 'RESET_CAPTURED' });
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
@@ -527,7 +682,7 @@ function CardActivity(props) {
       if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
-      dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false } });
+      dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false, isFaceProcessing: false } });
     }
   };
 
@@ -867,7 +1022,7 @@ function CardActivity(props) {
         open={checkModalOpen}
         onCancel={handleCloseAttendance}
         onCapture={handleCaptured}
-        onRetake={() => dispatch({ type: 'RESET_CAPTURED' })}
+        onRetake={handleRetake}
         onSubmit={handleSubmitAttendance}
         variant="checkin"
         campaignName={title}
@@ -877,6 +1032,8 @@ function CardActivity(props) {
         location={location}
         confirmLoading={isAttendanceBusy}
         phase={attendanceStep}
+        analysisLoading={isFaceProcessing}
+        analysisResult={faceMatchNotice}
       />
 
       {/* FeedbackModal chỉ mở khi user muốn gửi phản hồi */}

@@ -199,10 +199,48 @@
     }
   }
 
+  &__analysis {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--black-color);
+    font-size: 13px;
+    text-align: center;
+    min-height: 44px;
+
+    &.is-success,
+    &.is-approved {
+      background: rgba(46, 204, 113, 0.15);
+      color: #1b5e20;
+    }
+
+    &.is-warning {
+      background: rgba(255, 177, 66, 0.18);
+      color: #8a4b08;
+    }
+
+    &.is-danger {
+      background: rgba(255, 92, 0, 0.12);
+      color: #8b1a10;
+    }
+
+    :global(.ant-spin) {
+      margin-bottom: 4px;
+    }
+  }
+
+  &__analysis-score {
+    font-weight: 600;
+  }
+
   &__camera-frame {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
+    width: min(100%, 360px);
+    aspect-ratio: 3 / 4;
     border-radius: 24px;
     border: 2px dashed var(--orange-color);
     overflow: hidden;

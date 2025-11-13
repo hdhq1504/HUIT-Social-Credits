@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,6 +17,8 @@ import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import uploadService from '@/services/uploadService';
 import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
+import faceProfileApi from '@api/faceProfile.api';
+import { evaluateFaceMatch, normalizeDescriptorCollection } from '@/services/faceMatcherService';
 import useAuthStore from '@/stores/useAuthStore';
 import styles from './ActivityDetailPage.module.scss';
 
@@ -35,10 +37,13 @@ function ActivityDetailPage() {
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
   const [faceModelsReady, setFaceModelsReady] = useState(false);
+  const [capturedEvidence, setCapturedEvidence] = useState(null);
+  const [isFaceProcessing, setIsFaceProcessing] = useState(false);
+  const [faceMatchNotice, setFaceMatchNotice] = useState(null);
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
+  const captureTokenRef = useRef(0);
 
   // Lấy chi tiết hoạt động từ API
   const {
@@ -69,6 +74,15 @@ function ActivityDetailPage() {
 
   const notFound = isError && error?.response?.status === 404;
   const viewState = activity?.state ?? 'guest';
+
+  const shouldLoadFaceProfile = activity?.attendanceMethod === 'photo' && viewState !== 'guest';
+  const faceProfileQuery = useQuery({
+    queryKey: ['face-profile', 'with-descriptors'],
+    queryFn: () => faceProfileApi.get({ includeDescriptors: true }),
+    staleTime: 5 * 60 * 1000,
+    enabled: shouldLoadFaceProfile,
+  });
+  const faceProfile = faceProfileQuery.data;
 
   useEffect(() => {
     let mounted = true;
@@ -181,6 +195,10 @@ function ActivityDetailPage() {
       await invalidateActivityQueries(['activity', id]);
       setIsCheckOpen(false);
       setAttendancePhase('checkin');
+      setCapturedEvidence(null);
+      setFaceMatchNotice(null);
+      setIsFaceProcessing(false);
+      captureTokenRef.current = 0;
       const message = data?.message || 'Điểm danh thành công!';
       toast({ message, variant: 'success' });
     },
@@ -199,28 +217,154 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
+  const resetCaptureState = useCallback(() => {
+    setCapturedEvidence(null);
+    setFaceMatchNotice(null);
+    setIsFaceProcessing(false);
+    captureTokenRef.current = 0;
+  }, []);
+
+  const handleCloseCheckModal = useCallback(() => {
+    setIsCheckOpen(false);
+    resetCaptureState();
+  }, [resetCaptureState]);
+
+  const handleRetakeCapture = useCallback(() => {
+    resetCaptureState();
+  }, [resetCaptureState]);
+
+  const handleCaptureEvidence = useCallback(
+    async ({ file, previewUrl, dataUrl }) => {
+      const token = Date.now();
+      captureTokenRef.current = token;
+
+      setCapturedEvidence({ file, previewUrl, dataUrl, descriptor: null, faceError: null });
+      setFaceMatchNotice(null);
+      const isPhotoAttendance = activity?.attendanceMethod === 'photo';
+      setIsFaceProcessing(isPhotoAttendance);
+
+      if (!isPhotoAttendance || !dataUrl) {
+        setIsFaceProcessing(false);
+        return;
+      }
+
+      let descriptor = null;
+      let descriptorError = null;
+      let notice = null;
+
+      let currentProfile = faceProfile;
+      if (shouldLoadFaceProfile && !currentProfile) {
+        try {
+          const refetched = await faceProfileQuery.refetch();
+          currentProfile = refetched.data ?? null;
+        } catch (error) {
+          console.error('Không thể tải hồ sơ khuôn mặt để đối chiếu', error);
+        }
+      }
+
+      try {
+        await ensureModelsLoaded();
+        const computed = await computeDescriptorFromDataUrl(dataUrl);
+        if (computed?.length) {
+          descriptor = computed;
+          const profileDescriptors = normalizeDescriptorCollection(currentProfile?.descriptors || []);
+          if (!profileDescriptors.length) {
+            notice = {
+              status: 'profile_missing',
+              tone: 'warning',
+              message: 'Không tìm thấy hồ sơ khuôn mặt để đối chiếu. Ảnh sẽ được gửi lên hệ thống.',
+            };
+          } else {
+            const matchResult = evaluateFaceMatch({
+              descriptor: computed,
+              profileDescriptors,
+              thresholds: currentProfile?.thresholds,
+            });
+            switch (matchResult.status) {
+              case 'APPROVED':
+                notice = {
+                  status: 'approved',
+                  tone: 'success',
+                  message: 'Ảnh điểm danh khớp với hồ sơ khuôn mặt. Bạn có thể gửi để ghi nhận.',
+                  score: matchResult.score,
+                };
+                break;
+              case 'REJECTED':
+                notice = {
+                  status: 'rejected',
+                  tone: 'warning',
+                  message:
+                    'Hệ thống chưa nhận diện được sự khớp chính xác. Ảnh sẽ được ban quản trị kiểm tra thủ công.',
+                  score: matchResult.score,
+                };
+                break;
+              default:
+                notice = {
+                  status: 'review',
+                  tone: 'warning',
+                  message:
+                    'Ảnh điểm danh chưa được xác nhận tự động. Ban quản trị sẽ xác minh trong thời gian sớm nhất.',
+                  score: matchResult.score,
+                };
+                break;
+            }
+          }
+        } else {
+          descriptorError = 'NO_FACE_DETECTED';
+          notice = {
+            status: 'no_face',
+            tone: 'danger',
+            message: 'Không phát hiện khuôn mặt rõ ràng trong ảnh. Vui lòng chụp lại.',
+            blockSubmission: true,
+          };
+        }
+      } catch (error) {
+        console.error('Không thể phân tích khuôn mặt khi chụp ảnh điểm danh', error);
+        descriptorError = 'ANALYSIS_FAILED';
+        notice = {
+          status: 'analysis_failed',
+          tone: 'danger',
+          message: 'Không thể phân tích khuôn mặt. Vui lòng thử lại.',
+          blockSubmission: true,
+        };
+      }
+
+      if (captureTokenRef.current !== token) {
+        return;
+      }
+
+      setCapturedEvidence({ file, previewUrl, dataUrl, descriptor, faceError: descriptorError });
+      setFaceMatchNotice(notice);
+      setIsFaceProcessing(false);
+    },
+    [activity?.attendanceMethod, faceProfile, faceProfileQuery, shouldLoadFaceProfile],
+  );
+
   const handleAttendanceSubmit = async ({ file, dataUrl }) => {
     if (!id) return;
 
-    let evidenceDataUrl = dataUrl ?? null;
-    if (!evidenceDataUrl && file) {
+    const payloadFile = file ?? capturedEvidence?.file ?? null;
+    const payloadDataUrl = dataUrl ?? capturedEvidence?.dataUrl ?? null;
+
+    if (!payloadFile) {
+      toast({ message: 'Không tìm thấy ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+      return;
+    }
+
+    let evidenceDataUrl = payloadDataUrl ?? null;
+    if (!evidenceDataUrl) {
       try {
-        evidenceDataUrl = await fileToDataUrl(file);
+        evidenceDataUrl = await fileToDataUrl(payloadFile);
       } catch {
         toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
         return;
       }
     }
 
-    if (activity?.attendanceMethod === 'photo' && !evidenceDataUrl && !file) {
-      toast({ message: 'Vui lòng chụp hoặc tải lên ảnh để điểm danh.', variant: 'danger' });
-      return;
-    }
-
     let evidencePayload;
-    if (file) {
+    if (payloadFile) {
       try {
-        evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
+        evidencePayload = await uploadService.uploadAttendanceEvidence(payloadFile, {
           userId,
           activityId: id,
           phase: attendancePhase,
@@ -235,19 +379,25 @@ function ActivityDetailPage() {
     let faceDescriptorPayload = null;
     let faceAnalysisError = null;
     if (activity?.attendanceMethod === 'photo') {
-      setIsAnalyzingFace(true);
-      try {
-        const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-        if (descriptor && descriptor.length) {
-          faceDescriptorPayload = descriptor;
-        } else {
-          faceAnalysisError = 'NO_FACE_DETECTED';
+      if (capturedEvidence?.descriptor?.length) {
+        faceDescriptorPayload = capturedEvidence.descriptor;
+      } else if (capturedEvidence?.faceError) {
+        faceAnalysisError = capturedEvidence.faceError;
+      } else {
+        setIsFaceProcessing(true);
+        try {
+          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+          if (descriptor && descriptor.length) {
+            faceDescriptorPayload = descriptor;
+          } else {
+            faceAnalysisError = 'NO_FACE_DETECTED';
+          }
+        } catch (error) {
+          console.error('Không thể phân tích khuôn mặt', error);
+          faceAnalysisError = 'ANALYSIS_FAILED';
+        } finally {
+          setIsFaceProcessing(false);
         }
-      } catch (error) {
-        console.error('Không thể phân tích khuôn mặt', error);
-        faceAnalysisError = 'ANALYSIS_FAILED';
-      } finally {
-        setIsAnalyzingFace(false);
       }
     }
 
@@ -259,8 +409,8 @@ function ActivityDetailPage() {
         (evidenceDataUrl
           ? {
               data: evidenceDataUrl,
-              mimeType: file?.type,
-              fileName: file?.name,
+              mimeType: payloadFile?.type,
+              fileName: payloadFile?.name,
             }
           : undefined),
     };
@@ -368,6 +518,7 @@ function ActivityDetailPage() {
         });
         return;
       }
+      resetCaptureState();
       setAttendancePhase(phase);
       setIsCheckOpen(true);
     };
@@ -781,15 +932,19 @@ function ActivityDetailPage() {
 
       <CheckModal
         open={isCheckOpen}
-        onCancel={() => setIsCheckOpen(false)}
+        onCancel={handleCloseCheckModal}
+        onCapture={handleCaptureEvidence}
+        onRetake={handleRetakeCapture}
         onSubmit={handleAttendanceSubmit}
         campaignName={activity?.title}
         groupLabel={activity?.pointGroupLabel}
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
-        confirmLoading={attendanceMutation.isPending || isAnalyzingFace}
+        confirmLoading={attendanceMutation.isPending}
         phase={attendancePhase}
+        analysisLoading={isFaceProcessing}
+        analysisResult={faceMatchNotice}
       />
 
       <FeedbackModal
