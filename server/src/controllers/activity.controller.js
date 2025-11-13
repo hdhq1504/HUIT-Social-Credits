@@ -1543,10 +1543,11 @@ export const markAttendance = async (req, res) => {
   let descriptorSource = null;
   let normalizedDescriptor = null;
   if (attendanceMethod === "photo") {
-    if (Array.isArray(faceDescriptor)) {
-      normalizedDescriptor = normalizeDescriptor(faceDescriptor);
+    const directDescriptor = normalizeDescriptor(faceDescriptor);
+    if (directDescriptor) {
+      normalizedDescriptor = directDescriptor;
       descriptorSource = "faceDescriptor";
-    } else if (Array.isArray(faceDescriptors)) {
+    } else {
       const descriptorCollection = normalizeDescriptorCollection(faceDescriptors);
       if (descriptorCollection.length) {
         normalizedDescriptor = descriptorCollection[0];

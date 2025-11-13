@@ -6,9 +6,36 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const coerceArrayLike = (value) => {
+  if (!value) return null;
+  if (Array.isArray(value)) return value;
+  if (ArrayBuffer.isView(value)) return Array.from(value);
+  if (typeof value === "object") {
+    const length = Number.isInteger(value.length) && value.length >= 0 ? value.length : null;
+    if (length && length <= 1024) {
+      const result = [];
+      for (let index = 0; index < length; index += 1) {
+        if (Object.prototype.hasOwnProperty.call(value, index)) {
+          result.push(value[index]);
+        }
+      }
+      if (result.length) return result;
+    }
+    const numericKeys = Object.keys(value)
+      .map((key) => Number(key))
+      .filter((key) => Number.isInteger(key) && key >= 0)
+      .sort((a, b) => a - b);
+    if (numericKeys.length) {
+      return numericKeys.map((key) => value[key]);
+    }
+  }
+  return null;
+};
+
 export const normalizeDescriptor = (descriptor) => {
-  if (!Array.isArray(descriptor)) return null;
-  const values = descriptor
+  const arrayLike = coerceArrayLike(descriptor);
+  if (!arrayLike) return null;
+  const values = arrayLike
     .map((item) => toNumber(item))
     .filter((item) => item !== null);
   if (!values.length) return null;
@@ -16,8 +43,9 @@ export const normalizeDescriptor = (descriptor) => {
 };
 
 export const normalizeDescriptorCollection = (collection) => {
-  if (!Array.isArray(collection)) return [];
-  return collection
+  const arrayLike = coerceArrayLike(collection);
+  if (!arrayLike) return [];
+  return arrayLike
     .map((descriptor) => normalizeDescriptor(descriptor))
     .filter((descriptor) => Array.isArray(descriptor) && descriptor.length);
 };
