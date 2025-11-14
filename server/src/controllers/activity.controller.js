@@ -1512,6 +1512,17 @@ export const markAttendance = async (req, res) => {
 
   const normalizedNote = sanitizeOptionalText(note);
   const sanitizedEvidence = sanitizeAttendanceEvidence(evidence);
+  console.debug("[Attendance][Debug] Nhận yêu cầu điểm danh", {
+    activityId,
+    userId,
+    phase: normalizedPhase,
+    attendanceMethod,
+    hasFaceDescriptor: Boolean(faceDescriptor),
+    faceDescriptorsCount: Array.isArray(faceDescriptors) ? faceDescriptors.length : null,
+    faceError: faceError ?? null,
+    hasEvidenceData: Boolean(sanitizedEvidence.data),
+    hasEvidenceMetadata: Boolean(sanitizedEvidence.metadata),
+  });
   let storedEvidence = null;
   if (sanitizedEvidence.metadata) {
     storedEvidence = sanitizedEvidence.metadata;
@@ -1547,11 +1558,22 @@ export const markAttendance = async (req, res) => {
     if (directDescriptor) {
       normalizedDescriptor = directDescriptor;
       descriptorSource = "faceDescriptor";
+      console.debug("[Attendance][Debug] Nhận descriptor trực tiếp từ client", {
+        activityId,
+        userId,
+        descriptorLength: normalizedDescriptor.length,
+      });
     } else {
       const descriptorCollection = normalizeDescriptorCollection(faceDescriptors);
       if (descriptorCollection.length) {
         normalizedDescriptor = descriptorCollection[0];
         descriptorSource = "faceDescriptors";
+        console.debug("[Attendance][Debug] Sử dụng descriptor trong mảng gửi lên", {
+          activityId,
+          userId,
+          descriptorLength: normalizedDescriptor.length,
+          totalReceived: descriptorCollection.length,
+        });
       }
     }
   }
@@ -1560,16 +1582,42 @@ export const markAttendance = async (req, res) => {
   let referenceDescriptors = [];
   if (attendanceMethod === "photo") {
     referenceDescriptors = normalizeDescriptorCollection(faceProfile?.descriptors || []);
+    console.debug("[Attendance][Debug] Thông tin profile khuôn mặt", {
+      activityId,
+      userId,
+      referenceCount: referenceDescriptors.length,
+    });
     if (faceError) {
       faceMatchResult = { status: "REVIEW", score: null, reason: "client_error" };
+      console.debug("[Attendance][Debug] Bỏ qua so khớp do client báo lỗi", {
+        activityId,
+        userId,
+        faceError,
+      });
     } else if (!referenceDescriptors.length) {
       faceMatchResult = { status: "REVIEW", score: null, reason: "empty_profile" };
+      console.debug("[Attendance][Debug] Không có dữ liệu khuôn mặt đã đăng ký", {
+        activityId,
+        userId,
+      });
     } else if (!normalizedDescriptor) {
       faceMatchResult = { status: "REVIEW", score: null, reason: "missing_descriptor" };
+      console.debug("[Attendance][Debug] Không nhận được descriptor hợp lệ từ ảnh điểm danh", {
+        activityId,
+        userId,
+      });
     } else {
       faceMatchResult = evaluateFaceMatch({
         descriptor: normalizedDescriptor,
         profileDescriptors: referenceDescriptors,
+      });
+      console.debug("[Attendance][Debug] Kết quả so khớp khuôn mặt", {
+        activityId,
+        userId,
+        status: faceMatchResult?.status ?? null,
+        score: faceMatchResult?.score ?? null,
+        matchThreshold: FACE_MATCH_CONSTANTS.MATCH_THRESHOLD,
+        reviewThreshold: FACE_MATCH_CONSTANTS.REVIEW_THRESHOLD,
       });
     }
   }

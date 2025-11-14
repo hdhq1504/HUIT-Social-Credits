@@ -138,15 +138,24 @@ function FaceAttendanceModal({
     ],
   );
 
-  const analyzeDescriptor = async (dataUrl) => {
+  const analyzeDescriptor = async (dataUrl, origin) => {
+    console.debug('[FaceAttendanceModal] Bắt đầu phân tích khuôn mặt cho ảnh điểm danh', {
+      hasDataUrl: Boolean(dataUrl),
+      origin,
+    });
     let descriptor = null;
     let errorCode = null;
     try {
       const result = await computeDescriptorFromDataUrl(dataUrl);
       if (result && result.length) {
         descriptor = normalizeDescriptor(result);
+        console.debug('[FaceAttendanceModal] Phân tích khuôn mặt thành công', {
+          origin,
+          descriptorLength: descriptor?.length ?? 0,
+        });
       } else {
         errorCode = 'NO_FACE_DETECTED';
+        console.debug('[FaceAttendanceModal] Không phát hiện khuôn mặt', { origin });
       }
     } catch (error) {
       console.error('Không thể phân tích khuôn mặt khi điểm danh', error);
@@ -170,7 +179,7 @@ function FaceAttendanceModal({
     let errorCode = null;
 
     if (attendanceMethod === 'photo') {
-      ({ descriptor, errorCode } = await analyzeDescriptor(dataUrl));
+      ({ descriptor, errorCode } = await analyzeDescriptor(dataUrl, origin));
     }
 
     setSample({
@@ -179,6 +188,12 @@ function FaceAttendanceModal({
       file: fileToUse,
       origin,
       faceDescriptor: descriptor,
+      faceError: errorCode,
+    });
+    console.debug('[FaceAttendanceModal] Hoàn tất chuẩn bị ảnh điểm danh', {
+      origin,
+      hasDescriptor: Boolean(descriptor),
+      descriptorLength: descriptor?.length ?? 0,
       faceError: errorCode,
     });
     setFilePreview(dataUrl);
@@ -246,6 +261,12 @@ function FaceAttendanceModal({
         faceDescriptor: sample.faceDescriptor,
         faceError: sample.faceError,
         phase,
+      });
+      console.debug('[FaceAttendanceModal] Đã gửi ảnh điểm danh', {
+        origin: sample.origin,
+        hasDescriptor: Boolean(sample.faceDescriptor),
+        descriptorLength: sample.faceDescriptor?.length ?? 0,
+        faceError: sample.faceError,
       });
     } catch (error) {
       const messageText = error?.message || 'Không thể gửi điểm danh. Vui lòng thử lại.';

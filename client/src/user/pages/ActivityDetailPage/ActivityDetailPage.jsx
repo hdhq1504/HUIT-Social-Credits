@@ -218,6 +218,15 @@ function ActivityDetailPage() {
       }
     }
 
+    console.debug('[ActivityDetailPage] Chuẩn bị gửi điểm danh', {
+      activityId: id,
+      phase: attendancePhase,
+      hasFile: Boolean(file),
+      hasDataUrl: Boolean(evidenceDataUrl || dataUrl),
+      faceDescriptorLength: Array.isArray(faceDescriptor) ? faceDescriptor.length : faceDescriptor?.length ?? null,
+      faceError: faceError ?? null,
+    });
+
     if (activity?.attendanceMethod === 'photo' && !evidenceDataUrl && !file) {
       toast({ message: 'Vui lòng chụp hoặc tải lên ảnh để điểm danh.', variant: 'danger' });
       return;
@@ -230,6 +239,11 @@ function ActivityDetailPage() {
           userId,
           activityId: id,
           phase: attendancePhase,
+        });
+        console.debug('[ActivityDetailPage] Đã tải ảnh điểm danh lên kho lưu trữ', {
+          activityId: id,
+          phase: attendancePhase,
+          storagePath: evidencePayload?.path,
         });
       } catch (error) {
         const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
@@ -270,8 +284,17 @@ function ActivityDetailPage() {
           const descriptorFallback = await computeDescriptorFromDataUrl(evidenceDataUrl);
           if (descriptorFallback && descriptorFallback.length) {
             payload.faceDescriptor = descriptorFallback;
+            console.debug('[ActivityDetailPage] Trích xuất descriptor từ ảnh điểm danh thành công (fallback)', {
+              activityId: id,
+              phase: attendancePhase,
+              descriptorLength: descriptorFallback.length,
+            });
           } else {
             payload.faceError = 'NO_FACE_DETECTED';
+            console.debug('[ActivityDetailPage] Không phát hiện khuôn mặt khi fallback trích xuất descriptor', {
+              activityId: id,
+              phase: attendancePhase,
+            });
           }
         } catch (error) {
           console.error('Không thể phân tích khuôn mặt', error);
@@ -279,6 +302,15 @@ function ActivityDetailPage() {
         }
       }
     }
+
+    console.debug('[ActivityDetailPage] Gửi payload điểm danh lên server', {
+      activityId: id,
+      phase: attendancePhase,
+      hasDescriptor: Boolean(payload.faceDescriptor),
+      descriptorLength: payload.faceDescriptor?.length ?? null,
+      faceError: payload.faceError ?? null,
+      evidenceType: evidencePayload ? 'storage' : payload.evidence ? 'inline' : 'none',
+    });
 
     attendanceMutation.mutate({
       id,
