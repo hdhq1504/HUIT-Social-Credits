@@ -161,6 +161,12 @@ export const markAttendance = async (req, res) => {
   let referenceDescriptors = [];
   if (attendanceMethod === "photo") {
     referenceDescriptors = normalizeDescriptorCollection(faceProfile?.descriptors || []);
+    console.debug("[attendance] Nhận dữ liệu khuôn mặt từ client", {
+      descriptorSource,
+      descriptorLength: normalizedDescriptor?.length ?? null,
+      referenceCount: referenceDescriptors.length,
+      faceError: faceError ?? null,
+    });
     if (faceError) {
       faceMatchResult = { status: "REVIEW", score: null, reason: "client_error" };
     } else if (!referenceDescriptors.length) {
@@ -173,6 +179,11 @@ export const markAttendance = async (req, res) => {
         profileDescriptors: referenceDescriptors,
       });
     }
+    console.debug("[attendance] Kết quả so khớp khuôn mặt", {
+      status: faceMatchResult?.status ?? null,
+      score: faceMatchResult?.score ?? null,
+      reason: faceMatchResult?.reason ?? null,
+    });
   }
 
   const attendanceTime = new Date();

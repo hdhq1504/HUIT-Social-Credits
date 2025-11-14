@@ -199,7 +199,7 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
-  const handleAttendanceSubmit = async ({ file, dataUrl }) => {
+  const handleAttendanceSubmit = async ({ file, dataUrl, faceDescriptor, faceError }) => {
     if (!id) return;
 
     let evidenceDataUrl = dataUrl ?? null;
@@ -232,23 +232,42 @@ function ActivityDetailPage() {
       }
     }
 
-    let faceDescriptorPayload = null;
-    let faceAnalysisError = null;
+    let faceDescriptorPayload = Array.isArray(faceDescriptor) && faceDescriptor.length ? faceDescriptor : null;
+    let faceAnalysisError = faceError ?? null;
     if (activity?.attendanceMethod === 'photo') {
-      setIsAnalyzingFace(true);
-      try {
-        const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-        if (descriptor && descriptor.length) {
-          faceDescriptorPayload = descriptor;
-        } else {
-          faceAnalysisError = 'NO_FACE_DETECTED';
+      if (!faceDescriptorPayload?.length && !faceAnalysisError && evidenceDataUrl) {
+        setIsAnalyzingFace(true);
+        try {
+          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+          if (descriptor && descriptor.length) {
+            faceDescriptorPayload = descriptor;
+          } else {
+            faceAnalysisError = 'NO_FACE_DETECTED';
+          }
+        } catch (error) {
+          console.error('Không thể phân tích khuôn mặt (fallback)', error);
+          faceAnalysisError = 'ANALYSIS_FAILED';
+        } finally {
+          setIsAnalyzingFace(false);
         }
-      } catch (error) {
-        console.error('Không thể phân tích khuôn mặt', error);
-        faceAnalysisError = 'ANALYSIS_FAILED';
-      } finally {
+      } else {
         setIsAnalyzingFace(false);
       }
+
+      if (!faceDescriptorPayload?.length) {
+        const messageContent =
+          faceAnalysisError === 'ANALYSIS_FAILED'
+            ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+            : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+        toast({ message: messageContent, variant: 'danger' });
+        console.debug('[ActivityDetailPage] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+          faceAnalysisError,
+        });
+        return;
+      }
+      console.debug('[ActivityDetailPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+        descriptorLength: faceDescriptorPayload.length,
+      });
     }
 
     const payload = {
@@ -716,9 +735,20 @@ function ActivityDetailPage() {
                           }
                         }
 
-                        if (!descriptorPayload && !descriptorError) {
-                          descriptorError = 'NO_FACE_DETECTED';
+                        if (!descriptorPayload?.length) {
+                          const messageContent =
+                            descriptorError === 'ANALYSIS_FAILED'
+                              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+                              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+                          toast({ message: messageContent, variant: 'danger' });
+                          console.debug('[ActivityDetailPage] Huỷ gửi điểm danh liên quan do thiếu descriptor khuôn mặt.', {
+                            descriptorError,
+                          });
+                          throw new Error('ATTENDANCE_ABORTED');
                         }
+                        console.debug('[ActivityDetailPage] Gửi điểm danh hoạt động liên quan với descriptor khuôn mặt.', {
+                          descriptorLength: descriptorPayload.length,
+                        });
                       }
 
                       const result = await activitiesApi.attendance(item.id, {
@@ -728,7 +758,7 @@ function ActivityDetailPage() {
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
                         ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
-                        ...(descriptorError ? { faceError: descriptorError } : {}),
+                        ...(descriptorError && !descriptorPayload ? { faceError: descriptorError } : {}),
                       });
                       await invalidateActivityQueries(['activities', 'related', id]);
                       return result;

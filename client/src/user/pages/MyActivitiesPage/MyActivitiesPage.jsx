@@ -260,6 +260,21 @@ function MyActivitiesPage() {
             faceErrorPayload = 'ANALYSIS_FAILED';
           }
         }
+
+        if (!descriptorPayload?.length) {
+          const messageContent =
+            faceErrorPayload === 'ANALYSIS_FAILED'
+              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+          toast({ message: messageContent, variant: 'danger' });
+          console.debug('[MyActivitiesPage] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+            faceError: faceErrorPayload,
+          });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+        console.debug('[MyActivitiesPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+          descriptorLength: descriptorPayload.length,
+        });
       }
 
       return attendanceMutation.mutateAsync({
@@ -269,7 +284,7 @@ function MyActivitiesPage() {
           phase,
           evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
           ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
-          ...(faceErrorPayload ? { faceError: faceErrorPayload } : {}),
+          ...(faceErrorPayload && !descriptorPayload ? { faceError: faceErrorPayload } : {}),
         },
       });
     },

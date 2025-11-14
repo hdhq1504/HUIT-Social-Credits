@@ -4,6 +4,7 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot, faCamera, faRotate, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
+import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
 import styles from './AttendanceModal.module.scss';
 
 const cx = classNames.bind(styles);
@@ -29,6 +30,11 @@ function AttendanceModal({
   const wasOpenRef = useRef(false);
   const prevUrlRef = useRef(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [modelsReady, setModelsReady] = useState(false);
+  const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
+  const [faceDescriptor, setFaceDescriptor] = useState(null);
+  const [faceError, setFaceError] = useState(null);
 
   const webcamRef = useRef(null);
   const activeStreamRef = useRef(null);
@@ -70,6 +76,7 @@ function AttendanceModal({
   };
 
   useEffect(() => {
+    let cancelled = false;
     if (open && !wasOpenRef.current) {
       setCaptureStage(variant || 'checkin');
       setPreviewUrl(null);
@@ -79,6 +86,26 @@ function AttendanceModal({
       setDeviceId(null);
       setCurrentIndex(0);
       setIsReadingFile(false);
+      setFaceDescriptor(null);
+      setFaceError(null);
+      setModelsReady(false);
+      setIsModelLoading(true);
+      ensureModelsLoaded()
+        .then(() => {
+          if (cancelled) return;
+          console.debug('[AttendanceModal] Đã tải xong mô hình nhận diện khuôn mặt.');
+          setModelsReady(true);
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          console.error('[AttendanceModal] Không thể tải mô hình nhận diện khuôn mặt:', error);
+          message.error('Không thể tải mô hình nhận diện khuôn mặt. Vui lòng tải lại trang và thử lại.');
+          setModelsReady(false);
+        })
+        .finally(() => {
+          if (cancelled) return;
+          setIsModelLoading(false);
+        });
     }
 
     if (!open && wasOpenRef.current) {
@@ -86,8 +113,13 @@ function AttendanceModal({
       revokePreview();
       setDataUrl(null);
       setIsReadingFile(false);
+      setFaceDescriptor(null);
+      setFaceError(null);
     }
     wasOpenRef.current = open;
+    return () => {
+      cancelled = true;
+    };
   }, [open, variant]);
 
   useEffect(() => {
@@ -96,8 +128,54 @@ function AttendanceModal({
       revokePreview();
       setDataUrl(null);
       setIsReadingFile(false);
+      setFaceDescriptor(null);
+      setFaceError(null);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open || !dataUrl) return undefined;
+    let cancelled = false;
+    const analyze = async () => {
+      setIsAnalyzingFace(true);
+      setFaceDescriptor(null);
+      setFaceError(null);
+      try {
+        const descriptor = await computeDescriptorFromDataUrl(dataUrl, { minConfidence: 0.55 });
+        if (cancelled) return;
+        if (descriptor && descriptor.length) {
+          setFaceDescriptor(descriptor);
+          console.debug('[AttendanceModal] Đã trích xuất descriptor khuôn mặt với độ dài:', descriptor.length);
+        } else {
+          setFaceDescriptor(null);
+          setFaceError('NO_FACE_DETECTED');
+          message.warning('Không nhận diện được khuôn mặt. Vui lòng chụp lại.');
+          console.debug('[AttendanceModal] Không nhận diện được khuôn mặt, yêu cầu chụp lại.');
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[AttendanceModal] Lỗi phân tích khuôn mặt:', error);
+        setFaceDescriptor(null);
+        setFaceError('ANALYSIS_FAILED');
+        message.error('Không thể phân tích khuôn mặt. Vui lòng chụp lại.');
+      } finally {
+        if (!cancelled) {
+          setIsAnalyzingFace(false);
+        }
+      }
+    };
+
+    analyze();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dataUrl, open]);
+
+  useEffect(() => {
+    if (!open || !file || !previewUrl || !dataUrl || isAnalyzingFace) return;
+    onCapture?.({ file, previewUrl, dataUrl, faceDescriptor, faceError });
+  }, [open, file, previewUrl, dataUrl, faceDescriptor, faceError, isAnalyzingFace, onCapture]);
 
   const enumerateVideoInputs = async () => {
     try {
@@ -173,19 +251,21 @@ function AttendanceModal({
     setDataUrl(dataUrl);
     setCaptureStage('checkout');
     setIsReadingFile(false);
+    setFaceDescriptor(null);
+    setFaceError(null);
 
     hardStopCamera();
-
-    onCapture?.({ file: f, previewUrl: url, dataUrl });
   };
 
   const handleRetake = async () => {
     revokePreview();
     setFile(null);
     setPreviewUrl(null);
-    setDataUrl(dataUrl);
+    setDataUrl(null);
     setCaptureStage('checkin');
     setIsReadingFile(false);
+    setFaceDescriptor(null);
+    setFaceError(null);
     await openCamera();
     onRetake?.();
   };
@@ -196,12 +276,28 @@ function AttendanceModal({
       message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
       return;
     }
-    onSubmit?.({ file, previewUrl, dataUrl });
+    if (isAnalyzingFace) {
+      message.warning('Hệ thống đang phân tích khuôn mặt. Vui lòng chờ giây lát.');
+      return;
+    }
+    if (!faceDescriptor || !faceDescriptor.length) {
+      message.error('Không nhận diện được khuôn mặt. Vui lòng chụp lại.');
+      return;
+    }
+    onSubmit?.({ file, previewUrl, dataUrl, faceDescriptor, faceError });
   };
 
   const fileInputRef = useRef(null);
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
+    if (isModelLoading) {
+      message.warning('Đang tải mô hình nhận diện khuôn mặt. Vui lòng đợi trong giây lát.');
+      return;
+    }
+    if (!modelsReady) {
+      message.error('Không thể khởi tạo mô hình nhận diện khuôn mặt. Vui lòng tải lại trang.');
+      return;
+    }
     const f = e.target.files?.[0];
     if (!f) return;
     setIsReadingFile(true);
@@ -213,6 +309,8 @@ function AttendanceModal({
     setDataUrl(null);
     setCaptureStage('checkin');
     hardStopCamera();
+    setFaceDescriptor(null);
+    setFaceError(null);
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : null;
@@ -224,7 +322,6 @@ function AttendanceModal({
       setDataUrl(result);
       setCaptureStage('checkout');
       setIsReadingFile(false);
-      onCapture?.({ file: f, previewUrl: url, dataUrl: result });
     };
     reader.onerror = () => {
       message.error('Không thể đọc file. Vui lòng thử lại với ảnh khác.');
@@ -328,6 +425,14 @@ function AttendanceModal({
                   <button
                     className={cx('check-modal__confirm-button')}
                     onClick={() => {
+                      if (isModelLoading) {
+                        message.warning('Đang tải mô hình nhận diện khuôn mặt. Vui lòng đợi trong giây lát.');
+                        return;
+                      }
+                      if (!modelsReady) {
+                        message.error('Không thể khởi tạo mô hình nhận diện khuôn mặt. Vui lòng tải lại trang.');
+                        return;
+                      }
                       if (!isCameraOn) openCamera();
                       else handleCapture();
                     }}
@@ -363,7 +468,14 @@ function AttendanceModal({
                 <button
                   className={cx('check-modal__confirm-button')}
                   onClick={handleSubmit}
-                  disabled={isReadingFile || !file || !dataUrl || confirmLoading}
+                  disabled={
+                    isReadingFile ||
+                    !file ||
+                    !dataUrl ||
+                    confirmLoading ||
+                    isAnalyzingFace ||
+                    !faceDescriptor?.length
+                  }
                 >
                   <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
                   {confirmLoading ? 'Đang gửi...' : 'Gửi điểm danh'}

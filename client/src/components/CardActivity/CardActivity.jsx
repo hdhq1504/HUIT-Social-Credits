@@ -430,15 +430,31 @@ function CardActivity(props) {
     dispatch({ type: 'RESET_CAPTURED' });
   };
 
-  const handleCaptured = ({ file, previewUrl, dataUrl }) =>
-    dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
+  const handleCaptured = ({ file, previewUrl, dataUrl, faceDescriptor, faceError }) =>
+    dispatch({
+      type: 'SET',
+      payload: {
+        capturedEvidence: {
+          file,
+          previewUrl,
+          dataUrl,
+          faceDescriptor: Array.isArray(faceDescriptor) && faceDescriptor.length ? faceDescriptor : null,
+          faceError: faceError ?? null,
+        },
+      },
+    });
 
   // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
-  const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
+  const handleSubmitAttendance = async ({ file, previewUrl, dataUrl, faceDescriptor, faceError }) => {
     const payload = {
       file: file ?? capturedEvidence?.file ?? null,
       previewUrl: previewUrl ?? capturedEvidence?.previewUrl ?? null,
       dataUrl: dataUrl ?? capturedEvidence?.dataUrl ?? null,
+      faceDescriptor:
+        Array.isArray(faceDescriptor) && faceDescriptor.length
+          ? faceDescriptor
+          : capturedEvidence?.faceDescriptor ?? null,
+      faceError: faceError ?? capturedEvidence?.faceError ?? null,
     };
 
     if (!payload.file) {
@@ -465,17 +481,41 @@ function CardActivity(props) {
       let faceDescriptorPayload = null;
       let faceAnalysisError = null;
       if (attendanceMethod === 'photo') {
-        try {
-          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-          if (descriptor && descriptor.length) {
-            faceDescriptorPayload = descriptor;
-          } else {
-            faceAnalysisError = 'NO_FACE_DETECTED';
+        faceDescriptorPayload =
+          Array.isArray(payload.faceDescriptor) && payload.faceDescriptor.length
+            ? payload.faceDescriptor
+            : null;
+        faceAnalysisError = payload.faceError ?? null;
+        if (!faceDescriptorPayload?.length && !faceAnalysisError) {
+          try {
+            const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+            if (descriptor && descriptor.length) {
+              faceDescriptorPayload = descriptor;
+            } else {
+              faceAnalysisError = 'NO_FACE_DETECTED';
+            }
+          } catch (error) {
+            console.error('Không thể phân tích khuôn mặt', error);
+            faceAnalysisError = 'ANALYSIS_FAILED';
           }
-        } catch (error) {
-          console.error('Không thể phân tích khuôn mặt', error);
-          faceAnalysisError = 'ANALYSIS_FAILED';
         }
+        if (!faceDescriptorPayload?.length) {
+          openToast({
+            message:
+              faceAnalysisError === 'ANALYSIS_FAILED'
+                ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+                : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.',
+            variant: 'danger',
+          });
+          console.debug('[CardActivity] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+            faceAnalysisError,
+          });
+          dispatch({ type: 'SET', payload: { isAttendanceSubmitting: false } });
+          return;
+        }
+        console.debug('[CardActivity] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+          descriptorLength: faceDescriptorPayload.length,
+        });
       }
 
       // Bỏ dispatch({ type: 'SET', payload: { checkModalOpen: false } }); ở đây
