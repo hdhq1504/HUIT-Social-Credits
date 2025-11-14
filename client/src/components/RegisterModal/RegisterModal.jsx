@@ -11,7 +11,7 @@ const cx = classNames.bind(styles);
 
 const ATTENDANCE_METHOD_STYLES = {
   qr: { className: 'register-confirm__chip--qr', fallbackLabel: 'QR Code' },
-  photo: { className: 'register-confirm__chip--photo', fallbackLabel: 'Nhận diện khuôn mặt' },
+  photo: { className: 'register-confirm__chip--photo', fallbackLabel: 'Chụp Ảnh' },
 };
 
 function RegisterModal({

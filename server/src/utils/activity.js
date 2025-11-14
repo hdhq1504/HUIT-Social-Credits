@@ -1,7 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 import prisma from "../../prisma.js";
 import { env } from "../../env.js";
-import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "../../utils/points.js";
+import { getPointGroupLabel, normalizePointGroup } from "../../utils/points.js";
 import { deriveSemesterInfo } from "../../utils/academic.js";
 import {
   getAttendanceMethodLabel,
@@ -15,7 +15,6 @@ import {
   sanitizeStorageList,
   mapStorageForResponse,
   mapStorageListForResponse,
-  extractStoragePaths,
 } from "../../utils/storageMapper.js";
 
 const normalizeSemesterLabel = (value) => {
@@ -694,8 +693,8 @@ const determineState = (activity, registration) => {
       const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
       if (end && end < now) return "ended";
       if (start && start <= now && (!end || end >= now)) {
-        if (!hasCheckin) return "confirm_in";
-        if (!hasCheckout) return "confirm_out";
+        if (!hasCheckin) return "check_in";
+        if (!hasCheckout) return "check_out";
         return "attendance_open";
       }
       if (start && start > now) return "attendance_closed";

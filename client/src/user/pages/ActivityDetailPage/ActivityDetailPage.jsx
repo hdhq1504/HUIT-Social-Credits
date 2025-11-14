@@ -5,8 +5,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label } from '@components/index';
-import useToast from '@/components/Toast/Toast';
+import {
+  Button,
+  CardActivity,
+  AttendanceModal,
+  RegisterModal,
+  FeedbackModal,
+  Label,
+  useToast,
+} from '@components/index';
 import Loading from '@/user/pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
@@ -24,7 +31,7 @@ const cx = classNames.bind(styles);
 
 const ATTENDANCE_METHOD_BADGES = {
   qr: { label: 'QR Code', className: 'activity-detail__checkin-badge--qr' },
-  photo: { label: 'Nhận diện khuôn mặt', className: 'activity-detail__checkin-badge--photo' },
+  photo: { label: 'Chụp Ảnh', className: 'activity-detail__checkin-badge--photo' },
 };
 
 function ActivityDetailPage() {
@@ -134,9 +141,7 @@ function ActivityDetailPage() {
       return formatted !== '--' ? formatted : null;
     };
 
-    const checkin =
-      formatValue(findPhase('checkin')?.capturedAt) ||
-      formatValue(activity?.registration?.checkInAt);
+    const checkin = formatValue(findPhase('checkin')?.capturedAt) || formatValue(activity?.registration?.checkInAt);
 
     const checkout = formatValue(findPhase('checkout')?.capturedAt);
 
@@ -199,7 +204,7 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
-  const handleAttendanceSubmit = async ({ file, dataUrl }) => {
+  const handleAttendanceSubmit = async ({ file, dataUrl, faceDescriptor, faceError }) => {
     if (!id) return;
 
     let evidenceDataUrl = dataUrl ?? null;
@@ -217,54 +222,60 @@ function ActivityDetailPage() {
       return;
     }
 
-    let evidencePayload;
-    if (file) {
-      try {
-        evidencePayload = await uploadService.uploadAttendanceEvidence(file, {
-          userId,
-          activityId: id,
-          phase: attendancePhase,
-        });
-      } catch (error) {
-        const message = error?.message || 'Không thể tải ảnh điểm danh. Vui lòng thử lại.';
-        toast({ message, variant: 'danger' });
-        return;
-      }
-    }
+    let faceDescriptorPayload = Array.isArray(faceDescriptor) && faceDescriptor.length ? faceDescriptor : null;
+    let faceAnalysisError = faceError ?? null;
 
-    let faceDescriptorPayload = null;
-    let faceAnalysisError = null;
     if (activity?.attendanceMethod === 'photo') {
-      setIsAnalyzingFace(true);
-      try {
-        const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-        if (descriptor && descriptor.length) {
-          faceDescriptorPayload = descriptor;
-        } else {
-          faceAnalysisError = 'NO_FACE_DETECTED';
+      if (!faceDescriptorPayload?.length && !faceAnalysisError && evidenceDataUrl) {
+        setIsAnalyzingFace(true);
+        try {
+          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+          if (descriptor && descriptor.length) {
+            faceDescriptorPayload = descriptor;
+          } else {
+            faceAnalysisError = 'NO_FACE_DETECTED';
+          }
+        } catch (error) {
+          console.error('Không thể phân tích khuôn mặt (fallback)', error);
+          faceAnalysisError = 'ANALYSIS_FAILED';
+        } finally {
+          setIsAnalyzingFace(false);
         }
-      } catch (error) {
-        console.error('Không thể phân tích khuôn mặt', error);
-        faceAnalysisError = 'ANALYSIS_FAILED';
-      } finally {
+      } else {
         setIsAnalyzingFace(false);
       }
+
+      if (!faceDescriptorPayload?.length) {
+        const messageContent =
+          faceAnalysisError === 'ANALYSIS_FAILED'
+            ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+            : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+        toast({ message: messageContent, variant: 'danger' });
+        console.debug('[ActivityDetailPage] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+          faceAnalysisError,
+        });
+        return;
+      }
+
+      console.debug('[ActivityDetailPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+        descriptorLength: faceDescriptorPayload.length,
+      });
     }
 
     const payload = {
       status: 'present',
       phase: attendancePhase,
-      evidence:
-        evidencePayload ||
-        (evidenceDataUrl
-          ? {
-              data: evidenceDataUrl,
-              mimeType: file?.type,
-              fileName: file?.name,
-            }
-          : undefined),
+      evidence: evidenceDataUrl
+        ? {
+            data: evidenceDataUrl,
+            mimeType: file?.type,
+            fileName: file?.name,
+          }
+        : undefined,
+      faceDescriptor,
     };
 
+    // Chỉ thêm các field face khi dùng attendanceMethod = photo
     if (activity?.attendanceMethod === 'photo') {
       if (faceDescriptorPayload) {
         payload.faceDescriptor = faceDescriptorPayload;
@@ -273,6 +284,8 @@ function ActivityDetailPage() {
         payload.faceError = faceAnalysisError;
       }
     }
+
+    console.log('[ActivityDetailPage] attendance payload', payload);
 
     attendanceMutation.mutate({
       id,
@@ -647,7 +660,8 @@ function ActivityDetailPage() {
                       </div>
                       {activity?.requiresFaceEnrollment && !activity?.faceEnrollment?.enrolled && (
                         <p className={cx('activity-detail__sidebar-hint')}>
-                          Bạn cần <Link to={ROUTE_PATHS.USER.PROFILE}>đăng ký khuôn mặt</Link> trước khi thực hiện điểm danh.
+                          Bạn cần <Link to={ROUTE_PATHS.USER.PROFILE}>đăng ký khuôn mặt</Link> trước khi thực hiện điểm
+                          danh.
                         </p>
                       )}
                     </div>
@@ -716,9 +730,26 @@ function ActivityDetailPage() {
                           }
                         }
 
-                        if (!descriptorPayload && !descriptorError) {
-                          descriptorError = 'NO_FACE_DETECTED';
+                        if (!descriptorPayload?.length) {
+                          const messageContent =
+                            descriptorError === 'ANALYSIS_FAILED'
+                              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+                              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+                          toast({ message: messageContent, variant: 'danger' });
+                          console.debug(
+                            '[ActivityDetailPage] Huỷ gửi điểm danh liên quan do thiếu descriptor khuôn mặt.',
+                            {
+                              descriptorError,
+                            },
+                          );
+                          throw new Error('ATTENDANCE_ABORTED');
                         }
+                        console.debug(
+                          '[ActivityDetailPage] Gửi điểm danh hoạt động liên quan với descriptor khuôn mặt.',
+                          {
+                            descriptorLength: descriptorPayload.length,
+                          },
+                        );
                       }
 
                       const result = await activitiesApi.attendance(item.id, {
@@ -728,7 +759,7 @@ function ActivityDetailPage() {
                           ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name }
                           : undefined,
                         ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
-                        ...(descriptorError ? { faceError: descriptorError } : {}),
+                        ...(descriptorError && !descriptorPayload ? { faceError: descriptorError } : {}),
                       });
                       await invalidateActivityQueries(['activities', 'related', id]);
                       return result;
@@ -779,7 +810,7 @@ function ActivityDetailPage() {
         attendanceMethodLabel={activity?.attendanceMethodLabel}
       />
 
-      <CheckModal
+      <AttendanceModal
         open={isCheckOpen}
         onCancel={() => setIsCheckOpen(false)}
         onSubmit={handleAttendanceSubmit}

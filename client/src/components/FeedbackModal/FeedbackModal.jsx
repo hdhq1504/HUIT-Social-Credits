@@ -20,7 +20,6 @@ function FeedbackModal({
   checkoutTime,
   submitLoading = false,
 }) {
-  // Helper to convert File -> base64 for preview
   const getBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();

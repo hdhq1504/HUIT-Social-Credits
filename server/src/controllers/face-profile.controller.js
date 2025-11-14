@@ -6,7 +6,6 @@ import {
   summarizeFaceProfile,
 } from "../utils/face.js";
 import {
-  ensureBucket,
   isSupabaseConfigured,
   removeFiles,
   uploadBase64Image,
@@ -17,7 +16,6 @@ const MIN_DESCRIPTOR_COUNT = 3;
 const MAX_FACE_SAMPLES = 5;
 const FACE_SAMPLE_BUCKET = env.SUPABASE_FACE_BUCKET;
 const FACE_SAMPLE_BUCKET_SET = new Set([FACE_SAMPLE_BUCKET].filter(Boolean));
-const FACE_SAMPLE_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 const sanitizePathSegment = (value, fallback = "user") => {
   if (!value) return fallback;
@@ -54,12 +52,6 @@ const storeFaceSamples = async (userId, dataUrls) => {
     error.code = "SUPABASE_NOT_CONFIGURED";
     throw error;
   }
-
-  await ensureBucket(FACE_SAMPLE_BUCKET, {
-    public: false,
-    allowedMimeTypes: FACE_SAMPLE_ALLOWED_MIME_TYPES,
-    fileSizeLimit: "5242880",
-  });
 
   const prefix = `face-profiles/${sanitizePathSegment(userId)}`;
   const uploads = [];

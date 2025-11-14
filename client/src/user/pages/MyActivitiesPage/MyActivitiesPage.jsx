@@ -228,8 +228,12 @@ function MyActivitiesPage() {
       if (!evidenceDataUrl && file) {
         try {
           evidenceDataUrl = await fileToDataUrl(file);
-        } catch {
-          toast({ message: 'Không thể đọc dữ liệu ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
+        } catch (error) {
+          console.error('[MyActivitiesPage] Không convert file -> dataURL:', error);
+          toast({
+            message: 'Không thể đọc file ảnh. Vui lòng thử lại.',
+            variant: 'danger',
+          });
           throw new Error('ATTENDANCE_ABORTED');
         }
       }
@@ -255,11 +259,28 @@ function MyActivitiesPage() {
             } else {
               faceErrorPayload = 'NO_FACE_DETECTED';
             }
-          } catch (error) {
-            console.error('Không thể phân tích khuôn mặt khi điểm danh', error);
+          } catch (err) {
+            console.error('[MyActivitiesPage] Lỗi phân tích khuôn mặt:', err);
             faceErrorPayload = 'ANALYSIS_FAILED';
           }
         }
+
+        if (!descriptorPayload?.length) {
+          const msg =
+            faceErrorPayload === 'ANALYSIS_FAILED'
+              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
+              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
+          toast({ message: msg, variant: 'danger' });
+
+          console.debug('[MyActivitiesPage] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+            faceError: faceErrorPayload,
+          });
+          throw new Error('ATTENDANCE_ABORTED');
+        }
+
+        console.debug('[MyActivitiesPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+          descriptorLength: descriptorPayload.length,
+        });
       }
 
       return attendanceMutation.mutateAsync({
@@ -267,9 +288,15 @@ function MyActivitiesPage() {
         payload: {
           status: 'present',
           phase,
-          evidence: evidenceDataUrl ? { data: evidenceDataUrl, mimeType: file?.type, fileName: file?.name } : undefined,
+          evidence: evidenceDataUrl
+            ? {
+                data: evidenceDataUrl,
+                mimeType: file?.type || 'image/jpeg',
+                fileName: file?.name || `attendance_${Date.now()}.jpg`,
+              }
+            : undefined,
           ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
-          ...(faceErrorPayload ? { faceError: faceErrorPayload } : {}),
+          ...(faceErrorPayload && !descriptorPayload ? { faceError: faceErrorPayload } : {}),
         },
       });
     },

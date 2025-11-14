@@ -12,7 +12,7 @@ import {
   createActivity,
   updateActivity,
   deleteActivity,
-} from '../controllers/activty/activity-management.controller.js';
+} from '../controllers/activity/activity-management.controller.js';
 import { optionalAuth, requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();

@@ -4,6 +4,7 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot, faCamera, faRotate, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
+import { computeDescriptorFromDataUrl } from '@/services/faceApiService';
 import styles from './AttendanceModal.module.scss';
 
 const cx = classNames.bind(styles);
@@ -190,13 +191,30 @@ function AttendanceModal({
     onRetake?.();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (confirmLoading || !file) return;
     if (!dataUrl) {
       message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
       return;
     }
-    onSubmit?.({ file, previewUrl, dataUrl });
+
+    try {
+      const descriptor = await computeDescriptorFromDataUrl(dataUrl);
+      if (!descriptor || !descriptor.length) {
+        message.error('Không phát hiện được khuôn mặt rõ ràng trong ảnh điểm danh. Vui lòng chụp lại.');
+        return;
+      }
+
+      onSubmit?.({
+        file,
+        previewUrl,
+        dataUrl,
+        faceDescriptor: descriptor,
+      });
+    } catch (error) {
+      console.error('Không thể trích xuất descriptor khuôn mặt trong điểm danh', error);
+      message.error('Không thể phân tích khuôn mặt. Vui lòng thử lại.');
+    }
   };
 
   const fileInputRef = useRef(null);

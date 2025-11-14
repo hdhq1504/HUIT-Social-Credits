@@ -8,12 +8,6 @@
   align-items: center;
   gap: 20px;
 
-  // lg: 992px
-  @media (max-width: 992px) {
-    max-width: 768px;
-    gap: 18px;
-  }
-
   // md: 768px
   @media (max-width: 768px) {
     margin-top: 0;

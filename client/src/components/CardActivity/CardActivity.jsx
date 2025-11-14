@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
 import RegisterModal from '../RegisterModal/RegisterModal';
-import CheckModal from '../CheckModal/CheckModal';
+import AttendanceModal from '../AttendanceModal/AttendanceModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
@@ -18,7 +18,6 @@ import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
 
-// Helper: tạo initials từ tên (dùng cho Avatar khi không có src)
 const initials = (name = '') =>
   (
     name
@@ -35,7 +34,6 @@ const toTimestamp = (value) => {
   return Number.isNaN(ts) ? null : ts;
 };
 
-// Thời gian offset trước checkout để bật nút checkout (mặc định 10 phút)
 const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
 
 const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailable }) => ({
@@ -124,7 +122,6 @@ function CardActivity(props) {
     return null;
   }, [attendanceSummary?.checkoutAvailableAt, endTime]);
 
-  // Nếu attendanceSummary.hasCheckout true => đã checkout
   const initialCheckoutAvailability = useMemo(() => {
     if (attendanceSummary?.hasCheckout) return true;
     if (!checkoutAvailableTimestamp) return true;
@@ -245,12 +242,6 @@ function CardActivity(props) {
   );
 
   useEffect(() => {
-    // ===== CẬP NHẬT (FIX 1/2) =====
-    // Lỗi gốc: dispatch({ type: 'SET', payload: { uiState: false } });
-    // Gán `uiState` bằng `false` (boolean) đã làm hỏng logic
-    // và gây ra vòng lặp vô tận.
-    //
-    // Sửa lại: Đồng bộ `uiState` nội bộ với `state` prop.
     dispatch({ type: 'SET', payload: { uiState: state } });
   }, [state]);
 
@@ -259,31 +250,22 @@ function CardActivity(props) {
   }, [derivedNextAttendancePhase]);
 
   // EFFECT: quản lý timer checkout mở
-  // ===== CẬP NHẬT (FIX 2/2) =====
-  // Thêm các điều kiện `if (!checkoutAvailable)` và `if (checkoutAvailable)`
-  // trước khi dispatch để đảm bảo state chỉ được set khi nó thực sự thay đổi.
-  // Thêm `checkoutAvailable` và `dispatch` vào mảng phụ thuộc.
   useEffect(() => {
-    // Clear existing timer
     if (checkoutTimerRef.current) {
       clearTimeout(checkoutTimerRef.current);
       checkoutTimerRef.current = null;
     }
 
-    // Nếu đã checkout thì mở luôn
     if (attendanceSummary?.hasCheckout) {
       if (!checkoutAvailable) {
-        // <--- CHỈ DISPATCH NẾU STATE KHÁC
         dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       }
       checkoutReminderShownRef.current = true;
       return undefined;
     }
 
-    // Nếu người dùng chưa ở trạng thái chờ checkout -> không cần timer
-    if (uiState !== 'confirm_out') {
+    if (uiState !== 'check_out') {
       if (!checkoutAvailable) {
-        // <--- CHỈ DISPATCH NẾU STATE KHÁC
         dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       }
       checkoutReminderShownRef.current = false;
@@ -292,17 +274,14 @@ function CardActivity(props) {
 
     if (!checkoutAvailableTimestamp) {
       if (!checkoutAvailable) {
-        // <--- CHỈ DISPATCH NẾU STATE KHÁC
         dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       }
       return undefined;
     }
 
     const now = Date.now();
-    // Nếu đã vượt timestamp -> mở và show reminder 1 lần
     if (now >= checkoutAvailableTimestamp) {
       if (!checkoutAvailable) {
-        // <--- CHỈ DISPATCH NẾU STATE KHÁC
         dispatch({ type: 'SET', payload: { checkoutAvailable: true } });
       }
       if (!checkoutReminderShownRef.current) {
@@ -312,9 +291,7 @@ function CardActivity(props) {
       return undefined;
     }
 
-    // Chưa tới thời điểm -> set timeout
     if (checkoutAvailable) {
-      // <--- CHỈ DISPATCH NẾU STATE KHÁC
       dispatch({ type: 'SET', payload: { checkoutAvailable: false } });
     }
     checkoutTimerRef.current = setTimeout(() => {
@@ -325,17 +302,14 @@ function CardActivity(props) {
       }
     }, checkoutAvailableTimestamp - now);
 
-    // Cleanup timer khi effect rerun
     return () => {
       if (checkoutTimerRef.current) {
         clearTimeout(checkoutTimerRef.current);
         checkoutTimerRef.current = null;
       }
     };
-    // Thêm `checkoutAvailable` và `dispatch` vào dependencies
   }, [attendanceSummary?.hasCheckout, checkoutAvailableTimestamp, openToast, uiState, checkoutAvailable, dispatch]);
 
-  // Cleanup on unmount
   useEffect(
     () => () => {
       if (checkoutTimerRef.current) {
@@ -350,9 +324,8 @@ function CardActivity(props) {
   const hasCheckin = attendanceSummary?.hasCheckin;
   const hasCheckout = attendanceSummary?.hasCheckout;
   const isCheckoutReady = checkoutAvailable || hasCheckout;
-  const isCheckoutPending = uiState === 'confirm_out' && hasCheckin && !isCheckoutReady;
+  const isCheckoutPending = uiState === 'check_out' && hasCheckin && !isCheckoutReady;
 
-  // Khi click vào details: gọi callback trước rồi điều hướng
   const openDetails = () => {
     if (typeof onDetails === 'function') onDetails(activity);
 
@@ -363,7 +336,6 @@ function CardActivity(props) {
     }
   };
 
-  // Register modal handling
   const handleOpenRegister = () => {
     onRegister?.(activity);
     dispatch({ type: 'SET', payload: { modalVariant: 'confirm', registerModalOpen: true } });
@@ -373,25 +345,18 @@ function CardActivity(props) {
     dispatch({ type: 'SET', payload: { modalVariant: 'cancel', registerModalOpen: true } });
   };
 
-  // ===== CẬP NHẬT (FIX LOGIC) =====
-  // Sửa lại: set registerModalOpen: false để đóng modal
   const handleCloseRegister = () => dispatch({ type: 'SET', payload: { registerModalOpen: false } });
 
-  // Xử lý xác nhận register / cancel register
   const handleConfirmRegister = async (payload) => {
     dispatch({ type: 'SET', payload: { isRegisterProcessing: true } });
     try {
       if (modalVariant === 'cancel') {
         await onCancelRegister?.({ activity, ...payload });
         dispatch({ type: 'SET', payload: { registerModalOpen: false, uiState: 'guest', modalVariant: 'confirm' } });
-        // notify parent
-        // onStateChange optional
         onStateChange?.('guest');
         openToast({ message: 'Hủy đăng ký thành công!', variant: 'success' });
       } else {
         await onRegistered?.({ activity, ...payload });
-        // ===== CẬP NHẬT (FIX LOGIC) =====
-        // Thêm: đóng modal sau khi đăng ký thành công
         dispatch({ type: 'SET', payload: { registerModalOpen: false } });
         if (autoSwitchStateOnRegister) {
           dispatch({ type: 'SET', payload: { uiState: 'registered' } });
@@ -410,7 +375,6 @@ function CardActivity(props) {
     }
   };
 
-  // Attendance handling (mở modal chụp/submit)
   const handleOpenAttendance = (phase = attendanceStep ?? 'checkin') => {
     if (props.requiresFaceEnrollment && !props.faceEnrollment?.enrolled) {
       openToast({
@@ -433,7 +397,6 @@ function CardActivity(props) {
   const handleCaptured = ({ file, previewUrl, dataUrl }) =>
     dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
 
-  // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
   const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
     const payload = {
       file: file ?? capturedEvidence?.file ?? null,
@@ -458,8 +421,6 @@ function CardActivity(props) {
 
     const phaseToSend = attendanceStep || 'checkin';
 
-    // ===== CẬP NHẬT (FIX LOGIC) =====
-    // Chuyển set isAttendanceSubmitting: true lên trước
     dispatch({ type: 'SET', payload: { isAttendanceSubmitting: true } });
     try {
       let faceDescriptorPayload = null;
@@ -478,7 +439,6 @@ function CardActivity(props) {
         }
       }
 
-      // Bỏ dispatch({ type: 'SET', payload: { checkModalOpen: false } }); ở đây
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
@@ -488,7 +448,7 @@ function CardActivity(props) {
         faceDescriptor: faceDescriptorPayload,
         faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
-      dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
+      dispatch({ type: 'SET', payload: { checkModalOpen: false } });
       dispatch({ type: 'RESET_CAPTURED' });
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
@@ -502,7 +462,7 @@ function CardActivity(props) {
       const updatedActivity = result?.activity;
       const nextPhaseFromApi = updatedActivity?.registration?.attendanceSummary?.nextPhase;
       const nextCheckoutAvailableAt = updatedActivity?.registration?.attendanceSummary?.checkoutAvailableAt;
-      const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'confirm_out' : 'details_only');
+      const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'check_out' : 'details_only');
       const nextAttendanceStep = nextPhaseFromApi || (phaseToSend === 'checkin' ? 'checkout' : 'checkin');
       const nextCheckoutAvailable = nextCheckoutAvailableAt
         ? Date.now() >= new Date(nextCheckoutAvailableAt).getTime()
@@ -542,26 +502,18 @@ function CardActivity(props) {
     dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
-      // ===== CẬP NHẬT (FIX LOGIC) =====
-      // Sửa: Gán isFeedbackSubmitting: false và đóng modal
       dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false, feedbackModalOpen: false } });
       onStateChange?.('feedback_reviewing');
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
     } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });
-      // ===== CẬP NHẬT (FIX LOGIC) =====
-      // Thêm: set isFeedbackSubmitting: false khi có lỗi
       dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false } });
-    } finally {
-      // Bỏ dispatch(isFeedbackSubmitting: false) ở đây vì đã xử lý ở trên
     }
   };
 
-  // Helper nhỏ để tạo pill/status button
   const pill = (text, tone = 'neutral') => ({ text, tone });
   const btn = (label, onClick, opt = {}) => ({ label, onClick, variant: 'outline', ...opt });
 
-  // Localization / label overrides
   const L = {
     details: 'Chi tiết',
     register: 'Đăng ký ngay',
@@ -569,9 +521,8 @@ function CardActivity(props) {
     checkin: 'Điểm danh',
     complete: 'Hoàn thành',
     closed: 'Chưa bắt đầu',
-    viewDetail: 'Xem chi tiết',
-    confirmIn: 'Tham gia',
-    confirmOut: 'Hoàn tất',
+    checkIn: 'Tham gia',
+    checkOut: 'Tham gia',
     sent: 'Đã gửi',
     giveFeedback: 'Gửi phản hồi',
     accepted: 'Hoàn thành',
@@ -633,29 +584,29 @@ function CardActivity(props) {
         return {
           buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
         };
-      case 'confirm_in':
+      case 'check_in':
         return {
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.confirmIn, () => handleOpenAttendance('checkin'), {
+            btn(L.checkIn, () => handleOpenAttendance('checkin'), {
               variant: 'primary',
               disabled: isAttendanceBusy,
             }),
           ],
         };
-      case 'confirm_out':
+      case 'check_out':
         return {
           status: isCheckoutPending ? pill(L.checkoutLocked, 'warning') : undefined,
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.confirmOut, () => handleOpenAttendance('checkout'), {
-              variant: 'orange',
+            btn(L.checkOut, () => handleOpenAttendance('checkout'), {
+              variant: 'primary',
               disabled: isAttendanceBusy || !isCheckoutReady,
             }),
           ],
         };
       case 'details_only':
-        return { buttons: [btn(L.viewDetail, openDetails, { variant: 'success', fullWidth: true })] };
+        return { buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })] };
       case 'feedback_waiting':
         return {
           status: pill(L.waitingFeedback, 'warning'),
@@ -842,8 +793,6 @@ function CardActivity(props) {
 
       {/* Register modal: truyền props cần thiết, confirmLoading từ state */}
       <RegisterModal
-        // ===== CẬP NHẬT (FIX LOGIC) =====
-        // Lỗi gõ phím: `open={checkModalOpen}` -> `open={registerModalOpen}`
         open={registerModalOpen}
         onCancel={handleCloseRegister}
         onConfirm={handleConfirmRegister}
@@ -863,7 +812,7 @@ function CardActivity(props) {
       />
 
       {/* CheckModal: điểm danh (camera / upload) */}
-      <CheckModal
+      <AttendanceModal
         open={checkModalOpen}
         onCancel={handleCloseAttendance}
         onCapture={handleCaptured}
