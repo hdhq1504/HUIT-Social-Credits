@@ -17,16 +17,4 @@ export const authApi = {
     await http.post('/auth/logout', {});
     useAuthStore.getState().logout();
   },
-  requestPasswordReset: async (email) => {
-    const { data } = await http.post('/auth/forgot-password/request', { email });
-    return data;
-  },
-  verifyPasswordResetOtp: async (email, otp) => {
-    const { data } = await http.post('/auth/forgot-password/verify', { email, otp });
-    return data;
-  },
-  resetPasswordWithOtp: async (email, otp, newPassword) => {
-    const { data } = await http.post('/auth/forgot-password/reset', { email, otp, newPassword });
-    return data;
-  },
 };

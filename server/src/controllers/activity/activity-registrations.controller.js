@@ -312,29 +312,13 @@ export const decideRegistrationAttendance = async (req, res) => {
       : "Minh chứng điểm danh bị từ chối";
     const notificationType = isApproval ? "success" : "danger";
     const notificationAction = isApproval ? "ATTENDANCE_APPROVED" : "ATTENDANCE_REJECTED";
-    const emailSubject = isApproval
-      ? `[HUIT Social Credits] Minh chứng được duyệt - "${baseTitle}"`
-      : `[HUIT Social Credits] Minh chứng bị từ chối - "${baseTitle}"`;
-
-    const emailMessageLines = [
-      notificationMessage,
-      `Điểm cộng: ${activity.diemCong ?? 0}`,
-      reason ? `Ghi chú từ quản trị viên: ${reason}` : null,
-    ].filter(Boolean);
 
     await notifyUser({
       userId: updated.nguoiDungId,
-      user: {
-        id: user.id,
-        email: user.email,
-        hoTen: user.hoTen,
-      },
       title: notificationTitle,
       message: notificationMessage,
       type: notificationType,
       data: { activityId: activity.id, registrationId: updated.id, action: notificationAction },
-      emailSubject,
-      emailMessageLines,
     });
   }
 
@@ -405,24 +389,12 @@ export const registerForActivity = async (req, res) => {
 
   const updated = await buildActivityResponse(activityId, userId);
 
-  const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
-  const detailLines = [
-    scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
-    activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null,
-  ];
-
   await notifyUser({
     userId,
-    user,
     title: "Đăng ký hoạt động thành công",
     message: `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
     type: "success",
     data: { activityId, action: "REGISTERED" },
-    emailSubject: `[HUIT Social Credits] Xác nhận đăng ký hoạt động "${activity.tieuDe}"`,
-    emailMessageLines: [
-      `Bạn đã đăng ký hoạt động "${activity.tieuDe}" thành công.`,
-      ...detailLines,
-    ],
   });
 
   res.status(201).json({
@@ -465,25 +437,12 @@ export const cancelActivityRegistration = async (req, res) => {
   const updated = await buildActivityResponse(activityId, userId);
 
   if (activity) {
-    const scheduleLabel = formatDateRange(activity.batDauLuc, activity.ketThucLuc);
-    const detailLines = [
-      scheduleLabel ? `Thời gian: ${scheduleLabel}` : null,
-      activity.diaDiem ? `Địa điểm: ${activity.diaDiem}` : null,
-      reason ? `Lý do hủy: ${String(reason).trim()}` : null,
-    ];
-
     await notifyUser({
       userId,
-      user,
       title: "Bạn đã hủy đăng ký hoạt động",
       message: `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
       type: "warning",
       data: { activityId, action: "CANCELED" },
-      emailSubject: `[HUIT Social Credits] Xác nhận hủy đăng ký hoạt động "${activity.tieuDe}"`,
-      emailMessageLines: [
-        `Bạn đã hủy đăng ký hoạt động "${activity.tieuDe}".`,
-        ...detailLines,
-      ],
     });
   }
 
