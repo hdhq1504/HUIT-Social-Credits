@@ -3,7 +3,7 @@ import {
   listRegistrationsAdmin,
   getRegistrationDetailAdmin,
   decideRegistrationAttendance,
-} from '../controllers/activity.controller.js';
+} from '../controllers/activity/activity-registrations.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();

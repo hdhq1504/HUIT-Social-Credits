@@ -4,11 +4,11 @@ import classNames from 'classnames/bind';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot, faCamera, faRotate, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import Webcam from 'react-webcam';
-import styles from './CheckModal.module.scss';
+import styles from './AttendanceModal.module.scss';
 
 const cx = classNames.bind(styles);
 
-function CheckModal({
+function AttendanceModal({
   open,
   onCancel,
   onSubmit,
@@ -22,7 +22,6 @@ function CheckModal({
   location,
   confirmLoading = false,
 }) {
-  // Local state for preview / file / dataUrl
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
   const [dataUrl, setDataUrl] = useState(null);
@@ -31,24 +30,20 @@ function CheckModal({
   const prevUrlRef = useRef(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
 
-  // Camera state
   const webcamRef = useRef(null);
   const activeStreamRef = useRef(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
 
-  // Danh sách camera & camera đang chọn
   const [videoInputs, setVideoInputs] = useState([]);
   const [deviceId, setDeviceId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasVideoInput, setHasVideoInput] = useState(true);
 
-  // ========= Helpers =========
   const revokePreview = () => {
     if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
     prevUrlRef.current = null;
   };
 
-  // Dừng tất cả tracks và set lại trạng thái camera
   const hardStopCamera = () => {
     try {
       const videoEl =
@@ -74,9 +69,7 @@ function CheckModal({
     setIsCameraOn(false);
   };
 
-  // ========= Effects =========
   useEffect(() => {
-    // Khi mở modal lần đầu: reset các trạng thái liên quan đến capture
     if (open && !wasOpenRef.current) {
       setCaptureStage(variant || 'checkin');
       setPreviewUrl(null);
@@ -88,7 +81,6 @@ function CheckModal({
       setIsReadingFile(false);
     }
 
-    // Khi đóng modal: dọn dẹp camera + revoke object URL
     if (!open && wasOpenRef.current) {
       hardStopCamera();
       revokePreview();
@@ -100,7 +92,6 @@ function CheckModal({
 
   useEffect(() => {
     return () => {
-      // Unmount: chắc chắn dừng camera và dọn URL
       hardStopCamera();
       revokePreview();
       setDataUrl(null);
@@ -108,7 +99,6 @@ function CheckModal({
     };
   }, []);
 
-  // Lấy danh sách thiết bị video (nếu có)
   const enumerateVideoInputs = async () => {
     try {
       const devices = await navigator.mediaDevices?.enumerateDevices?.();
@@ -117,7 +107,6 @@ function CheckModal({
       setHasVideoInput(vids.length > 0);
 
       if (vids.length) {
-        // ưu tiên camera sau (back) nếu có
         const backIdx = vids.findIndex((d) => /back|rear|environment/i.test(d.label));
         const idx = backIdx >= 0 ? backIdx : 0;
         setCurrentIndex(idx);
@@ -132,13 +121,11 @@ function CheckModal({
   };
   const openCamera = async () => {
     try {
-      // Thử getUserMedia để xin quyền, nhưng stop ngay để chỉ enumerate devices
       const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       tmp.getTracks().forEach((t) => t.stop());
       await enumerateVideoInputs();
       setIsCameraOn(true);
     } catch (err) {
-      // Xử lý lỗi phổ biến: user từ chối quyền, không có camera
       if (err?.name === 'NotAllowedError') {
         message.error('Bạn đã từ chối quyền camera. Hãy cấp quyền trong cài đặt trình duyệt và thử lại.');
       } else if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
@@ -150,18 +137,15 @@ function CheckModal({
     }
   };
 
-  // Chuyển camera (nếu có nhiều hơn 1)
   const toggleCamera = async () => {
     if (!videoInputs.length) return;
     hardStopCamera();
     const nextIdx = (currentIndex + 1) % videoInputs.length;
     setCurrentIndex(nextIdx);
     setDeviceId(videoInputs[nextIdx].deviceId);
-    // setIsCameraOn true sau khi deviceId cập nhật => Webcam sẽ mount lại
     setTimeout(() => setIsCameraOn(true), 0);
   };
 
-  // ========= Capture / Submit =========
   const dataURLtoFile = (dataUrl, fileName) => {
     const arr = dataUrl.split(',');
     const mime = arr[0].match(/:(.*?);/)[1] || 'image/jpeg';
@@ -190,15 +174,12 @@ function CheckModal({
     setCaptureStage('checkout');
     setIsReadingFile(false);
 
-    // Dừng camera để giảm resource usage (người dùng đã chụp)
     hardStopCamera();
 
-    // Báo parent rằng đã có capture (nếu cần)
     onCapture?.({ file: f, previewUrl: url, dataUrl });
   };
 
   const handleRetake = async () => {
-    // Xóa preview cũ, mở camera lại
     revokePreview();
     setFile(null);
     setPreviewUrl(null);
@@ -210,7 +191,6 @@ function CheckModal({
   };
 
   const handleSubmit = () => {
-    // Nếu đang confirmLoading hoặc chưa có file thì ignore
     if (confirmLoading || !file) return;
     if (!dataUrl) {
       message.warning('Hình ảnh đang được xử lý, vui lòng chờ trong giây lát.');
@@ -219,7 +199,6 @@ function CheckModal({
     onSubmit?.({ file, previewUrl, dataUrl });
   };
 
-  // File picker fallback: user có thể upload file từ máy
   const fileInputRef = useRef(null);
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
@@ -257,7 +236,6 @@ function CheckModal({
     }
   };
 
-  // Set constraints video dựa vào deviceId
   const videoConstraints = useMemo(() => {
     return deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -265,10 +243,6 @@ function CheckModal({
   }, [deviceId]);
 
   const webcamKey = deviceId || 'default';
-
-  const hasPreview = Boolean(previewUrl);
-  const canShowCamera = !hasPreview && isCameraOn && hasVideoInput;
-  const shouldShowPlaceholder = !hasPreview && (!isCameraOn || !hasVideoInput);
 
   return (
     <Modal
@@ -308,46 +282,43 @@ function CheckModal({
           </div>
         </div>
 
-        {/* Camera / preview area */}
-        <div className={cx('check-modal__camera-box')}>
-          <div className={cx('check-modal__camera-frame', hasPreview && 'has-preview')}>
-            {canShowCamera && (
-              <div className={cx('check-modal__webcam-wrap')}>
-                <Webcam
-                  key={webcamKey}
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={videoConstraints}
-                  className={cx('check-modal__webcam')}
-                  mirrored={false}
-                  playsInline
-                  onUserMedia={() => {
-                    const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
-                    const stream = videoEl?.srcObject || webcamRef.current?.stream;
-                    if (stream) activeStreamRef.current = stream;
-                  }}
-                  onUserMediaError={(e) => {
-                    message.error('Không thể truy cập camera: ' + (e?.message || 'Lỗi không xác định'));
-                  }}
-                />
-              </div>
-            )}
+        <div className={cx('check-modal__camera-box', !previewUrl && 'camera-box--idle')}>
+          {!previewUrl && isCameraOn && hasVideoInput && (
+            <div className={cx('check-modal__webcam-wrap')}>
+              <Webcam
+                key={webcamKey}
+                ref={webcamRef}
+                audio={false}
+                screenshotFormat="image/jpeg"
+                videoConstraints={videoConstraints}
+                className={cx('check-modal__webcam')}
+                mirrored={false}
+                playsInline
+                onUserMedia={() => {
+                  const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;
+                  const stream = videoEl?.srcObject || webcamRef.current?.stream;
+                  if (stream) activeStreamRef.current = stream;
+                }}
+                onUserMediaError={(e) => {
+                  message.error('Không thể truy cập camera: ' + (e?.message || 'Lỗi không xác định'));
+                }}
+              />
+            </div>
+          )}
 
-            {shouldShowPlaceholder && (
-              <div className={cx('check-modal__camera-empty')}>
-                <div className={cx('check-modal__camera-icon')}>
-                  <FontAwesomeIcon icon={faCamera} />
-                </div>
-                <div className={cx('check-modal__camera-title')}>Camera sẵn sàng</div>
-                <div className={cx('check-modal__camera-hint')}>Đảm bảo bạn hiển thị rõ trong khung hình</div>
+          {/* Idle state (chưa mở camera) */}
+          {!previewUrl && (!isCameraOn || !hasVideoInput) && (
+            <div className={cx('check-modal__camera-box-empty')}>
+              <div className={cx('check-modal__camera-box-icon')}>
+                <FontAwesomeIcon icon={faCamera} />
               </div>
-            )}
+              <div className={cx('check-modal__camera-box-title')}>Camera sẵn sàng</div>
+              <div className={cx('check-modal__camera-box-hint')}>Đảm bảo bạn hiển thị rõ trong khung hình</div>
+            </div>
+          )}
 
-            {hasPreview && (
-              <img className={cx('check-modal__camera-preview')} src={previewUrl} alt="preview" />
-            )}
-          </div>
+          {/* Preview image */}
+          {previewUrl && <img className={cx('check-modal__camera-box-preview')} src={previewUrl} alt="preview" />}
 
           {/* Actions (chụp / đổi camera / upload / gửi) */}
           <div className={cx('check-modal__actions')}>
@@ -400,19 +371,19 @@ function CheckModal({
               </>
             )}
           </div>
-        </div>
 
-        {/* Fallback input file */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+          {/* Fallback input file */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
     </Modal>
   );
 }
 
-export default CheckModal;
+export default AttendanceModal;

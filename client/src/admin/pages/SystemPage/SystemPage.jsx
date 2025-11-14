@@ -4,7 +4,7 @@ import { Button, Upload } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleInfo, faClockRotateLeft, faDownload, faShieldHalved, faUpload } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faClockRotateLeft, faDownload, faUpload } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
@@ -164,17 +164,6 @@ export default function SystemPage() {
   return (
     <div className={cx('system-page')}>
       {contextHolder}
-      <section className={cx('system-page__intro')}>
-        <div className={cx('system-page__intro-icon')}>
-          <FontAwesomeIcon icon={faShieldHalved} />
-        </div>
-        <div className={cx('system-page__intro-content')}>
-          <h1 className={cx('system-page__intro-title')}>Trung tâm sao lưu &amp; phục hồi</h1>
-          <p className={cx('system-page__intro-description')}>
-            Duy trì an toàn dữ liệu bằng cách sao lưu định kỳ và khôi phục nhanh chóng khi có sự cố.
-          </p>
-        </div>
-      </section>
 
       <div className={cx('system-page__grid')}>
         <section className={cx('system-page__card', 'system-page__card--backup')}>

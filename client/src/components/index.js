@@ -1,8 +1,9 @@
+export { default as AdminRoute } from './AdminRoute/AdminRoute';
+export { default as AttendanceModal } from './AttendanceModal/AttendanceModal';
 export { default as Button } from './Button/Button';
 export { default as CardActivity } from './CardActivity/CardActivity';
 export { default as ChangePasswordModal } from './ChangePasswordModal/ChangePasswordModal';
 export { default as CheckboxGroup } from './CheckboxGroup/CheckboxGroup';
-export { default as CheckModal } from './CheckModal/CheckModal';
 export { default as FeaturedActivitySection } from './FeaturedActivitySection/FeaturedActivitySection';
 export { default as FeedbackModal } from './FeedbackModal/FeedbackModal';
 export { default as ForgotPasswordForm } from './ForgotPasswordForm/ForgotPasswordForm';
@@ -16,6 +17,5 @@ export { default as ProofStatusSection } from './ProofStatusSection/ProofStatusS
 export { default as RegisterModal } from './RegisterModal/RegisterModal';
 export { default as ScrollToTop } from './ScrollToTop/ScrollToTop';
 export { default as UpcomingActivitiesSection } from './UpcomingActivitiesSection/UpcomingActivitiesSection';
-export { default as AdminRoute } from './AdminRoute/AdminRoute';
 export { default as RichTextEditor } from './RichTextEditor/RichTextEditor';
 export { default as useToast } from './Toast/Toast';

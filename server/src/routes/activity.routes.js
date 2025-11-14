@@ -1,17 +1,18 @@
 import { Router } from 'express';
+import { getActivity, listActivities } from '../controllers/activity/activity-public.controller.js';
 import {
   cancelActivityRegistration,
-  getActivity,
-  listActivities,
+  listActivityRegistrationsAdmin,
   listMyActivities,
-  markAttendance,
   registerForActivity,
-  submitActivityFeedback,
+} from '../controllers/activity/activity-registrations.controller.js';
+import { markAttendance } from '../controllers/activity/activity-attendance.controller.js';
+import { submitActivityFeedback } from '../controllers/activity/activity-feedback.controller.js';
+import {
   createActivity,
   updateActivity,
   deleteActivity,
-  listActivityRegistrationsAdmin
-} from '../controllers/activity.controller.js';
+} from '../controllers/activty/activity-management.controller.js';
 import { optionalAuth, requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
