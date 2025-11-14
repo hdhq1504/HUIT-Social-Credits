@@ -5,7 +5,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import { Col, Row, Tabs, Empty } from 'antd';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Button, CardActivity, CheckModal, RegisterModal, FeedbackModal, Label } from '@components/index';
+import {
+  Button,
+  CardActivity,
+  FaceAttendanceModal,
+  RegisterModal,
+  FeedbackModal,
+  Label,
+} from '@components/index';
 import useToast from '@/components/Toast/Toast';
 import Loading from '@/user/pages/Loading/Loading';
 import activitiesApi from '@api/activities.api';
@@ -35,7 +42,6 @@ function ActivityDetailPage() {
   const [isCheckOpen, setIsCheckOpen] = useState(false);
   const [attendancePhase, setAttendancePhase] = useState('checkin');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [isAnalyzingFace, setIsAnalyzingFace] = useState(false);
   const [faceModelsReady, setFaceModelsReady] = useState(false);
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
@@ -199,7 +205,7 @@ function ActivityDetailPage() {
     registerMutation.mutate({ variant, id, reason, note });
   };
 
-  const handleAttendanceSubmit = async ({ file, dataUrl }) => {
+  const handleAttendanceSubmit = async ({ file, dataUrl, faceDescriptor, faceError }) => {
     if (!id) return;
 
     let evidenceDataUrl = dataUrl ?? null;
@@ -232,25 +238,6 @@ function ActivityDetailPage() {
       }
     }
 
-    let faceDescriptorPayload = null;
-    let faceAnalysisError = null;
-    if (activity?.attendanceMethod === 'photo') {
-      setIsAnalyzingFace(true);
-      try {
-        const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-        if (descriptor && descriptor.length) {
-          faceDescriptorPayload = descriptor;
-        } else {
-          faceAnalysisError = 'NO_FACE_DETECTED';
-        }
-      } catch (error) {
-        console.error('Không thể phân tích khuôn mặt', error);
-        faceAnalysisError = 'ANALYSIS_FAILED';
-      } finally {
-        setIsAnalyzingFace(false);
-      }
-    }
-
     const payload = {
       status: 'present',
       phase: attendancePhase,
@@ -266,11 +253,30 @@ function ActivityDetailPage() {
     };
 
     if (activity?.attendanceMethod === 'photo') {
-      if (faceDescriptorPayload) {
-        payload.faceDescriptor = faceDescriptorPayload;
+      if (faceDescriptor && typeof faceDescriptor === 'object') {
+        try {
+          payload.faceDescriptor = Array.from(faceDescriptor);
+        } catch {
+          payload.faceDescriptor = Array.isArray(faceDescriptor) ? faceDescriptor : undefined;
+        }
       }
-      if (!faceDescriptorPayload && faceAnalysisError) {
-        payload.faceError = faceAnalysisError;
+
+      if (!payload.faceDescriptor && faceError) {
+        payload.faceError = faceError;
+      }
+
+      if (!payload.faceDescriptor && !payload.faceError && evidenceDataUrl) {
+        try {
+          const descriptorFallback = await computeDescriptorFromDataUrl(evidenceDataUrl);
+          if (descriptorFallback && descriptorFallback.length) {
+            payload.faceDescriptor = descriptorFallback;
+          } else {
+            payload.faceError = 'NO_FACE_DETECTED';
+          }
+        } catch (error) {
+          console.error('Không thể phân tích khuôn mặt', error);
+          payload.faceError = 'ANALYSIS_FAILED';
+        }
       }
     }
 
@@ -779,7 +785,7 @@ function ActivityDetailPage() {
         attendanceMethodLabel={activity?.attendanceMethodLabel}
       />
 
-      <CheckModal
+      <FaceAttendanceModal
         open={isCheckOpen}
         onCancel={() => setIsCheckOpen(false)}
         onSubmit={handleAttendanceSubmit}
@@ -788,8 +794,10 @@ function ActivityDetailPage() {
         pointsLabel={activity?.points != null ? `${activity.points} điểm` : undefined}
         dateTime={activity?.dateTime}
         location={activity?.location}
-        confirmLoading={attendanceMutation.isPending || isAnalyzingFace}
+        confirmLoading={attendanceMutation.isPending}
         phase={attendancePhase}
+        attendanceMethod={activity?.attendanceMethod}
+        attendanceMethodLabel={activity?.attendanceMethodLabel}
       />
 
       <FeedbackModal

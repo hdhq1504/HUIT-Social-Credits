@@ -2,7 +2,7 @@ export { default as Button } from './Button/Button';
 export { default as CardActivity } from './CardActivity/CardActivity';
 export { default as ChangePasswordModal } from './ChangePasswordModal/ChangePasswordModal';
 export { default as CheckboxGroup } from './CheckboxGroup/CheckboxGroup';
-export { default as CheckModal } from './CheckModal/CheckModal';
+export { default as FaceAttendanceModal } from './FaceAttendanceModal/FaceAttendanceModal';
 export { default as FeaturedActivitySection } from './FeaturedActivitySection/FeaturedActivitySection';
 export { default as FeedbackModal } from './FeedbackModal/FeedbackModal';
 export { default as ForgotPasswordForm } from './ForgotPasswordForm/ForgotPasswordForm';

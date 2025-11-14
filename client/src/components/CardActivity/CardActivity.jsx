@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Button from '../Button/Button';
 import RegisterModal from '../RegisterModal/RegisterModal';
-import CheckModal from '../CheckModal/CheckModal';
+import FaceAttendanceModal from '../FaceAttendanceModal/FaceAttendanceModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
@@ -43,7 +43,6 @@ const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailab
   uiState: initialUiState,
   modalVariant: 'confirm',
   checkModalOpen: false,
-  capturedEvidence: null,
   feedbackModalOpen: false,
   isRegisterProcessing: false,
   isAttendanceSubmitting: false,
@@ -56,8 +55,6 @@ const cardActivityReducer = (prevState, action) => {
   switch (action.type) {
     case 'SET':
       return { ...prevState, ...action.payload };
-    case 'RESET_CAPTURED':
-      return { ...prevState, capturedEvidence: null };
     default:
       return prevState;
   }
@@ -144,7 +141,6 @@ function CardActivity(props) {
     uiState,
     modalVariant,
     checkModalOpen,
-    capturedEvidence,
     feedbackModalOpen,
     isRegisterProcessing,
     isAttendanceSubmitting,
@@ -421,27 +417,22 @@ function CardActivity(props) {
     }
     dispatch({
       type: 'SET',
-      payload: { capturedEvidence: null, attendanceStep: phase, checkModalOpen: true },
+      payload: { attendanceStep: phase, checkModalOpen: true },
     });
   };
 
   const handleCloseAttendance = () => {
     dispatch({ type: 'SET', payload: { checkModalOpen: false } });
-    dispatch({ type: 'RESET_CAPTURED' });
   };
 
-  const handleCaptured = ({ file, previewUrl, dataUrl }) =>
-    dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
-
   // Submit attendance: chuyển file sang dataUrl nếu cần, gọi onConfirmPresent
-  const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
+  const handleSubmitAttendance = async ({ file, dataUrl, faceDescriptor, faceError }) => {
     const payload = {
-      file: file ?? capturedEvidence?.file ?? null,
-      previewUrl: previewUrl ?? capturedEvidence?.previewUrl ?? null,
-      dataUrl: dataUrl ?? capturedEvidence?.dataUrl ?? null,
+      file: file ?? null,
+      dataUrl: dataUrl ?? null,
     };
 
-    if (!payload.file) {
+    if (!payload.file && !payload.dataUrl) {
       openToast({ message: 'Không tìm thấy ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
       return;
     }
@@ -463,18 +454,28 @@ function CardActivity(props) {
     dispatch({ type: 'SET', payload: { isAttendanceSubmitting: true } });
     try {
       let faceDescriptorPayload = null;
-      let faceAnalysisError = null;
+      let faceAnalysisError = faceError ?? null;
       if (attendanceMethod === 'photo') {
-        try {
-          const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
-          if (descriptor && descriptor.length) {
-            faceDescriptorPayload = descriptor;
-          } else {
-            faceAnalysisError = 'NO_FACE_DETECTED';
+        if (faceDescriptor && typeof faceDescriptor === 'object') {
+          try {
+            faceDescriptorPayload = Array.from(faceDescriptor);
+          } catch {
+            faceDescriptorPayload = Array.isArray(faceDescriptor) ? faceDescriptor : null;
           }
-        } catch (error) {
-          console.error('Không thể phân tích khuôn mặt', error);
-          faceAnalysisError = 'ANALYSIS_FAILED';
+        }
+
+        if (!faceDescriptorPayload && !faceAnalysisError && evidenceDataUrl) {
+          try {
+            const descriptor = await computeDescriptorFromDataUrl(evidenceDataUrl);
+            if (descriptor && descriptor.length) {
+              faceDescriptorPayload = descriptor;
+            } else {
+              faceAnalysisError = 'NO_FACE_DETECTED';
+            }
+          } catch (error) {
+            console.error('Không thể phân tích khuôn mặt', error);
+            faceAnalysisError = 'ANALYSIS_FAILED';
+          }
         }
       }
 
@@ -482,14 +483,12 @@ function CardActivity(props) {
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
-        previewUrl: payload.previewUrl,
         dataUrl: evidenceDataUrl,
         phase: phaseToSend,
         faceDescriptor: faceDescriptorPayload,
         faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
       dispatch({ type: 'SET', payload: { checkModalOpen: false } }); // Đóng modal khi thành công
-      dispatch({ type: 'RESET_CAPTURED' });
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
       const responseMessage = result?.message || fallbackMessage;
@@ -862,14 +861,11 @@ function CardActivity(props) {
         {...registerModalProps}
       />
 
-      {/* CheckModal: điểm danh (camera / upload) */}
-      <CheckModal
+      {/* FaceAttendanceModal: điểm danh (camera / upload) */}
+      <FaceAttendanceModal
         open={checkModalOpen}
         onCancel={handleCloseAttendance}
-        onCapture={handleCaptured}
-        onRetake={() => dispatch({ type: 'RESET_CAPTURED' })}
         onSubmit={handleSubmitAttendance}
-        variant="checkin"
         campaignName={title}
         groupLabel={normalizedGroupLabel}
         pointsLabel={points != null ? `${points} điểm` : undefined}
@@ -877,6 +873,8 @@ function CardActivity(props) {
         location={location}
         confirmLoading={isAttendanceBusy}
         phase={attendanceStep}
+        attendanceMethod={attendanceMethod}
+        attendanceMethodLabel={attendanceMethodLabel}
       />
 
       {/* FeedbackModal chỉ mở khi user muốn gửi phản hồi */}
