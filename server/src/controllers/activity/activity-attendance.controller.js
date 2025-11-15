@@ -258,6 +258,8 @@ export const markAttendance = async (req, res) => {
   let notificationMessage;
   let notificationType;
   let notificationAction;
+  let emailSubject;
+  const emailMessageLines = [];
   let responseMessage;
 
   if (isCheckout) {
@@ -267,18 +269,36 @@ export const markAttendance = async (req, res) => {
       notificationMessage = `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận và cộng điểm.`;
       notificationType = "success";
       notificationAction = "ATTENDED";
+      emailSubject = `[HUIT Social Credits] Điểm danh thành công - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công và cộng điểm.`
+      );
     } else if (finalStatus === "CHO_DUYET") {
       responseMessage = "Ảnh điểm danh cần xác minh. Vui lòng chờ ban quản trị duyệt.";
       notificationTitle = "Điểm danh đang chờ duyệt";
       notificationMessage = `Hệ thống cần xác minh ảnh điểm danh của bạn cho hoạt động "${activity.tieuDe}".`;
       notificationType = "warning";
       notificationAction = "ATTENDANCE_REVIEW";
+      emailSubject = `[HUIT Social Credits] Điểm danh chờ duyệt - \"${activity.tieuDe}\"`;
+      if (faceSummary?.approvedCount === 1 && (faceSummary?.rejectedCount ?? 0) === 0) {
+        emailMessageLines.push(
+          "Hệ thống chỉ nhận diện trùng khớp một trong hai ảnh điểm danh. Ban quản trị sẽ kiểm tra thủ công."
+        );
+      } else {
+        emailMessageLines.push(
+          "Hệ thống chưa thể xác minh tự động ảnh điểm danh. Ban quản trị sẽ kiểm tra thủ công trong thời gian sớm nhất."
+        );
+      }
     } else {
       responseMessage = "Đã ghi nhận vắng mặt";
       notificationTitle = "Đã ghi nhận vắng mặt";
       notificationMessage = `Bạn được ghi nhận vắng mặt tại hoạt động "${activity.tieuDe}".`;
       notificationType = "danger";
       notificationAction = "ABSENT";
+      emailSubject = `[HUIT Social Credits] Ghi nhận vắng mặt - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh cho hoạt động "${activity.tieuDe}" ghi nhận bạn vắng mặt.`
+      );
     }
   } else {
     if (attendanceMethod === "photo" && (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED")) {
@@ -287,21 +307,36 @@ export const markAttendance = async (req, res) => {
       notificationMessage = `Ảnh điểm danh đầu giờ của bạn cho hoạt động "${activity.tieuDe}" cần được kiểm tra thêm.`;
       notificationType = "warning";
       notificationAction = "CHECKIN_REVIEW";
+      emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ chờ xác minh - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Hệ thống chưa thể xác nhận tự động ảnh điểm danh đầu giờ cho hoạt động "${activity.tieuDe}". Ban quản trị sẽ xem xét.`
+      );
     } else {
       responseMessage = "Điểm danh đầu giờ thành công";
       notificationTitle = "Đã ghi nhận điểm danh đầu giờ";
       notificationMessage = `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận.`;
       notificationType = "info";
       notificationAction = "CHECKIN";
+      emailSubject = `[HUIT Social Credits] Điểm danh đầu giờ - "${activity.tieuDe}"`;
+      emailMessageLines.push(
+        `Điểm danh đầu giờ cho hoạt động "${activity.tieuDe}" đã được ghi nhận thành công.`
+      );
     }
+  }
+
+  if (normalizedNote) {
+    emailMessageLines.push(`Ghi chú: ${normalizedNote}`);
   }
 
   await notifyUser({
     userId,
+    user,
     title: notificationTitle,
     message: notificationMessage,
     type: notificationType,
     data: { activityId, action: notificationAction },
+    emailSubject,
+    emailMessageLines,
   });
 
   res.json({

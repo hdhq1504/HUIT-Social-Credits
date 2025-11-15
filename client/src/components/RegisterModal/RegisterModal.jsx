@@ -109,9 +109,7 @@ function RegisterModal({
             <span
               className={cx(
                 'register-confirm__notice-value',
-                normalizedCancellationDeadline
-                  ? 'register-confirm__notice-danger'
-                  : 'register-confirm__notice-muted',
+                normalizedCancellationDeadline ? 'register-confirm__notice-danger' : 'register-confirm__notice-muted',
               )}
             >
               {normalizedCancellationDeadline || 'Đang cập nhật'}
@@ -120,9 +118,7 @@ function RegisterModal({
           <div className={cx('register-confirm__notice-row')}>
             <span className={cx('register-confirm__notice-label')}>Check-in:</span>
             {attendanceChip ? (
-              <span className={cx('register-confirm__chip', attendanceChip.className)}>
-                {attendanceChip.label}
-              </span>
+              <span className={cx('register-confirm__chip', attendanceChip.className)}>{attendanceChip.label}</span>
             ) : (
               <span className={cx('register-confirm__notice-muted')}>Đang cập nhật</span>
             )}

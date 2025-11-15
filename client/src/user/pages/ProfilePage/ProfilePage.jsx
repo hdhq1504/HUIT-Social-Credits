@@ -21,15 +21,7 @@ const cx = classNames.bind(styles);
 const MIN_FACE_SAMPLES = 3;
 const MAX_FACE_SAMPLES = 5;
 
-function FaceEnrollmentModal({
-  open,
-  onCancel,
-  onSave,
-  isSaving,
-  isModelsLoading,
-  modelsReady,
-  modelError,
-}) {
+function FaceEnrollmentModal({ open, onCancel, onSave, isSaving, isModelsLoading, modelsReady, modelError }) {
   const [samples, setSamples] = useState([]);
   const [captureError, setCaptureError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -184,8 +176,7 @@ function FaceEnrollmentModal({
       cancelText="Hủy"
       okButtonProps={{
         loading: isSaving,
-        disabled:
-          isModelsLoading || !modelsReady || isAnalyzing || samples.length < MIN_FACE_SAMPLES,
+        disabled: isModelsLoading || !modelsReady || isAnalyzing || samples.length < MIN_FACE_SAMPLES,
       }}
       cancelButtonProps={{ disabled: isSaving || isAnalyzing }}
       maskClosable={!(isSaving || isAnalyzing)}
@@ -201,12 +192,7 @@ function FaceEnrollmentModal({
         />
 
         {modelError && (
-          <Alert
-            type="error"
-            message={modelError}
-            showIcon
-            className={cx('profile-page__face-modal-alert')}
-          />
+          <Alert type="error" message={modelError} showIcon className={cx('profile-page__face-modal-alert')} />
         )}
 
         <div className={cx('profile-page__face-modal-camera')}>
@@ -263,12 +249,7 @@ function FaceEnrollmentModal({
         </div>
 
         {captureError && (
-          <Alert
-            type="warning"
-            message={captureError}
-            showIcon
-            className={cx('profile-page__face-modal-alert')}
-          />
+          <Alert type="warning" message={captureError} showIcon className={cx('profile-page__face-modal-alert')} />
         )}
 
         <div className={cx('profile-page__face-modal-samples')}>

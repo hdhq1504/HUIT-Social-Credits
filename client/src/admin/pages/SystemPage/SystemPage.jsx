@@ -71,7 +71,10 @@ export default function SystemPage() {
       openToast({ message: 'Đã tạo và tải xuống bản sao lưu thành công.', variant: 'success' });
     },
     onError: (error) => {
-      openToast({ message: error.response?.data?.error || 'Không thể tạo bản sao lưu. Vui lòng thử lại.', variant: 'danger' });
+      openToast({
+        message: error.response?.data?.error || 'Không thể tạo bản sao lưu. Vui lòng thử lại.',
+        variant: 'danger',
+      });
     },
   });
 
@@ -88,7 +91,10 @@ export default function SystemPage() {
       openToast({ message: response?.message || 'Khôi phục dữ liệu thành công.', variant: 'success' });
     },
     onError: (error) => {
-      openToast({ message: error.response?.data?.error || 'Khôi phục dữ liệu thất bại. Vui lòng kiểm tra lại tệp.', variant: 'danger' });
+      openToast({
+        message: error.response?.data?.error || 'Khôi phục dữ liệu thất bại. Vui lòng kiểm tra lại tệp.',
+        variant: 'danger',
+      });
     },
   });
 
@@ -255,7 +261,9 @@ export default function SystemPage() {
                 {restoreCounts.map((item) => (
                   <li key={item.key} className={cx('system-page__stat-item')}>
                     <span className={cx('system-page__stat-label')}>{item.label}</span>
-                    <span className={cx('system-page__stat-value', 'system-page__stat-value--accent')}>{item.value}</span>
+                    <span className={cx('system-page__stat-value', 'system-page__stat-value--accent')}>
+                      {item.value}
+                    </span>
                   </li>
                 ))}
               </ul>

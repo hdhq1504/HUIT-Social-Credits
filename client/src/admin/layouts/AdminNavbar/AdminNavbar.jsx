@@ -10,10 +10,8 @@ import styles from './AdminNavbar.module.scss';
 const cx = classNames.bind(styles);
 
 function AdminNavbar({ pageTitle, actions, breadcrumbs }) {
-  // Render Breadcrumb động
   const renderBreadcrumbs = () => {
     if (breadcrumbs) {
-      // Nếu có breadcrumbs, render đầy đủ
       return (
         <div className={cx('admin-navbar__breadcrumb')}>
           {breadcrumbs.map((crumb, index) => {

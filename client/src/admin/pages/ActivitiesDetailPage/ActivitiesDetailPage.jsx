@@ -508,9 +508,7 @@ function ActivitiesDetailPage() {
 
                         <div className={cx('activity-detail__feedback-content')}>
                           {item.rating ? (
-                            <div className={cx('activity-detail__feedback-rating')}>
-                              Đánh giá: {item.rating}/5
-                            </div>
+                            <div className={cx('activity-detail__feedback-rating')}>Đánh giá: {item.rating}/5</div>
                           ) : null}
                           <p>{item.content || 'Không có nội dung phản hồi.'}</p>
 
@@ -527,7 +525,7 @@ function ActivitiesDetailPage() {
                                 </a>
                               ))}
                             </div>
-                            ) : null}
+                          ) : null}
                         </div>
                       </List.Item>
                     );

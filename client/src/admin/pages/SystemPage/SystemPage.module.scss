@@ -16,14 +16,6 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
-
-    &--backup {
-      border-top: 4px solid var(--primary-color);
-    }
-
-    &--restore {
-      border-top: 4px solid var(--orange-color);
-    }
   }
 
   &__card-header {
@@ -145,14 +137,14 @@
   }
 
   &__action-button {
-    display: inline-flex !important;
+    display: inline-flex;
     align-items: center;
     gap: 10px;
-    height: 44px !important;
-    padding: 0 24px !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    font-family: 'Montserrat', sans-serif !important;
+    background-color: var(--primary-color);
+
+    &:hover {
+      background-color: var(--primary-hover-color) !important;
+    }
   }
 
   &__timestamp {
@@ -187,7 +179,9 @@
       border-radius: 16px;
       border: 1px dashed var(--border-color);
       background: #fafafa;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
+      transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
     }
 
     :global(.ant-upload-drag:hover),

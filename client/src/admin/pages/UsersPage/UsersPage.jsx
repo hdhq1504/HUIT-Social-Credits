@@ -4,14 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar, Button, Input, Modal, Pagination, Select, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faCircleDot,
-  faPenToSquare,
-  faSearch,
-  faSort,
-  faTrash,
-  faUserPlus,
-} from '@fortawesome/free-solid-svg-icons';
+import { faCircleDot, faArrowRotateRight, faPenToSquare, faSearch, faSort, faTrash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
@@ -366,6 +359,7 @@ export default function UsersPage() {
           />
 
           <Button size="large" onClick={handleResetFilters} className={cx('users-page__reset-button')}>
+            <FontAwesomeIcon icon={faArrowRotateRight} />
             Đặt lại
           </Button>
         </div>

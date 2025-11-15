@@ -46,7 +46,7 @@ const UsersAddEditPage = () => {
     navigate(ROUTE_PATHS.ADMIN.USERS);
   }, [navigate]);
 
-  const pageTitle = useMemo(() => (isEditMode ? 'Chỉnh sửa người dùng' : 'Thêm mới người dùng'), [isEditMode]);
+  const pageTitle = useMemo(() => (isEditMode ? 'Chỉnh sửa người dùng' : 'Tạo người dùng mới'), [isEditMode]);
 
   useEffect(() => {
     const breadcrumbs = [
@@ -162,7 +162,7 @@ const UsersAddEditPage = () => {
             <p className={cx('users-add-edit-page__subtitle')}>
               {isEditMode
                 ? 'Cập nhật thông tin tài khoản và trạng thái hoạt động của người dùng.'
-                : 'Nhập thông tin chi tiết để thêm mới tài khoản người dùng vào hệ thống.'}
+                : 'Nhập thông tin chi tiết để tạo tài khoản người dùng mới vào hệ thống.'}
             </p>
           </div>
         </div>
@@ -189,15 +189,17 @@ const UsersAddEditPage = () => {
                 <Form.Item
                   label="Email"
                   name="email"
-                  rules={[{ required: true, message: 'Vui lòng nhập email.' }, { type: 'email', message: 'Email không hợp lệ.' }]}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập email.' },
+                    { type: 'email', message: 'Email không hợp lệ.' },
+                  ]}
                 >
                   <Input placeholder="ví dụ: sinhvien@huit.edu.vn" allowClear />
                 </Form.Item>
               </Col>
 
               <Col xs={24} md={12}>
-                <Form.Item label="Vai trò" name="role" rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}
-                >
+                <Form.Item label="Vai trò" name="role" rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}>
                   <Select options={ROLE_OPTIONS} placeholder="Chọn vai trò" />
                 </Form.Item>
               </Col>
@@ -239,7 +241,11 @@ const UsersAddEditPage = () => {
                     { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự.' },
                   ]}
                 >
-                  <Input.Password placeholder={isEditMode ? 'Để trống nếu không thay đổi' : 'Nhập mật khẩu'} visibilityToggle allowClear />
+                  <Input.Password
+                    placeholder={isEditMode ? 'Để trống nếu không thay đổi' : 'Nhập mật khẩu'}
+                    visibilityToggle
+                    allowClear
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
@@ -268,22 +274,22 @@ const UsersAddEditPage = () => {
               </Col>
 
               <Col xs={24}>
-                <Form.Item name="isActive" label="Trạng thái hoạt động" valuePropName="checked">
-                  <Switch checkedChildren="Đang hoạt động" unCheckedChildren="Ngưng hoạt động" />
+                <Form.Item name="isActive" label="Đang hoạt động" valuePropName="checked">
+                  <Switch />
                 </Form.Item>
               </Col>
             </Row>
           </Spin>
 
           <div className={cx('users-add-edit-page__actions')}>
-            <Button onClick={handleBackToList} icon={<FontAwesomeIcon icon={faArrowLeft} />}>Hủy</Button>
+            <Button onClick={handleBackToList}>Hủy</Button>
             <Button
               type="primary"
               htmlType="submit"
               loading={isSubmitting}
               icon={<FontAwesomeIcon icon={faFloppyDisk} />}
             >
-              {isEditMode ? 'Cập nhật' : 'Thêm mới'}
+              {isEditMode ? 'Cập nhật' : 'Tạo'}
             </Button>
           </div>
         </Form>

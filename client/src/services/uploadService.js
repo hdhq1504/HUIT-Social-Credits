@@ -23,7 +23,7 @@ const sanitizeSegment = (value, fallback) => {
 };
 
 const randomId = () =>
-  (typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10));
+  typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10);
 
 const buildFeedbackPath = (userId, activityId, file) => {
   const ext = file.name?.split('.').pop()?.toLowerCase() || 'dat';
@@ -42,12 +42,10 @@ export const uploadFeedbackEvidence = async (file, { userId, activityId }) => {
   const bucket = BUCKETS.feedback;
   const path = buildFeedbackPath(userId, activityId, file);
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
+  const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
 
   if (error) {
     throw new Error(error.message || 'Không thể upload minh chứng');

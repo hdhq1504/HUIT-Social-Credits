@@ -49,7 +49,7 @@
     transition: 0.2s;
 
     &:hover {
-      background-color: #01016d;
+      background-color: var(--primary-hover-color) !important;
     }
   }
 
@@ -64,6 +64,17 @@
     padding: 16px;
     height: auto;
     border-radius: 8px;
+
+    &--primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      color: white;
+
+      &:hover {
+        background-color: var(--primary-hover-color) !important;
+        border-color: var(--primary-hover-color) !important;
+      }
+    }
 
     &--orange {
       background: var(--orange-color);

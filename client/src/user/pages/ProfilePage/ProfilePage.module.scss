@@ -217,7 +217,10 @@
     color: var(--white-color);
     background: linear-gradient(135deg, #ff6b1a, #ff5c00);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease;
 
     &:hover {
       transform: translateY(-1px);
@@ -303,7 +306,10 @@
     background: linear-gradient(135deg, #2a54ff, #1b34c8);
     color: var(--white-color);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease;
 
     &:hover {
       transform: translateY(-1px);

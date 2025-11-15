@@ -153,7 +153,7 @@ function PersonalActivitiesSection() {
           </div>
         )}
       </div>
-      
+
       {canShowViewAll && (
         <div className={cx('personal-activities__actions')}>
           <Link to={'/my-activities'}>

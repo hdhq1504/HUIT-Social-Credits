@@ -95,10 +95,17 @@ export const submitActivityFeedback = async (req, res) => {
 
   await notifyUser({
     userId,
+    user,
     title: "Đã gửi phản hồi hoạt động",
     message: `Phản hồi của bạn cho hoạt động "${activityTitle}" đã được gửi thành công.`,
     type: "info",
     data: { activityId, action: "FEEDBACK_SUBMITTED", feedbackId: feedback.id },
+    emailSubject: `[HUIT Social Credits] Xác nhận gửi phản hồi hoạt động "${activityTitle}"`,
+    emailMessageLines: [
+      `Phản hồi của bạn cho hoạt động "${activityTitle}" đã được gửi thành công.`,
+      normalizedRating ? `Đánh giá: ${normalizedRating}/5` : null,
+      normalizedAttachments.length ? `Số lượng minh chứng: ${normalizedAttachments.length}` : null,
+    ],
   });
 
   res.status(201).json({

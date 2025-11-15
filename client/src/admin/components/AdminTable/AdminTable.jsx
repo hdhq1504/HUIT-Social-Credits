@@ -6,17 +6,10 @@ import styles from './AdminTable.module.scss';
 
 const cx = classNames.bind(styles);
 
-const columnKey = (column = {}) => column.key ?? (Array.isArray(column.dataIndex) ? column.dataIndex.join('.') : column.dataIndex);
+const columnKey = (column = {}) =>
+  column.key ?? (Array.isArray(column.dataIndex) ? column.dataIndex.join('.') : column.dataIndex);
 
-function AdminTable({
-  columns,
-  dataSource,
-  columnRenderers,
-  className,
-  wrapperClassName,
-  sortIcon,
-  ...tableProps
-}) {
+function AdminTable({ columns, dataSource, columnRenderers, className, wrapperClassName, sortIcon, ...tableProps }) {
   const enhancedColumns = useMemo(
     () =>
       columns.map((column) => {

@@ -47,11 +47,7 @@ export default function ReportsPage() {
     return params;
   }, [selectedYear, selectedSemester]);
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-  } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: [ADMIN_REPORTS_QUERY_KEY, queryParams],
     queryFn: () => statsApi.getAdminReports(queryParams),
     keepPreviousData: true,
@@ -126,7 +122,7 @@ export default function ReportsPage() {
         label: 'Hoạt động ghi nhận',
         value: overview.totalActivities ?? 0,
         icon: faClipboardList,
-        modifier: 'orange',
+        modifier: 'yellow',
         fractionDigits: 0,
       },
       {
@@ -134,7 +130,7 @@ export default function ReportsPage() {
         label: 'Điểm trung bình / SV',
         value: overview.averagePointsPerStudent ?? 0,
         icon: faMedal,
-        modifier: 'purple',
+        modifier: 'information',
         fractionDigits: 2,
       },
     ],
@@ -269,9 +265,7 @@ export default function ReportsPage() {
                 <span>{formatNumber(item.studentCount)} SV</span>
               </div>
             </div>
-            <span className={cx('reports-page__faculty-count')}>
-              {formatNumber(item.participationCount)} lượt
-            </span>
+            <span className={cx('reports-page__faculty-count')}>{formatNumber(item.participationCount)} lượt</span>
           </li>
         ))}
       </ul>
@@ -344,7 +338,11 @@ export default function ReportsPage() {
             </div>
             <div className={cx('reports-page__stat-card-info')}>
               <span className={cx('reports-page__stat-card-value')}>
-                {isInitialLoading ? <Skeleton paragraph={false} active title /> : formatNumber(card.value, card.fractionDigits)}
+                {isInitialLoading ? (
+                  <Skeleton paragraph={false} active title />
+                ) : (
+                  formatNumber(card.value, card.fractionDigits)
+                )}
               </span>
               <span className={cx('reports-page__stat-card-label')}>{card.label}</span>
             </div>

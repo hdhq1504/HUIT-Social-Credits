@@ -60,7 +60,12 @@ function ScoringPage() {
   const navigate = useNavigate();
   const { contextHolder, open: openToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({ status: 'all', faculty: undefined, className: undefined, activityId: undefined });
+  const [filters, setFilters] = useState({
+    status: 'all',
+    faculty: undefined,
+    className: undefined,
+    activityId: undefined,
+  });
   const [filterOptions, setFilterOptions] = useState({ faculties: [], classes: [], activities: [] });
   const [statusCounts, setStatusCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
   const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE, total: 0 });
@@ -127,8 +132,7 @@ function ScoringPage() {
     const activities = (data?.filterOptions?.activities ?? []).map((item) => ({ label: item.title, value: item.id }));
     setFilterOptions({ faculties, classes, activities });
 
-    const totalCount =
-      stats.total ?? (stats.pending ?? 0) + (stats.approved ?? 0) + (stats.rejected ?? 0);
+    const totalCount = stats.total ?? (stats.pending ?? 0) + (stats.approved ?? 0) + (stats.rejected ?? 0);
     setStatusCounts({
       all: totalCount,
       pending: stats.pending ?? 0,
@@ -136,7 +140,6 @@ function ScoringPage() {
       rejected: stats.rejected ?? 0,
     });
   }, [data]);
-
 
   const registrations = data?.registrations ?? [];
 
@@ -188,14 +191,52 @@ function ScoringPage() {
     () => [
       { title: 'STT', dataIndex: 'index', key: 'index', width: 60, align: 'center' },
       { title: 'Tên sinh viên', dataIndex: ['student', 'name'], key: 'student', width: 250 },
-      { title: 'MSSV', dataIndex: ['student', 'studentCode'], key: 'studentCode', width: 110, sorter: (a, b) => (a.student?.studentCode || '').localeCompare(b.student?.studentCode || '') },
-      { title: 'Khoa', dataIndex: ['student', 'faculty'], key: 'faculty', width: 180, sorter: (a, b) => (a.student?.faculty || '').localeCompare(b.student?.faculty || '') },
-      { title: 'Lớp', dataIndex: ['student', 'className'], key: 'className', width: 100, sorter: (a, b) => (a.student?.className || '').localeCompare(b.student?.className || '') },
-      { title: 'Hoạt động', dataIndex: ['activity', 'title'], key: 'activity', width: 250, sorter: (a, b) => (a.activity?.title || '').localeCompare(b.activity?.title || '') },
-      { title: 'Điểm', dataIndex: ['activity', 'points'], key: 'points', width: 80, align: 'center', sorter: (a, b) => (a.activity?.points || 0) - (b.activity?.points || 0) },
+      {
+        title: 'MSSV',
+        dataIndex: ['student', 'studentCode'],
+        key: 'studentCode',
+        width: 110,
+        sorter: (a, b) => (a.student?.studentCode || '').localeCompare(b.student?.studentCode || ''),
+      },
+      {
+        title: 'Khoa',
+        dataIndex: ['student', 'faculty'],
+        key: 'faculty',
+        width: 180,
+        sorter: (a, b) => (a.student?.faculty || '').localeCompare(b.student?.faculty || ''),
+      },
+      {
+        title: 'Lớp',
+        dataIndex: ['student', 'className'],
+        key: 'className',
+        width: 100,
+        sorter: (a, b) => (a.student?.className || '').localeCompare(b.student?.className || ''),
+      },
+      {
+        title: 'Hoạt động',
+        dataIndex: ['activity', 'title'],
+        key: 'activity',
+        width: 250,
+        sorter: (a, b) => (a.activity?.title || '').localeCompare(b.activity?.title || ''),
+      },
+      {
+        title: 'Điểm',
+        dataIndex: ['activity', 'points'],
+        key: 'points',
+        width: 80,
+        align: 'center',
+        sorter: (a, b) => (a.activity?.points || 0) - (b.activity?.points || 0),
+      },
       { title: 'Check-in', dataIndex: 'checkIn', key: 'checkIn', width: 130 },
       { title: 'Check out', dataIndex: 'checkOut', key: 'checkOut', width: 130 },
-      { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, align: 'center', sorter: (a, b) => (a.status || '').localeCompare(b.status || '') },
+      {
+        title: 'Trạng thái',
+        dataIndex: 'status',
+        key: 'status',
+        width: 120,
+        align: 'center',
+        sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
+      },
       { title: 'Hành động', key: 'action', width: 100, align: 'center' },
     ],
     [],
@@ -208,7 +249,9 @@ function ScoringPage() {
         <div className={cx('scoring-page__student')}>
           <Avatar src={record.student?.avatarUrl || '/images/profile.png'} />
           <div className={cx('scoring-page__student-details')}>
-            <Typography.Text className={cx('scoring-page__student-name')}>{record.student?.name || 'N/A'}</Typography.Text>
+            <Typography.Text className={cx('scoring-page__student-name')}>
+              {record.student?.name || 'N/A'}
+            </Typography.Text>
             <Typography.Text type="secondary" className={cx('scoring-page__student-email')}>
               {record.student?.email || 'N/A'}
             </Typography.Text>
@@ -220,7 +263,9 @@ function ScoringPage() {
       className: ({ record }) => record.student?.className || '--',
       activity: ({ record }) => (
         <div className={cx('scoring-page__activity')}>
-          <Typography.Text className={cx('scoring-page__activity-name')}>{record.activity?.title || '--'}</Typography.Text>
+          <Typography.Text className={cx('scoring-page__activity-name')}>
+            {record.activity?.title || '--'}
+          </Typography.Text>
           <Typography.Text type="secondary" className={cx('scoring-page__activity-date')}>
             <FontAwesomeIcon icon={faCalendarAlt} />
             {record.activity?.startTime ? dayjs(record.activity.startTime).format('DD/MM/YYYY') : '--/--/----'}
@@ -229,14 +274,20 @@ function ScoringPage() {
       ),
       points: ({ record }) => {
         const points = Number.isFinite(Number(record.activity?.points)) ? Number(record.activity.points) : 0;
-        return <Typography.Text className={cx('scoring-page__score')}>{points > 0 ? `+${points}` : points}</Typography.Text>;
+        return (
+          <Typography.Text className={cx('scoring-page__score')}>{points > 0 ? `+${points}` : points}</Typography.Text>
+        );
       },
       checkIn: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkin')),
       checkOut: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkout')),
       status: ({ record }) => {
         const meta = REGISTRATION_STATUS_META[record.status] || REGISTRATION_STATUS_META.DANG_KY;
         return (
-          <Tag icon={<FontAwesomeIcon icon={meta.icon} />} color={meta.color} className={cx('scoring-page__status-tag')}>
+          <Tag
+            icon={<FontAwesomeIcon icon={meta.icon} />}
+            color={meta.color}
+            className={cx('scoring-page__status-tag')}
+          >
             {record.statusLabel || meta.label}
           </Tag>
         );
