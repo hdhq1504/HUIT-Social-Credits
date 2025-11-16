@@ -122,31 +122,31 @@
 
   &__grid {
     &__item:nth-child(2) &__item-icon-wrapper {
-      background: rgba(219.51, 118.54, 0, 0.12); // warning-bg
+      background: rgba(219.51, 118.54, 0, 0.12);
     }
     &__item:nth-child(2) &__item-icon {
-      color: var(--yellow-color); // yellow-star
+      color: var(--yellow-color);
     }
     &__item:nth-child(3) &__item-icon-wrapper {
-      background: rgba(25, 120, 135, 0.12); // success-bg
+      background: rgba(25, 120, 135, 0.12);
     }
     &__item:nth-child(3) &__item-icon {
       color: var(--success-color);
     }
     &__item:nth-child(4) &__item-icon-wrapper {
-      background: rgba(220, 53, 69, 0.12); // danger-bg
+      background: rgba(220, 53, 69, 0.12);
     }
     &__item:nth-child(4) &__item-icon {
       color: var(--danger-color);
     }
     &__item:nth-child(5) &__item-icon-wrapper {
-      background: rgba(255, 92, 0, 0.12); // orange-bg
+      background: rgba(255, 92, 0, 0.12);
     }
     &__item:nth-child(5) &__item-icon {
       color: var(--orange-color);
     }
     &__item:nth-child(6) &__item-icon-wrapper {
-      background: rgba(57, 181, 250, 0.12); // info-bg
+      background: rgba(57, 181, 250, 0.12);
     }
     &__item:nth-child(6) &__item-icon {
       color: var(--information-color);
@@ -323,59 +323,7 @@
     padding: 0 32px 16px;
   }
 
-  &__table-wrapper {
-    padding: 24px 0;
-
-    :global {
-      .ant-table {
-        font-size: 14px;
-      }
-      .ant-table-thead > tr > th {
-        background: #f9fafb;
-        font-weight: 600;
-      }
-    }
-  }
-
-  &__list-section {
-    margin-bottom: 24px;
-  }
-
-  &__list-title {
-    font-size: 18px;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 16px;
-  }
-
-  &__student-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  &__student-avatar {
-    background: var(--secondary-color);
-    color: var(--primary-color);
-  }
-
-  &__student-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__student-name {
-    font-weight: 600;
-    color: var(--black-color);
-  }
-
-  &__student-email {
-    font-size: 12px;
-    color: var(--muted-color);
-  }
-
+  // Tab 'Thông tin chi tiết'
   &__list {
     display: flex;
     flex-direction: column;
@@ -425,60 +373,329 @@
     }
   }
 
-  &__feedback-item {
-    padding: 16px 0;
-    border-bottom: 1px solid #f0f0f0;
+  &__list-section {
+    margin-bottom: 24px;
   }
 
-  &__feedback-header {
+  &__list-title {
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+  }
+
+  // Tab 'Sinh viên tham gia'
+  &__table-wrapper {
+    padding: 24px 0;
+
+    :global {
+      .ant-table {
+        font-size: 14px;
+      }
+      .ant-table-thead > tr > th {
+        background: #f9fafb;
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__student-cell {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-weight: 600;
-    color: var(--black-color);
-
-    span {
-      flex: 1;
-    }
   }
 
-  &__feedback-meta {
-    display: flex;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--muted-color);
-
-    span + span::before {
-      content: '\2022';
-      margin: 0 8px;
-    }
-  }
-
-  &__feedback-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--black-color);
-
-    p {
-      margin: 0;
-    }
-  }
-
-  &__feedback-rating {
-    font-weight: 500;
+  &__student-avatar {
+    background: var(--secondary-color);
     color: var(--primary-color);
   }
 
-  &__feedback-attachments {
+  &__student-info {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    flex-direction: column;
+    gap: 4px;
+  }
 
-    a {
+  &__student-name {
+    font-weight: 600;
+    color: var(--black-color);
+  }
+
+  &__student-email {
+    font-size: 12px;
+    color: var(--muted-color);
+  }
+
+  &__registration-status-tag {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    text-align: center;
+
+    &--in-progress {
+      background-color: var(--secondary-color);
       color: var(--primary-color);
-      font-weight: 500;
+    }
+
+    &--joined {
+      background-color: rgba(25, 135, 84, 0.12);
+      color: var(--success-color);
+    }
+
+    &--pending {
+      background-color: rgba(220, 119, 0, 0.12);
+      color: var(--warning-color);
+    }
+
+    &--canceled {
+      background-color: var(--border-color);
+      color: var(--muted-color);
+    }
+
+    &--absent {
+      background-color: rgba(220, 53, 69, 0.12);
+      color: var(--danger-color);
+    }
+
+    &--default {
+      background-color: var(--border-color);
+      color: var(--black-color);
+    }
+  }
+
+  // Tab 'Nhật ký phản hồi'
+  &__feedback-log-card {
+    background: var(--white-color);
+    border-radius: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  &__feedback-log-header {
+    padding: 24px;
+    background: var(--secondary-color);
+  }
+
+  &__feedback-summary-row {
+    width: 100%;
+  }
+
+  &__feedback-summary-item {
+    text-align: center;
+
+    .ant-card-body {
+      padding: 12px;
+    }
+
+    :global(.ant-statistic-title) {
+      font-size: 14px;
+      font-family: 'Montserrat', sans-serif;
+      color: var(--muted-color);
+    }
+
+    :global(.ant-statistic-content) {
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 36px;
+    }
+
+    &--total {
+      :global(.ant-statistic-content-value) {
+        color: var(--primary-color);
+      }
+    }
+
+    &--approved {
+      :global(.ant-statistic-content-value) {
+        color: var(--success-color);
+      }
+    }
+
+    &--pending {
+      :global(.ant-statistic-content-value) {
+        color: var(--warning-color);
+      }
+    }
+
+    &--rejected {
+      :global(.ant-statistic-content-value) {
+        color: var(--danger-color);
+      }
+    }
+  }
+
+  &__feedback-toolbar {
+    padding: 24px;
+    border-bottom: 0.75px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__feedback-filter {
+    min-width: 220px;
+  }
+
+  &__feedback-bulk-btn {
+    border-radius: 8px;
+
+    &--approve {
+      background-color: var(--success-color);
+
+      &:hover {
+        background-color: #186340 !important;
+      }
+    }
+
+    &--reject {
+      background-color: var(--danger-color);
+
+      &:hover {
+        background-color: #b7192c !important;
+      }
+    }
+  }
+
+  &__feedback-list-wrapper {
+    padding: 24px 24px 8px;
+  }
+
+  &__feedback-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__feedback-item-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__feedback-item-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__feedback-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__feedback-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__feedback-student-name {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: 'Montserrat', sans-serif;
+    color: var(--black-color);
+  }
+
+  &__feedback-student-code {
+    font-size: 14px;
+    color: var(--muted-color);
+  }
+
+  &__feedback-text {
+    font-size: 16px;
+    color: var(--muted-color);
+  }
+
+  &__feedback-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--muted-color);
+    flex-wrap: wrap;
+  }
+
+  &__feedback-status-tag {
+    border-radius: 24px;
+    border: none;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &--pending {
+      background-color: rgba(220, 119, 0, 0.12);
+      color: var(--warning-color);
+    }
+
+    &--approved {
+      background-color: rgba(25, 135, 84, 0.12);
+      color: var(--success-color);
+    }
+
+    &--rejected {
+      background-color: rgba(220, 53, 69, 0.12);
+      color: var(--danger-color);
+    }
+
+    &--default {
+      background-color: var(--border-color);
+      color: var(--muted-color);
+    }
+  }
+
+  &__feedback-item-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__feedback-action-btn {
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-family: 'Montserrat', sans-serif;
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--approve {
+      background-color: rgba(25, 135, 84, 0.12);
+      color: var(--success-color);
+    }
+
+    &--reject {
+      background-color: rgba(220, 53, 69, 0.12);
+      color: var(--danger-color);
+    }
+
+    &--view {
+      background-color: transparent;
+      padding: 0;
+      color: var(--primary-color);
     }
   }
 }

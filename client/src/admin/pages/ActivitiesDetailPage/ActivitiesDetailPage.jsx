@@ -2,7 +2,25 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tabs, Row, Col, Tag, Image, Spin, Empty, Modal, ConfigProvider, Table, Avatar, List } from 'antd';
+import {
+  Tabs,
+  Row,
+  Col,
+  Tag,
+  Image,
+  Spin,
+  Empty,
+  Modal,
+  ConfigProvider,
+  Table,
+  Avatar,
+  List,
+  Card,
+  Statistic,
+  Select,
+  Button,
+  Space,
+} from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUser,
@@ -20,6 +38,9 @@ import {
   faClipboardList,
   faSchool,
   faCalendarDays,
+  faCheck,
+  faXmark,
+  faEye,
 } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
@@ -36,21 +57,21 @@ const { TabPane } = Tabs;
 
 const ATTENDANCE_METHOD_LABELS = {
   qr: 'QR Code',
-  photo: 'Nhận diện khuôn mặt',
+  photo: 'Chụp Ảnh',
 };
 
 const REGISTRATION_STATUS_DISPLAY = {
-  DANG_KY: { label: 'Đang tham gia', color: 'processing' },
-  DA_THAM_GIA: { label: 'Đã tham gia', color: 'success' },
-  DA_HUY: { label: 'Đã hủy', color: 'default' },
-  VANG_MAT: { label: 'Vắng mặt', color: 'error' },
-  CHO_DUYET: { label: 'Chờ duyệt điểm danh', color: 'warning' },
+  DANG_KY: { label: 'Đang tham gia', color: 'processing', variant: 'in-progress' },
+  DA_THAM_GIA: { label: 'Đã tham gia', color: 'success', variant: 'joined' },
+  DA_HUY: { label: 'Đã hủy', color: 'default', variant: 'canceled' },
+  VANG_MAT: { label: 'Vắng mặt', color: 'error', variant: 'absent' },
+  CHO_DUYET: { label: 'Chờ duyệt', color: 'warning', variant: 'pending' },
 };
 
 const FEEDBACK_STATUS_DISPLAY = {
-  CHO_DUYET: { label: 'Chờ duyệt', color: 'processing' },
-  DA_DUYET: { label: 'Đã duyệt', color: 'success' },
-  BI_TU_CHOI: { label: 'Bị từ chối', color: 'error' },
+  CHO_DUYET: { label: 'Chờ duyệt', color: 'warning', variant: 'pending' },
+  DA_DUYET: { label: 'Đã duyệt', color: 'success', variant: 'approved' },
+  BI_TU_CHOI: { label: 'Bị từ chối', color: 'error', variant: 'rejected' },
 };
 
 const resolveAttendanceLabel = (method, label) => {
@@ -60,7 +81,7 @@ const resolveAttendanceLabel = (method, label) => {
 };
 
 // === Helpers ===
-const formatDateTime = (isoString, format = 'HH:mm [ngày] DD/MM/YYYY') => {
+const formatDateTime = (isoString, format = 'DD/MM/YYYY HH:mm') => {
   if (!isoString) return '--';
   return dayjs(isoString).format(format);
 };
@@ -101,6 +122,30 @@ const getStatusTag = (status) => {
   }
 };
 
+const getRegistrationStatusTag = (status) => {
+  const meta = REGISTRATION_STATUS_DISPLAY[status] || {
+    label: status || 'Không rõ',
+    variant: 'default',
+  };
+
+  const variant = meta.variant || 'default';
+  const modifierClass = `activity-detail__registration-status-tag--${variant}`;
+
+  return <Tag className={cx('activity-detail__registration-status-tag', modifierClass)}>{meta.label}</Tag>;
+};
+
+const getFeedbackStatusTag = (status) => {
+  const meta = FEEDBACK_STATUS_DISPLAY[status] || {
+    label: status || 'Không rõ',
+    variant: 'default',
+  };
+
+  const variant = meta.variant || 'default';
+  const modifierClass = `activity-detail__feedback-status-tag--${variant}`;
+
+  return <Tag className={cx('activity-detail__feedback-status-tag', modifierClass)}>{meta.label}</Tag>;
+};
+
 const InfoItem = ({ icon, label, value }) => (
   <div className={cx('activity-detail__item')}>
     <div className={cx('activity-detail__item-icon-wrapper')}>
@@ -126,10 +171,11 @@ const getInitials = (value = '') =>
 function ActivitiesDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
-  const { contextHolder, open: openToast } = useToast();
   const queryClient = useQueryClient();
+  const { contextHolder, open: openToast } = useToast();
+  const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState('ALL');
 
   const {
     data: activity,
@@ -153,6 +199,7 @@ function ActivitiesDetailPage() {
     },
   });
 
+  // Handlers
   const handleDelete = useCallback(() => {
     setDeleteModalOpen(true);
   }, []);
@@ -169,6 +216,7 @@ function ActivitiesDetailPage() {
     }
   }, [deleteMutation]);
 
+  // Breadcrums
   useEffect(() => {
     if (activity) {
       setBreadcrumbs([
@@ -239,6 +287,7 @@ function ActivitiesDetailPage() {
     [buildListItemKey],
   );
 
+  // Sinh viên tham gia
   const participantData = useMemo(
     () =>
       (activity?.participantRegistrations ?? []).map((registration, index) => ({
@@ -306,15 +355,13 @@ function ActivitiesDetailPage() {
         title: 'Trạng thái',
         dataIndex: 'status',
         key: 'status',
-        render: (status) => {
-          const meta = REGISTRATION_STATUS_DISPLAY[status] || { label: status || 'Không rõ', color: 'default' };
-          return <Tag color={meta.color}>{meta.label}</Tag>;
-        },
+        render: (status) => getRegistrationStatusTag(status),
       },
     ],
     [],
   );
 
+  // Nhật ký phản hồi
   const feedbackLogs = useMemo(() => {
     if (!Array.isArray(activity?.feedbackLogs)) return [];
     return activity.feedbackLogs
@@ -329,6 +376,42 @@ function ActivitiesDetailPage() {
       });
   }, [activity?.feedbackLogs]);
 
+  const feedbackSummary = useMemo(() => {
+    const summary = {
+      total: feedbackLogs.length,
+      approved: 0,
+      pending: 0,
+      rejected: 0,
+    };
+
+    feedbackLogs.forEach((item) => {
+      switch (item.status) {
+        case 'DA_DUYET':
+          summary.approved += 1;
+          break;
+        case 'CHO_DUYET':
+          summary.pending += 1;
+          break;
+        case 'BI_TU_CHOI':
+          summary.rejected += 1;
+          break;
+        default:
+          break;
+      }
+    });
+
+    return summary;
+  }, [feedbackLogs]);
+
+  const filteredFeedbackLogs = useMemo(
+    () =>
+      feedbackStatusFilter === 'ALL'
+        ? feedbackLogs
+        : feedbackLogs.filter((item) => item.status === feedbackStatusFilter),
+    [feedbackLogs, feedbackStatusFilter],
+  );
+
+  // Loading state
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -423,7 +506,7 @@ function ActivitiesDetailPage() {
           </Row>
         </section>
 
-        <div className={cx('activity-detail__tabs-container')}>
+        <section className={cx('activity-detail__tabs-container')}>
           <Tabs defaultActiveKey="details" className={cx('activity-detail__tabs')}>
             <TabPane tab="Thông tin chi tiết" key="details" className={cx('activity-detail__tab-pane')}>
               <div className={cx('activity-detail__rich-section')}>
@@ -475,70 +558,182 @@ function ActivitiesDetailPage() {
             </TabPane>
 
             <TabPane tab="Nhật ký phản hồi" key="feedback" className={cx('activity-detail__tab-pane')}>
-              {feedbackLogs.length ? (
-                <List
-                  itemLayout="vertical"
-                  dataSource={feedbackLogs}
-                  renderItem={(item) => {
-                    const statusMeta = FEEDBACK_STATUS_DISPLAY[item.status] || {
-                      label: item.status || 'Không rõ',
-                      color: 'default',
-                    };
-                    return (
-                      <List.Item key={item.key} className={cx('activity-detail__feedback-item')}>
-                        <List.Item.Meta
-                          avatar={
-                            <Avatar src={item.student?.avatarUrl} className={cx('activity-detail__student-avatar')}>
-                              {getInitials(item.student?.name)}
-                            </Avatar>
-                          }
-                          title={
-                            <div className={cx('activity-detail__feedback-header')}>
-                              <span>{item.student?.name || 'Sinh viên'}</span>
-                              <Tag color={statusMeta.color}>{statusMeta.label}</Tag>
-                            </div>
-                          }
-                          description={
-                            <div className={cx('activity-detail__feedback-meta')}>
-                              <span>{item.student?.email || '---'}</span>
-                              <span>{formatDateTime(item.submittedAt) || '--'}</span>
-                            </div>
-                          }
-                        />
+              <div className={cx('activity-detail__feedback-log')}>
+                <div className={cx('activity-detail__feedback-log-card')}>
+                  <div className={cx('activity-detail__feedback-log-header')}>
+                    <Row gutter={[16, 16]} className={cx('activity-detail__feedback-summary-row')}>
+                      <Col xs={12} md={6}>
+                        <Card
+                          bordered={false}
+                          className={cx(
+                            'activity-detail__feedback-summary-item',
+                            'activity-detail__feedback-summary-item--total',
+                          )}
+                        >
+                          <Statistic title="Tổng phản hồi" value={feedbackSummary.total} />
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card
+                          bordered={false}
+                          className={cx(
+                            'activity-detail__feedback-summary-item',
+                            'activity-detail__feedback-summary-item--approved',
+                          )}
+                        >
+                          <Statistic title="Đã duyệt" value={feedbackSummary.approved} />
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card
+                          bordered={false}
+                          className={cx(
+                            'activity-detail__feedback-summary-item',
+                            'activity-detail__feedback-summary-item--pending',
+                          )}
+                        >
+                          <Statistic title="Chờ duyệt" value={feedbackSummary.pending} />
+                        </Card>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Card
+                          bordered={false}
+                          className={cx(
+                            'activity-detail__feedback-summary-item',
+                            'activity-detail__feedback-summary-item--rejected',
+                          )}
+                        >
+                          <Statistic title="Từ chối" value={feedbackSummary.rejected} />
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
 
-                        <div className={cx('activity-detail__feedback-content')}>
-                          {item.rating ? (
-                            <div className={cx('activity-detail__feedback-rating')}>Đánh giá: {item.rating}/5</div>
-                          ) : null}
-                          <p>{item.content || 'Không có nội dung phản hồi.'}</p>
+                  <div className={cx('activity-detail__feedback-toolbar')}>
+                    <Select
+                      className={cx('activity-detail__feedback-filter')}
+                      value={feedbackStatusFilter}
+                      onChange={setFeedbackStatusFilter}
+                      options={[
+                        { label: 'Tất cả trạng thái', value: 'ALL' },
+                        { label: FEEDBACK_STATUS_DISPLAY.CHO_DUYET.label, value: 'CHO_DUYET' },
+                        { label: FEEDBACK_STATUS_DISPLAY.DA_DUYET.label, value: 'DA_DUYET' },
+                        { label: FEEDBACK_STATUS_DISPLAY.BI_TU_CHOI.label, value: 'BI_TU_CHOI' },
+                      ]}
+                    />
 
-                          {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
-                            <div className={cx('activity-detail__feedback-attachments')}>
-                              {item.attachments.map((attachment, index) => (
-                                <a
-                                  key={attachment.path || attachment.url || `${item.key}-attachment-${index}`}
-                                  href={attachment.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {attachment.fileName || `Tập tin ${index + 1}`}
-                                </a>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      </List.Item>
-                    );
-                  }}
-                />
-              ) : (
-                <Empty description="Chưa có phản hồi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              )}
+                    <Space>
+                      <Button
+                        type="primary"
+                        className={cx(
+                          'activity-detail__feedback-bulk-btn',
+                          'activity-detail__feedback-bulk-btn--approve',
+                        )}
+                      >
+                        <FontAwesomeIcon icon={faCheck} />
+                        Duyệt tất cả
+                      </Button>
+                      <Button
+                        type="primary"
+                        className={cx(
+                          'activity-detail__feedback-bulk-btn',
+                          'activity-detail__feedback-bulk-btn--reject',
+                        )}
+                      >
+                        <FontAwesomeIcon icon={faXmark} />
+                        Từ chối tất cả
+                      </Button>
+                    </Space>
+                  </div>
+
+                  {/* Danh sách phản hồi */}
+                  <div className={cx('activity-detail__feedback-list-wrapper')}>
+                    {filteredFeedbackLogs.length ? (
+                      <List
+                        itemLayout="vertical"
+                        dataSource={filteredFeedbackLogs}
+                        renderItem={(item) => {
+                          return (
+                            <List.Item key={item.key} className={cx('activity-detail__feedback-item')}>
+                              <div className={cx('activity-detail__feedback-item-inner')}>
+                                <div className={cx('activity-detail__feedback-item-left')}>
+                                  <Avatar
+                                    src={item.student?.avatarUrl}
+                                    className={cx('activity-detail__student-avatar')}
+                                  >
+                                    {getInitials(item.student?.name)}
+                                  </Avatar>
+
+                                  <div className={cx('activity-detail__feedback-content-wrapper')}>
+                                    <div className={cx('activity-detail__feedback-title-row')}>
+                                      <span className={cx('activity-detail__feedback-student-name')}>
+                                        {item.student?.name || 'Sinh viên'}
+                                      </span>
+                                      {item.student?.studentCode && (
+                                        <span className={cx('activity-detail__feedback-student-code')}>
+                                          {item.student.studentCode}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className={cx('activity-detail__feedback-text')}>
+                                      {item.content || 'Không có nội dung phản hồi.'}
+                                    </div>
+
+                                    <div className={cx('activity-detail__feedback-meta-row')}>
+                                      <span>{formatDateTime(item.submittedAt) || '--'}</span>
+                                      {getFeedbackStatusTag(item.status)}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className={cx('activity-detail__feedback-item-right')}>
+                                  <button
+                                    type="button"
+                                    className={cx(
+                                      'activity-detail__feedback-action-btn',
+                                      'activity-detail__feedback-action-btn--view',
+                                    )}
+                                    onClick={() => navigate(buildPath.adminFeedbackDetail(activity.id))}
+                                  >
+                                    <FontAwesomeIcon icon={faEye} />
+                                  </button>
+                                  <Button
+                                    className={cx(
+                                      'activity-detail__feedback-action-btn',
+                                      'activity-detail__feedback-action-btn--approve',
+                                    )}
+                                  >
+                                    <FontAwesomeIcon icon={faCheck} />
+                                    Duyệt
+                                  </Button>
+                                  <Button
+                                    className={cx(
+                                      'activity-detail__feedback-action-btn',
+                                      'activity-detail__feedback-action-btn--reject',
+                                    )}
+                                  >
+                                    <FontAwesomeIcon icon={faXmark} />
+                                    Từ chối
+                                  </Button>
+                                </div>
+                              </div>
+                            </List.Item>
+                          );
+                        }}
+                      />
+                    ) : (
+                      <Empty description="Chưa có phản hồi" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    )}
+                  </div>
+                </div>
+              </div>
             </TabPane>
           </Tabs>
-        </div>
+        </section>
       </div>
 
+      {/* Delete modal */}
       <Modal
         open={isDeleteModalOpen}
         title="Bạn có chắc chắn muốn xóa?"

@@ -171,9 +171,13 @@
     gap: 4px;
     border: none;
 
-    &--ongoing,
+    &--ongoing {
+      background-color: rgba(25, 120, 135, 0.12);
+      color: var(--success-color);
+    }
+
     &--upcoming {
-      background: rgba(219.51, 118.54, 0, 0.12);
+      background: rgba(220, 119, 0, 0.12);
       color: var(--warning-color);
     }
 
