@@ -81,10 +81,16 @@ function FeedbackPage() {
     enableSemester: true,
   });
 
-  const processedRegistrations = useMemo(
-    () => sortItems(filteredRegistrations.filter((registration) => Boolean(registration?.activity))),
-    [filteredRegistrations, sortItems],
-  );
+  const processedRegistrations = useMemo(() => {
+    const allowedFeedbackStates = ['feedback_pending', 'feedback_reviewing', 'feedback_accepted', 'feedback_denied'];
+
+    const feedbackOnlyRegistrations = filteredRegistrations.filter((registration) => {
+      const state = registration.activity?.state;
+      return Boolean(state) && allowedFeedbackStates.includes(state);
+    });
+
+    return sortItems(feedbackOnlyRegistrations);
+  }, [filteredRegistrations, sortItems]);
 
   const invalidateActivityQueries = useInvalidateActivities();
 

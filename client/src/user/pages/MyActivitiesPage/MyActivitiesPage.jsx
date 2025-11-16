@@ -17,13 +17,13 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CardActivity, Label, useToast } from '@components/index';
 import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
-import { fileToDataUrl } from '@utils/file';
-import { computeDescriptorFromDataUrl } from '@/services/faceApiService';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 import useRegistrationFilters from '@/hooks/useRegistrationFilters';
 import uploadService from '@/services/uploadService';
+import { computeDescriptorFromDataUrl } from '@/services/faceApiService';
 import useAuthStore from '@/stores/useAuthStore';
+import { fileToDataUrl } from '@utils/file';
 import styles from './MyActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -37,7 +37,6 @@ dayjs.updateLocale('vi', { weekStart: 1 });
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
-
   const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
 
   const {
@@ -322,19 +321,39 @@ function MyActivitiesPage() {
 
   const buildCards = useCallback(
     (items) =>
-      items.map((registration) => (
-        <CardActivity
-          key={registration.id}
-          {...registration.activity}
-          variant="vertical"
-          state={registration.activity?.state}
-          onRegistered={handleRegister}
-          onCancelRegister={handleCancel}
-          onConfirmPresent={handleAttendance}
-          onSendFeedback={handleFeedback}
-          attendanceLoading={attendanceMutation.isPending}
-        />
-      )),
+      items.map((registration) => {
+        const activityState = registration.activity?.state;
+        const registrationStatus = registration.status;
+        const feedbackStatus = registration.feedback?.status;
+
+        let effectiveState = activityState;
+
+        if (registrationStatus === 'DA_THAM_GIA') {
+          if (activityState === 'feedback_accepted' || feedbackStatus === 'DA_DUYET') {
+            effectiveState = 'feedback_accepted';
+          } else if (
+            activityState !== 'feedback_reviewing' &&
+            activityState !== 'feedback_denied' &&
+            activityState !== 'feedback_pending'
+          ) {
+            effectiveState = 'completed';
+          }
+        }
+
+        return (
+          <CardActivity
+            key={registration.id}
+            {...registration.activity}
+            variant="vertical"
+            state={effectiveState}
+            onRegistered={handleRegister}
+            onCancelRegister={handleCancel}
+            onConfirmPresent={handleAttendance}
+            onSendFeedback={handleFeedback}
+            attendanceLoading={attendanceMutation.isPending}
+          />
+        );
+      }),
     [handleRegister, handleCancel, handleAttendance, handleFeedback, attendanceMutation.isPending],
   );
 

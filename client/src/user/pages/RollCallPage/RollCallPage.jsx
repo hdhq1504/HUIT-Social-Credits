@@ -304,19 +304,39 @@ function RollCallPage() {
       return (
         <>
           <div className={cx('roll-call__list')}>
-            {pageItems.map((registration) => (
-              <CardActivity
-                key={registration.id}
-                {...registration.activity}
-                variant="vertical"
-                state={registration.activity?.state}
-                onRegistered={handleRegister}
-                onCancelRegister={handleCancel}
-                onConfirmPresent={handleAttendance}
-                onSendFeedback={handleFeedback}
-                attendanceLoading={attendanceMutation.isPending}
-              />
-            ))}
+            {pageItems.map((registration) => {
+              const activityState = registration.activity?.state;
+              const registrationStatus = registration.status;
+              const feedbackStatus = registration.feedback?.status;
+
+              let effectiveState = activityState;
+
+              if (registrationStatus === 'DA_THAM_GIA') {
+                if (activityState === 'feedback_accepted' || feedbackStatus === 'DA_DUYET') {
+                  effectiveState = 'feedback_accepted';
+                } else if (
+                  activityState !== 'feedback_reviewing' &&
+                  activityState !== 'feedback_denied' &&
+                  activityState !== 'feedback_pending'
+                ) {
+                  effectiveState = 'completed';
+                }
+              }
+
+              return (
+                <CardActivity
+                  key={registration.id}
+                  {...registration.activity}
+                  variant="vertical"
+                  state={effectiveState}
+                  onRegistered={handleRegister}
+                  onCancelRegister={handleCancel}
+                  onConfirmPresent={handleAttendance}
+                  onSendFeedback={handleFeedback}
+                  attendanceLoading={attendanceMutation.isPending}
+                />
+              );
+            })}
           </div>
           <Pagination
             className={cx('roll-call__pagination')}
