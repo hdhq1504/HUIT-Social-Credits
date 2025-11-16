@@ -8,6 +8,7 @@ import {
   faCircleCheck,
   faClock,
   faTrophy,
+  faUserXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Calendar, ConfigProvider, DatePicker, Empty, Input, Pagination, Tabs } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
@@ -134,14 +135,14 @@ function MyActivitiesPage() {
     const registered = filteredRegistrations.filter((item) => item.status === 'DANG_KY');
     const attended = filteredRegistrations.filter((item) => item.status === 'DA_THAM_GIA');
     const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
+    const absent = filteredRegistrations.filter((item) => item.status === 'VANG_MAT');
     const totalPoints = attended.reduce((sum, item) => sum + (item.activity?.points ?? 0), 0);
-    const pendingFeedback = attended.filter((item) => item.feedback?.status !== 'DA_DUYET').length;
 
     return {
       totalPoints,
       totalActivities: filteredRegistrations.length,
       completed: attended.length,
-      pending: pendingFeedback,
+      absent: absent.length,
       registered,
       attended,
       canceled,
@@ -454,7 +455,7 @@ function MyActivitiesPage() {
 
           {/* Stats */}
           <div className={cx('my-activities__stats')}>
-            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--orange')}`}>
+            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--scores')}`}>
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Điểm CTXH</div>
@@ -466,7 +467,7 @@ function MyActivitiesPage() {
               </div>
             </div>
 
-            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--blue')}`}>
+            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--total')}`}>
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Tổng hoạt động</div>
@@ -478,10 +479,10 @@ function MyActivitiesPage() {
               </div>
             </div>
 
-            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--green')}`}>
+            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--completed')}`}>
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
-                  <div className={cx('my-activities__stat-card-label')}>Đã hoàn thành</div>
+                  <div className={cx('my-activities__stat-card-label')}>Đã tham gia</div>
                   <div className={cx('my-activities__stat-card-value')}>{stats.completed}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
@@ -490,14 +491,14 @@ function MyActivitiesPage() {
               </div>
             </div>
 
-            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--purple')}`}>
+            <div className={`${cx('my-activities__stat-card')} ${cx('my-activities__stat-card--absent')}`}>
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
-                  <div className={cx('my-activities__stat-card-label')}>Đang chờ</div>
-                  <div className={cx('my-activities__stat-card-value')}>{stats.pending}</div>
+                  <div className={cx('my-activities__stat-card-label')}>Vắng mặt</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.absent}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
-                  <FontAwesomeIcon icon={faClock} className={cx('my-activities__stat-card-icon-mark')} />
+                  <FontAwesomeIcon icon={faUserXmark} className={cx('my-activities__stat-card-icon-mark')} />
                 </div>
               </div>
             </div>

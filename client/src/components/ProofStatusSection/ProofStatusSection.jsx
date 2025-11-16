@@ -30,6 +30,8 @@ const FEEDBACK_STATE_DISPLAY = {
   feedback_denied: { status: 'rejected', label: 'Từ chối' },
 };
 
+const ALLOWED_FEEDBACK_STATES = ['feedback_pending', 'feedback_reviewing', 'feedback_accepted', 'feedback_denied'];
+
 const statusIcons = {
   approved: faCircleCheck,
   processing: faClock,
@@ -58,7 +60,18 @@ function ProofStatusSection() {
     if (!isLoggedIn) return [];
 
     return (registrations || [])
-      .filter((registration) => registration?.activity)
+      .filter((registration) => {
+        const activityState = registration?.activity?.state;
+        if (!activityState || !ALLOWED_FEEDBACK_STATES.includes(activityState)) {
+          return false;
+        }
+
+        if (activityState === 'feedback_accepted' && !registration?.feedback) {
+          return false;
+        }
+
+        return Boolean(registration?.activity);
+      })
       .map((registration) => {
         const activity = registration.activity;
         const feedback = registration.feedback;

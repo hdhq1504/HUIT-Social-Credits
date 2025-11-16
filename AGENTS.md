@@ -133,12 +133,12 @@ HUIT-Social-Credits/
 
 ## Testing & Quality Gates
 - **Frontend:**
-  - Install deps: `cd client && npm install`.
+  - Install deps: `cd client; npm install`.
   - Lint & format: `npm run lint`, `npm run prettier`.
   - Build sanity check: `npm run build`.
   - (Future) Place component tests alongside components or in `__tests__` folders and run with configured test runner once added.
 - **Backend:**
-  - Install deps: `cd server && npm install`.
+  - Install deps: `cd server; npm install`.
   - Sync Prisma: `npx prisma generate` (before running dev/build).
   - Database migrations: `npm run build` (deploy migrations) or `npx prisma migrate dev --name <desc>` when altering schema.
   - Start dev server: `npm run dev` (nodemon) or `npm run start`.

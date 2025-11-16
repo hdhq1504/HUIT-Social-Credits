@@ -110,6 +110,7 @@ const getStatusTag = (status) => {
     case 'ended':
     case 'feedback_pending':
     case 'feedback_reviewing':
+    case 'completed':
     case 'feedback_accepted':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ended')}>

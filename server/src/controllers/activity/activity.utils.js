@@ -708,12 +708,17 @@ const determineState = (activity, registration) => {
     case "CHO_DUYET":
       return "attendance_review";
     case "DA_THAM_GIA": {
+      const faceSummary = summarizeFaceHistoryRaw(registration.lichSuDiemDanh ?? []);
+      const needsManualReview = faceSummary?.requiresReview ?? false;
       const feedback = registration.phanHoi;
       if (!feedback) {
         const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
         const availableAt = feedbackAvailableAt ? new Date(feedbackAvailableAt) : null;
         if (availableAt && now < availableAt) {
           return "feedback_waiting";
+        }
+        if (!needsManualReview) {
+          return "feedback_accepted";
         }
         return "feedback_pending";
       }

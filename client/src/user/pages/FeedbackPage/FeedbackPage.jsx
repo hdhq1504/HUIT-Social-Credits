@@ -86,7 +86,15 @@ function FeedbackPage() {
 
     const feedbackOnlyRegistrations = filteredRegistrations.filter((registration) => {
       const state = registration.activity?.state;
-      return Boolean(state) && allowedFeedbackStates.includes(state);
+      if (!state || !allowedFeedbackStates.includes(state)) {
+        return false;
+      }
+
+      if (state === 'feedback_accepted') {
+        return Boolean(registration.feedback);
+      }
+
+      return true;
     });
 
     return sortItems(feedbackOnlyRegistrations);

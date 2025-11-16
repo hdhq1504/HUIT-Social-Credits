@@ -253,25 +253,19 @@ function FaceEnrollmentModal({ open, onCancel, onSave, isSaving, isModelsLoading
         )}
 
         <div className={cx('profile-page__face-modal-samples')}>
-          {samples.length === 0 ? (
-            <p className={cx('profile-page__face-modal-empty')}>
-              Chưa có ảnh mẫu. Hãy chụp hoặc tải ảnh khuôn mặt của bạn.
-            </p>
-          ) : (
-            samples.map((sample) => (
-              <div key={sample.id} className={cx('profile-page__face-modal-sample')}>
-                <img src={sample.dataUrl} alt="Ảnh mẫu khuôn mặt" />
-                <button
-                  type="button"
-                  className={cx('profile-page__face-modal-remove')}
-                  onClick={() => handleRemoveSample(sample.id)}
-                  disabled={isAnalyzing || isSaving}
-                >
-                  Xóa
-                </button>
-              </div>
-            ))
-          )}
+          {samples.map((sample) => (
+            <div key={sample.id} className={cx('profile-page__face-modal-sample')}>
+              <img src={sample.dataUrl} alt="Ảnh mẫu khuôn mặt" />
+              <button
+                type="button"
+                className={cx('profile-page__face-modal-remove')}
+                onClick={() => handleRemoveSample(sample.id)}
+                disabled={isAnalyzing || isSaving}
+              >
+                Xóa
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </Modal>

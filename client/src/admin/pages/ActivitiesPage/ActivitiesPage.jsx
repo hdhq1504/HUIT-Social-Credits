@@ -43,6 +43,7 @@ const STATUS_CATEGORY_MAP = {
   ended: 'ended',
   feedback_pending: 'ended',
   feedback_reviewing: 'ended',
+  completed: 'ended',
   feedback_accepted: 'ended',
   feedback_waiting: 'ended',
   feedback_denied: 'ended',

@@ -110,19 +110,19 @@
       border-radius: 8px;
     }
 
-    &--orange {
+    &--absent {
       background: linear-gradient(90deg, #ff6a00 0%, #ea580c 100%);
     }
 
-    &--blue {
+    &--scores {
       background: linear-gradient(90deg, #001f8f 0%, #1d4ed8 100%);
     }
 
-    &--green {
+    &--completed {
       background: linear-gradient(90deg, #22c55e 0%, #059669 100%);
     }
 
-    &--purple {
+    &--total {
       background: linear-gradient(90deg, #a855f7 0%, #4f46e5 100%);
     }
 
@@ -695,7 +695,6 @@
 
     &:hover {
       background-color: #d74400 !important;
-      transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(255, 92, 0, 0.3);
     }
 

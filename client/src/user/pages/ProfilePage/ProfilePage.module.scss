@@ -223,7 +223,6 @@
       opacity 0.2s ease;
 
     &:hover {
-      transform: translateY(-1px);
       box-shadow: rgba(255, 92, 0, 0.3) 0 8px 18px;
     }
 
@@ -301,9 +300,9 @@
     border: none;
     border-radius: 10px;
     padding: 10px 14px;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 14px;
-    background: linear-gradient(135deg, #2a54ff, #1b34c8);
+    background: var(--primary-color);
     color: var(--white-color);
     cursor: pointer;
     transition:
@@ -312,7 +311,6 @@
       opacity 0.2s ease;
 
     &:hover {
-      transform: translateY(-1px);
       box-shadow: rgba(26, 84, 255, 0.3) 0 8px 18px;
     }
 
@@ -324,8 +322,8 @@
     }
 
     &--secondary {
-      background: rgba(26, 84, 255, 0.12);
-      color: #1b34c8;
+      background: var(--secondary-color);
+      color: var(--primary-color);
       box-shadow: none;
 
       &:hover {

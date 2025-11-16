@@ -474,6 +474,7 @@ function ActivityDetailPage() {
             Đã gửi
           </Button>
         );
+      case 'completed':
       case 'feedback_accepted':
         return (
           <Button className={cx('activity-detail__sidebar-button')} variant="muted" disabled>

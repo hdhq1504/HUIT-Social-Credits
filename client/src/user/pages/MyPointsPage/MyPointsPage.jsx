@@ -52,6 +52,7 @@ function MyPointsPage() {
 
     const determineStatus = (state) => {
       switch (state) {
+        case 'completed':
         case 'feedback_accepted':
           return { key: 'confirmed', label: 'Đã xác nhận' };
         case 'feedback_denied':
