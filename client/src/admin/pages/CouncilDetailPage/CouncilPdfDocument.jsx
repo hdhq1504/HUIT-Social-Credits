@@ -1,5 +1,17 @@
 import dayjs from 'dayjs';
-import { Document, Page, Text } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text } from '@react-pdf/renderer';
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 24,
+    fontFamily: 'Courier',
+    fontSize: 10,
+    lineHeight: 1.25,
+  },
+  line: {
+    marginBottom: 4,
+  },
+});
 
 const GROUP_REQUIREMENTS = {
   group1: 50,
@@ -166,7 +178,13 @@ const CouncilPdfDocument = ({ council, students = [], generatedAt = new Date() }
 
   return (
     <Document>
-      <Page>{lines.map((line, index) => <Text key={`${index}-${line}`}>{line}</Text>)}</Page>
+      <Page size="A4" style={styles.page}>
+        {lines.map((line, index) => (
+          <Text key={`${index}-${line}`} style={styles.line}>
+            {line || ' '}
+          </Text>
+        ))}
+      </Page>
     </Document>
   );
 };

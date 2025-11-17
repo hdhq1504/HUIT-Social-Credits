@@ -63,7 +63,6 @@ export default defineConfig({
       '@user': path.resolve(__dirname, './src/user'),
       '@stores': path.resolve(__dirname, './src/stores'),
       '@utils': path.resolve(__dirname, './src/utils'),
-      '@react-pdf/renderer': path.resolve(__dirname, './src/lib/reactPdfRenderer'),
     },
   },
 });
