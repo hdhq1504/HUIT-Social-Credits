@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { useQuery } from '@tanstack/react-query';
@@ -24,8 +24,6 @@ import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
 import statsApi, { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { formatDateTime } from '@/utils/datetime';
 import styles from './DashboardPage.module.scss';
-import { useMemo } from 'react';
-
 const cx = classNames.bind(styles);
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -38,6 +36,12 @@ const formatPercentChange = (value) => {
 
 export default function DashboardPage() {
   const [year, setYear] = useState(dayjs().year());
+  const [toolbarState, setToolbarState] = useState({
+    query: '',
+    term: undefined,
+    year: undefined,
+    faculty: 'all',
+  });
   const { setPageActions } = useContext(AdminPageContext);
   const navigate = useNavigate();
 
@@ -58,6 +62,36 @@ export default function DashboardPage() {
       .filter((value) => Number.isFinite(value))
       .sort((a, b) => a - b);
   }, [dashboardData?.chart]);
+
+  const termOptions = useMemo(
+    () => [
+      { value: 'hk1', label: 'Học kỳ 1' },
+      { value: 'hk2', label: 'Học kỳ 2' },
+      { value: 'hk3', label: 'Học kỳ Hè' },
+    ],
+    [],
+  );
+
+  const yearFilterOptions = useMemo(
+    () => [
+      { value: '2024-2025', label: '2024–2025' },
+      { value: '2025-2026', label: '2025–2026' },
+    ],
+    [],
+  );
+
+  const facultyOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Tất cả khoa' },
+      { value: 'cntt', label: 'Công nghệ thông tin' },
+      { value: 'kt', label: 'Quản trị kinh doanh' },
+    ],
+    [],
+  );
+
+  const handleToolbarSubmit = useCallback((payload) => {
+    setToolbarState(payload);
+  }, []);
 
   useEffect(() => {
     if (!availableYears.length) return;
@@ -208,11 +242,13 @@ export default function DashboardPage() {
     <div className={cx('dashboard')}>
       {/* Filter search bar */}
       <AdminSearchBar
-        facultyOptions={[
-          { value: 'all', label: 'Tất cả khoa' },
-          { value: 'cntt', label: 'Công nghệ thông tin' },
-          { value: 'kt', label: 'Quản trị kinh doanh' },
+        defaultValues={toolbarState}
+        filters={[
+          { key: 'term', type: 'select', placeholder: 'Chọn học kỳ', options: termOptions },
+          { key: 'year', type: 'select', placeholder: 'Chọn năm học', options: yearFilterOptions },
+          { key: 'faculty', type: 'select', placeholder: 'Khoa phụ trách', options: facultyOptions, allowClear: false },
         ]}
+        onSubmit={handleToolbarSubmit}
       />
 
       {/* Quick stats */}

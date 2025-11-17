@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addCouncilMembers,
   createCouncil,
+  exportCouncilDataset,
   exportCouncilReport,
   finalizeCouncil,
   getCouncilById,
@@ -31,5 +32,6 @@ router.get("/:id/students", listCouncilStudents);
 router.patch("/:id/students/:evaluationId", updateCouncilStudent);
 router.post("/:id/finalize", finalizeCouncil);
 router.get("/:id/export", exportCouncilReport);
+router.get("/:id/export-data", exportCouncilDataset);
 
 export default router;

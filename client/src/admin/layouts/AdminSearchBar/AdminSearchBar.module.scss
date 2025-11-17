@@ -1,49 +1,78 @@
 .admin-search {
   width: 100%;
-  padding: 24px 20px;
-  background: var(--primary-color);
+  background: linear-gradient(120deg, var(--primary-color), #1a237e);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--white-color);
+}
+
+.admin-search__input {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  padding: 12px 16px !important;
+}
+
+.admin-search__controls {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  gap: 16px;
   justify-content: space-between;
+}
+
+.admin-search__filters {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+  flex: 1;
+}
 
-  &__compact {
-    flex: 1 1 360px;
-    width: 100%;
+.admin-search__filter,
+.admin-search__select {
+  min-width: 180px;
+}
+
+.admin-search__select {
+  :global(.ant-select-selector) {
+    border-radius: 12px !important;
+    border: none !important;
+    padding: 10px 12px !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   }
+}
 
-  &__button {
-    border-radius: 8px;
-    font-weight: 500;
-    background-color: var(--orange-color);
-    color: var(--white-color);
-    border: none;
+.admin-search__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
-    &:hover {
-      background-color: #d74400 !important;
-      color: var(--white-color) !important;
-      box-shadow: 0 4px 12px rgba(255, 92, 0, 0.3);
-    }
-  }
+.admin-search__button {
+  border-radius: 10px;
+  padding: 0 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
-  &__filters {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
+.admin-search__button--primary {
+  background: var(--orange-color);
+  border: none;
+  color: var(--white-color);
+  box-shadow: 0 12px 24px rgba(255, 92, 0, 0.35);
+}
 
-  &__select {
-    min-width: 190px;
-    background: var(--white-color);
-    border-radius: 8px;
+.admin-search__button--ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--white-color);
+}
 
-    :global(.ant-select-selector) {
-      border-radius: 8px !important;
-      border: 1px solid rgba(0, 0, 0, 0.15) !important;
-      background: var(--white-color) !important;
-      padding: 8px 12px !important;
-    }
-  }
+.admin-search__button--danger {
+  background: var(--danger-color);
+  border: none;
+  color: var(--white-color);
 }

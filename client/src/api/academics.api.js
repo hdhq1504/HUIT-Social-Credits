@@ -22,6 +22,14 @@ const academicsApi = {
     });
     return data;
   },
+  async updateAcademicYear(id, payload) {
+    const { data } = await http.patch(`/academics/years/${id}`, payload);
+    return data.academicYear;
+  },
+  async updateSemester(id, payload) {
+    const { data } = await http.patch(`/academics/semesters/${id}`, payload);
+    return data.semester;
+  },
 };
 
 export default academicsApi;

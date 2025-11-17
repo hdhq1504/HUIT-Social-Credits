@@ -1,0 +1,107 @@
+.academic-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.academic-settings__loading,
+.academic-settings__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  background: var(--white-color);
+  border-radius: 16px;
+}
+
+.academic-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.academic-settings__card {
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  :global(.ant-card-body) {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.academic-settings__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.academic-settings__card-subtitle {
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--muted-color);
+  letter-spacing: 0.5px;
+}
+
+.academic-settings__card-range {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.academic-settings__card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.academic-settings__semester-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.academic-settings__semester-item {
+  border: 1px dashed rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--secondary-color);
+}
+
+.academic-settings__semester-item p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.academic-settings__semester-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.academic-settings__status-tag {
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.academic-settings__empty-semester {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted-color);
+  font-size: 13px;
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.academic-settings__empty {
+  flex-direction: column;
+}

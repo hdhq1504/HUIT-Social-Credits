@@ -119,6 +119,48 @@ const getSummaryForCouncils = async (councilIds = []) => {
   return map;
 };
 
+const createEmptyGroupPoints = () => ({ group1: 0, group2: 0, group3: 0 });
+
+const buildGroupPointMap = async (studentIds = []) => {
+  if (!studentIds.length) return new Map();
+  const participations = await prisma.dangKyHoatDong.findMany({
+    where: {
+      nguoiDungId: { in: studentIds },
+      trangThai: "DA_THAM_GIA",
+    },
+    select: {
+      nguoiDungId: true,
+      hoatDong: { select: { diemCong: true, nhomDiem: true } },
+    },
+  });
+
+  const map = new Map();
+  participations.forEach((entry) => {
+    if (!entry.hoatDong) return;
+    const bucket = map.get(entry.nguoiDungId) ?? createEmptyGroupPoints();
+    const points = Number(entry.hoatDong.diemCong) || 0;
+    const group = entry.hoatDong.nhomDiem || "NHOM_2";
+    if (group === "NHOM_1") bucket.group1 += points;
+    else if (group === "NHOM_3") bucket.group3 += points;
+    else bucket.group2 += points;
+    map.set(entry.nguoiDungId, bucket);
+  });
+  return map;
+};
+
+const mapGroupPointsFromMap = (pointMap, studentId) => {
+  const record = pointMap.get(studentId) || createEmptyGroupPoints();
+  const group1 = record.group1 || 0;
+  const group2 = record.group2 || 0;
+  const group3 = record.group3 || 0;
+  return {
+    group1,
+    group2,
+    group3,
+    group23: group2 + group3,
+  };
+};
+
 export const listCouncils = async (req, res) => {
   try {
     ensureManager(req);
@@ -583,10 +625,13 @@ export const listCouncilStudents = async (req, res) => {
     prisma.danhGiaSinhVien.count({ where }),
   ]);
 
-  const summary = await getCouncilSummaryById(id);
+  const studentIds = items.map((item) => item.studentId).filter(Boolean);
+  const [summary, groupPointMap] = await Promise.all([
+    getCouncilSummaryById(id),
+    buildGroupPointMap(studentIds),
+  ]);
 
-  res.json({
-    items: items.map((item) => ({
+  const payloadItems = items.map((item) => ({
       id: item.id,
       studentId: item.studentId,
       student: {
@@ -603,7 +648,11 @@ export const listCouncilStudents = async (req, res) => {
       updatedBy: item.updatedBy ? { id: item.updatedBy.id, fullName: item.updatedBy.hoTen } : null,
       updatedAt: item.updatedAt,
       createdAt: item.createdAt,
-    })),
+      groupPoints: mapGroupPointsFromMap(groupPointMap, item.studentId),
+    }));
+
+  res.json({
+    items: payloadItems,
     pagination: {
       page: currentPage,
       pageSize,
@@ -764,4 +813,73 @@ export const exportCouncilReport = async (req, res) => {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
   res.send(buffer);
+};
+
+export const exportCouncilDataset = async (req, res) => {
+  try {
+    ensureManager(req);
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+
+  const { id } = req.params;
+  const council = await prisma.hoiDongXetDiem.findUnique({
+    where: { id },
+    include: {
+      createdBy: { select: { id: true, hoTen: true, email: true } },
+      namHoc: { select: { id: true, ten: true, nienKhoa: true, ma: true } },
+      hocKy: { select: { id: true, ten: true, ma: true } },
+      members: {
+        include: { user: { select: { id: true, hoTen: true, vaiTro: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+      _count: { select: { members: true, evaluations: true } },
+    },
+  });
+
+  if (!council) {
+    return res.status(404).json({ error: "Không tìm thấy hội đồng." });
+  }
+
+  if (council.status !== "FINALIZED") {
+    return res.status(400).json({ error: "Vui lòng chốt kết quả trước khi xuất dữ liệu." });
+  }
+
+  const evaluations = await prisma.danhGiaSinhVien.findMany({
+    where: { councilId: id },
+    orderBy: [{ student: { maLop: "asc" } }, { student: { maSV: "asc" } }],
+    include: {
+      student: { select: { hoTen: true, maSV: true, maLop: true, maKhoa: true, email: true, id: true } },
+      updatedBy: { select: { id: true, hoTen: true } },
+    },
+  });
+
+  const studentIds = evaluations.map((entry) => entry.studentId).filter(Boolean);
+  const [summary, groupPointMap] = await Promise.all([
+    getCouncilSummaryById(id),
+    buildGroupPointMap(studentIds),
+  ]);
+
+  const dataset = evaluations.map((evaluation, index) => ({
+    id: evaluation.id,
+    order: index + 1,
+    studentId: evaluation.studentId,
+    student: {
+      id: evaluation.student?.id,
+      fullName: evaluation.student?.hoTen,
+      studentCode: evaluation.student?.maSV,
+      classCode: evaluation.student?.maLop,
+      facultyCode: evaluation.student?.maKhoa,
+      email: evaluation.student?.email,
+    },
+    totalPoints: evaluation.totalPoints,
+    result: evaluation.result,
+    note: evaluation.note,
+    groupPoints: mapGroupPointsFromMap(groupPointMap, evaluation.studentId),
+    updatedBy: evaluation.updatedBy ? { id: evaluation.updatedBy.id, fullName: evaluation.updatedBy.hoTen } : null,
+    updatedAt: evaluation.updatedAt,
+    createdAt: evaluation.createdAt,
+  }));
+
+  res.json({ council: mapCouncil(council, summary), students: dataset });
 };

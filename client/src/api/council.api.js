@@ -63,8 +63,8 @@ export const councilApi = {
     const { data } = await http.post(`/councils/${id}/finalize`);
     return data;
   },
-  async exportPdf(id) {
-    const { data } = await http.get(`/councils/${id}/export`, { responseType: 'blob' });
+  async exportDataset(id) {
+    const { data } = await http.get(`/councils/${id}/export-data`);
     return data;
   },
 };

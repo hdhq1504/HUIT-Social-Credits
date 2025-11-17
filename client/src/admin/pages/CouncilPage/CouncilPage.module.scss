@@ -1,7 +1,70 @@
 .council-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+.council-page__hero {
+  background: linear-gradient(135deg, var(--primary-color), #002984);
+  border-radius: 24px;
+  padding: 28px;
+  color: var(--white-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: space-between;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.2);
+}
+
+.council-page__hero-subtitle {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.council-page__hero h1 {
+  margin: 8px 0;
+  font-size: 26px;
+}
+
+.council-page__hero-stats {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.council-page__hero-stats div {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 16px 20px;
+  border-radius: 18px;
+  min-width: 140px;
+  text-align: center;
+}
+
+.council-page__hero-stats span {
+  display: block;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.council-page__hero-stats strong {
+  font-size: 28px;
+}
+
+.council-page__filters-card,
+.council-page__table-card {
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.council-page__filters-card :global(.ant-card-body) {
+  padding: 18px;
+}
+
+.council-page__table-card :global(.ant-card-body) {
+  padding: 0 24px 24px;
 }
 
 .council-page__filters {
@@ -10,19 +73,39 @@
   gap: 12px;
 }
 
-.council-page__table-card {
-  .ant-card-body {
-    padding: 0;
-  }
-}
-
-.council-page__status-tag {
-  text-transform: uppercase;
+.council-page__table :global(.ant-table-thead > tr > th) {
+  background: var(--secondary-color);
+  color: var(--black-color);
   font-weight: 600;
 }
 
+.council-page__table :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.council-page__status-tag {
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.council-page__status-tag--preparing {
+  background: rgba(233, 196, 106, 0.2);
+  color: #c77d16;
+}
+
+.council-page__status-tag--progress {
+  background: rgba(53, 162, 235, 0.2);
+  color: #0b67c2;
+}
+
+.council-page__status-tag--done {
+  background: rgba(46, 204, 113, 0.2);
+  color: #12723f;
+}
+
 .council-page__footer-text {
-  margin-top: 12px;
-  color: #7a7a7a;
-  font-size: 13px;
+  margin-top: 16px;
+  color: var(--muted-color);
+  text-align: right;
 }

@@ -11,15 +11,17 @@ import useToast from '@/components/Toast/Toast';
 import styles from './CouncilPage.module.scss';
 
 const STATUS_TAGS = {
-  PREPARING: { color: 'default', label: 'Đang chuẩn bị' },
-  IN_PROGRESS: { color: 'processing', label: 'Đang xét' },
-  FINALIZED: { color: 'success', label: 'Đã chốt' },
+  PREPARING: { label: 'Đang chuẩn bị', tone: 'preparing' },
+  IN_PROGRESS: { label: 'Đang xét', tone: 'progress' },
+  FINALIZED: { label: 'Đã chốt', tone: 'done' },
 };
 
 const statusTag = (status) => {
-  const meta = STATUS_TAGS[status] || { color: 'default', label: status };
+  const meta = STATUS_TAGS[status] || { label: status, tone: 'default' };
   return (
-    <Tag color={meta.color} className={styles['council-page__status-tag']}>
+    <Tag
+      className={`${styles['council-page__status-tag']} ${styles[`council-page__status-tag--${meta.tone}`] || ''}`}
+    >
       {meta.label}
     </Tag>
   );
@@ -70,7 +72,7 @@ export default function CouncilPage() {
     },
   });
 
-  const councils = data?.councils ?? [];
+  const councils = useMemo(() => data?.councils ?? [], [data?.councils]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value || 'all' }));
@@ -165,10 +167,44 @@ export default function CouncilPage() {
     label: semester.ten || semester.ma || 'Học kỳ',
   }));
 
+  const summary = useMemo(
+    () => ({
+      total: councils.length,
+      inProgress: councils.filter((item) => item.status === 'IN_PROGRESS').length,
+      finalized: councils.filter((item) => item.status === 'FINALIZED').length,
+    }),
+    [councils],
+  );
+
   return (
     <div className={styles['council-page']}>
       {contextHolder}
-      <Card>
+      <section className={styles['council-page__hero']}>
+        <div>
+          <p className={styles['council-page__hero-subtitle']}>Hội đồng xét điểm CTXH</p>
+          <h1>Điều phối, giám sát và lưu trữ biên bản xét điểm</h1>
+          <p>
+            Theo dõi tiến độ các hội đồng, nắm số lượng sinh viên đã xét và xuất biên bản đạt chuẩn trình ký chỉ với
+            một thao tác.
+          </p>
+        </div>
+        <div className={styles['council-page__hero-stats']}>
+          <div>
+            <span>Tổng số hội đồng</span>
+            <strong>{summary.total}</strong>
+          </div>
+          <div>
+            <span>Đang xét duyệt</span>
+            <strong>{summary.inProgress}</strong>
+          </div>
+          <div>
+            <span>Đã chốt</span>
+            <strong>{summary.finalized}</strong>
+          </div>
+        </div>
+      </section>
+
+      <Card className={styles['council-page__filters-card']}>
         <Space className={styles['council-page__filters']}>
           <Select
             placeholder="Năm học"
@@ -201,6 +237,7 @@ export default function CouncilPage() {
 
       <Card className={styles['council-page__table-card']}>
         <Table
+          className={styles['council-page__table']}
           rowKey="id"
           dataSource={councils}
           columns={columns}

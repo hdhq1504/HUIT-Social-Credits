@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { pdf } from '@react-pdf/renderer';
 import {
   Button,
   Card,
@@ -27,6 +28,7 @@ import councilApi, { COUNCIL_QUERY_KEYS } from '@/api/council.api';
 import academicsApi, { ACADEMICS_QUERY_KEY } from '@/api/academics.api';
 import useToast from '@/components/Toast/Toast';
 import useDebounce from '@/hooks/useDebounce';
+import CouncilPdfDocument from './CouncilPdfDocument';
 import styles from './CouncilDetailPage.module.scss';
 
 const STATUS_TEXT = {
@@ -57,6 +59,13 @@ const studentResultOptions = [
   { value: 'PASSED', label: 'Đạt' },
   { value: 'FAILED', label: 'Không đạt' },
 ];
+
+const ROLE_LABELS = {
+  ADMIN: 'Quản trị viên',
+  GIANGVIEN: 'Giảng viên',
+  NHANVIEN: 'Nhân viên',
+  SINHVIEN: 'Sinh viên',
+};
 
 export default function CouncilDetailPage() {
   const { id } = useParams();
@@ -278,8 +287,16 @@ export default function CouncilDetailPage() {
   const handleExport = async () => {
     try {
       setExporting(true);
-      const blob = await councilApi.exportPdf(id);
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const dataset = await councilApi.exportDataset(id);
+      const documentNode = (
+        <CouncilPdfDocument
+          council={dataset?.council || detail}
+          students={dataset?.students || []}
+          generatedAt={new Date()}
+        />
+      );
+      const blob = await pdf(documentNode).toBlob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `bien-ban-hoi-dong-${detail?.academicYear || 'nam-hoc'}.pdf`;
@@ -287,7 +304,7 @@ export default function CouncilDetailPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      openToast({ message: 'Đã tải biên bản hội đồng.', variant: 'success' });
+      openToast({ message: 'Đã tạo bảng PDF của hội đồng.', variant: 'success' });
     } catch (error) {
       openToast({ message: error.response?.data?.error || 'Không thể xuất PDF.', variant: 'danger' });
     } finally {
@@ -312,7 +329,7 @@ export default function CouncilDetailPage() {
       dataIndex: 'systemRole',
       key: 'systemRole',
       width: 140,
-      render: (role) => role || '—',
+      render: (role) => ROLE_LABELS[role] || role || '—',
     },
     {
       title: 'Vai trò trong hội đồng',
@@ -549,9 +566,13 @@ export default function CouncilDetailPage() {
       <Card>
         <Space direction="vertical" size="large">
           <p>
-            Xuất biên bản xét duyệt để lưu trữ và trình ký. Vui lòng đảm bảo hội đồng đã chốt kết quả trước khi xuất
-            PDF.
+            Xuất bảng PDF bao gồm các cột STT, MSSV, Họ, Tên, Lớp, điểm từng nhóm và ghi chú về điều kiện còn thiếu để
+            đạt chứng chỉ. Vui lòng đảm bảo hội đồng đã chốt kết quả trước khi xuất dữ liệu.
           </p>
+          <ul className={styles['council-detail__export-list']}>
+            <li>Điểm nhóm 1, nhóm 2 và nhóm 3 kèm trạng thái Đạt/Không đạt.</li>
+            <li>Điểm tổng, kết quả cuối cùng và ghi chú được tự động tạo nếu sinh viên thiếu điều kiện.</li>
+          </ul>
           <Button type="primary" onClick={handleExport} disabled={!isFinalized} loading={exporting}>
             Xuất PDF
           </Button>

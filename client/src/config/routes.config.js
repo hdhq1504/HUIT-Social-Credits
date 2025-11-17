@@ -37,6 +37,7 @@ export const ROUTE_PATHS = {
     USER_CREATE: '/admin/users/create',
     USER_EDIT: '/admin/users/:id/edit',
     SYSTEM: '/admin/system',
+    ACADEMIC_SETTINGS: '/admin/academic-settings',
   },
 };
 

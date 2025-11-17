@@ -8,6 +8,7 @@ import {
   CouncilPage,
   SystemPage,
   UsersPage,
+  AcademicSettingsPage,
 } from '@/admin/pages';
 
 const lastPathSegment = (path) => path.split('/').pop();
@@ -65,6 +66,15 @@ export const adminRoutes = [
       key: 'council',
       label: 'Hội đồng xét điểm',
       icon: 'TeamOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.ACADEMIC_SETTINGS),
+    component: AcademicSettingsPage,
+    meta: {
+      key: 'academic-settings',
+      label: 'Cấu hình học kỳ',
+      icon: 'BookOutlined',
     },
   },
   {

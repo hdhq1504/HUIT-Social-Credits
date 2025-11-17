@@ -12,6 +12,7 @@ import {
   faHeart,
   faCalendar,
   faUserGear,
+  faBookOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import styles from './AdminSidebar.module.scss';
 
@@ -27,6 +28,7 @@ const iconByKey = {
   council: faMedal,
   users: faUserGear,
   system: faGear,
+  academic: faBookOpen,
 };
 
 function AdminSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {} }) {

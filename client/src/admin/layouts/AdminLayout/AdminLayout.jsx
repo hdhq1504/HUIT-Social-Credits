@@ -25,6 +25,7 @@ const iconByKey = {
   TeamOutlined: 'council',
   UserGearOutlined: 'users',
   SettingOutlined: 'system',
+  BookOutlined: 'academic',
 };
 
 function AdminLayout() {
