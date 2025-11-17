@@ -32,6 +32,7 @@ export const ROUTE_PATHS = {
     FEEDBACK_DETAIL: '/admin/feedback/:id',
     REPORTS: '/admin/reports',
     COUNCIL: '/admin/council',
+    COUNCIL_DETAIL: '/admin/council/:id',
     USERS: '/admin/users',
     USER_CREATE: '/admin/users/create',
     USER_EDIT: '/admin/users/:id/edit',

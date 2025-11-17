@@ -1,0 +1,28 @@
+.council-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.council-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.council-page__table-card {
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+.council-page__status-tag {
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.council-page__footer-text {
+  margin-top: 12px;
+  color: #7a7a7a;
+  font-size: 13px;
+}

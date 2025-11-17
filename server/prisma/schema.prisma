@@ -42,6 +42,10 @@ model NguoiDung {
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
   faceProfile                 FaceProfile?
+  hoiDongDaTao                HoiDongXetDiem[]    @relation("HoiDongNguoiTao")
+  thanhVienHoiDong            ThanhVienHoiDong[]
+  danhGiaSinhVien             DanhGiaSinhVien[]   @relation("DanhGiaSinhVienStudent")
+  danhGiaCapNhat              DanhGiaSinhVien[]   @relation("DanhGiaSinhVienNguoiCapNhat")
 
   @@index([email])
   @@index([maSV])
@@ -51,36 +55,38 @@ model NguoiDung {
 }
 
 model NamHoc {
-  id        String    @id @default(cuid())
-  ma        String    @unique
-  nienKhoa  String    @unique
-  ten       String?
-  batDau    DateTime
-  ketThuc   DateTime
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  hocKy     HocKy[]
-  hoatDong  HoatDong[] @relation("HoatDongNamHoc")
+  id             String           @id @default(cuid())
+  ma             String           @unique
+  nienKhoa       String           @unique
+  ten            String?
+  batDau         DateTime
+  ketThuc        DateTime
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  hocKy          HocKy[]
+  hoatDong       HoatDong[]       @relation("HoatDongNamHoc")
+  HoiDongXetDiem HoiDongXetDiem[]
 
   @@index([isActive, batDau])
   @@index([batDau, ketThuc])
 }
 
 model HocKy {
-  id        String    @id @default(cuid())
-  ma        String    @unique
-  ten       String
-  thuTu     Int?
-  moTa      String?
-  batDau    DateTime
-  ketThuc   DateTime
-  isActive  Boolean   @default(true)
-  namHocId  String
-  namHoc    NamHoc    @relation(fields: [namHocId], references: [id], onDelete: Cascade)
-  hoatDong  HoatDong[] @relation("HoatDongHocKy")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id             String           @id @default(cuid())
+  ma             String           @unique
+  ten            String
+  thuTu          Int?
+  moTa           String?
+  batDau         DateTime
+  ketThuc        DateTime
+  isActive       Boolean          @default(true)
+  namHocId       String
+  namHoc         NamHoc           @relation(fields: [namHocId], references: [id], onDelete: Cascade)
+  hoatDong       HoatDong[]       @relation("HoatDongHocKy")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  HoiDongXetDiem HoiDongXetDiem[]
 
   @@index([namHocId, isActive, thuTu])
   @@index([batDau, ketThuc])
@@ -146,18 +152,18 @@ model DangKyHoatDong {
 }
 
 model DiemDanhNguoiDung {
-  id          String          @id @default(cuid())
+  id          String           @id @default(cuid())
   dangKyId    String
   nguoiDungId String
   hoatDongId  String
   trangThai   TrangThaiDangKy
-  loai        AttendancePhase @default(CHECKIN)
+  loai        AttendancePhase  @default(CHECKIN)
   ghiChu      String?
   anhDinhKem  Json?
   faceMatch   FaceMatchStatus?
   faceScore   Float?
   faceMeta    Json?
-  taoLuc      DateTime        @default(now())
+  taoLuc      DateTime         @default(now())
 
   dangKy    DangKyHoatDong @relation(fields: [dangKyId], references: [id])
   nguoiDung NguoiDung      @relation(fields: [nguoiDungId], references: [id])
@@ -201,10 +207,80 @@ model ThongBao {
   daDocLuc    DateTime?
   createdAt   DateTime  @default(now())
 
-  nguoiDung   NguoiDung @relation(fields: [nguoiDungId], references: [id])
+  nguoiDung  NguoiDung @relation(fields: [nguoiDungId], references: [id])
 
   @@index([nguoiDungId, daDoc])
   @@index([nguoiDungId, createdAt])
+}
+
+model HoiDongXetDiem {
+  id            String             @id @default(cuid())
+  name          String
+  description   String?
+  academicYear  String
+  semesterLabel String
+  namHocId      String?
+  hocKyId       String?
+  facultyCode   String?
+  status        TrangThaiHoiDong   @default(PREPARING)
+  createdById   String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  finalizedAt   DateTime?
+  exportUrl     String?
+  exportPath    String?
+  namHoc        NamHoc?            @relation(fields: [namHocId], references: [id])
+  hocKy         HocKy?             @relation(fields: [hocKyId], references: [id])
+  createdBy     NguoiDung          @relation("HoiDongNguoiTao", fields: [createdById], references: [id])
+  members       ThanhVienHoiDong[]
+  evaluations   DanhGiaSinhVien[]
+
+  @@index([namHocId])
+  @@index([hocKyId])
+  @@index([status])
+}
+
+model ThanhVienHoiDong {
+  id            String         @id @default(cuid())
+  councilId     String
+  userId        String
+  roleInCouncil String
+  createdAt     DateTime       @default(now())
+  council       HoiDongXetDiem @relation(fields: [councilId], references: [id], onDelete: Cascade)
+  user          NguoiDung      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([councilId, userId])
+  @@index([userId])
+}
+
+model DanhGiaSinhVien {
+  id          String                @id @default(cuid())
+  councilId   String
+  studentId   String
+  totalPoints Int                   @default(0)
+  result      KetQuaDanhGiaSinhVien @default(PENDING)
+  note        String?
+  updatedById String?
+  updatedAt   DateTime?
+  createdAt   DateTime              @default(now())
+  council     HoiDongXetDiem        @relation(fields: [councilId], references: [id], onDelete: Cascade)
+  student     NguoiDung             @relation("DanhGiaSinhVienStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  updatedBy   NguoiDung?            @relation("DanhGiaSinhVienNguoiCapNhat", fields: [updatedById], references: [id])
+
+  @@unique([councilId, studentId])
+  @@index([studentId])
+  @@index([result])
+}
+
+model FaceProfile {
+  id          String   @id @default(cuid())
+  nguoiDungId String   @unique
+  descriptors Json
+  samples     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
 }
 
 enum VaiTro {
@@ -256,13 +332,14 @@ enum FaceMatchStatus {
   REJECTED
 }
 
-model FaceProfile {
-  id          String   @id @default(cuid())
-  nguoiDungId String   @unique
-  descriptors Json
-  samples     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum TrangThaiHoiDong {
+  PREPARING
+  IN_PROGRESS
+  FINALIZED
+}
 
-  user NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
+enum KetQuaDanhGiaSinhVien {
+  PENDING
+  PASSED
+  FAILED
 }

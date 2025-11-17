@@ -1,0 +1,43 @@
+.council-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.council-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.council-detail__stats {
+  margin-top: 16px;
+}
+
+.council-detail__members-actions,
+.council-detail__students-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.council-detail__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.council-detail__summary-cards {
+  margin-top: 16px;
+}
+
+.council-detail__tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

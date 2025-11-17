@@ -8,7 +8,7 @@ const seed = async () => {
     const adminPlainPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
     const adminHashedPassword = await bcrypt.hash(adminPlainPassword, 10);
 
-    await prisma.nguoiDung.upsert({
+    const admin = await prisma.nguoiDung.upsert({
       where: { email: adminEmail },
       update: {
         matKhau: adminHashedPassword,
@@ -26,6 +26,53 @@ const seed = async () => {
         isActive: true,
         soDT: "0900000000",
         avatarUrl: "/images/profile.png",
+      },
+    });
+
+    const lecturer = await prisma.nguoiDung.upsert({
+      where: { email: "giangvien@huit.edu.vn" },
+      update: {
+        matKhau: adminHashedPassword,
+        hoTen: "Trần Thị Giảng Viên",
+        vaiTro: "GIANGVIEN",
+        maCB: "GV001",
+        maKhoa: "CNTT",
+        isActive: true,
+      },
+      create: {
+        email: "giangvien@huit.edu.vn",
+        matKhau: adminHashedPassword,
+        hoTen: "Trần Thị Giảng Viên",
+        vaiTro: "GIANGVIEN",
+        maCB: "GV001",
+        maKhoa: "CNTT",
+        maLop: null,
+        soDT: "0911111111",
+        avatarUrl: "/images/profile.png",
+        isActive: true,
+      },
+    });
+
+    const staff = await prisma.nguoiDung.upsert({
+      where: { email: "nhanvien@huit.edu.vn" },
+      update: {
+        matKhau: adminHashedPassword,
+        hoTen: "Nguyễn Văn Nhân Viên",
+        vaiTro: "NHANVIEN",
+        maCB: "NV001",
+        maKhoa: "CNTT",
+        isActive: true,
+      },
+      create: {
+        email: "nhanvien@huit.edu.vn",
+        matKhau: adminHashedPassword,
+        hoTen: "Nguyễn Văn Nhân Viên",
+        vaiTro: "NHANVIEN",
+        maCB: "NV001",
+        maKhoa: "CNTT",
+        soDT: "0912222222",
+        avatarUrl: "/images/profile.png",
+        isActive: true,
       },
     });
 
@@ -111,7 +158,7 @@ const seed = async () => {
       "Giấy chứng nhận (nếu đủ điều kiện)",
       "Kỹ năng làm việc nhóm",
       "Kỹ năng tổ chức sự kiện",
-      "Trải nghiệm hoạt động cộng đồng"
+      "Trải nghiệm hoạt động cộng đồng",
     ];
 
     const REQUIREMENTS_PRESET = [
@@ -119,14 +166,14 @@ const seed = async () => {
       "Trang phục gọn gàng",
       "Tuân thủ phân công",
       "Giữ vệ sinh khu vực",
-      "Ứng xử văn minh"
+      "Ứng xử văn minh",
     ];
 
     const GUIDES_PRESET = [
       "Tập trung tại điểm danh trước 15 phút",
       "Theo dõi thông báo trên dashboard",
       "Nhóm trưởng nhận dụng cụ tại phòng CTSV",
-      "Báo cáo nhanh cuối buổi cho phụ trách"
+      "Báo cáo nhanh cuối buổi cho phụ trách",
     ];
 
     const RESPONSIBILITIES_PRESET = [
@@ -134,7 +181,7 @@ const seed = async () => {
       "Dẫn đường – hướng dẫn",
       "Dọn vệ sinh – thu gom",
       "Truyền thông – chụp ảnh",
-      "Điều phối hàng ghế"
+      "Điều phối hàng ghế",
     ];
 
     const pickSome = (arr, n = 3) => {
@@ -160,7 +207,7 @@ const seed = async () => {
       return [
         safeSummary ? `<p>${safeSummary}</p>` : null,
         benefitList ? `<h3>Quyền lợi</h3><ul>${benefitList}</ul>` : null,
-        responsibilityList ? `<h3>Trách nhiệm</h3><ul>${responsibilityList}</ul>` : null
+        responsibilityList ? `<h3>Trách nhiệm</h3><ul>${responsibilityList}</ul>` : null,
       ]
         .filter(Boolean)
         .join("");
@@ -177,7 +224,7 @@ const seed = async () => {
         sucChuaToiDa: 60,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Hỗ trợ hướng dẫn tân sinh viên",
@@ -189,7 +236,7 @@ const seed = async () => {
         sucChuaToiDa: 30,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Chăm sóc vườn cây khoa",
@@ -201,7 +248,7 @@ const seed = async () => {
         sucChuaToiDa: 25,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_2",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Xuân yêu thương – gói quà sớm",
@@ -213,7 +260,7 @@ const seed = async () => {
         sucChuaToiDa: 40,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Tập huấn an toàn khi hiến máu",
@@ -225,7 +272,7 @@ const seed = async () => {
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Tham quan Địa chỉ đỏ: Bảo tàng Chứng tích Chiến tranh",
@@ -237,7 +284,7 @@ const seed = async () => {
         sucChuaToiDa: 90,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Ngày hội hiến máu – Giọt hồng IT",
@@ -249,7 +296,7 @@ const seed = async () => {
         sucChuaToiDa: 150,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Dọn rác tuyến kênh Tham Lương",
@@ -261,7 +308,7 @@ const seed = async () => {
         sucChuaToiDa: 80,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_2",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Hỗ trợ tổ chức Ngày Nhà giáo Việt Nam 20/11",
@@ -273,7 +320,7 @@ const seed = async () => {
         sucChuaToiDa: 50,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Xuân tình nguyện – Gây quỹ ấm no",
@@ -285,7 +332,7 @@ const seed = async () => {
         sucChuaToiDa: 70,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Mùa hè xanh – Tập huấn tiền trạm",
@@ -297,7 +344,7 @@ const seed = async () => {
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_2",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "TUYỂN TÌNH NGUYỆN VIÊN ĐĂNG KÝ HIẾN MÁU TÌNH NGUYỆN ❤🩸",
@@ -309,7 +356,7 @@ const seed = async () => {
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Chỉnh trang bảng tin khoa",
@@ -321,7 +368,7 @@ const seed = async () => {
         sucChuaToiDa: 20,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Tuyên truyền an toàn giao thông",
@@ -333,7 +380,7 @@ const seed = async () => {
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Đêm hội trăng rằm – hỗ trợ chương trình",
@@ -345,7 +392,7 @@ const seed = async () => {
         sucChuaToiDa: 80,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Tham quan Địa đạo Củ Chi",
@@ -357,7 +404,7 @@ const seed = async () => {
         sucChuaToiDa: 120,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Dọn vệ sinh phòng máy",
@@ -369,7 +416,7 @@ const seed = async () => {
         sucChuaToiDa: 25,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Nhặt rác – Tuyến đường xanh",
@@ -381,7 +428,7 @@ const seed = async () => {
         sucChuaToiDa: 60,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_2",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Tập huấn PCCC cơ bản",
@@ -393,7 +440,7 @@ const seed = async () => {
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: true
+        isFeatured: true,
       },
       {
         tieuDe: "Hiến máu – HUIT vì cộng đồng",
@@ -405,7 +452,7 @@ const seed = async () => {
         sucChuaToiDa: 140,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Địa chỉ đỏ: Bảo tàng Hồ Chí Minh – Chi nhánh TP.HCM",
@@ -417,7 +464,7 @@ const seed = async () => {
         sucChuaToiDa: 100,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
-        isFeatured: false
+        isFeatured: false,
       },
       {
         tieuDe: "Tiếp sức mùa thi – tổng kết",
@@ -429,12 +476,14 @@ const seed = async () => {
         sucChuaToiDa: 200,
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
-        isFeatured: true
-      }
+        isFeatured: true,
+      },
     ];
 
     for (const activity of activitiesData) {
-      const academicPeriod = await resolveAcademicPeriodForDate(activity.batDauLuc ?? activity.ketThucLuc);
+      const academicPeriod = await resolveAcademicPeriodForDate(
+        activity.batDauLuc ?? activity.ketThucLuc
+      );
       const benefits = activity.benefits ?? pickSome(BENEFITS_PRESET, 3);
       const responsibilities = activity.responsibilities ?? pickSome(RESPONSIBILITIES_PRESET, 3);
       const richDescription = buildRichDescription(activity.moTa, benefits, responsibilities);
@@ -451,11 +500,11 @@ const seed = async () => {
         sucChuaToiDa: activity.sucChuaToiDa,
         hinhAnh: activity.hinhAnh,
         isFeatured: activity.isFeatured,
-        phuongThucDiemDanh: activity.phuongThucDiemDanh ?? "QR",
+        phuongThucDiemDanh: activity.phuongThucDiemDanh ?? "PHOTO",
         hocKyId: activity.hocKyId ?? academicPeriod.hocKyId,
         namHocId: activity.namHocId ?? academicPeriod.namHocId,
         isPublished: true,
-        nhomDiem: activity.nhomDiem ?? "NHOM_2"
+        nhomDiem: activity.nhomDiem ?? "NHOM_2",
       };
 
       const existing = await prisma.hoatDong.findFirst({ where: { tieuDe: activity.tieuDe } });
@@ -466,10 +515,108 @@ const seed = async () => {
       }
     }
 
+    // Seed mẫu hội đồng xét điểm CTXH và kết quả đánh giá sinh viên
+    const councilReferenceDate = new Date("2025-10-30T08:00:00+07:00");
+    const councilAcademicPeriod = await resolveAcademicPeriodForDate(councilReferenceDate);
+
+    let academicYear = "2024-2025";
+    let semesterLabel = "Học kỳ 1";
+
+    if (councilAcademicPeriod?.namHocId) {
+      const nh = await prisma.namHoc.findUnique({
+        where: { id: councilAcademicPeriod.namHocId },
+      });
+      if (nh?.nienKhoa) {
+        academicYear = nh.nienKhoa;
+      }
+    }
+
+    if (councilAcademicPeriod?.hocKyId) {
+      const hk = await prisma.hocKy.findUnique({
+        where: { id: councilAcademicPeriod.hocKyId },
+      });
+      if (hk?.ten) {
+        semesterLabel = hk.ten;
+      }
+    }
+
+    let council = await prisma.hoiDongXetDiem.findFirst({
+      where: {
+        namHocId: councilAcademicPeriod.namHocId,
+        hocKyId: councilAcademicPeriod.hocKyId,
+        facultyCode: "CNTT",
+      },
+    });
+
+    if (!council) {
+      council = await prisma.hoiDongXetDiem.create({
+        data: {
+          name: `Hội đồng xét điểm CTXH Khoa CNTT - ${academicYear} - ${semesterLabel}`,
+          description: "Hội đồng mẫu dùng để minh họa quy trình xét điểm CTXH.",
+          academicYear,
+          semesterLabel,
+          namHocId: councilAcademicPeriod.namHocId,
+          hocKyId: councilAcademicPeriod.hocKyId,
+          facultyCode: "CNTT",
+          status: "PREPARING",
+          createdById: admin.id,
+        },
+      });
+    }
+
+    await prisma.thanhVienHoiDong.createMany({
+      data: [
+        { councilId: council.id, userId: admin.id, roleInCouncil: "Chủ tịch" },
+        { councilId: council.id, userId: lecturer.id, roleInCouncil: "Ủy viên" },
+        { councilId: council.id, userId: staff.id, roleInCouncil: "Thư ký" },
+      ],
+      skipDuplicates: true,
+    });
+
+    const seededStudents = await prisma.nguoiDung.findMany({
+      where: {
+        email: { in: Students.map((s) => s.email) },
+      },
+    });
+
+    const evaluationScores = [60, 50, 40, 30, 20, 10];
+
+    const evaluationsData = seededStudents.map((student, index) => {
+      const totalPoints = evaluationScores[index] ?? 0;
+      let result = "PENDING";
+      let note = null;
+
+      if (totalPoints >= 50) {
+        result = "PASSED";
+      } else if (totalPoints > 0) {
+        result = "FAILED";
+        note = "Chưa đạt đủ số điểm CTXH tối thiểu.";
+      }
+
+      return {
+        councilId: council.id,
+        studentId: student.id,
+        totalPoints,
+        result,
+        note,
+        updatedById: admin.id,
+        updatedAt: new Date(),
+      };
+    });
+
+    if (evaluationsData.length > 0) {
+      await prisma.danhGiaSinhVien.createMany({
+        data: evaluationsData,
+        skipDuplicates: true,
+      });
+    }
+
     console.log("Tạo seed thành công");
+    await prisma.$disconnect();
     process.exit(0);
   } catch (e) {
     console.error(e);
+    await prisma.$disconnect();
     process.exit(1);
   }
 };

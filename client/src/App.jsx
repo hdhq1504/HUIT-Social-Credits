@@ -18,6 +18,7 @@ import ActivitiesAddEditPage from './admin/pages/ActivitiesAddEditPage/Activitie
 import ActivitiesDetailPage from './admin/pages/ActivitiesDetailPage/ActivitiesDetailPage';
 import FeedbackDetailPage from './admin/pages/FeedbackDetailPage/FeedbackDetailPage';
 import ScoringDetailPage from './admin/pages/ScoringDetailPage/ScoringDetailPage';
+import CouncilDetailPage from './admin/pages/CouncilDetailPage/CouncilDetailPage';
 import UsersAddEditPage from './admin/pages/UsersAddEditPage/UsersAddEditPage';
 
 const queryClient = new QueryClient({
@@ -114,6 +115,7 @@ function App() {
               <Route path="activities/:id" element={<ActivitiesDetailPage />} />
               <Route path="scoring/:id" element={<ScoringDetailPage />} />
               <Route path="feedback/:id" element={<FeedbackDetailPage />} />
+              <Route path="council/:id" element={<CouncilDetailPage />} />
               <Route path="users/create" element={<UsersAddEditPage />} />
               <Route path="users/:id/edit" element={<UsersAddEditPage />} />
             </Route>
