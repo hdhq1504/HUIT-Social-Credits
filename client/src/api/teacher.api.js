@@ -32,6 +32,22 @@ const teacherApi = {
     });
     return response.data;
   },
+
+  // Homeroom methods
+  async getMyClasses() {
+    const { data } = await http.get('/teacher/homeroom/my-classes');
+    return data;
+  },
+
+  async getHomeroomClassStudents(classId) {
+    const { data } = await http.get(`/teacher/homeroom/classes/${classId}/students`);
+    return data;
+  },
+
+  async getStudentScores(studentId) {
+    const { data } = await http.get(`/teacher/homeroom/students/${studentId}/scores`);
+    return data;
+  },
 };
 
 export default teacherApi;

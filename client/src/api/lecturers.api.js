@@ -24,6 +24,10 @@ export const lecturersApi = {
     const { data } = await http.get('/admin/teachers/classes/available');
     return data;
   },
+  async remove(id) {
+    const { data } = await http.delete(`/users/${id}`);
+    return data;
+  },
 };
 
 export default lecturersApi;

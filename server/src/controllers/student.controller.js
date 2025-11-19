@@ -3,12 +3,11 @@ import bcrypt from "bcrypt";
 
 export const getStudents = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, khoaId, lopId } = req.query;
-    const skip = (page - 1) * limit;
+    const { page = 1, pageSize = 10, search, khoaId, lopId, status } = req.query;
+    const skip = (page - 1) * pageSize;
 
     const where = {
       vaiTro: "SINHVIEN",
-      isActive: true,
       ...(search && {
         OR: [
           { hoTen: { contains: search, mode: "insensitive" } },
@@ -16,17 +15,21 @@ export const getStudents = async (req, res) => {
           { email: { contains: search, mode: "insensitive" } },
         ],
       }),
-      ...(khoaId && { maKhoa: khoaId }), // Note: Schema uses maKhoa string, but UI might send ID. Assuming maKhoa for now based on schema.
-      ...(lopId && { lopHocId: lopId }),
+      ...(status !== undefined && status !== 'all' && {
+        isActive: status === 'active'
+      }),
     };
 
-    // Check if khoaId is actually an ID or Code. Schema has maKhoa as string.
-    // If filtering by Faculty ID (from Khoa table), we need to filter via lopHoc -> khoa
+    // Filter by khoaId through lopHoc relation
     if (khoaId) {
-      delete where.maKhoa; // Remove direct check if we are checking relation
       where.lopHoc = {
         khoaId: khoaId
-      }
+      };
+    }
+
+    // Filter by lopId
+    if (lopId) {
+      where.lopHocId = lopId;
     }
 
     const [students, total] = await Promise.all([
@@ -40,6 +43,9 @@ export const getStudents = async (req, res) => {
           ngaySinh: true,
           gioiTinh: true,
           soDT: true,
+          isActive: true,
+          lastLoginAt: true,
+          avatarUrl: true,
           lopHoc: {
             select: {
               id: true,
@@ -55,19 +61,41 @@ export const getStudents = async (req, res) => {
           }
         },
         skip: Number(skip),
-        take: Number(limit),
-        orderBy: { createdAt: "desc" },
+        take: Number(pageSize),
+        orderBy: [
+          { lopHoc: { khoa: { tenKhoa: 'asc' } } },
+          { lopHoc: { tenLop: 'asc' } },
+          { hoTen: 'asc' }
+        ],
       }),
       prisma.nguoiDung.count({ where }),
     ]);
 
+    // Map students to include department and class info
+    const mappedStudents = students.map(student => ({
+      id: student.id,
+      studentCode: student.maSV,
+      fullName: student.hoTen,
+      email: student.email,
+      dateOfBirth: student.ngaySinh,
+      gender: student.gioiTinh,
+      phoneNumber: student.soDT,
+      isActive: student.isActive,
+      lastLoginAt: student.lastLoginAt,
+      avatarUrl: student.avatarUrl,
+      classCode: student.lopHoc?.maLop || null,
+      className: student.lopHoc?.tenLop || null,
+      department: student.lopHoc?.khoa?.tenKhoa || null,
+      departmentId: student.lopHoc?.khoa?.id || null,
+    }));
+
     res.json({
-      data: students,
+      students: mappedStudents,
       pagination: {
         page: Number(page),
-        limit: Number(limit),
+        pageSize: Number(pageSize),
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / pageSize),
       },
     });
   } catch (error) {

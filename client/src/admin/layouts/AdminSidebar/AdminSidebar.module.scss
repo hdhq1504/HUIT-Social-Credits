@@ -1,6 +1,5 @@
 .sidebar {
   &__sider {
-    top: 0;
     height: 100vh;
     background: var(--white-color);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
@@ -46,8 +45,7 @@
   &__content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
-
+    padding-bottom: 16px;
     &::-webkit-scrollbar {
       width: 6px;
     }
@@ -146,18 +144,28 @@
       border-color: var(--danger-color);
     }
   }
-  
+
   // Collapsed state overrides
   :global(.ant-layout-sider-collapsed) {
     .sidebar__brand {
-        display: none;
+      display: none;
     }
-    
+
     .sidebar__logout-btn {
-        padding: 10px 0;
-        span {
-            display: none;
-        }
+      padding: 10px 0;
+
+      span {
+        display: none;
+      }
+    }
+  }
+
+  :global(.ant-layout-sider-collapsed) &__item {
+    justify-content: center;
+
+    :global(.ant-menu-item-icon) {
+      transform: translateY(-70%);
+      margin-right: 0;
     }
   }
 }

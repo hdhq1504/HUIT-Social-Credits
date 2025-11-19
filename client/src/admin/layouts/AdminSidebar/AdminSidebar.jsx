@@ -13,6 +13,7 @@ import {
   faCalendar,
   faUserGear,
   faRightFromBracket,
+  faCalendarAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import styles from './AdminSidebar.module.scss';
 
@@ -29,6 +30,7 @@ const iconByKey = {
   users: faUserGear,
   students: faUsers,
   lecturers: faUserGear,
+  academics: faCalendarAlt,
   system: faGear,
 };
 

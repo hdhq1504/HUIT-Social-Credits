@@ -38,6 +38,7 @@ export const ROUTE_PATHS = {
     USER_EDIT: '/admin/users/:id/edit',
     STUDENTS: '/admin/students',
     LECTURERS: '/admin/lecturers',
+    ACADEMIC_YEARS: '/admin/academic-years',
     SYSTEM: '/admin/system',
   },
 
@@ -46,6 +47,7 @@ export const ROUTE_PATHS = {
     ROOT: '/teacher',
     OVERVIEW: '/teacher',
     CLASSES: '/teacher/classes',
+    CLASS_STUDENTS: '/teacher/classes/:classId/students',
   },
 };
 
@@ -58,6 +60,7 @@ export const buildPath = {
   adminUserEdit: (id) => `/admin/users/${id}/edit`,
   adminScoringDetail: (id) => `/admin/scoring/${id}`,
   teacherClassDetail: (id) => `/teacher/classes/${id}`,
+  teacherClassStudents: (classId) => `/teacher/classes/${classId}/students`,
 };
 
 export default ROUTE_PATHS;

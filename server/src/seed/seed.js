@@ -130,10 +130,55 @@ const seed = async () => {
           tenLop: lop.tenLop,
           khoaId: lop.khoaId,
           namNhapHoc: lop.namNhapHoc,
-          giangVienChuNhiemId: lop.giangVienChuNhiemId,
         },
-        create: lop,
+        create: {
+          maLop: lop.maLop,
+          tenLop: lop.tenLop,
+          khoaId: lop.khoaId,
+          namNhapHoc: lop.namNhapHoc,
+        },
       });
+    }
+
+    // ==================== SEED PHÂN CÔNG CHỦ NHIỆM ====================
+    // Get active academic year
+    const activeNamHoc = await prisma.namHoc.findFirst({
+      where: { isActive: true },
+      orderBy: { batDau: 'desc' }
+    });
+
+    if (activeNamHoc) {
+      // Create PhanCong records for homeroom teachers
+      for (const lop of lopHocData) {
+        if (lop.giangVienChuNhiemId) {
+          const lopHoc = await prisma.lopHoc.findUnique({
+            where: { maLop: lop.maLop }
+          });
+
+          if (lopHoc) {
+            await prisma.phanCong.upsert({
+              where: {
+                giangVienId_lopHocId_namHocId_loaiPhanCong: {
+                  giangVienId: lop.giangVienChuNhiemId,
+                  lopHocId: lopHoc.id,
+                  namHocId: activeNamHoc.id,
+                  loaiPhanCong: 'CHU_NHIEM'
+                }
+              },
+              update: {},
+              create: {
+                giangVienId: lop.giangVienChuNhiemId,
+                lopHocId: lopHoc.id,
+                namHocId: activeNamHoc.id,
+                loaiPhanCong: 'CHU_NHIEM'
+              }
+            });
+          }
+        }
+      }
+      console.log("✓ Đã tạo phân công chủ nhiệm");
+    } else {
+      console.warn("⚠ Không tìm thấy năm học active, bỏ qua tạo phân công");
     }
 
     // ==================== SEED SINH VIÊN ====================

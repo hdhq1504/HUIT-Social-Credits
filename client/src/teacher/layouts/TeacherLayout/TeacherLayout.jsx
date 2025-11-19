@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import TeacherHeader from '../TeacherHeader/TeacherHeader';
 import TeacherSidebar from '../TeacherSidebar/TeacherSidebar';
 import TeacherBodyContent from '../TeacherBodyContent/TeacherBodyContent';
-// import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext'; // Assuming context might be needed later
+import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
 import teacherRoutes from '@/routes/teacherRoutes';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useAuthStore from '@/stores/useAuthStore';
@@ -25,7 +25,7 @@ function TeacherLayout() {
   const authUser = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.logout);
   const { contextHolder, open: openToast } = useToast();
-  // const contextValue = useMemo(() => ({ setPageActions, setBreadcrumbs }), []);
+  const contextValue = useMemo(() => ({ setPageActions, setBreadcrumbs }), []);
 
   useQuery({
     queryKey: ['teacher', 'me'],
@@ -35,12 +35,14 @@ function TeacherLayout() {
 
   const sidebarItems = useMemo(
     () =>
-      teacherRoutes.map((route) => ({
-        path: `/teacher/${route.path}`,
-        label: route.meta?.label ?? 'Trang',
-        icon: route.meta?.icon ?? faChalkboardUser,
-        iconKey: route.meta?.iconKey, // If you add iconKey to teacherRoutes later
-      })),
+      teacherRoutes
+        .filter((route) => !route.meta?.hideInSidebar)
+        .map((route) => ({
+          path: `/teacher/${route.path}`,
+          label: route.meta?.label ?? 'Trang',
+          icon: route.meta?.icon ?? faChalkboardUser,
+          iconKey: route.meta?.iconKey, // If you add iconKey to teacherRoutes later
+        })),
     [],
   );
 
@@ -85,8 +87,7 @@ function TeacherLayout() {
   );
 
   return (
-    // <TeacherPageContext.Provider value={contextValue}>
-    <>
+    <TeacherPageContext.Provider value={contextValue}>
       {contextHolder}
       <div className={cx('teacher-layout')}>
         <div
@@ -121,8 +122,7 @@ function TeacherLayout() {
           </TeacherBodyContent>
         </div>
       </div>
-    </>
-    // </TeacherPageContext.Provider>
+    </TeacherPageContext.Provider>
   );
 }
 

@@ -1,3 +1,4 @@
+export { default as AcademicYearsPage } from './AcademicYearsPage/AcademicYearsPage';
 export { default as ActivitiesAddEditPage } from './ActivitiesAddEditPage/ActivitiesAddEditPage';
 export { default as ActivitiesDetailPage } from './ActivitiesDetailPage/ActivitiesDetailPage';
 export { default as ActivitiesPage } from './ActivitiesPage/ActivitiesPage';

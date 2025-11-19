@@ -26,6 +26,7 @@ const iconByKey = {
   UserGearOutlined: 'users',
   TeamOutlined: 'students',
   UserTieOutlined: 'lecturers',
+  CalendarAltOutlined: 'academics',
   SettingOutlined: 'system',
 };
 

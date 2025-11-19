@@ -10,6 +10,7 @@ import {
   UsersPage,
   StudentsPage,
   LecturersPage,
+  AcademicYearsPage,
 } from '@/admin/pages';
 
 const lastPathSegment = (path) => path.split('/').pop();
@@ -94,6 +95,15 @@ export const adminRoutes = [
       key: 'lecturers',
       label: 'Quản lý giảng viên',
       icon: 'UserTieOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.ACADEMIC_YEARS), // 'academic-years'
+    component: AcademicYearsPage,
+    meta: {
+      key: 'academics',
+      label: 'Cấu hình năm học',
+      icon: 'CalendarAltOutlined',
     },
   },
   {

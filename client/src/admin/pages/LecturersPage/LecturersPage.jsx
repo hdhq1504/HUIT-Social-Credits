@@ -2,9 +2,18 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import classNames from 'classnames/bind';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Avatar, Button, Input, Modal, Pagination, Select, Tag, Tooltip, Form } from 'antd';
+import { Avatar, Button, Checkbox, Input, Modal, Pagination, Select, Tag, Tooltip, Form } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleDot, faArrowRotateRight, faPenToSquare, faSearch, faSort, faTrash, faUserPlus, faChalkboardTeacher } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCircleDot,
+  faArrowRotateRight,
+  faPenToSquare,
+  faSearch,
+  faSort,
+  faTrash,
+  faUserPlus,
+  faChalkboardTeacher,
+} from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import lecturersApi, { LECTURERS_QUERY_KEY } from '@/api/lecturers.api';
@@ -53,6 +62,7 @@ export default function LecturersPage() {
 
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState(null);
+  const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(false);
   const [assignForm] = Form.useForm();
 
   useEffect(() => {
@@ -285,7 +295,7 @@ export default function LecturersPage() {
       lastLoginAt: ({ value }) => formatDateTime(value),
       actions: ({ record }) => (
         <div className={cx('lecturers-page__actions')}>
-           <Tooltip title="Phân công chủ nhiệm">
+          <Tooltip title="Phân công chủ nhiệm">
             <button
               type="button"
               className={cx('lecturers-page__action-button', 'lecturers-page__action-button--assign')}
@@ -334,11 +344,18 @@ export default function LecturersPage() {
 
   const classOptions = useMemo(() => {
     if (!availableClasses) return [];
-    return availableClasses.map((cls) => ({
-      label: `${cls.maLop} - ${cls.tenLop} ${cls.giangVienChuNhiem ? `(GVCN: ${cls.giangVienChuNhiem.hoTen})` : '(Chưa có GVCN)'}`,
+
+    // Filter classes based on checkbox
+    const filteredClasses = showOnlyUnassigned
+      ? availableClasses.filter((cls) => !cls.giangVienChuNhiem)
+      : availableClasses;
+
+    // Map to options with only class name
+    return filteredClasses.map((cls) => ({
+      label: cls.tenLop,
       value: cls.id,
     }));
-  }, [availableClasses]);
+  }, [availableClasses, showOnlyUnassigned]);
 
   return (
     <>
@@ -426,17 +443,20 @@ export default function LecturersPage() {
               mode="multiple"
               placeholder="Chọn lớp..."
               options={classOptions}
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
+              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               style={{ width: '100%' }}
             />
           </Form.Item>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setIsAssignModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={assignHomeroomMutation.isLoading}>
-              Lưu phân công
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Checkbox checked={showOnlyUnassigned} onChange={(e) => setShowOnlyUnassigned(e.target.checked)}>
+              Chỉ hiển thị lớp chưa có GVCN
+            </Checkbox>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button onClick={() => setIsAssignModalOpen(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={assignHomeroomMutation.isLoading}>
+                Lưu phân công
+              </Button>
+            </div>
           </div>
         </Form>
       </Modal>

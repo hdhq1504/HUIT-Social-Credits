@@ -4,7 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Avatar, Button, Input, Modal, Pagination, Select, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleDot, faArrowRotateRight, faPenToSquare, faSearch, faSort, faTrash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCircleDot,
+  faArrowRotateRight,
+  faPenToSquare,
+  faSearch,
+  faSort,
+  faTrash,
+  faUserPlus,
+} from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import studentsApi, { STUDENTS_QUERY_KEY } from '@/api/students.api';
@@ -53,20 +61,6 @@ export default function StudentsPage() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const debouncedSearch = useDebounce(searchValue, 400);
 
-  // Mock Faculty Data - In a real app, this should come from an API
-  // Since I don't have a Faculty API yet, I'll hardcode some or try to fetch if possible.
-  // The user requirement mentioned "filter by faculty", implying faculties exist.
-  // I'll use a placeholder for now or check if I can fetch them.
-  // Looking at the backend, `LopHoc` has `khoaId`.
-  // I'll assume there's an API or I'll just use text input for now if no API.
-  // Wait, `studentsApi.getClassesByFaculty` exists.
-  // But I need a list of faculties first.
-  // I'll check if there's a `faculties` endpoint.
-  // For now, I will use a hardcoded list of faculties based on common data or leave it as a future improvement.
-  // Actually, I can't filter by faculty ID if I don't have the IDs.
-  // I'll use a text input for Faculty ID or just assume some exist.
-  // Better yet, I'll add a TODO to fetch faculties.
-  
   const { data: facultiesData } = useQuery({
     queryKey: ['admin', 'faculties'],
     queryFn: studentsApi.getFaculties,
@@ -74,10 +68,7 @@ export default function StudentsPage() {
 
   const FACULTY_OPTIONS = useMemo(() => {
     if (!facultiesData) return [{ label: 'Tất cả khoa', value: 'all' }];
-    return [
-      { label: 'Tất cả khoa', value: 'all' },
-      ...facultiesData.map((f) => ({ label: f.tenKhoa, value: f.id })),
-    ];
+    return [{ label: 'Tất cả khoa', value: 'all' }, ...facultiesData.map((f) => ({ label: f.tenKhoa, value: f.id }))];
   }, [facultiesData]);
 
   const { data: classesData } = useQuery({
@@ -88,10 +79,7 @@ export default function StudentsPage() {
 
   const classOptions = useMemo(() => {
     if (!classesData) return [{ label: 'Tất cả lớp', value: 'all' }];
-    return [
-      { label: 'Tất cả lớp', value: 'all' },
-      ...classesData.map((cls) => ({ label: cls.maLop, value: cls.id })),
-    ];
+    return [{ label: 'Tất cả lớp', value: 'all' }, ...classesData.map((cls) => ({ label: cls.maLop, value: cls.id }))];
   }, [classesData]);
 
   useEffect(() => {
@@ -106,7 +94,7 @@ export default function StudentsPage() {
         type: 'primary',
         className: 'admin-navbar__add-button',
         icon: <FontAwesomeIcon icon={faUserPlus} />,
-        onClick: () => navigate(ROUTE_PATHS.ADMIN.USER_CREATE), // Should probably be STUDENT_CREATE
+        onClick: () => navigate(ROUTE_PATHS.ADMIN.USER_CREATE),
       },
     ]);
     return () => {
@@ -152,7 +140,7 @@ export default function StudentsPage() {
 
   const handleEditStudent = useCallback(
     (id) => {
-      navigate(buildPath.adminUserEdit(id)); // Reuse user edit for now
+      navigate(buildPath.adminUserEdit(id));
     },
     [navigate],
   );
@@ -210,7 +198,7 @@ export default function StudentsPage() {
 
   const handleFacultyChange = (value) => {
     setFacultyValue(value);
-    setClassValue('all'); // Reset class when faculty changes
+    setClassValue('all');
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 

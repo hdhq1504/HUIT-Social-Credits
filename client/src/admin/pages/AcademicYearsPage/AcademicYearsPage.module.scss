@@ -1,0 +1,37 @@
+.academic-years {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+  }
+
+  &__subtitle {
+    margin: 0;
+    color: #8c8c8c;
+    font-size: 14px;
+  }
+
+  &__content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+}
