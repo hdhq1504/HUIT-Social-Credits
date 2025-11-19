@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
-import prisma from "./prisma.js";
-import { resolveAcademicPeriodForDate } from "./utils/academic.js";
+import prisma from "../prisma.js";
+import { resolveAcademicPeriodForDate } from "../utils/academic.js";
 
 const seed = async () => {
   try {
@@ -8,6 +8,7 @@ const seed = async () => {
     const adminPlainPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
     const adminHashedPassword = await bcrypt.hash(adminPlainPassword, 10);
 
+    // ==================== SEED ADMIN ====================
     const admin = await prisma.nguoiDung.upsert({
       where: { email: adminEmail },
       update: {
@@ -29,56 +30,113 @@ const seed = async () => {
       },
     });
 
+    const plainPassword = process.env.SEED_PASSWORD || "1234";
+    const hashed = await bcrypt.hash(plainPassword, 10);
+
+    // ==================== SEED KHOA ====================
+    const khoaData = [
+      {
+        maKhoa: "CNTT",
+        tenKhoa: "Công nghệ Thông tin",
+        moTa: "Khoa Công nghệ Thông tin - Đào tạo các ngành về phần mềm, mạng máy tính, an ninh mạng",
+      },
+      {
+        maKhoa: "ATTT",
+        tenKhoa: "An toàn thông tin",
+        moTa: "Khoa An toàn Thông tin - Đào tạo về bảo mật, dữ liệu, mạng máy tính",
+      },
+      {
+        maKhoa: "KHDL",
+        tenKhoa: "Khoa học dữ liệu",
+        moTa: "Khoa Khoa học dữ liệu - Đào tạo về dữ liệu, AI, máy học",
+      },
+    ];
+
+    for (const khoa of khoaData) {
+      await prisma.khoa.upsert({
+        where: { maKhoa: khoa.maKhoa },
+        update: {
+          tenKhoa: khoa.tenKhoa,
+          moTa: khoa.moTa,
+          isActive: true,
+        },
+        create: khoa,
+      });
+    }
+
+    // ==================== SEED GIẢNG VIÊN ====================
     const lecturer = await prisma.nguoiDung.upsert({
-      where: { email: "giangvien@huit.edu.vn" },
+      where: { email: "huunt@huit.edu.vn" },
       update: {
         matKhau: adminHashedPassword,
-        hoTen: "Trần Thị Giảng Viên",
+        hoTen: "Nguyễn Thế Hũu",
         vaiTro: "GIANGVIEN",
         maCB: "GV001",
         maKhoa: "CNTT",
         isActive: true,
       },
       create: {
-        email: "giangvien@huit.edu.vn",
+        email: "huunt@huit.edu.vn",
         matKhau: adminHashedPassword,
-        hoTen: "Trần Thị Giảng Viên",
+        hoTen: "Nguyễn Thế Hữu",
         vaiTro: "GIANGVIEN",
         maCB: "GV001",
         maKhoa: "CNTT",
         maLop: null,
-        soDT: "0911111111",
+        soDT: "0912345678",
         avatarUrl: "/images/profile.png",
         isActive: true,
       },
     });
 
-    const staff = await prisma.nguoiDung.upsert({
-      where: { email: "nhanvien@huit.edu.vn" },
-      update: {
-        matKhau: adminHashedPassword,
-        hoTen: "Nguyễn Văn Nhân Viên",
-        vaiTro: "NHANVIEN",
-        maCB: "NV001",
-        maKhoa: "CNTT",
-        isActive: true,
-      },
-      create: {
-        email: "nhanvien@huit.edu.vn",
-        matKhau: adminHashedPassword,
-        hoTen: "Nguyễn Văn Nhân Viên",
-        vaiTro: "NHANVIEN",
-        maCB: "NV001",
-        maKhoa: "CNTT",
-        soDT: "0912222222",
-        avatarUrl: "/images/profile.png",
-        isActive: true,
-      },
+    // Lấy khoa CNTT để dùng ID cho lớp học
+    const khoaCNTT = await prisma.khoa.findUnique({
+      where: { maKhoa: "CNTT" },
     });
 
-    const plainPassword = process.env.SEED_PASSWORD || "1234";
-    const hashed = await bcrypt.hash(plainPassword, 10);
+    if (!khoaCNTT) {
+      throw new Error("Không tìm thấy khoa CNTT");
+    }
 
+    // ==================== SEED LỚP HỌC ====================
+    const lopHocData = [
+      {
+        maLop: "13DHTH01",
+        tenLop: "13 Đại học Tin học 01",
+        khoaId: khoaCNTT.id,
+        namNhapHoc: 2022,
+        giangVienChuNhiemId: lecturer.id,
+      },
+      {
+        maLop: "13DHTH02",
+        tenLop: "13 Đại học Tin học 02",
+        khoaId: khoaCNTT.id,
+        namNhapHoc: 2022,
+        giangVienChuNhiemId: lecturer.id,
+      },
+      {
+        maLop: "13DHTH03",
+        tenLop: "13 Đại học Tin học 03",
+        khoaId: khoaCNTT.id,
+        namNhapHoc: 2022,
+        giangVienChuNhiemId: null,
+      },
+    ];
+
+    for (const lop of lopHocData) {
+      await prisma.lopHoc.upsert({
+        where: { maLop: lop.maLop },
+        update: {
+          tenLop: lop.tenLop,
+          khoaId: lop.khoaId,
+          namNhapHoc: lop.namNhapHoc,
+          giangVienChuNhiemId: lop.giangVienChuNhiemId,
+        },
+        create: lop,
+      });
+    }
+
+    // ==================== SEED SINH VIÊN ====================
     const Students = [
       {
         email: "2001223947@huit.edu.vn",
@@ -138,19 +196,28 @@ const seed = async () => {
     ];
 
     for (const student of Students) {
-      const maSV = student.email.split("@")[0];
-      await prisma.nguoiDung.upsert({
-        where: { email: student.email },
-        update: {},
-        create: {
-          ...student,
-          maSV,
-          matKhau: hashed,
-          vaiTro: "SINHVIEN",
-          isActive: true,
-          avatarUrl: "/images/profile.png",
-        },
+      const lop = await prisma.lopHoc.findUnique({
+        where: { maLop: student.maLop },
       });
+
+      if (lop) {
+        const maSV = student.email.split("@")[0];
+        await prisma.nguoiDung.upsert({
+          where: { email: student.email },
+          update: {
+            lopHocId: lop.id,
+          },
+          create: {
+            ...student,
+            maSV,
+            matKhau: hashed,
+            vaiTro: "SINHVIEN",
+            isActive: true,
+            avatarUrl: "/images/profile.png",
+            lopHocId: lop.id,
+          },
+        });
+      }
     }
 
     const BENEFITS_PRESET = [
@@ -515,7 +582,7 @@ const seed = async () => {
       }
     }
 
-    // Seed mẫu hội đồng xét điểm CTXH và kết quả đánh giá sinh viên
+    // ==================== SEED HỘI ĐỒNG ====================
     const councilReferenceDate = new Date("2025-10-30T08:00:00+07:00");
     const councilAcademicPeriod = await resolveAcademicPeriodForDate(councilReferenceDate);
 
@@ -568,7 +635,6 @@ const seed = async () => {
       data: [
         { councilId: council.id, userId: admin.id, roleInCouncil: "Chủ tịch" },
         { councilId: council.id, userId: lecturer.id, roleInCouncil: "Ủy viên" },
-        { councilId: council.id, userId: staff.id, roleInCouncil: "Thư ký" },
       ],
       skipDuplicates: true,
     });

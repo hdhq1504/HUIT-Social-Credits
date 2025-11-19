@@ -8,6 +8,8 @@ import {
   CouncilPage,
   SystemPage,
   UsersPage,
+  StudentsPage,
+  LecturersPage,
 } from '@/admin/pages';
 
 const lastPathSegment = (path) => path.split('/').pop();
@@ -74,6 +76,24 @@ export const adminRoutes = [
       key: 'users',
       label: 'Quản lý người dùng',
       icon: 'UserGearOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.STUDENTS), // 'students'
+    component: StudentsPage,
+    meta: {
+      key: 'students',
+      label: 'Quản lý sinh viên',
+      icon: 'TeamOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.LECTURERS), // 'lecturers'
+    component: LecturersPage,
+    meta: {
+      key: 'lecturers',
+      label: 'Quản lý giảng viên',
+      icon: 'UserTieOutlined',
     },
   },
   {

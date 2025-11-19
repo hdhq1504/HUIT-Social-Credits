@@ -1,3 +1,5 @@
+import prisma from "../prisma.js";
+
 export const POINT_GROUPS = {
   NHOM_1: {
     id: 'NHOM_1',
@@ -46,3 +48,65 @@ export const getPointGroupSummary = () =>
 
 export const getTotalTargetPoints = () =>
   Object.values(POINT_GROUPS).reduce((sum, group) => sum + group.target, 0);
+
+export const calculateUserPoints = async (userId, hocKyId) => {
+  if (!userId) {
+    return { tongDiem: 0, diemTheoNhom: [] };
+  }
+
+  const registrations = await prisma.dangKyHoatDong.findMany({
+    where: {
+      nguoiDungId: userId,
+      hoatDong: {
+        trangThai: "DA_DIEN_RA",
+        ...(hocKyId ? { hocKyId } : {}),
+      },
+    },
+    include: {
+      hoatDong: {
+        select: {
+          nhomDiem: true,
+          diemCong: true,
+          hocKyId: true,
+        },
+      },
+      phanHoi: {
+        select: {
+          trangThai: true,
+          diemNhan: true,
+        },
+      },
+    },
+  });
+
+  const pointsByGroup = {};
+  let totalPoints = 0;
+
+  registrations.forEach((registration) => {
+    const isApproved = registration.phanHoi?.trangThai === "DA_DUYET";
+    const pointValue = isApproved
+      ? registration.phanHoi?.diemNhan ?? registration.hoatDong?.diemCong ?? 0
+      : 0;
+
+    if (pointValue <= 0) return;
+
+    const groupKey = normalizePointGroup(registration.hoatDong?.nhomDiem ?? DEFAULT_POINT_GROUP);
+    if (!pointsByGroup[groupKey]) {
+      pointsByGroup[groupKey] = {
+        id: groupKey,
+        tenNhom: getPointGroupLabel(groupKey),
+        tongDiem: 0,
+        soHoatDong: 0,
+      };
+    }
+
+    pointsByGroup[groupKey].tongDiem += pointValue;
+    pointsByGroup[groupKey].soHoatDong += 1;
+    totalPoints += pointValue;
+  });
+
+  return {
+    tongDiem: totalPoints,
+    diemTheoNhom: Object.values(pointsByGroup),
+  };
+};

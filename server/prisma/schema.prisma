@@ -57,6 +57,21 @@ model NguoiDung {
   @@index([resetPasswordTokenExpiresAt])
 }
 
+model Khoa {
+  id        String   @id @default(cuid())
+  maKhoa    String   @unique @db.VarChar(50)
+  tenKhoa   String   @db.VarChar(255)
+  moTa      String?  @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  lopHoc    LopHoc[]
+
+  @@index([maKhoa])
+  @@index([isActive])
+}
+
 model LopHoc {
   id            String   @id @default(uuid())
   maLop         String   @unique
@@ -303,7 +318,6 @@ model FaceProfile {
 enum VaiTro {
   SINHVIEN
   GIANGVIEN
-  NHANVIEN
   ADMIN
 }
 

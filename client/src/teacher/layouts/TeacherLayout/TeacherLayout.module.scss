@@ -1,0 +1,32 @@
+.teacher-layout {
+  display: flex;
+  height: 100vh;
+
+  &__sidebar {
+    transition: width 0.3s ease;
+
+    &--open {
+      width: 250px;
+    }
+
+    &--closed {
+      width: 80px;
+    }
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+  }
+
+  &__header {
+    position: sticky;
+    top: 0;
+    flex: 0 0 auto;
+    background: var(--white-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+}

@@ -2,34 +2,21 @@ import React, { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames/bind';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import AdminHeader from '../AdminHeader/AdminHeader';
-import AdminSidebar from '../AdminSidebar/AdminSidebar';
-import AdminBodyContent from '../AdminBodyContent/AdminBodyContent';
-import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
-import adminRoutes from '@/routes/adminRoutes';
+import TeacherHeader from '../TeacherHeader/TeacherHeader';
+import TeacherSidebar from '../TeacherSidebar/TeacherSidebar';
+import TeacherBodyContent from '../TeacherBodyContent/TeacherBodyContent';
+// import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext'; // Assuming context might be needed later
+import teacherRoutes from '@/routes/teacherRoutes';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useAuthStore from '@/stores/useAuthStore';
 import { authApi } from '@/api/auth.api';
 import useToast from '@/components/Toast/Toast';
-import styles from './AdminLayout.module.scss';
+import styles from './TeacherLayout.module.scss';
+import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons';
 
 const cx = classNames.bind(styles);
 
-const iconByKey = {
-  DashboardOutlined: 'dashboard',
-  CalendarOutlined: 'activities',
-  TrophyOutlined: 'scoring',
-  FileSearchOutlined: 'proof',
-  MessageOutlined: 'feedback',
-  BarChartOutlined: 'reports',
-  TeamOutlined: 'council',
-  UserGearOutlined: 'users',
-  TeamOutlined: 'students',
-  UserTieOutlined: 'lecturers',
-  SettingOutlined: 'system',
-};
-
-function AdminLayout() {
+function TeacherLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,20 +25,21 @@ function AdminLayout() {
   const authUser = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.logout);
   const { contextHolder, open: openToast } = useToast();
-  const contextValue = useMemo(() => ({ setPageActions, setBreadcrumbs }), []);
+  // const contextValue = useMemo(() => ({ setPageActions, setBreadcrumbs }), []);
 
   useQuery({
-    queryKey: ['auth', 'me'],
+    queryKey: ['teacher', 'me'],
     queryFn: authApi.me,
     staleTime: 5 * 60 * 1000,
   });
 
   const sidebarItems = useMemo(
     () =>
-      adminRoutes.map((route) => ({
-        path: `/admin/${route.path}`,
-        label: route.meta.label,
-        iconKey: iconByKey[route.meta.icon] || 'dashboard',
+      teacherRoutes.map((route) => ({
+        path: `/teacher/${route.path}`,
+        label: route.meta?.label ?? 'Trang',
+        icon: route.meta?.icon ?? faChalkboardUser,
+        iconKey: route.meta?.iconKey, // If you add iconKey to teacherRoutes later
       })),
     [],
   );
@@ -89,34 +77,34 @@ function AdminLayout() {
 
   const headerUser = useMemo(
     () => ({
-      name: authUser?.fullName || 'Admin',
-      email: authUser?.email || 'admin@huit.edu.vn',
+      name: authUser?.fullName || authUser?.hoTen || 'Giảng viên',
+      email: authUser?.email || 'teacher@huit.edu.vn',
       avatarUrl: authUser?.avatarUrl || '',
     }),
     [authUser],
   );
 
   return (
-    <AdminPageContext.Provider value={contextValue}>
+    // <TeacherPageContext.Provider value={contextValue}>
+    <>
       {contextHolder}
-      <div className={cx('admin-layout')}>
+      <div className={cx('teacher-layout')}>
         <div
-          className={`${cx('admin-layout__sidebar')} ${
-            isSidebarOpen ? cx('admin-layout__sidebar--open') : cx('admin-layout__sidebar--closed')
+          className={`${cx('teacher-layout__sidebar')} ${
+            isSidebarOpen ? cx('teacher-layout__sidebar--open') : cx('teacher-layout__sidebar--closed')
           }`}
         >
-          <AdminSidebar
+          <TeacherSidebar
             items={sidebarItems}
             activePath={activeItem?.path ?? ''}
             isOpen={isSidebarOpen}
             onNavigate={handleNavigate}
-            onLogout={handleLogout}
           />
         </div>
 
-        <div className={cx('admin-layout__main')}>
-          <div className={cx('admin-layout__header')}>
-            <AdminHeader
+        <div className={cx('teacher-layout__main')}>
+          <div className={cx('teacher-layout__header')}>
+            <TeacherHeader
               onToggleSidebar={handleToggleSidebar}
               isOpen={isSidebarOpen}
               user={headerUser}
@@ -124,17 +112,18 @@ function AdminLayout() {
             />
           </div>
 
-          <AdminBodyContent
+          <TeacherBodyContent
             pageTitle={activeItem?.label ?? defaultLabel}
             actions={pageActions}
             breadcrumbs={breadcrumbs}
           >
             <Outlet />
-          </AdminBodyContent>
+          </TeacherBodyContent>
         </div>
       </div>
-    </AdminPageContext.Provider>
+    </>
+    // </TeacherPageContext.Provider>
   );
 }
 
-export default AdminLayout;
+export default TeacherLayout;

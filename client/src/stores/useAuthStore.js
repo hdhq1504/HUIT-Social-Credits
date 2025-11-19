@@ -4,7 +4,7 @@ import { authApi } from '../api/auth.api';
 
 const normalizeUser = (user) => {
   if (!user) return null;
-  const role = user.role || user.vaiTro || 'SINHVIEN';
+  const role = (user.role || user.vaiTro || 'SINHVIEN').toUpperCase();
   const fullName = user.fullName || user.hoTen || user.TenNguoiDung || user.name || user.email || '';
   return {
     ...user,

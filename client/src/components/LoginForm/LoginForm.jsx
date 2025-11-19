@@ -8,6 +8,7 @@ import { Checkbox } from 'antd';
 import InputField from '../InputField/InputField';
 import useToast from '../Toast/Toast';
 import { authApi } from '@api/auth.api';
+import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './LoginForm.module.scss';
 
 const cx = classNames.bind(styles);
@@ -32,11 +33,16 @@ function LoginForm() {
     onSuccess: (user) => {
       openToast({ message: 'Đăng nhập thành công!', variant: 'success' });
       setTimeout(() => {
-        if (user?.role === 'ADMIN') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/login');
+        const normalizedRole = user?.role?.toUpperCase();
+        if (normalizedRole === 'ADMIN') {
+          navigate(ROUTE_PATHS.ADMIN.DASHBOARD, { replace: true });
+          return;
         }
+        if (normalizedRole === 'GIANGVIEN') {
+          navigate(ROUTE_PATHS.TEACHER.CLASSES, { replace: true });
+          return;
+        }
+        navigate(ROUTE_PATHS.PUBLIC.HOME, { replace: true });
       }, 500);
     },
     onError: (error) => {

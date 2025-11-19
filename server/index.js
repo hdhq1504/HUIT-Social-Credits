@@ -15,6 +15,9 @@ import systemRoutes from "./src/routes/system.routes.js";
 import registrationRoutes from "./src/routes/registration.routes.js";
 import faceProfileRoutes from "./src/routes/face-profile.routes.js";
 import councilRoutes from "./src/routes/council.routes.js";
+import teacherRoutes from "./src/routes/teacher.routes.js";
+import adminTeacherRoutes from "./src/routes/admin.teacher.routes.js";
+import studentRoutes from "./src/routes/student.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
 const app = express();
@@ -40,6 +43,9 @@ app.use("/api/system", systemRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/face-profiles", faceProfileRoutes);
 app.use("/api/councils", councilRoutes);
+app.use("/api/teacher", teacherRoutes);
+app.use("/api/admin/teachers", adminTeacherRoutes);
+app.use("/api/admin/students", studentRoutes);
 
 app.use(errorHandler);
 

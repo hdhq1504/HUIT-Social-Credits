@@ -13,23 +13,23 @@ import {
   updateActivity,
   deleteActivity,
 } from '../controllers/activity/activity-management.controller.js';
-import { optionalAuth, requireAuth } from '../middlewares/auth.middleware.js';
+import { optionalAuth, requireAuth, requireRoles } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 // CRUD hoạt động
-router.post('/', requireAuth, createActivity);
-router.put('/:id', requireAuth, updateActivity);
-router.delete('/:id', requireAuth, deleteActivity);
+router.post('/', requireRoles('ADMIN', 'GIANGVIEN'), createActivity);
+router.put('/:id', requireRoles('ADMIN', 'GIANGVIEN'), updateActivity);
+router.delete('/:id', requireRoles('ADMIN', 'GIANGVIEN'), deleteActivity);
 
 router.get('/', optionalAuth, listActivities);
 
 router.get('/my', requireAuth, listMyActivities);
 router.get('/:id', optionalAuth, getActivity);
-router.get('/:id/registrations', requireAuth, listActivityRegistrationsAdmin);
-router.post('/:id/registrations', requireAuth, registerForActivity);
-router.post('/:id/registrations/cancel', requireAuth, cancelActivityRegistration);
-router.post('/:id/attendance', requireAuth, markAttendance);
-router.post('/:id/feedback', requireAuth, submitActivityFeedback);
+router.get('/:id/registrations', requireRoles('ADMIN', 'GIANGVIEN'), listActivityRegistrationsAdmin);
+router.post('/:id/registrations', requireRoles('SINHVIEN'), registerForActivity);
+router.post('/:id/registrations/cancel', requireRoles('SINHVIEN'), cancelActivityRegistration);
+router.post('/:id/attendance', requireRoles('ADMIN', 'GIANGVIEN'), markAttendance);
+router.post('/:id/feedback', requireRoles('SINHVIEN'), submitActivityFeedback);
 
 export default router;

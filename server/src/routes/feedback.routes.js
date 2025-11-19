@@ -1,15 +1,15 @@
 import { Router } from "express";
 import {
-  decideFeedbackStatus,
+  listFeedbacks,
   getFeedbackDetail,
-  listFeedbacks
+  decideFeedbackStatus
 } from "../controllers/feedback.controller.js";
-import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/", requireAuth, listFeedbacks);
-router.get("/:id", requireAuth, getFeedbackDetail);
-router.post("/decision", requireAuth, decideFeedbackStatus);
+router.get("/", requireAuth, requireRoles("ADMIN", "GIANGVIEN"), listFeedbacks);
+router.get("/:id", requireAuth, requireRoles("ADMIN", "GIANGVIEN"), getFeedbackDetail);
+router.post("/decision", requireAuth, requireRoles("ADMIN", "GIANGVIEN"), decideFeedbackStatus);
 
 export default router;

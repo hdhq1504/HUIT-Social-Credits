@@ -9,7 +9,7 @@
     "start": "node src/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed/seed.js"
   },
   "keywords": [],
   "author": "",

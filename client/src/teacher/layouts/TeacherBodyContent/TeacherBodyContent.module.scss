@@ -1,0 +1,13 @@
+.teacher-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  &__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 24px;
+  }
+}

@@ -1,0 +1,166 @@
+.students-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__filter-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  &__filter-search {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  &__filter-select {
+    width: 200px;
+  }
+
+  &__reset-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__content {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  &__content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #262626;
+    }
+  }
+
+  &__content-summary {
+    color: #8c8c8c;
+    font-size: 14px;
+  }
+
+  &__table-wrapper {
+    overflow-x: auto;
+  }
+
+  &__user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__user-info {
+    display: flex;
+    flex-direction: column;
+    
+    strong {
+      color: #262626;
+      font-weight: 500;
+    }
+
+    span {
+      color: #8c8c8c;
+      font-size: 13px;
+    }
+  }
+
+  &__status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-weight: 500;
+    border: none;
+
+    &--active {
+      background-color: #f6ffed;
+      color: #52c41a;
+    }
+
+    &--inactive {
+      background-color: #fff1f0;
+      color: #ff4d4f;
+    }
+  }
+
+  &__status-icon {
+    font-size: 8px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  &__action-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+
+    &--edit {
+      color: #1890ff;
+      background: #e6f7ff;
+
+      &:hover {
+        background: #1890ff;
+        color: #fff;
+      }
+    }
+
+    &--delete {
+      color: #ff4d4f;
+      background: #fff1f0;
+
+      &:hover {
+        background: #ff4d4f;
+        color: #fff;
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  &__pagination-summary {
+    color: #8c8c8c;
+    font-size: 14px;
+  }
+}

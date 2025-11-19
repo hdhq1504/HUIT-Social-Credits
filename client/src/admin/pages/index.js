@@ -12,3 +12,5 @@ export { default as ScoringDetailPage } from './ScoringDetailPage/ScoringDetailP
 export { default as SystemPage } from './SystemPage/SystemPage';
 export { default as UsersPage } from './UsersPage/UsersPage';
 export { default as UsersAddEditPage } from './UsersAddEditPage/UsersAddEditPage';
+export { default as StudentsPage } from './StudentsPage/StudentsPage';
+export { default as LecturersPage } from './LecturersPage/LecturersPage';

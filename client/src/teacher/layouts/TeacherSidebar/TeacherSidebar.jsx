@@ -12,9 +12,9 @@ import {
   faHeart,
   faCalendar,
   faUserGear,
-  faRightFromBracket,
+  faChalkboardUser,
 } from '@fortawesome/free-solid-svg-icons';
-import styles from './AdminSidebar.module.scss';
+import styles from './TeacherSidebar.module.scss';
 
 const cx = classNames.bind(styles);
 const { Sider } = Layout;
@@ -27,19 +27,18 @@ const iconByKey = {
   reports: faChartColumn,
   council: faMedal,
   users: faUserGear,
-  students: faUsers,
-  lecturers: faUserGear,
   system: faGear,
+  classes: faChalkboardUser,
 };
 
-function AdminSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {}, onLogout = () => {} }) {
+function TeacherSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {} }) {
   const menuItems = items
-    .filter((item) => iconByKey[item.iconKey])
+    .filter((item) => iconByKey[item.iconKey] || item.icon)
     .map((item) => ({
       key: item.path,
       label: item.label,
       className: cx('sidebar__item', activePath === item.path ? 'sidebar__item--active' : 'sidebar__item--neutral'),
-      icon: <FontAwesomeIcon icon={iconByKey[item.iconKey]} fixedWidth />,
+      icon: <FontAwesomeIcon icon={item.icon || iconByKey[item.iconKey]} fixedWidth />,
     }));
 
   const selected = activePath ? [activePath] : items.length ? [items[0].path] : [];
@@ -48,27 +47,18 @@ function AdminSidebar({ items = [], activePath, isOpen = true, onNavigate = () =
     <Sider width={250} collapsible collapsed={!isOpen} trigger={null} className={cx('sidebar__sider')}>
       <div className={cx('sidebar__logo')}>
         <img src={logo} alt="" aria-hidden="true" />
-        {isOpen && <div className={cx('sidebar__brand')}>ADMIN</div>}
+        {isOpen && <div className={cx('sidebar__brand')}>TEACHER</div>}
       </div>
 
-      <div className={cx('sidebar__content')}>
-        <Menu
-          mode="inline"
-          selectedKeys={selected}
-          onClick={(e) => onNavigate?.(e.key)}
-          items={menuItems}
-          className={cx('sidebar__menu')}
-        />
-      </div>
-
-      <div className={cx('sidebar__footer')}>
-        <button className={cx('sidebar__logout-btn')} onClick={onLogout}>
-          <FontAwesomeIcon icon={faRightFromBracket} fixedWidth />
-          {isOpen && <span>Đăng xuất</span>}
-        </button>
-      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={selected}
+        onClick={(e) => onNavigate?.(e.key)}
+        items={menuItems}
+        className={cx('sidebar__menu')}
+      />
     </Sider>
   );
 }
 
-export default AdminSidebar;
+export default TeacherSidebar;

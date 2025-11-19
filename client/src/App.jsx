@@ -6,11 +6,13 @@ import viVN from 'antd/locale/vi_VN';
 import { publicRoutes, protectedUserRoutes } from './routes/userRoutes';
 import { authRoutes } from './routes/authRoutes';
 import adminRoutes from './routes/adminRoutes';
+import teacherRoutes from './routes/teacherRoutes';
 import ProtectedRoute from './components/guards/ProtectedRoute';
 import GuestRoute from './components/guards/GuestRoute';
 import NotFound from './components/NotFound/NotFound';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import AdminLayout from './admin/layouts/AdminLayout/AdminLayout';
+import TeacherLayout from './teacher/layouts/TeacherLayout/TeacherLayout';
 import useAuthStore from './stores/useAuthStore';
 import { ROUTE_PATHS } from './config/routes.config';
 
@@ -118,6 +120,21 @@ function App() {
               <Route path="council/:id" element={<CouncilDetailPage />} />
               <Route path="users/create" element={<UsersAddEditPage />} />
               <Route path="users/:id/edit" element={<UsersAddEditPage />} />
+            </Route>
+
+            <Route
+              path={ROUTE_PATHS.TEACHER.ROOT}
+              element={
+                <ProtectedRoute allowedRoles={['GIANGVIEN']}>
+                  <TeacherLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to={ROUTE_PATHS.TEACHER.CLASSES} replace />} />
+              {teacherRoutes.map((route) => {
+                const Page = route.component;
+                return <Route key={route.path} path={route.path} element={<Page />} />;
+              })}
             </Route>
 
             <Route path="*" element={<NotFound />} />

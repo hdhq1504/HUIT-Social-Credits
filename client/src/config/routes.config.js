@@ -36,7 +36,16 @@ export const ROUTE_PATHS = {
     USERS: '/admin/users',
     USER_CREATE: '/admin/users/create',
     USER_EDIT: '/admin/users/:id/edit',
+    STUDENTS: '/admin/students',
+    LECTURERS: '/admin/lecturers',
     SYSTEM: '/admin/system',
+  },
+
+  // Teacher routes - cần đăng nhập + role GIANGVIEN
+  TEACHER: {
+    ROOT: '/teacher',
+    OVERVIEW: '/teacher',
+    CLASSES: '/teacher/classes',
   },
 };
 
@@ -48,6 +57,7 @@ export const buildPath = {
   adminFeedbackDetail: (id) => `/admin/feedback/${id}`,
   adminUserEdit: (id) => `/admin/users/${id}/edit`,
   adminScoringDetail: (id) => `/admin/scoring/${id}`,
+  teacherClassDetail: (id) => `/teacher/classes/${id}`,
 };
 
 export default ROUTE_PATHS;
