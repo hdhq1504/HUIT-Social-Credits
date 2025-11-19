@@ -46,12 +46,29 @@ model NguoiDung {
   thanhVienHoiDong            ThanhVienHoiDong[]
   danhGiaSinhVien             DanhGiaSinhVien[]   @relation("DanhGiaSinhVienStudent")
   danhGiaCapNhat              DanhGiaSinhVien[]   @relation("DanhGiaSinhVienNguoiCapNhat")
+  lopChuNhiem                 LopHoc[]            @relation("GiangVienChuNhiem")
+  lopHocId                    String?
+  lopHoc                      LopHoc?             @relation("SinhVienLop", fields: [lopHocId], references: [id])
 
   @@index([email])
   @@index([maSV])
   @@index([maCB])
   @@index([vaiTro, isActive])
   @@index([resetPasswordTokenExpiresAt])
+}
+
+model LopHoc {
+  id            String   @id @default(uuid())
+  maLop         String   @unique
+  tenLop        String   
+  khoaId        String
+  khoa          Khoa     @relation(fields: [khoaId], references: [id])
+  namNhapHoc    Int      
+  giangVienChuNhiemId String?
+  giangVienChuNhiem   NguoiDung? @relation("GiangVienChuNhiem", fields: [giangVienChuNhiemId], references: [id])
+  sinhVien      NguoiDung[] @relation("SinhVienLop")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model NamHoc {
