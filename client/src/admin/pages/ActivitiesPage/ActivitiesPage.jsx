@@ -35,8 +35,8 @@ const formatDateTime = (isoString) => {
 
 const STATUS_CATEGORY_MAP = {
   ongoing: 'ongoing',
-  attendance_open: 'ongoing',
-  confirm_in: 'ongoing',
+  check_in: 'ongoing',
+  check_out: 'ongoing',
   confirm_out: 'ongoing',
   attendance_review: 'ongoing',
   upcoming: 'upcoming',

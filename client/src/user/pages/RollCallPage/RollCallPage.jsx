@@ -266,8 +266,8 @@ function RollCallPage() {
       const activity = registration.activity;
       if (!activity) return;
       switch (activity.state) {
-        case 'attendance_open':
-        case 'confirm_in':
+        case 'check_in':
+        case 'check_out':
           groups.ongoing.push(registration);
           break;
         case 'registered':

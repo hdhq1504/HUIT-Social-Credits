@@ -340,6 +340,7 @@ enum GioiTinh {
 
 enum TrangThaiDangKy {
   DANG_KY
+  DANG_THAM_GIA
   DA_HUY
   DA_THAM_GIA
   VANG_MAT

@@ -61,7 +61,8 @@ const ATTENDANCE_METHOD_LABELS = {
 };
 
 const REGISTRATION_STATUS_DISPLAY = {
-  DANG_KY: { label: 'Đang tham gia', color: 'processing', variant: 'in-progress' },
+  DANG_KY: { label: 'Đã đăng ký', color: 'processing', variant: 'registered' },
+  DANG_THAM_GIA: { label: 'Đang tham gia', color: 'success', variant: 'in-progress' },
   DA_THAM_GIA: { label: 'Đã tham gia', color: 'success', variant: 'joined' },
   DA_HUY: { label: 'Đã hủy', color: 'default', variant: 'canceled' },
   VANG_MAT: { label: 'Vắng mặt', color: 'error', variant: 'absent' },
@@ -89,8 +90,8 @@ const formatDateTime = (isoString, format = 'DD/MM/YYYY HH:mm') => {
 const getStatusTag = (status) => {
   switch (status) {
     case 'ongoing':
-    case 'attendance_open':
-    case 'confirm_in':
+    case 'check_in':
+    case 'check_out':
     case 'confirm_out':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ongoing')}>
@@ -99,6 +100,7 @@ const getStatusTag = (status) => {
         </Tag>
       );
     case 'upcoming':
+    case 'guest':
     case 'registered':
     case 'attendance_closed':
       return (

@@ -20,7 +20,7 @@ import {
   sanitizeOptionalText,
   sanitizeStatusFilter,
   FEEDBACK_STATUSES,
-} from "./activity.utils.js";
+} from "../../utils/activity.js";
 
 export const listActivityRegistrationsAdmin = async (req, res) => {
   try {

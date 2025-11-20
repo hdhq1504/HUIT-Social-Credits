@@ -1,21 +1,22 @@
 import sanitizeHtml from "sanitize-html";
-import prisma from "../../prisma.js";
-import { env } from "../../env.js";
-import { getPointGroupLabel, normalizePointGroup } from "../../utils/points.js";
-import { deriveSemesterInfo } from "../../utils/academic.js";
+import prisma from "../prisma.js";
+import { env } from "../env.js";
+import { getPointGroupLabel, normalizePointGroup, isValidPointGroup } from "./points.js";
+import { deriveSemesterInfo } from "./academic.js";
 import {
   getAttendanceMethodLabel,
   getDefaultAttendanceMethod,
   mapAttendanceMethodToApi
-} from "../../utils/attendance.js";
-import { summarizeFaceProfile } from "../../utils/face.js";
-import { uploadBase64Image, isSupabaseConfigured } from "../../utils/supabaseStorage.js";
+} from "./attendance.js";
+import { summarizeFaceProfile } from "./face.js";
+import { uploadBase64Image, isSupabaseConfigured } from "./supabaseStorage.js";
 import {
   sanitizeStorageMetadata,
   sanitizeStorageList,
   mapStorageForResponse,
   mapStorageListForResponse,
-} from "../../utils/storageMapper.js";
+  extractStoragePaths,
+} from "./storageMapper.js";
 
 const normalizeSemesterLabel = (value) => {
   if (!value) return null;
@@ -699,6 +700,17 @@ const determineState = (activity, registration) => {
       }
       if (start && start > now) return "attendance_closed";
       return "registered";
+    }
+    case "DANG_THAM_GIA": {
+      // Đang tham gia - đã checkin nhưng chưa checkout
+      const history = registration.lichSuDiemDanh ?? [];
+      const hasCheckout = history.some((entry) => entry.loai === "CHECKOUT");
+      if (end && end < now) return "ended";
+      if (start && start <= now && (!end || end >= now)) {
+        if (!hasCheckout) return "check_out";
+        return "attendance_open";
+      }
+      return "check_out";
     }
     case "DA_HUY":
       return "canceled";

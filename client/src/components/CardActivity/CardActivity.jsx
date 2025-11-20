@@ -549,6 +549,7 @@ function CardActivity(props) {
         };
       case 'registered':
         return {
+          status: pill('• Đã đăng ký', 'success'),
           buttons: [btn(L.details, openDetails), btn(L.cancel, handleOpenCancel, { variant: 'danger' })],
         };
       case 'checkin':
@@ -563,16 +564,6 @@ function CardActivity(props) {
         return {
           buttons: [btn(L.details, openDetails), btn(L.canceled, () => {}, { variant: 'muted', disabled: true })],
         };
-      case 'attendance_open':
-        return {
-          buttons: [
-            btn(L.details, openDetails),
-            btn(L.checkin, () => handleOpenAttendance(attendanceStep ?? 'checkin'), {
-              variant: 'primary',
-              disabled: isAttendanceBusy,
-            }),
-          ],
-        };
       case 'attendance_closed':
         return {
           buttons: [
@@ -585,10 +576,27 @@ function CardActivity(props) {
           buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
         };
       case 'check_in':
+        // If already checked in, show disabled button
+        if (hasCheckin && !hasCheckout) {
+          return {
+            status: isCheckoutReady
+              ? pill('• Sẵn sàng điểm danh cuối giờ', 'success')
+              : pill('• Đã điểm danh đầu giờ', 'warning'),
+            buttons: [
+              btn(L.details, openDetails, { variant: 'outline' }),
+              btn(L.checkin, () => {}, {
+                variant: 'muted',
+                disabled: true,
+              }),
+            ],
+          };
+        }
+
+        // Not checked in yet
         return {
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.checkIn, () => handleOpenAttendance('checkin'), {
+            btn(L.checkin, () => handleOpenAttendance('checkin'), {
               variant: 'primary',
               disabled: isAttendanceBusy,
             }),
@@ -596,10 +604,10 @@ function CardActivity(props) {
         };
       case 'check_out':
         return {
-          status: isCheckoutPending ? pill(L.checkoutLocked, 'warning') : undefined,
+          status: !isCheckoutReady ? pill('• Điểm danh cuối giờ chưa mở', 'warning') : undefined,
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
-            btn(L.checkOut, () => handleOpenAttendance('checkout'), {
+            btn(L.checkin, () => handleOpenAttendance('checkout'), {
               variant: 'primary',
               disabled: isAttendanceBusy || !isCheckoutReady,
             }),
@@ -798,6 +806,7 @@ function CardActivity(props) {
         onConfirm={handleConfirmRegister}
         variant={modalVariant}
         campaignName={title}
+        confirmLoading={isRegisterProcessing}
         groupLabel={normalizedGroupLabel}
         pointsLabel={points != null ? `${points} điểm` : undefined}
         dateTime={dateTime}
@@ -807,7 +816,6 @@ function CardActivity(props) {
         attendanceMethod={attendanceMethod}
         attendanceMethodLabel={attendanceMethodLabel}
         showConflictAlert={showConflictAlert}
-        confirmLoading={isRegisterProcessing}
         {...registerModalProps}
       />
 

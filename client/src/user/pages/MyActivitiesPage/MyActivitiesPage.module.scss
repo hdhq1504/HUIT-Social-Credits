@@ -332,6 +332,11 @@
       background-color: var(--success-color);
       color: var(--white-color);
     }
+
+    &--error {
+      background-color: var(--danger-color);
+      color: var(--white-color);
+    }
   }
 
   &__calendar-date {
@@ -397,6 +402,10 @@
 
     &--success {
       background-color: var(--success-color);
+    }
+
+    &--error {
+      background-color: var(--danger-color);
     }
   }
 
@@ -485,7 +494,7 @@
         }
 
         // Last tab hover
-        &:nth-child(3):hover {
+        &:nth-child(4):hover {
           border-top-right-radius: 12px;
 
           @media (max-width: 768px) {
@@ -520,7 +529,7 @@
         }
 
         // Last tab active
-        &:nth-child(3) {
+        &:nth-child(4) {
           border-top-right-radius: 12px;
 
           @media (max-width: 768px) {

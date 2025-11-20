@@ -6,7 +6,7 @@ import {
   buildActivityResponse,
   mapFeedback,
   sanitizeFeedbackAttachmentList,
-} from "./activity.utils.js";
+} from "../../utils/activity.js";
 import { extractStoragePaths } from "../../utils/storageMapper.js";
 
 export const submitActivityFeedback = async (req, res) => {

@@ -14,7 +14,7 @@ import {
   sanitizeCapacity,
   sanitizeStringArray,
   toDate,
-} from "./activity.utils.js";
+} from "../../utils/activity.js";
 
 export const createActivity = async (req, res) => {
   const {

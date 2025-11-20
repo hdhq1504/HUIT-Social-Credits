@@ -7,7 +7,7 @@ import {
   mapActivity,
   buildActivityResponse,
   sanitizeOptionalText,
-} from "./activity.utils.js";
+} from "../../utils/activity.js";
 
 export const listActivities = async (req, res) => {
   const currentUserId = req.user?.sub;

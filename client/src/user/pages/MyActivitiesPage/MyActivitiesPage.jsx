@@ -38,7 +38,7 @@ dayjs.updateLocale('vi', { weekStart: 1 });
 function MyActivitiesPage() {
   const { contextHolder, open: toast } = useToast();
   const userId = useAuthStore((state) => state.user?.id);
-  const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1 });
+  const [pages, setPages] = useState({ registered: 1, attended: 1, canceled: 1, absent: 1 });
 
   const {
     data: registrations = [],
@@ -128,13 +128,13 @@ function MyActivitiesPage() {
   });
 
   useEffect(() => {
-    setPages({ registered: 1, attended: 1, canceled: 1 });
+    setPages({ registered: 1, attended: 1, canceled: 1, absent: 1 });
   }, [filteredRegistrations, registrations.length]);
 
   const stats = useMemo(() => {
     const registered = filteredRegistrations.filter((item) => item.status === 'DANG_KY');
     const attended = filteredRegistrations.filter((item) => item.status === 'DA_THAM_GIA');
-    const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY' || item.status === 'VANG_MAT');
+    const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY');
     const absent = filteredRegistrations.filter((item) => item.status === 'VANG_MAT');
     const totalPoints = attended.reduce((sum, item) => sum + (item.activity?.points ?? 0), 0);
 
@@ -142,10 +142,10 @@ function MyActivitiesPage() {
       totalPoints,
       totalActivities: filteredRegistrations.length,
       completed: attended.length,
-      absent: absent.length,
       registered,
       attended,
       canceled,
+      absent,
     };
   }, [filteredRegistrations]);
 
@@ -178,7 +178,8 @@ function MyActivitiesPage() {
       if (map[key]) return;
       let type = 'primary';
       if (registration.status === 'DA_THAM_GIA') type = 'success';
-      else if (registration.status === 'DA_HUY' || registration.status === 'VANG_MAT') type = 'warning';
+      else if (registration.status === 'VANG_MAT') type = 'error';
+      else if (registration.status === 'DA_HUY') type = 'warning';
       map[key] = { type, label: activity.title };
     });
     return map;
@@ -197,6 +198,7 @@ function MyActivitiesPage() {
           'my-activities__calendar-cell--primary': event?.type === 'primary',
           'my-activities__calendar-cell--warning': event?.type === 'warning',
           'my-activities__calendar-cell--success': event?.type === 'success',
+          'my-activities__calendar-cell--error': event?.type === 'error',
         })}
       >
         <span className={cx('my-activities__calendar-date')}>{current.date()}</span>
@@ -399,7 +401,7 @@ function MyActivitiesPage() {
   );
 
   const tabItems = useMemo(() => {
-    const { registered, attended, canceled } = stats;
+    const { registered, attended, canceled, absent } = stats;
 
     return [
       {
@@ -434,6 +436,17 @@ function MyActivitiesPage() {
           </div>
         ),
         children: renderTabContent('canceled', canceled, 'Chưa có hoạt động nào bị hủy'),
+      },
+      {
+        key: 'absent',
+        label: (
+          <div className={cx('my-activities__tab-label')}>
+            <FontAwesomeIcon icon={faUserXmark} className={cx('my-activities__tab-icon')} />
+            <span>Vắng mặt</span>
+            <span className={cx('my-activities__tab-badge')}>{absent.length}</span>
+          </div>
+        ),
+        children: renderTabContent('absent', absent, 'Chưa có hoạt động nào vắng mặt'),
       },
     ];
   }, [renderTabContent, stats]);
@@ -495,7 +508,7 @@ function MyActivitiesPage() {
               <div className={cx('my-activities__stat-card-row')}>
                 <div className={cx('my-activities__stat-card-info')}>
                   <div className={cx('my-activities__stat-card-label')}>Vắng mặt</div>
-                  <div className={cx('my-activities__stat-card-value')}>{stats.absent}</div>
+                  <div className={cx('my-activities__stat-card-value')}>{stats.absent.length}</div>
                 </div>
                 <div className={cx('my-activities__stat-card-icon')}>
                   <FontAwesomeIcon icon={faUserXmark} className={cx('my-activities__stat-card-icon-mark')} />
@@ -525,7 +538,11 @@ function MyActivitiesPage() {
               </div>
               <div className={cx('my-activities__legend-item')}>
                 <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--warning')} />
-                <span>Đã hủy/Vắng mặt</span>
+                <span>Đã hủy</span>
+              </div>
+              <div className={cx('my-activities__legend-item')}>
+                <span className={cx('my-activities__legend-dot', 'my-activities__legend-dot--error')} />
+                <span>Vắng mặt</span>
               </div>
             </div>
           </div>

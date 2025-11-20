@@ -403,18 +403,7 @@ function ActivityDetailPage() {
             Hủy đăng ký
           </Button>
         );
-      case 'attendance_open':
-        return (
-          <Button
-            className={cx('activity-detail__sidebar-button')}
-            variant="primary"
-            onClick={() => openAttendance(nextPhase)}
-            disabled={attendanceMutation.isPending}
-          >
-            Điểm danh
-          </Button>
-        );
-      case 'confirm_in':
+      case 'check_in':
         return (
           <Button
             className={cx('activity-detail__sidebar-button')}
@@ -422,18 +411,18 @@ function ActivityDetailPage() {
             onClick={() => openAttendance('checkin')}
             disabled={attendanceMutation.isPending}
           >
-            Tham gia
+            Điểm danh
           </Button>
         );
-      case 'confirm_out':
+      case 'check_out':
         return (
           <Button
             className={cx('activity-detail__sidebar-button')}
-            variant="orange"
+            variant="primary"
             onClick={() => openAttendance('checkout')}
             disabled={attendanceMutation.isPending}
           >
-            Hoàn tất
+            Điểm danh
           </Button>
         );
       case 'attendance_review':

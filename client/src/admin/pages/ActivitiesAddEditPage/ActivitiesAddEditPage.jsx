@@ -29,6 +29,7 @@ import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
 import { fileToDataUrl } from '@/utils/file';
+import defaultCover from '@/assets/images/activity-cover.png';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');
@@ -73,7 +74,6 @@ const ActivitiesAddEditPage = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [coverFileList, setCoverFileList] = useState([]);
-  const [initialCoverMeta, setInitialCoverMeta] = useState(null);
   const startDateValue = Form.useWatch('startDate', form);
   const startTimeValue = Form.useWatch('startTime', form);
   const isEditMode = !!id;
@@ -104,7 +104,6 @@ const ActivitiesAddEditPage = () => {
           ]
         : [];
       setCoverFileList(coverFiles);
-      setInitialCoverMeta(coverMeta);
       form.setFieldsValue({
         title: activityData.title,
         pointGroup: activityData.pointGroup,
@@ -131,7 +130,6 @@ const ActivitiesAddEditPage = () => {
       });
     } else if (!isEditMode) {
       setCoverFileList([]);
-      setInitialCoverMeta(null);
       form.setFieldsValue({ coverImage: [] });
     }
   }, [activityData, isEditMode, form]);
@@ -172,8 +170,20 @@ const ActivitiesAddEditPage = () => {
   const onFinish = async (values) => {
     let coverImagePayload;
     if (coverFileList.length === 0) {
-      if (isEditMode && initialCoverMeta) {
-        coverImagePayload = null;
+      // Fallback image logic
+      try {
+        const response = await fetch(defaultCover);
+        const blob = await response.blob();
+        const dataUrl = await fileToDataUrl(blob);
+        coverImagePayload = {
+          dataUrl: dataUrl,
+          fileName: 'default-cover.png',
+          mimeType: blob.type,
+        };
+      } catch (error) {
+        console.error('Failed to load default cover image', error);
+        // If fallback fails, we might send null or ignore, but let's try to proceed without image or show error
+        // For now, if fallback fails, we just don't set coverImagePayload, which might be acceptable or we can alert.
       }
     } else {
       const [fileItem] = coverFileList;

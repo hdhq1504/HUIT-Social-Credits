@@ -33,10 +33,12 @@ const ATTENDANCE_TONES = {
 };
 
 const REGISTRATION_STATUS_META = {
-  DANG_KY: { color: 'warning', icon: faClock, label: 'Chờ duyệt' },
+  DANG_KY: { color: 'warning', icon: faClock, label: 'Đã đăng ký' },
+  DANG_THAM_GIA: { color: 'processing', icon: faClock, label: 'Đang tham gia' },
   DA_THAM_GIA: { color: 'success', icon: faCheckCircle, label: 'Đạt' },
   VANG_MAT: { color: 'error', icon: faTimesCircle, label: 'Không đạt' },
   DA_HUY: { color: 'default', icon: faTimesCircle, label: 'Đã hủy' },
+  CHO_DUYET: { color: 'warning', icon: faClock, label: 'Chờ duyệt' },
 };
 
 const getAttendanceEntry = (history, phase) => history?.find((item) => item.phase === phase) || null;
@@ -284,13 +286,13 @@ function ScoringPage() {
       checkOut: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkout')),
       status: ({ record }) => {
         const meta = REGISTRATION_STATUS_META[record.status] || REGISTRATION_STATUS_META.DANG_KY;
+        const label = record.statusLabel || meta.label;
+        const color = meta.color;
+        const icon = meta.icon;
+
         return (
-          <Tag
-            icon={<FontAwesomeIcon icon={meta.icon} />}
-            color={meta.color}
-            className={cx('scoring-page__status-tag')}
-          >
-            {record.statusLabel || meta.label}
+          <Tag icon={<FontAwesomeIcon icon={icon} />} color={color} className={cx('scoring-page__status-tag')}>
+            {label}
           </Tag>
         );
       },

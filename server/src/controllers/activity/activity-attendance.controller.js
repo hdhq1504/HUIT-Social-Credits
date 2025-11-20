@@ -21,7 +21,7 @@ import {
   sanitizeOptionalText,
   sanitizeAttendanceEvidence,
   summarizeFaceHistoryRaw,
-} from "./activity.utils.js";
+} from "../../utils/activity.js";
 
 export const markAttendance = async (req, res) => {
   const userId = req.user?.sub;
@@ -190,6 +190,10 @@ export const markAttendance = async (req, res) => {
     if (!isCheckout) {
       if (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED") {
         entryStatus = "CHO_DUYET";
+      } else {
+        // Checkin thành công với photo -> set DANG_THAM_GIA
+        finalStatus = "DANG_THAM_GIA";
+        entryStatus = "DANG_THAM_GIA";
       }
     } else if (faceSummary?.approvedCount >= 2) {
       finalStatus = "DA_THAM_GIA";
@@ -204,6 +208,10 @@ export const markAttendance = async (req, res) => {
   } else if (isCheckout) {
     finalStatus = status === "absent" ? "VANG_MAT" : "DA_THAM_GIA";
     entryStatus = finalStatus;
+  } else {
+    // Checkin lần đầu với QR -> set DANG_THAM_GIA
+    finalStatus = "DANG_THAM_GIA";
+    entryStatus = "DANG_THAM_GIA";
   }
 
   const registrationUpdate = {
@@ -211,7 +219,12 @@ export const markAttendance = async (req, res) => {
     diemDanhGhiChu: normalizedNote,
     diemDanhBoiId: userId,
   };
-  if (isCheckout) {
+
+  // Cập nhật trạng thái khi checkin hoặc checkout
+  if (!isCheckout && finalStatus === "DANG_THAM_GIA") {
+    // Checkin lần đầu -> set DANG_THAM_GIA
+    registrationUpdate.trangThai = finalStatus;
+  } else if (isCheckout) {
     registrationUpdate.trangThai = finalStatus;
     if (finalStatus === "DA_THAM_GIA") {
       registrationUpdate.duyetLuc = attendanceTime;
