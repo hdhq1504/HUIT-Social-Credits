@@ -21,7 +21,6 @@ function ForgotPasswordForm() {
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const navigate = useNavigate();
 
   const requestOtpMutation = useMutation({
@@ -64,9 +63,8 @@ function ForgotPasswordForm() {
     }
 
     try {
-      const { message, otp: newOtp } = await requestOtpMutation.mutateAsync(normalizedEmail);
+      const { message } = await requestOtpMutation.mutateAsync(normalizedEmail);
       setEmail(normalizedEmail);
-      setGeneratedOtp(newOtp ?? '');
       setOtp('');
       setPassword('');
       setConfirmPassword('');
@@ -164,8 +162,7 @@ function ForgotPasswordForm() {
     }
 
     try {
-      const { message, otp: newOtp } = await requestOtpMutation.mutateAsync(email);
-      setGeneratedOtp(newOtp ?? '');
+      const { message } = await requestOtpMutation.mutateAsync(email);
       setInfoMessage(message || 'Đã gửi lại mã OTP tới email của bạn.');
     } catch (error) {
       setErrorMessage(getErrorMessage(error, 'Không thể gửi lại OTP. Vui lòng thử lại.'));
@@ -242,11 +239,7 @@ function ForgotPasswordForm() {
                   <span>{requestOtpMutation.isPending ? 'Đang gửi...' : 'Gửi lại mã mới'}</span>
                 </button>
               </div>
-              {generatedOtp && (
-                <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
-                  Mã OTP mô phỏng: {generatedOtp}
-                </p>
-              )}
+
               {errorMessage && <p className={cx('forgot-password__error')}>{errorMessage}</p>}
               {infoMessage && (
                 <p className={cx('forgot-password__error')} style={{ color: '#2e7d32' }}>
@@ -351,9 +344,6 @@ function ForgotPasswordForm() {
 
   return (
     <div className={cx('forgot-password')}>
-      <div className={cx('forgot-password__breadcrumb')}>
-        <Link to="/">Trang chủ</Link> / <Link to="/account">Tài khoản</Link> / <span>Quên mật khẩu</span>
-      </div>
       <form className={cx('forgot-password__card')} onSubmit={(e) => e.preventDefault()}>
         <div className={cx('forgot-password__banner')} style={{ backgroundImage: "url('/images/bialogin.jpg')" }}>
           <p className={cx('forgot-password__banner-title')}>

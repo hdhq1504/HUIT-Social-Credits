@@ -830,6 +830,7 @@ const mapActivity = (activity, registration, options = {}) => {
     cancellationDeadline: activity.hanHuyDangKy?.toISOString() ?? null,
     requiresFaceEnrollment: attendanceMethod === "photo",
     faceEnrollment,
+    approvalStatus: activity.trangThaiDuyet ?? null,
     state: determineState(activity, registration),
     registration: mapRegistration(registration, activity)
   };

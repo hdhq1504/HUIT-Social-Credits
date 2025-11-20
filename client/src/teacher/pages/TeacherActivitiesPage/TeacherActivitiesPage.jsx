@@ -1,29 +1,18 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Input, Select, DatePicker, Tag, Tooltip, Modal, ConfigProvider } from 'antd';
+import { useQuery } from '@tanstack/react-query';
+import { Input, Select, DatePicker, Tag, Tooltip, ConfigProvider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faEye,
-  faPenToSquare,
-  faTrashAlt,
-  faSort,
-  faCircleDot,
-  faSearch,
-  faPlus,
-  faCheck,
-  faTimes,
-} from '@fortawesome/free-solid-svg-icons';
+import { faEye, faPenToSquare, faSort, faCircleDot, faSearch, faPlus } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
-import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
 import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
-import useToast from '@/components/Toast/Toast';
 import useDebounce from '@/hooks/useDebounce';
-import styles from './ActivitiesPage.module.scss';
+import styles from './TeacherActivitiesPage.module.scss';
 
 const cx = classNames.bind(styles);
 const { Option } = Select;
@@ -80,34 +69,6 @@ const getGroupTag = (groupId, groupLabel) => {
   return <Tag className={cx('activities-page__group-tag', tagClass)}>{label}</Tag>;
 };
 
-const getStatusTag = (status) => {
-  switch (status) {
-    case 'ongoing':
-      return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--ongoing')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Đang diễn ra
-        </Tag>
-      );
-    case 'upcoming':
-      return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--upcoming')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Sắp diễn ra
-        </Tag>
-      );
-    case 'ended':
-      return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--ended')}>
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Đã kết thúc
-        </Tag>
-      );
-    default:
-      return <Tag>{status}</Tag>;
-  }
-};
-
 const getApprovalStatusTag = (approvalStatus) => {
   switch (approvalStatus) {
     case 'CHO_DUYET':
@@ -136,21 +97,14 @@ const getApprovalStatusTag = (approvalStatus) => {
   }
 };
 
-export default function ActivitiesPage() {
+export default function TeacherActivitiesPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { contextHolder, open: openToast } = useToast();
-  const { setPageActions } = useContext(AdminPageContext);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const { setPageActions } = useContext(TeacherPageContext);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedApprovalStatus, setSelectedApprovalStatus] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
-  const [activityToDelete, setActivityToDelete] = useState(null);
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 400);
 
   useEffect(() => {
@@ -161,7 +115,7 @@ export default function ActivitiesPage() {
         icon: <FontAwesomeIcon icon={faPlus} />,
         type: 'primary',
         className: 'admin-navbar__add-button',
-        onClick: () => navigate(ROUTE_PATHS.ADMIN.ACTIVITY_CREATE),
+        onClick: () => navigate(ROUTE_PATHS.TEACHER.ACTIVITY_CREATE),
       },
     ]);
 
@@ -171,50 +125,6 @@ export default function ActivitiesPage() {
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ACTIVITIES_QUERY_KEY,
     queryFn: activitiesApi.list,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => activitiesApi.remove(id),
-    onSuccess: () => {
-      openToast({ message: 'Xóa hoạt động thành công!', variant: 'success' });
-      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
-    },
-    onError: (error) => {
-      openToast({
-        message: error.response?.data?.error || 'Xóa thất bại, vui lòng thử lại.',
-        variant: 'danger',
-      });
-    },
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: (id) => activitiesApi.approve(id),
-    onSuccess: () => {
-      openToast({ message: 'Duyệt hoạt động thành công!', variant: 'success' });
-      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
-    },
-    onError: (error) => {
-      openToast({
-        message: error.response?.data?.error || 'Duyệt thất bại.',
-        variant: 'danger',
-      });
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: ({ id, reason }) => activitiesApi.reject(id, reason),
-    onSuccess: () => {
-      openToast({ message: 'Từ chối hoạt động thành công!', variant: 'success' });
-      queryClient.invalidateQueries(ACTIVITIES_QUERY_KEY);
-      setRejectModalOpen(false);
-      setRejectReason('');
-    },
-    onError: (error) => {
-      openToast({
-        message: error.response?.data?.error || 'Từ chối thất bại.',
-        variant: 'danger',
-      });
-    },
   });
 
   const filteredActivities = useMemo(() => {
@@ -229,84 +139,19 @@ export default function ActivitiesPage() {
 
       const matchesGroup = selectedGroup === 'all' || activity.pointGroup === selectedGroup;
 
-      const statusCategory = deriveStatusCategory(activity);
-      const matchesStatus = selectedStatus === 'all' || statusCategory === selectedStatus;
-
       const matchesApprovalStatus =
         selectedApprovalStatus === 'all' || activity.approvalStatus === selectedApprovalStatus;
 
       const matchesDate =
         !selectedDate || (activity.startTime && dayjs(activity.startTime).isSame(selectedDate, 'day'));
 
-      return matchesSearch && matchesGroup && matchesStatus && matchesDate && matchesApprovalStatus;
+      return matchesSearch && matchesGroup && matchesApprovalStatus && matchesDate;
     });
-  }, [activities, debouncedSearch, selectedGroup, selectedStatus, selectedDate, selectedApprovalStatus]);
+  }, [activities, debouncedSearch, selectedGroup, selectedApprovalStatus, selectedDate]);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, current: 1 }));
-  }, [debouncedSearch, selectedGroup, selectedStatus, selectedDate, selectedApprovalStatus]);
-
-  const handleOpenDeleteModal = useCallback((activity) => {
-    setActivityToDelete(activity);
-  }, []);
-
-  const handleCancelDelete = useCallback(() => {
-    setActivityToDelete(null);
-  }, []);
-
-  const handleConfirmDelete = useCallback(async () => {
-    if (!activityToDelete) return;
-    try {
-      await deleteMutation.mutateAsync(activityToDelete.id);
-    } finally {
-      setActivityToDelete(null);
-    }
-  }, [activityToDelete, deleteMutation]);
-
-  const handleBulkApprove = useCallback(async () => {
-    if (!selectedRowKeys.length) return;
-
-    // Process sequentially to avoid overwhelming the server or hitting rate limits
-    // In a real app, you might want a bulk API endpoint
-    let successCount = 0;
-    for (const id of selectedRowKeys) {
-      try {
-        await approveMutation.mutateAsync(id);
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to approve activity ${id}`, error);
-      }
-    }
-
-    if (successCount > 0) {
-      setSelectedRowKeys([]);
-    }
-  }, [selectedRowKeys, approveMutation]);
-
-  const handleBulkReject = useCallback(async () => {
-    if (!selectedRowKeys.length || !rejectReason.trim()) return;
-
-    let successCount = 0;
-    for (const id of selectedRowKeys) {
-      try {
-        await rejectMutation.mutateAsync({ id, reason: rejectReason });
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to reject activity ${id}`, error);
-      }
-    }
-
-    if (successCount > 0) {
-      setSelectedRowKeys([]);
-      setRejectModalOpen(false);
-      setRejectReason('');
-    }
-  }, [selectedRowKeys, rejectReason, rejectMutation]);
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
-  };
+  }, [debouncedSearch, selectedGroup, selectedApprovalStatus, selectedDate]);
 
   const columns = useMemo(
     () => [
@@ -314,7 +159,8 @@ export default function ActivitiesPage() {
         title: 'STT',
         dataIndex: 'index',
         key: 'index',
-        width: 60,
+        align: 'center',
+        width: 70,
       },
       {
         title: 'Tên hoạt động',
@@ -327,7 +173,7 @@ export default function ActivitiesPage() {
         title: 'Nhóm hoạt động',
         dataIndex: 'pointGroup',
         key: 'pointGroup',
-        width: 150,
+        width: 170,
         sorter: (a, b) => a.pointGroupLabel.localeCompare(b.pointGroupLabel),
       },
       {
@@ -348,7 +194,7 @@ export default function ActivitiesPage() {
         title: 'Điểm',
         dataIndex: 'points',
         key: 'points',
-        width: 80,
+        width: 100,
         align: 'center',
         sorter: (a, b) => a.points - b.points,
       },
@@ -356,7 +202,7 @@ export default function ActivitiesPage() {
         title: 'Số lượng',
         dataIndex: 'capacity',
         key: 'capacity',
-        width: 100,
+        width: 120,
         align: 'center',
         sorter: (a, b) => a.participantsCount - b.participantsCount,
       },
@@ -380,13 +226,6 @@ export default function ActivitiesPage() {
         key: 'state',
         width: 150,
         sorter: (a, b) => deriveStatusCategory(a).localeCompare(deriveStatusCategory(b)),
-      },
-      {
-        title: 'Trạng thái duyệt',
-        dataIndex: 'approvalStatus',
-        key: 'approvalStatus',
-        width: 150,
-        sorter: (a, b) => (a.approvalStatus || '').localeCompare(b.approvalStatus || ''),
       },
       {
         title: 'Hành động',
@@ -425,15 +264,17 @@ export default function ActivitiesPage() {
       },
       startTime: ({ value }) => formatDateTime(value),
       endTime: ({ value }) => formatDateTime(value),
-      state: ({ record }) => getStatusTag(deriveStatusCategory(record)),
-      approvalStatus: ({ value }) => getApprovalStatusTag(value),
+      state: ({ record }) => {
+        const approvalTag = getApprovalStatusTag(record.approvalStatus);
+        return approvalTag || <Tag>Chưa xác định</Tag>;
+      },
       actions: ({ record }) => (
         <div className={cx('activities-page__actions')}>
           <Tooltip title="Xem chi tiết">
             <button
               type="button"
               className={cx('activities-page__action-button', 'activities-page__action-button--view')}
-              onClick={() => navigate(buildPath.adminActivityDetail(record.id))}
+              onClick={() => navigate(buildPath.teacherActivityDetail(record.id))}
             >
               <FontAwesomeIcon icon={faEye} />
             </button>
@@ -442,29 +283,15 @@ export default function ActivitiesPage() {
             <button
               type="button"
               className={cx('activities-page__action-button', 'activities-page__action-button--edit')}
-              onClick={() => navigate(buildPath.adminActivityEdit(record.id))}
+              onClick={() => navigate(buildPath.teacherActivityEdit(record.id))}
             >
               <FontAwesomeIcon icon={faPenToSquare} />
-            </button>
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <button
-              type="button"
-              className={cx('activities-page__action-button', 'activities-page__action-button--delete')}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                handleOpenDeleteModal(record);
-              }}
-              disabled={deleteMutation.isLoading}
-            >
-              <FontAwesomeIcon icon={faTrashAlt} />
             </button>
           </Tooltip>
         </div>
       ),
     }),
-    [deleteMutation.isLoading, handleOpenDeleteModal, navigate, pagination],
+    [navigate, pagination],
   );
 
   const renderSortIcon = useCallback(
@@ -479,7 +306,6 @@ export default function ActivitiesPage() {
 
   return (
     <ConfigProvider locale={viVN}>
-      {contextHolder}
       <div className={cx('activities-page')}>
         <div className={cx('activities-page__filter-bar')}>
           <Input
@@ -501,23 +327,12 @@ export default function ActivitiesPage() {
             <Option value="NHOM_3">Nhóm 3</Option>
           </Select>
           <Select
-            placeholder="Trạng thái"
-            className={cx('activities-page__filter-select')}
-            value={selectedStatus}
-            onChange={setSelectedStatus}
-          >
-            <Option value="all">Tất cả trạng thái</Option>
-            <Option value="ongoing">Đang diễn ra</Option>
-            <Option value="upcoming">Sắp diễn ra</Option>
-            <Option value="ended">Đã kết thúc</Option>
-          </Select>
-          <Select
             placeholder="Trạng thái duyệt"
             className={cx('activities-page__filter-select')}
             value={selectedApprovalStatus}
             onChange={setSelectedApprovalStatus}
           >
-            <Option value="all">Tất cả trạng thái duyệt</Option>
+            <Option value="all">Tất cả trạng thái</Option>
             <Option value="CHO_DUYET">Chờ duyệt</Option>
             <Option value="DA_DUYET">Đã duyệt</Option>
             <Option value="BI_TU_CHOI">Bị từ chối</Option>
@@ -542,7 +357,6 @@ export default function ActivitiesPage() {
             columns={columns}
             dataSource={filteredActivities}
             columnRenderers={columnRenderers}
-            rowSelection={rowSelection}
             pagination={{
               current: pagination.current,
               pageSize: pagination.pageSize,
@@ -556,71 +370,7 @@ export default function ActivitiesPage() {
             className={cx('activities-page__table')}
           />
         </div>
-
-        {selectedRowKeys.length > 0 && (
-          <div className={cx('activities-page__bulk-actions')}>
-            <div className={cx('activities-page__bulk-info')}>
-              Đã chọn <strong>{selectedRowKeys.length}</strong> hoạt động
-            </div>
-            <div className={cx('activities-page__bulk-buttons')}>
-              <button
-                type="button"
-                className={cx('activities-page__bulk-button', 'activities-page__bulk-button--approve')}
-                onClick={handleBulkApprove}
-                disabled={approveMutation.isLoading}
-              >
-                <FontAwesomeIcon icon={faCheck} /> Duyệt
-              </button>
-              <button
-                type="button"
-                className={cx('activities-page__bulk-button', 'activities-page__bulk-button--reject')}
-                onClick={() => setRejectModalOpen(true)}
-                disabled={rejectMutation.isLoading}
-              >
-                <FontAwesomeIcon icon={faTimes} /> Từ chối
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-      <Modal
-        open={!!activityToDelete}
-        title="Bạn có chắc chắn muốn xóa?"
-        okText="Xóa"
-        okType="danger"
-        cancelText="Hủy"
-        confirmLoading={deleteMutation.isLoading}
-        onOk={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        destroyOnClose
-        centered
-      >
-        <p>Hoạt động "{activityToDelete?.title}" sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
-      </Modal>
-
-      <Modal
-        open={rejectModalOpen}
-        title="Từ chối hoạt động"
-        okText="Xác nhận từ chối"
-        okType="danger"
-        cancelText="Hủy"
-        confirmLoading={rejectMutation.isLoading}
-        onOk={handleBulkReject}
-        onCancel={() => {
-          setRejectModalOpen(false);
-          setRejectReason('');
-        }}
-        destroyOnClose
-        centered
-      >
-        <p>Vui lòng nhập lý do từ chối cho {selectedRowKeys.length} hoạt động đã chọn:</p>
-        <Input.TextArea
-          rows={4}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          placeholder="Nhập lý do từ chối..."
-        />
-      </Modal>
     </ConfigProvider>
   );
 }

@@ -144,12 +144,14 @@ function ScoringPage() {
   const registrations = data?.registrations ?? [];
 
   useEffect(() => {
-    if (!registrations.length) {
+    const regLength = data?.registrations?.length || 0;
+    if (!regLength) {
       setSelectedRowKeys([]);
       return;
     }
-    setSelectedRowKeys((prev) => prev.filter((key) => registrations.some((item) => item.id === key)));
-  }, [registrations]);
+    const regIds = data.registrations.map((item) => item.id);
+    setSelectedRowKeys((prev) => prev.filter((key) => regIds.includes(key)));
+  }, [data]);
 
   const handleStatusFilterChange = useCallback((statusValue) => {
     setFilters((prev) => ({ ...prev, status: statusValue ?? 'all' }));

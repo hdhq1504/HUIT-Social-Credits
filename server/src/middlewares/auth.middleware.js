@@ -28,6 +28,19 @@ export function optionalAuth(req, _res, next) {
 }
 
 export const requireRoles = (...roles) => (req, res, next) => {
+  // First ensure user is authenticated
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const payload = verifyAccessToken(token);
+    req.user = { ...payload, id: payload.sub };
+  } catch {
+    return res.status(401).json({ error: "Token expired or invalid" });
+  }
+
+  // Then check role permissions
   if (!req.user || !req.user.role) {
     return res.status(401).json({ error: "Unauthorized" });
   }

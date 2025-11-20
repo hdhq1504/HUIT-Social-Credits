@@ -11,6 +11,7 @@ import {
 
 export const listActivities = async (req, res) => {
   const currentUserId = req.user?.sub;
+  const userRole = req.user?.role;
 
   const { limit, sort, search, pointGroup } = req.query || {};
   const take = limit ? parseInt(limit, 10) : undefined;
@@ -23,18 +24,38 @@ export const listActivities = async (req, res) => {
   const searchTerm = sanitizeOptionalText(search, 100);
   const normalizedPointGroup = isValidPointGroup(pointGroup) ? pointGroup : undefined;
 
-  const where = {
-    isPublished: true,
+  // Build base where clause with search and point group filters
+  const baseFilters = {
     ...(normalizedPointGroup ? { nhomDiem: normalizedPointGroup } : {}),
     ...(searchTerm
       ? {
-          OR: [
-            { tieuDe: { contains: searchTerm, mode: "insensitive" } },
-            { diaDiem: { contains: searchTerm, mode: "insensitive" } },
-          ],
-        }
+        OR: [
+          { tieuDe: { contains: searchTerm, mode: "insensitive" } },
+          { diaDiem: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      }
       : {}),
   };
+
+  // Apply role-based filtering
+  let where;
+  if (userRole === 'ADMIN') {
+    // Admins see all activities
+    where = baseFilters;
+  } else if (userRole === 'GIANGVIEN') {
+    // Teachers only see activities they created (including pending ones)
+    where = {
+      ...baseFilters,
+      nguoiTaoId: currentUserId,
+    };
+  } else {
+    // Students and public users only see published, approved activities
+    where = {
+      ...baseFilters,
+      isPublished: true,
+      trangThaiDuyet: 'DA_DUYET',
+    };
+  }
 
   const activities = await prisma.hoatDong.findMany({
     where,

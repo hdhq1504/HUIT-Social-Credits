@@ -58,6 +58,11 @@ export const createActivity = async (req, res) => {
     const registrationDue = registrationDeadline ?? req.body?.hanDangKy;
     const cancellationDue = cancellationDeadline ?? req.body?.hanHuyDangKy;
 
+    // Determine approval status based on user role
+    const userRole = req.user?.role;
+    const isTeacher = userRole === 'GIANGVIEN';
+    const isAdmin = userRole === 'ADMIN';
+
     const data = {
       tieuDe: normalizedTitle,
       nhomDiem: normalizePointGroup(nhomDiem),
@@ -74,6 +79,10 @@ export const createActivity = async (req, res) => {
       phuongThucDiemDanh: normalizedAttendanceMethod,
       hocKyId: academicPeriod.hocKyId,
       namHocId: academicPeriod.namHocId,
+      nguoiTaoId: req.user?.sub || null,
+      nguoiPhuTrachId: req.user?.sub || null,
+      trangThaiDuyet: isTeacher ? 'CHO_DUYET' : 'DA_DUYET',
+      isPublished: isAdmin, // Only publish immediately if admin creates it
     };
 
     const newActivity = await prisma.hoatDong.create({
@@ -250,5 +259,78 @@ export const deleteActivity = async (req, res) => {
     }
     console.error("Error deleting activity:", error);
     res.status(500).json({ error: error.message || "Không thể xóa hoạt động" });
+  }
+};
+
+export const approveActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const activity = await prisma.hoatDong.findUnique({
+      where: { id },
+      select: { trangThaiDuyet: true },
+    });
+
+    if (!activity) {
+      return res.status(404).json({ error: "Hoạt động không tồn tại" });
+    }
+
+    if (activity.trangThaiDuyet === "DA_DUYET") {
+      return res.status(400).json({ error: "Hoạt động đã được duyệt" });
+    }
+
+    const updated = await prisma.hoatDong.update({
+      where: { id },
+      data: {
+        trangThaiDuyet: "DA_DUYET",
+        isPublished: true,
+        lyDoTuChoi: null,
+      },
+    });
+
+    const activityResponse = await buildActivityResponse(updated.id, req.user?.sub);
+    res.json({ activity: activityResponse, message: "Đã duyệt hoạt động" });
+  } catch (error) {
+    console.error("Error approving activity:", error);
+    res.status(500).json({ error: error.message || "Không thể duyệt hoạt động" });
+  }
+};
+
+export const rejectActivity = async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: "Vui lòng cung cấp lý do từ chối" });
+  }
+
+  try {
+    const activity = await prisma.hoatDong.findUnique({
+      where: { id },
+      select: { trangThaiDuyet: true },
+    });
+
+    if (!activity) {
+      return res.status(404).json({ error: "Hoạt động không tồn tại" });
+    }
+
+    if (activity.trangThaiDuyet === "BI_TU_CHOI") {
+      return res.status(400).json({ error: "Hoạt động đã bị từ chối" });
+    }
+
+    const updated = await prisma.hoatDong.update({
+      where: { id },
+      data: {
+        trangThaiDuyet: "BI_TU_CHOI",
+        isPublished: false,
+        lyDoTuChoi: reason.trim(),
+      },
+    });
+
+    const activityResponse = await buildActivityResponse(updated.id, req.user?.sub);
+    res.json({ activity: activityResponse, message: "Đã từ chối hoạt động" });
+  } catch (error) {
+    console.error("Error rejecting activity:", error);
+    res.status(500).json({ error: error.message || "Không thể từ chối hoạt động" });
   }
 };

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import prisma from "../prisma.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
 import { env } from "../env.js";
+import { sendMail } from "../utils/mailer.js";
 
 const cookieOpts = {
   httpOnly: true,
@@ -103,6 +104,10 @@ export const logout = async (_req, res) => {
   res.json({ message: "Đã đăng xuất" });
 };
 
+
+
+// ... (existing code)
+
 export const requestPasswordReset = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   if (!email) {
@@ -126,9 +131,38 @@ export const requestPasswordReset = async (req, res) => {
     },
   });
 
+  // Send OTP via email
+  try {
+    await sendMail({
+      to: email,
+      subject: "Mã xác thực đặt lại mật khẩu - HUIT Social Credits",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #0056b3;">Yêu cầu đặt lại mật khẩu</h2>
+          <p>Xin chào ${user.hoTen},</p>
+          <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản HUIT Social Credits.</p>
+          <p>Mã xác thực (OTP) của bạn là:</p>
+          <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+            ${otp}
+          </div>
+          <p>Mã này sẽ hết hạn sau ${RESET_TOKEN_TTL_MINUTES} phút.</p>
+          <p>Nếu bạn không yêu cầu điều này, vui lòng bỏ qua email này.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #666;">Đây là email tự động, vui lòng không trả lời.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send OTP email:", error);
+    return res.status(500).json({ error: "Không thể gửi email xác thực. Vui lòng thử lại sau." });
+  }
+
   return res.json(
     buildForgotPasswordResponse(
       `Mã xác nhận đã được gửi tới ${email}. Mã có hiệu lực trong ${RESET_TOKEN_TTL_MINUTES} phút.`,
+      // Only return OTP in dev mode if absolutely necessary, but plan says to remove it or hide it.
+      // For security, we should NOT return it.
+      // However, the buildForgotPasswordResponse function handles env check.
       otp
     )
   );

@@ -100,6 +100,7 @@ function TeacherLayout() {
             activePath={activeItem?.path ?? ''}
             isOpen={isSidebarOpen}
             onNavigate={handleNavigate}
+            onLogout={handleLogout}
           />
         </div>
 

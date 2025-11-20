@@ -12,6 +12,8 @@ import {
   createActivity,
   updateActivity,
   deleteActivity,
+  approveActivity,
+  rejectActivity,
 } from '../controllers/activity/activity-management.controller.js';
 import { optionalAuth, requireAuth, requireRoles } from '../middlewares/auth.middleware.js';
 
@@ -20,7 +22,9 @@ const router = Router();
 // CRUD hoạt động
 router.post('/', requireRoles('ADMIN', 'GIANGVIEN'), createActivity);
 router.put('/:id', requireRoles('ADMIN', 'GIANGVIEN'), updateActivity);
-router.delete('/:id', requireRoles('ADMIN', 'GIANGVIEN'), deleteActivity);
+router.delete('/:id', requireRoles('ADMIN'), deleteActivity);
+router.put('/:id/approve', requireRoles('ADMIN'), approveActivity);
+router.put('/:id/reject', requireRoles('ADMIN'), rejectActivity);
 
 router.get('/', optionalAuth, listActivities);
 

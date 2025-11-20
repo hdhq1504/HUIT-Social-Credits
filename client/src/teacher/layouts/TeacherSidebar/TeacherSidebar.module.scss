@@ -1,13 +1,20 @@
 .sidebar {
   &__sider {
-    top: 0;
     height: 100vh;
     background: var(--white-color);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
     height: 100vh;
     position: sticky;
     top: 0;
-    overflow: auto;
+    left: 0;
+    z-index: 100;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+
+    :global(.ant-layout-sider-children) {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
   }
 
   &__logo {
@@ -29,6 +36,23 @@
     font-size: 28px;
     letter-spacing: 1px;
     line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+
+  &__content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+    }
   }
 
   &__menu {
@@ -89,6 +113,50 @@
 
     :global(.ant-menu-item-icon) {
       color: var(--white-color) !important;
+    }
+  }
+
+  &__footer {
+    padding: 16px;
+    border-top: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+
+  &__logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid transparent;
+    background: #fff1f0;
+    color: var(--danger-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+
+    &:hover {
+      background: var(--danger-color);
+      color: var(--white-color);
+      border-color: var(--danger-color);
+    }
+  }
+
+  // Collapsed state overrides
+  :global(.ant-layout-sider-collapsed) {
+    .sidebar__brand {
+      display: none;
+    }
+
+    .sidebar__logout-btn {
+      padding: 10px 0;
+
+      span {
+        display: none;
+      }
     }
   }
 

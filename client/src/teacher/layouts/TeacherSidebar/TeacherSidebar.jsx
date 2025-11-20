@@ -13,6 +13,7 @@ import {
   faCalendar,
   faUserGear,
   faChalkboardUser,
+  faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import styles from './TeacherSidebar.module.scss';
 
@@ -31,7 +32,7 @@ const iconByKey = {
   classes: faChalkboardUser,
 };
 
-function TeacherSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {} }) {
+function TeacherSidebar({ items = [], activePath, isOpen = true, onNavigate = () => {}, onLogout = () => {} }) {
   const menuItems = items
     .filter((item) => iconByKey[item.iconKey] || item.icon)
     .map((item) => ({
@@ -50,13 +51,22 @@ function TeacherSidebar({ items = [], activePath, isOpen = true, onNavigate = ()
         {isOpen && <div className={cx('sidebar__brand')}>TEACHER</div>}
       </div>
 
-      <Menu
-        mode="inline"
-        selectedKeys={selected}
-        onClick={(e) => onNavigate?.(e.key)}
-        items={menuItems}
-        className={cx('sidebar__menu')}
-      />
+      <div className={cx('sidebar__content')}>
+        <Menu
+          mode="inline"
+          selectedKeys={selected}
+          onClick={(e) => onNavigate?.(e.key)}
+          items={menuItems}
+          className={cx('sidebar__menu')}
+        />
+      </div>
+
+      <div className={cx('sidebar__footer')}>
+        <button className={cx('sidebar__logout-btn')} onClick={onLogout}>
+          <FontAwesomeIcon icon={faRightFromBracket} fixedWidth />
+          {isOpen && <span>Đăng xuất</span>}
+        </button>
+      </div>
     </Sider>
   );
 }

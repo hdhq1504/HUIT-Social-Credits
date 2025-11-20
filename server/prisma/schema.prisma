@@ -47,6 +47,8 @@ model NguoiDung {
   danhGiaSinhVien             DanhGiaSinhVien[]   @relation("DanhGiaSinhVienStudent")
   danhGiaCapNhat              DanhGiaSinhVien[]   @relation("DanhGiaSinhVienNguoiCapNhat")
   phanCong                    PhanCong[]          @relation("PhanCongGiangVien")
+  hoatDongDaTao               HoatDong[]          @relation("HoatDongNguoiTao")
+  hoatDongPhuTrach            HoatDong[]          @relation("HoatDongNguoiPhuTrach")
   lopHocId                    String?
   lopHoc                      LopHoc?             @relation("SinhVienLop", fields: [lopHocId], references: [id])
 
@@ -125,34 +127,43 @@ model HocKy {
 }
 
 model HoatDong {
-  id                 String              @id @default(cuid())
+  id                 String                   @id @default(cuid())
   tieuDe             String
-  moTa               String?             @db.Text
+  moTa               String?                  @db.Text
   yeuCau             Json?
   huongDan           Json?
-  diemCong           Int                 @default(0)
+  diemCong           Int                      @default(0)
   batDauLuc          DateTime?
   ketThucLuc         DateTime?
   diaDiem            String?
   sucChuaToiDa       Int?
   hinhAnh            Json?
-  isFeatured         Boolean             @default(false)
-  isPublished        Boolean             @default(true)
+  isFeatured         Boolean                  @default(false)
+  isPublished        Boolean                  @default(true)
   hanDangKy          DateTime?
   hanHuyDangKy       DateTime?
-  phuongThucDiemDanh AttendanceMethod    @default(QR)
+  phuongThucDiemDanh AttendanceMethod         @default(QR)
+  trangThaiDuyet     TrangThaiDuyetHoatDong   @default(DA_DUYET)
+  nguoiTaoId         String?
+  nguoiPhuTrachId    String?
+  lyDoTuChoi         String?                  @db.Text
   hocKyId            String?
   namHocId           String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
   dangKy             DangKyHoatDong[]
   phanHoi            PhanHoiHoatDong[]
-  nhomDiem           NhomDiem            @default(NHOM_2)
+  nhomDiem           NhomDiem                 @default(NHOM_2)
   DiemDanhNguoiDung  DiemDanhNguoiDung[]
-  hocKyRef           HocKy?              @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
-  namHocRef          NamHoc?             @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
+  hocKyRef           HocKy?                   @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
+  namHocRef          NamHoc?                  @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
+  nguoiTao           NguoiDung?               @relation("HoatDongNguoiTao", fields: [nguoiTaoId], references: [id])
+  nguoiPhuTrach      NguoiDung?               @relation("HoatDongNguoiPhuTrach", fields: [nguoiPhuTrachId], references: [id])
 
   @@index([isPublished, batDauLuc])
+  @@index([trangThaiDuyet])
+  @@index([nguoiTaoId])
+  @@index([nguoiPhuTrachId])
   @@index([hocKyId])
   @@index([namHocId])
 }
@@ -379,6 +390,13 @@ enum LoaiPhanCong {
   CHU_NHIEM
   GIANG_DAY
 }
+
+enum TrangThaiDuyetHoatDong {
+  CHO_DUYET
+  DA_DUYET
+  BI_TU_CHOI
+}
+
 
 model PhanCong {
   id           String        @id @default(cuid())

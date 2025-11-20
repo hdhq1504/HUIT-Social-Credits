@@ -24,7 +24,7 @@ const iconByKey = {
   BarChartOutlined: 'reports',
   TeamOutlined: 'council',
   UserGearOutlined: 'users',
-  TeamOutlined: 'students',
+  StudentOutlined: 'students',
   UserTieOutlined: 'lecturers',
   CalendarAltOutlined: 'academics',
   SettingOutlined: 'system',

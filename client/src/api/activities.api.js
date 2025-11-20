@@ -51,6 +51,14 @@ export const activitiesApi = {
     const { data } = await http.post(`/activities/${activityId}/feedback`, payload);
     return data;
   },
+  async approve(id) {
+    const { data } = await http.put(`/activities/${id}/approve`);
+    return data;
+  },
+  async reject(id, reason) {
+    const { data } = await http.put(`/activities/${id}/reject`, { reason });
+    return data;
+  },
   async listMine(params = {}) {
     const { data } = await http.get('/activities/my', { params });
     return data.registrations ?? [];

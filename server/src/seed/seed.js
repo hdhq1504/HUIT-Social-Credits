@@ -337,6 +337,8 @@ const seed = async () => {
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
         isFeatured: true,
+        trangThaiDuyet: "DA_DUYET",
+        nguoiTaoId: admin.id,
       },
       {
         tieuDe: "Hỗ trợ hướng dẫn tân sinh viên",
@@ -349,6 +351,8 @@ const seed = async () => {
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_3",
         isFeatured: false,
+        trangThaiDuyet: "CHO_DUYET",
+        nguoiTaoId: lecturer.id,
       },
       {
         tieuDe: "Chăm sóc vườn cây khoa",
@@ -361,6 +365,8 @@ const seed = async () => {
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_2",
         isFeatured: false,
+        trangThaiDuyet: "DA_DUYET",
+        nguoiTaoId: lecturer.id,
       },
       {
         tieuDe: "Xuân yêu thương – gói quà sớm",
@@ -373,6 +379,9 @@ const seed = async () => {
         hinhAnh: "/images/activity-cover.png",
         nhomDiem: "NHOM_1",
         isFeatured: true,
+        trangThaiDuyet: "BI_TU_CHOI",
+        lyDoTuChoi: "Thông tin chưa đầy đủ, vui lòng bổ sung kế hoạch chi tiết.",
+        nguoiTaoId: lecturer.id,
       },
       {
         tieuDe: "Tập huấn an toàn khi hiến máu",
@@ -615,8 +624,11 @@ const seed = async () => {
         phuongThucDiemDanh: activity.phuongThucDiemDanh ?? "PHOTO",
         hocKyId: activity.hocKyId ?? academicPeriod.hocKyId,
         namHocId: activity.namHocId ?? academicPeriod.namHocId,
-        isPublished: true,
+        isPublished: activity.isPublished ?? true,
         nhomDiem: activity.nhomDiem ?? "NHOM_2",
+        trangThaiDuyet: activity.trangThaiDuyet ?? "DA_DUYET",
+        nguoiTaoId: activity.nguoiTaoId ?? admin.id,
+        lyDoTuChoi: activity.lyDoTuChoi ?? null,
       };
 
       const existing = await prisma.hoatDong.findFirst({ where: { tieuDe: activity.tieuDe } });

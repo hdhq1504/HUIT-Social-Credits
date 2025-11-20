@@ -5,15 +5,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import logo from '@/assets/images/apple-touch-icon.png';
 import {
   faGaugeHigh,
-  faUsers,
+  faCalendarCheck,
+  faTrophy,
+  faComments,
   faChartColumn,
   faMedal,
-  faGear,
-  faHeart,
-  faCalendar,
   faUserGear,
-  faRightFromBracket,
+  faUserGraduate,
+  faChalkboardTeacher,
   faCalendarAlt,
+  faGear,
+  faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import styles from './AdminSidebar.module.scss';
 
@@ -22,14 +24,14 @@ const { Sider } = Layout;
 
 const iconByKey = {
   dashboard: faGaugeHigh,
-  activities: faHeart,
-  scoring: faCalendar,
-  feedback: faUsers,
+  activities: faCalendarCheck,
+  scoring: faTrophy,
+  feedback: faComments,
   reports: faChartColumn,
   council: faMedal,
   users: faUserGear,
-  students: faUsers,
-  lecturers: faUserGear,
+  students: faUserGraduate,
+  lecturers: faChalkboardTeacher,
   academics: faCalendarAlt,
   system: faGear,
 };

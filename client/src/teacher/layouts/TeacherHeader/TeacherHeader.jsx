@@ -10,16 +10,11 @@ const cx = classNames.bind(styles);
 export default function TeacherHeader({
   onToggleSidebar,
   user = { name: 'Giảng viên', email: 'teacher@huit.edu.vn', avatarUrl: '' },
-  onLogout,
 }) {
-  const menuItems = [
-    { key: 'home', icon: '', label: 'Trang chủ' },
-    { key: 'logout', icon: '', label: 'Đăng xuất' },
-  ];
+  const menuItems = [{ key: 'home', icon: '', label: 'Trang chủ' }];
 
   const onMenuClick = ({ key }) => {
     if (key === 'home') window.location.assign('/teacher/classes');
-    if (key === 'logout') onLogout?.();
   };
 
   return (

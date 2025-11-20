@@ -46,8 +46,13 @@ export const ROUTE_PATHS = {
   TEACHER: {
     ROOT: '/teacher',
     OVERVIEW: '/teacher',
+    DASHBOARD: '/teacher',
     CLASSES: '/teacher/classes',
     CLASS_STUDENTS: '/teacher/classes/:classId/students',
+    ACTIVITIES: '/teacher/activities',
+    ACTIVITY_CREATE: '/teacher/activities/create',
+    ACTIVITY_DETAIL: '/teacher/activities/:id',
+    ACTIVITY_EDIT: '/teacher/activities/:id/edit',
   },
 };
 
@@ -59,6 +64,9 @@ export const buildPath = {
   adminFeedbackDetail: (id) => `/admin/feedback/${id}`,
   adminUserEdit: (id) => `/admin/users/${id}/edit`,
   adminScoringDetail: (id) => `/admin/scoring/${id}`,
+  adminCouncilDetail: (id) => `/admin/council/${id}`,
+  teacherActivityDetail: (id) => `/teacher/activities/${id}`,
+  teacherActivityEdit: (id) => `/teacher/activities/${id}/edit`,
   teacherClassDetail: (id) => `/teacher/classes/${id}`,
   teacherClassStudents: (classId) => `/teacher/classes/${classId}/students`,
 };
