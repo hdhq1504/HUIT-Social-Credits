@@ -3,7 +3,6 @@ export { default as ActivitiesAddEditPage } from './ActivitiesAddEditPage/Activi
 export { default as ActivitiesDetailPage } from './ActivitiesDetailPage/ActivitiesDetailPage';
 export { default as ActivitiesPage } from './ActivitiesPage/ActivitiesPage';
 export { default as CouncilPage } from './CouncilPage/CouncilPage';
-export { default as CouncilDetailPage } from './CouncilDetailPage/CouncilDetailPage';
 export { default as DashboardPage } from './DashboardPage/DashboardPage';
 export { default as FeedbackPage } from './FeedbackPage/FeedbackPage';
 export { default as FeedbackDetailPage } from './FeedbackDetailPage/FeedbackDetailPage';

@@ -42,10 +42,6 @@ model NguoiDung {
   DiemDanhNguoiDung           DiemDanhNguoiDung[]
   thongBao                    ThongBao[]
   faceProfile                 FaceProfile?
-  hoiDongDaTao                HoiDongXetDiem[]    @relation("HoiDongNguoiTao")
-  thanhVienHoiDong            ThanhVienHoiDong[]
-  danhGiaSinhVien             DanhGiaSinhVien[]   @relation("DanhGiaSinhVienStudent")
-  danhGiaCapNhat              DanhGiaSinhVien[]   @relation("DanhGiaSinhVienNguoiCapNhat")
   phanCong                    PhanCong[]          @relation("PhanCongGiangVien")
   hoatDongDaTao               HoatDong[]          @relation("HoatDongNguoiTao")
   hoatDongPhuTrach            HoatDong[]          @relation("HoatDongNguoiPhuTrach")
@@ -99,7 +95,6 @@ model NamHoc {
   updatedAt      DateTime         @updatedAt
   hocKy          HocKy[]          @relation
   hoatDong       HoatDong[]       @relation("HoatDongNamHoc")
-  HoiDongXetDiem HoiDongXetDiem[]
   phanCong       PhanCong[]       @relation("PhanCongNamHoc")
 
   @@index([isActive, batDau])
@@ -120,7 +115,6 @@ model HocKy {
   hoatDong       HoatDong[]       @relation("HoatDongHocKy")
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  HoiDongXetDiem HoiDongXetDiem[]
 
   @@index([namHocId, isActive, thuTu])
   @@index([batDau, ketThuc])
@@ -256,65 +250,6 @@ model ThongBao {
   @@index([nguoiDungId, createdAt])
 }
 
-model HoiDongXetDiem {
-  id            String             @id @default(cuid())
-  name          String
-  description   String?
-  academicYear  String
-  semesterLabel String
-  namHocId      String?
-  hocKyId       String?
-  facultyCode   String?
-  status        TrangThaiHoiDong   @default(PREPARING)
-  createdById   String
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  finalizedAt   DateTime?
-  exportUrl     String?
-  exportPath    String?
-  namHoc        NamHoc?            @relation(fields: [namHocId], references: [id])
-  hocKy         HocKy?             @relation(fields: [hocKyId], references: [id])
-  createdBy     NguoiDung          @relation("HoiDongNguoiTao", fields: [createdById], references: [id])
-  members       ThanhVienHoiDong[]
-  evaluations   DanhGiaSinhVien[]
-
-  @@index([namHocId])
-  @@index([hocKyId])
-  @@index([status])
-}
-
-model ThanhVienHoiDong {
-  id            String         @id @default(cuid())
-  councilId     String
-  userId        String
-  roleInCouncil String
-  createdAt     DateTime       @default(now())
-  council       HoiDongXetDiem @relation(fields: [councilId], references: [id], onDelete: Cascade)
-  user          NguoiDung      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([councilId, userId])
-  @@index([userId])
-}
-
-model DanhGiaSinhVien {
-  id          String                @id @default(cuid())
-  councilId   String
-  studentId   String
-  totalPoints Int                   @default(0)
-  result      KetQuaDanhGiaSinhVien @default(PENDING)
-  note        String?
-  updatedById String?
-  updatedAt   DateTime?
-  createdAt   DateTime              @default(now())
-  council     HoiDongXetDiem        @relation(fields: [councilId], references: [id], onDelete: Cascade)
-  student     NguoiDung             @relation("DanhGiaSinhVienStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  updatedBy   NguoiDung?            @relation("DanhGiaSinhVienNguoiCapNhat", fields: [updatedById], references: [id])
-
-  @@unique([councilId, studentId])
-  @@index([studentId])
-  @@index([result])
-}
-
 model FaceProfile {
   id          String   @id @default(cuid())
   nguoiDungId String   @unique
@@ -324,6 +259,25 @@ model FaceProfile {
   updatedAt   DateTime @updatedAt
 
   user NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
+}
+
+model PhanCong {
+  id           String        @id @default(cuid())
+  giangVienId  String
+  giangVien    NguoiDung     @relation("PhanCongGiangVien", fields: [giangVienId], references: [id], onDelete: Cascade)
+  lopHocId     String
+  lopHoc       LopHoc        @relation("PhanCongLopHoc", fields: [lopHocId], references: [id], onDelete: Cascade)
+  namHocId     String
+  namHoc       NamHoc        @relation("PhanCongNamHoc", fields: [namHocId], references: [id])
+  loaiPhanCong LoaiPhanCong  @default(CHU_NHIEM)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([giangVienId, lopHocId, namHocId, loaiPhanCong])
+  @@index([giangVienId])
+  @@index([lopHocId])
+  @@index([namHocId])
+  @@index([loaiPhanCong])
 }
 
 enum VaiTro {
@@ -375,18 +329,6 @@ enum FaceMatchStatus {
   REJECTED
 }
 
-enum TrangThaiHoiDong {
-  PREPARING
-  IN_PROGRESS
-  FINALIZED
-}
-
-enum KetQuaDanhGiaSinhVien {
-  PENDING
-  PASSED
-  FAILED
-}
-
 enum LoaiPhanCong {
   CHU_NHIEM
   GIANG_DAY
@@ -396,24 +338,4 @@ enum TrangThaiDuyetHoatDong {
   CHO_DUYET
   DA_DUYET
   BI_TU_CHOI
-}
-
-
-model PhanCong {
-  id           String        @id @default(cuid())
-  giangVienId  String
-  giangVien    NguoiDung     @relation("PhanCongGiangVien", fields: [giangVienId], references: [id], onDelete: Cascade)
-  lopHocId     String
-  lopHoc       LopHoc        @relation("PhanCongLopHoc", fields: [lopHocId], references: [id], onDelete: Cascade)
-  namHocId     String
-  namHoc       NamHoc        @relation("PhanCongNamHoc", fields: [namHocId], references: [id])
-  loaiPhanCong LoaiPhanCong  @default(CHU_NHIEM)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  @@unique([giangVienId, lopHocId, namHocId, loaiPhanCong])
-  @@index([giangVienId])
-  @@index([lopHocId])
-  @@index([namHocId])
-  @@index([loaiPhanCong])
 }

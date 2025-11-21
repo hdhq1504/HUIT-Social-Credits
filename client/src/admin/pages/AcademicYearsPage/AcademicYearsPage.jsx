@@ -1,12 +1,13 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import classNames from 'classnames/bind';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Modal, Form, Input, DatePicker, message, Popconfirm, Tag, Collapse } from 'antd';
+import { Button, Modal, Form, Input, DatePicker, message, Popconfirm, Tag, Collapse, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faEdit, faTrash, faCheck } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import academicApi from '@/api/academic.api';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
+import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './AcademicYearsPage.module.scss';
 
@@ -22,6 +23,7 @@ export default function AcademicYearsPage() {
   const [semesterModalOpen, setSemesterModalOpen] = useState(false);
   const [selectedYearForSemesters, setSelectedYearForSemesters] = useState(null);
   const [form] = Form.useForm();
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'academic-years'],
@@ -38,7 +40,7 @@ export default function AcademicYearsPage() {
         key: 'create',
         label: 'Tạo năm học mới',
         type: 'primary',
-        className: 'admin-navbar__add-button',
+        className: 'admin-navbar__btn--primary',
         icon: <FontAwesomeIcon icon={faPlus} />,
         onClick: () => setIsModalOpen(true),
       },
@@ -95,26 +97,29 @@ export default function AcademicYearsPage() {
     },
   });
 
-  const handleOpenModal = (year = null) => {
-    setEditingYear(year);
-    if (year) {
-      form.setFieldsValue({
-        ma: year.ma,
-        nienKhoa: year.nienKhoa,
-        ten: year.ten,
-        dateRange: [dayjs(year.batDau), dayjs(year.ketThuc)],
-      });
-    } else {
-      form.resetFields();
-    }
-    setIsModalOpen(true);
-  };
+  const handleOpenModal = useCallback(
+    (year = null) => {
+      setEditingYear(year);
+      if (year) {
+        form.setFieldsValue({
+          ma: year.ma,
+          nienKhoa: year.nienKhoa,
+          ten: year.ten,
+          dateRange: [dayjs(year.batDau), dayjs(year.ketThuc)],
+        });
+      } else {
+        form.resetFields();
+      }
+      setIsModalOpen(true);
+    },
+    [form],
+  );
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingYear(null);
     form.resetFields();
-  };
+  }, [form]);
 
   const handleSubmit = async (values) => {
     const [batDau, ketThuc] = values.dateRange;
@@ -129,14 +134,12 @@ export default function AcademicYearsPage() {
     if (editingYear) {
       updateMutation.mutate({ id: editingYear.id, data: payload });
     } else {
-      // Create year and automatically create 3 semesters
       createMutation.mutate(payload, {
         onSuccess: async (response) => {
           const yearId = response.namHoc.id;
           const yearStart = dayjs(batDau);
           const yearEnd = dayjs(ketThuc);
 
-          // Auto-create 3 semesters
           const semesters = [
             {
               ma: `${values.ma}-HK1`,
@@ -173,100 +176,117 @@ export default function AcademicYearsPage() {
     }
   };
 
-  const handleDelete = (id) => {
-    deleteMutation.mutate(id);
-  };
+  const handleDelete = useCallback(
+    (id) => {
+      deleteMutation.mutate(id);
+    },
+    [deleteMutation],
+  );
 
-  const handleActivate = (id) => {
-    activateMutation.mutate(id);
-  };
+  const handleActivate = useCallback(
+    (id) => {
+      activateMutation.mutate(id);
+    },
+    [activateMutation],
+  );
 
-  const handleManageSemesters = (year) => {
+  const handleManageSemesters = useCallback((year) => {
     setSelectedYearForSemesters(year);
     setSemesterModalOpen(true);
-  };
+  }, []);
 
-  const columns = [
-    {
-      title: 'Mã',
-      dataIndex: 'ma',
-      key: 'ma',
-      width: 100,
-    },
-    {
-      title: 'Niên khóa',
-      dataIndex: 'nienKhoa',
-      key: 'nienKhoa',
-      width: 150,
-    },
-    {
-      title: 'Tên năm học',
-      dataIndex: 'ten',
-      key: 'ten',
-      width: 200,
-    },
-    {
-      title: 'Thời gian',
-      key: 'time',
-      width: 200,
-      render: (_, record) => (
-        <span>
-          {dayjs(record.batDau).format('DD/MM/YYYY')} - {dayjs(record.ketThuc).format('DD/MM/YYYY')}
-        </span>
-      ),
-    },
-    {
-      title: 'Số học kỳ',
-      dataIndex: ['_count', 'hocKy'],
-      key: 'semesterCount',
-      width: 100,
-      align: 'center',
-      render: (count, record) => (
-        <Button type="link" onClick={() => handleManageSemesters(record)}>
-          {count || 0} học kỳ
-        </Button>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 120,
-      align: 'center',
-      render: (isActive) =>
-        isActive ? (
-          <Tag color="success" icon={<FontAwesomeIcon icon={faCheck} />}>
-            Đang áp dụng
-          </Tag>
-        ) : (
-          <Tag>Không hoạt động</Tag>
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Mã',
+        dataIndex: 'ma',
+        key: 'ma',
+        width: 100,
+      },
+      {
+        title: 'Niên khóa',
+        dataIndex: 'nienKhoa',
+        key: 'nienKhoa',
+        width: 150,
+      },
+      {
+        title: 'Tên năm học',
+        dataIndex: 'ten',
+        key: 'ten',
+        width: 200,
+      },
+      {
+        title: 'Thời gian',
+        key: 'time',
+        width: 200,
+        render: ({ record }) => (
+          <span>
+            {dayjs(record.batDau).format('DD/MM/YYYY')} - {dayjs(record.ketThuc).format('DD/MM/YYYY')}
+          </span>
         ),
-    },
-    {
-      title: 'Hành động',
-      key: 'actions',
-      width: 200,
-      align: 'center',
-      render: (_, record) => (
-        <div className={cx('actions')}>
-          {!record.isActive && (
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleActivate(record.id)}
-              loading={activateMutation.isLoading}
-            >
-              Kích hoạt
-            </Button>
-          )}
-          <Button
-            type="link"
-            size="small"
-            icon={<FontAwesomeIcon icon={faEdit} />}
-            onClick={() => handleOpenModal(record)}
-          >
-            Sửa
+      },
+      {
+        title: 'Số học kỳ',
+        dataIndex: ['_count', 'hocKy'],
+        key: 'semesterCount',
+        width: 100,
+        align: 'center',
+        render: ({ value: count, record }) => (
+          <Button type="link" onClick={() => handleManageSemesters(record)}>
+            {count || 0} học kỳ
           </Button>
+        ),
+      },
+      {
+        title: 'Trạng thái',
+        dataIndex: 'isActive',
+        key: 'isActive',
+        width: 80,
+        align: 'center',
+      },
+      {
+        title: 'Hành động',
+        key: 'actions',
+        width: 200,
+        align: 'center',
+      },
+    ],
+    [handleManageSemesters],
+  );
+
+  const columnRenderers = useMemo(
+    () => ({
+      isActive: ({ value }) => (
+        <Tag
+          className={cx(
+            'academic-years-page__status-tag',
+            value ? 'academic-years-page__status-tag--success' : 'academic-years-page__status-tag--default',
+          )}
+          icon={value ? <FontAwesomeIcon icon={faCheck} /> : null}
+        >
+          {value ? 'Đang áp dụng' : 'Không hoạt động'}
+        </Tag>
+      ),
+      actions: ({ record }) => (
+        <div className={cx('academic-years-page__actions')}>
+          {!record.isActive && (
+            <button
+              type="button"
+              className={cx('academic-years-page__action-button', 'academic-years-page__action-button--activate')}
+              onClick={() => handleActivate(record.id)}
+            >
+              <FontAwesomeIcon icon={faCheck} />
+            </button>
+          )}
+          <Tooltip title="Sửa">
+            <button
+              type="button"
+              className={cx('academic-years-page__action-button', 'academic-years-page__action-button--edit')}
+              onClick={() => handleOpenModal(record)}
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </button>
+          </Tooltip>
           <Popconfirm
             title="Xóa năm học"
             description="Bạn có chắc chắn muốn xóa năm học này?"
@@ -274,25 +294,49 @@ export default function AcademicYearsPage() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="link"
-              danger
-              size="small"
-              icon={<FontAwesomeIcon icon={faTrash} />}
-              loading={deleteMutation.isLoading}
-            >
-              Xóa
-            </Button>
+            <Tooltip title="Xóa">
+              <button
+                type="button"
+                className={cx('academic-years-page__action-button', 'academic-years-page__action-button--delete')}
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </Tooltip>
           </Popconfirm>
         </div>
       ),
-    },
-  ];
+    }),
+    [activateMutation.isLoading, deleteMutation.isLoading, handleActivate, handleDelete, handleOpenModal],
+  );
+
+  const namHocs = data?.namHocs || [];
 
   return (
-    <div className={cx('academic-years')}>
-      <div className={cx('academic-years__content')}>
-        <Table columns={columns} dataSource={data?.namHocs || []} rowKey="id" loading={isLoading} pagination={false} />
+    <div className={cx('academic-years-page')}>
+      <div className={cx('academic-years-page__content')}>
+        <div className={cx('academic-years-page__content-header')}>
+          <h3>Danh sách năm học</h3>
+          <div className={cx('academic-years-page__stats')}>
+            Tổng số: <strong>{namHocs.length}</strong>
+          </div>
+        </div>
+        <AdminTable
+          columns={columns}
+          dataSource={namHocs}
+          rowKey="id"
+          loading={isLoading}
+          columnRenderers={columnRenderers}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: namHocs.length,
+            onChange: (page, pageSize) => {
+              setPagination({ current: page, pageSize });
+            },
+            showSizeChanger: false,
+          }}
+          className={cx('academic-years-page__table')}
+        />
       </div>
 
       <Modal
@@ -359,7 +403,6 @@ export default function AcademicYearsPage() {
   );
 }
 
-// Semester Management Modal Component
 function SemesterManagementModal({ open, year, onClose, onSuccess }) {
   const queryClient = useQueryClient();
   const [editingSemester, setEditingSemester] = useState(null);

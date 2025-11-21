@@ -95,7 +95,7 @@ const getStatusTag = (status) => {
     case 'confirm_out':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ongoing')}>
-          <FontAwesomeIcon icon={faCircleDot} />
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
           Đang diễn ra
         </Tag>
       );
@@ -105,7 +105,7 @@ const getStatusTag = (status) => {
     case 'attendance_closed':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--upcoming')}>
-          <FontAwesomeIcon icon={faCircleDot} />
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
           Sắp diễn ra
         </Tag>
       );
@@ -116,7 +116,7 @@ const getStatusTag = (status) => {
     case 'feedback_accepted':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ended')}>
-          <FontAwesomeIcon icon={faCircleDot} />
+          <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
           Đã kết thúc
         </Tag>
       );

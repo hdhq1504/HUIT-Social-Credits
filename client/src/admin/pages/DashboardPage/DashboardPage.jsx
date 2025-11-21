@@ -19,7 +19,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
-import AdminSearchBar from '../../layouts/AdminSearchBar/AdminSearchBar';
 import activitiesApi, { DASHBOARD_QUERY_KEY } from '@/api/activities.api';
 import statsApi, { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { formatDateTime } from '@/utils/datetime';
@@ -121,7 +120,7 @@ export default function DashboardPage() {
     setPageActions([
       {
         key: 'add',
-        label: 'Thêm mới hoạt động mới',
+        label: 'Thêm hoạt động mới',
         icon: <FontAwesomeIcon icon={faPlus} />,
         type: 'primary',
         className: 'admin-navbar__add-button',
@@ -206,16 +205,6 @@ export default function DashboardPage() {
 
   return (
     <div className={cx('dashboard')}>
-      {/* Filter search bar */}
-      <AdminSearchBar
-        facultyOptions={[
-          { value: 'all', label: 'Tất cả khoa' },
-          { value: 'cntt', label: 'Công nghệ thông tin' },
-          { value: 'kt', label: 'Quản trị kinh doanh' },
-        ]}
-      />
-
-      {/* Quick stats */}
       <section className={cx('dashboard__stats')}>
         {overviewCards.map((item) => (
           <div key={item.key} className={cx('dashboard__stat-card')}>
@@ -236,7 +225,6 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {/* Dashboard grid */}
       <section className={cx('dashboard__grid')}>
         <div className={cx('dashboard__chart')}>
           <div className={cx('dashboard__chart-header')}>

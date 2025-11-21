@@ -1,158 +1,166 @@
-const escapePdfText = (value = "") =>
-  String(value)
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
+import PDFDocument from "pdfkit";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const removeDiacritics = (value = "") =>
-  String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const chunkString = (value, length) => {
-  if (!value) return [""];
-  const result = [];
-  let current = value;
-  while (current.length > length) {
-    result.push(current.slice(0, length));
-    current = current.slice(length);
-  }
-  result.push(current);
-  return result;
+const HEADER_LINE_1 = "TRƯỜNG ĐẠI HỌC CÔNG THƯƠNG THÀNH PHỐ HỒ CHÍ MINH";
+const HEADER_LINE_2 = "PHÒNG CÔNG TÁC SINH VIÊN & THANH TRA GIÁO DỤC";
+const TITLE = "KẾT QUẢ THỰC HIỆN MÔN HỌC GIÁO DỤC NGHỀ NGHIỆP & CÔNG TÁC XÃ HỘI";
+
+const FONT_SIZE = 14;
+const HEADER_FONT_SIZE = 16;
+
+const drawCellBorder = (doc, x, y, width, height) => {
+  doc.rect(x, y, width, height).stroke();
 };
 
-const formatLine = (value, maxLength = 110) => {
-  const normalized = removeDiacritics(value || "");
-  return chunkString(normalized, maxLength);
+const fillCellBackground = (doc, x, y, width, height, color) => {
+  doc.save();
+  doc.fillColor(color);
+  doc.rect(x, y, width, height).fill();
+  doc.restore();
+  doc.fillColor('black');
 };
 
-const buildPages = (lines, linesPerPage = 40) => {
-  if (!lines.length) return [[" "]];
-  const pages = [[]];
-  lines.forEach((line) => {
-    const currentPage = pages[pages.length - 1];
-    if (currentPage.length >= linesPerPage) {
-      pages.push([]);
+export const generateCertificationPdf = async ({ students, facultyName }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: [1200, 700],
+        margins: { top: 40, bottom: 40, left: 40, right: 40 },
+      });
+
+      const fontPath = path.join(__dirname, '../assets/fonts/SVN-Times New Roman 2.ttf');
+      const boldFontPath = path.join(__dirname, '../assets/fonts/SVN-Times New Roman 2 bold.ttf');
+      doc.registerFont('Times New Roman', fontPath);
+      doc.registerFont('Times New Roman Bold', boldFontPath);
+
+      const chunks = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.font('Times New Roman Bold');
+      doc.fontSize(HEADER_FONT_SIZE);
+
+      doc.text(HEADER_LINE_1, 40, 40, { align: 'left' });
+      doc.text(HEADER_LINE_2, 40, 56, { align: 'left' });
+
+      doc.fontSize(HEADER_FONT_SIZE);
+      doc.text(TITLE, 40, 85, { align: 'center', width: doc.page.width - 80 });
+
+      let tableTop = 135;
+      if (facultyName) {
+        doc.fontSize(FONT_SIZE);
+        doc.text(`Khoa: ${facultyName}`, 40, 110, { align: 'center', width: doc.page.width - 80 });
+        tableTop = 150;
+      }
+
+      const headerRowHeight = 45;
+      const dataRowHeight = 30;
+
+      const columns = [
+        { header: 'STT', width: 50, align: 'center' },
+        { header: 'MSSV', width: 90, align: 'center' },
+        { header: 'Họ và tên', width: 150, align: 'center' },
+        { header: 'Lớp', width: 80, align: 'center' },
+        { header: 'Điểm Nhóm 1', width: 75, align: 'center' },
+        { header: 'Tổng điểm Nhóm 1', width: 75, align: 'center' },
+        { header: 'Kết quả Nhóm 1', width: 85, align: 'center' },
+        { header: 'Điểm Nhóm 2+3', width: 75, align: 'center' },
+        { header: 'Điểm dư Nhóm 1', width: 75, align: 'center' },
+        { header: 'Tổng điểm Nhóm 2,3', width: 80, align: 'center' },
+        { header: 'Kết quả Nhóm 2,3', width: 85, align: 'center' },
+        { header: 'Kết quả đánh giá', width: 115, align: 'center' },
+        { header: 'Đợt cấp chứng nhận', width: 85, align: 'center' },
+      ];
+
+      let currentX = 40;
+      let currentY = tableTop;
+
+      doc.font('Times New Roman Bold');
+      doc.fontSize(FONT_SIZE);
+
+      columns.forEach((col) => {
+        fillCellBackground(doc, currentX, currentY, col.width, headerRowHeight, '#D3D3D3');
+
+        drawCellBorder(doc, currentX, currentY, col.width, headerRowHeight);
+
+        doc.text(col.header, currentX + 3, currentY + 6, {
+          width: col.width - 6,
+          align: col.align,
+          lineBreak: true,
+        });
+        currentX += col.width;
+      });
+
+      currentY += headerRowHeight;
+
+      doc.font('Times New Roman');
+      doc.fontSize(FONT_SIZE);
+
+      students.forEach((student, index) => {
+        if (currentY > doc.page.height - 60) {
+          doc.addPage();
+          currentY = 40;
+          currentX = 40;
+          doc.font('Times New Roman Bold');
+
+          columns.forEach((col) => {
+            fillCellBackground(doc, currentX, currentY, col.width, headerRowHeight, '#D3D3D3');
+            drawCellBorder(doc, currentX, currentY, col.width, headerRowHeight);
+            doc.text(col.header, currentX + 3, currentY + 6, {
+              width: col.width - 6,
+              align: col.align,
+              lineBreak: true,
+            });
+            currentX += col.width;
+          });
+          currentY += headerRowHeight;
+          doc.font('Times New Roman');
+        }
+
+        currentX = 40;
+
+        const rowData = [
+          String(index + 1),
+          student.studentCode || '--',
+          student.fullName || '--',
+          student.classCode || '--',
+          String(student.groupOnePoints || 0),
+          String(student.groupOneTotalEffective || 0),
+          student.groupOneResult || '--',
+          String(student.groupTwoThreePoints || 0),
+          String(student.groupOneOverflow || 0),
+          String(student.groupTwoThreeTotalEffective || 0),
+          student.groupTwoThreeResult || '--',
+          student.overallResult || '--',
+          student.certificationDate || 'Chưa cấp',
+        ];
+
+        rowData.forEach((data, colIndex) => {
+          const col = columns[colIndex];
+
+          drawCellBorder(doc, currentX, currentY, col.width, dataRowHeight);
+
+          const textY = currentY + (dataRowHeight - FONT_SIZE) / 2;
+          doc.text(data, currentX + 3, textY, {
+            width: col.width - 6,
+            align: col.align,
+            lineBreak: false,
+            ellipsis: true,
+          });
+          currentX += col.width;
+        });
+
+        currentY += dataRowHeight;
+      });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
     }
-    pages[pages.length - 1].push(line);
   });
-  return pages;
-};
-
-const buildContentStream = (pageLines) => {
-  const commands = ["BT", "/F1 12 Tf", "16 TL", "1 0 0 1 50 780 Tm"];
-  pageLines.forEach((line) => {
-    commands.push(`(${escapePdfText(line)}) Tj`);
-    commands.push("T*");
-  });
-  commands.push("ET");
-  return commands.join("\n");
-};
-
-const buildPdfBuffer = (pages) => {
-  const objects = [];
-  const addObject = (content = "") => {
-    objects.push(content);
-    return objects.length; // PDF object number
-  };
-
-  const catalogNumber = addObject();
-  const pagesNumber = addObject();
-  const fontNumber = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-
-  const contentEntries = [];
-  const pageEntries = [];
-  pages.forEach((lines) => {
-    const contentNumber = addObject();
-    const pageNumber = addObject();
-    contentEntries.push({ number: contentNumber, lines });
-    pageEntries.push({ number: pageNumber, contentNumber });
-  });
-
-  pageEntries.forEach((entry) => {
-    const lines = contentEntries.find((item) => item.number === entry.contentNumber)?.lines || [" "];
-    const stream = buildContentStream(lines);
-    const length = Buffer.byteLength(stream, "utf8");
-    objects[entry.contentNumber - 1] = `<< /Length ${length} >>\nstream\n${stream}\nendstream`;
-    objects[entry.number - 1] =
-      `<< /Type /Page /Parent ${pagesNumber} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontNumber} 0 R >> >> /Contents ${entry.contentNumber} 0 R >>`;
-  });
-
-  const kids = pageEntries.map((entry) => `${entry.number} 0 R`).join(" ");
-  objects[pagesNumber - 1] = `<< /Type /Pages /Count ${pageEntries.length} /Kids [${kids}] >>`;
-  objects[catalogNumber - 1] = `<< /Type /Catalog /Pages ${pagesNumber} 0 R >>`;
-
-  const parts = ["%PDF-1.4\n"];
-  const xref = [];
-  let offset = Buffer.byteLength(parts[0], "utf8");
-  objects.forEach((object, index) => {
-    xref.push(offset);
-    const content = `${index + 1} 0 obj\n${object}\nendobj\n`;
-    parts.push(content);
-    offset += Buffer.byteLength(content, "utf8");
-  });
-
-  const xrefStart = offset;
-  const header = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  parts.push(header);
-  offset += Buffer.byteLength(header, "utf8");
-  xref.forEach((position) => {
-    const line = `${String(position).padStart(10, "0")} 00000 n \n`;
-    parts.push(line);
-    offset += Buffer.byteLength(line, "utf8");
-  });
-  const trailer = `trailer << /Size ${objects.length + 1} /Root ${catalogNumber} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  parts.push(trailer);
-  return Buffer.from(parts.join(""), "utf8");
-};
-
-const buildStudentLine = (index, evaluation) => {
-  const { student } = evaluation;
-  const studentCode = student?.maSV || "--";
-  const fullName = student?.hoTen || "--";
-  const classCode = student?.maLop || "--";
-  const facultyCode = student?.maKhoa || "--";
-  const result = evaluation.result === "PASSED" ? "Dat" : evaluation.result === "FAILED" ? "Khong dat" : "Chua xet";
-  const note = evaluation.note ? ` - ${evaluation.note}` : "";
-  return `${String(index).padStart(2, "0")}. ${studentCode} | ${fullName} | Lop ${classCode} | Khoa ${facultyCode} | Diem: ${evaluation.totalPoints} | Ket qua: ${result}${note}`;
-};
-
-export const generateCouncilPdf = async ({ council, evaluations }) => {
-  const lines = [];
-  lines.push(...formatLine(`Bien ban hoi dong xet diem CTXH - ${council.name}`));
-  lines.push(...formatLine(`Nam hoc: ${council.academicYear} - Hoc ky: ${council.semesterLabel}`));
-  if (council.facultyCode) {
-    lines.push(...formatLine(`Khoa/phong phu trach: ${council.facultyCode}`));
-  }
-  lines.push(" ");
-  lines.push("Danh sach thanh vien hoi dong:");
-  if (Array.isArray(council.members) && council.members.length) {
-    council.members.forEach((member, idx) => {
-      const label = `${idx + 1}. ${member.user?.hoTen || "Thanh vien"} - ${member.roleInCouncil}`;
-      lines.push(...formatLine(label));
-    });
-  } else {
-    lines.push("(Chua cap nhat)");
-  }
-  lines.push(" ");
-  lines.push("Danh sach sinh vien xet duyet:");
-  evaluations.forEach((evaluation, index) => {
-    const studentLine = buildStudentLine(index + 1, evaluation);
-    lines.push(...formatLine(studentLine));
-  });
-  if (!evaluations.length) {
-    lines.push("Chua co sinh vien duoc them vao hoi dong.");
-  }
-  lines.push(" ");
-  lines.push("Chu ky xac nhan:");
-  lines.push("- Chu tich hoi dong");
-  lines.push("- Thu ky hoi dong");
-  lines.push("- Uy vien");
-
-  const pages = buildPages(lines);
-  return buildPdfBuffer(pages);
-};
-
-export default {
-  generateCouncilPdf,
 };

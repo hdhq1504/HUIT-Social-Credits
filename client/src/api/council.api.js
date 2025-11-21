@@ -1,71 +1,62 @@
-import http from '@utils/http';
-
-const normalizeParams = (params = {}) =>
-  Object.entries(params).reduce((acc, [key, value]) => {
-    if (value === undefined || value === null || value === '' || value === 'all') return acc;
-    acc[key] = value;
-    return acc;
-  }, {});
+import http from '@/utils/http';
 
 export const COUNCIL_QUERY_KEYS = {
   base: ['councils'],
-  detail: (id) => ['councils', id],
-  students: (id, params) => ['councils', id, 'students', params],
-  eligibleMembers: (search) => ['councils', 'eligible-members', search],
+  students: (filters) => [...COUNCIL_QUERY_KEYS.base, 'students', filters],
 };
 
-export const councilApi = {
-  async list(params = {}) {
-    const { data } = await http.get('/councils', { params: normalizeParams(params) });
-    return data;
+const councilApi = {
+  getStudents: async (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.namHocId) params.append('namHocId', filters.namHocId);
+    if (filters.hocKyId) params.append('hocKyId', filters.hocKyId);
+
+    const response = await http.get(`/councils/students?${params.toString()}`);
+    return response.data;
   },
-  async create(payload) {
-    const { data } = await http.post('/councils', payload);
-    return data;
-  },
-  async detail(id) {
-    const { data } = await http.get(`/councils/${id}`);
-    return data;
-  },
-  async update(id, payload) {
-    const { data } = await http.put(`/councils/${id}`, payload);
-    return data;
-  },
-  async addMembers(id, payload) {
-    const { data } = await http.post(`/councils/${id}/members`, payload);
-    return data;
-  },
-  async removeMember(id, memberId) {
-    const { data } = await http.delete(`/councils/${id}/members/${memberId}`);
-    return data;
-  },
-  async searchMembers(search) {
-    const { data } = await http.get('/councils/eligible-members', {
-      params: normalizeParams({ search }),
+
+  exportPdf: async (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.namHocId) params.append('namHocId', filters.namHocId);
+    if (filters.hocKyId) params.append('hocKyId', filters.hocKyId);
+
+    const response = await http.get(`/councils/export/pdf?${params.toString()}`, {
+      responseType: 'blob',
     });
-    return data.users || [];
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `CTXH-${Date.now()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
-  async importStudents(id, payload) {
-    const { data } = await http.post(`/councils/${id}/students/import`, payload);
-    return data;
-  },
-  async listStudents(id, params = {}) {
-    const { data } = await http.get(`/councils/${id}/students`, {
-      params: normalizeParams(params),
+
+  exportExcel: async (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.namHocId) params.append('namHocId', filters.namHocId);
+    if (filters.hocKyId) params.append('hocKyId', filters.hocKyId);
+
+    const response = await http.get(`/councils/export/excel?${params.toString()}`, {
+      responseType: 'blob',
     });
-    return data;
-  },
-  async updateStudent(id, evaluationId, payload) {
-    const { data } = await http.patch(`/councils/${id}/students/${evaluationId}`, payload);
-    return data;
-  },
-  async finalize(id) {
-    const { data } = await http.post(`/councils/${id}/finalize`);
-    return data;
-  },
-  async exportPdf(id) {
-    const { data } = await http.get(`/councils/${id}/export`, { responseType: 'blob' });
-    return data;
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `CTXH-${Date.now()}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 };
 

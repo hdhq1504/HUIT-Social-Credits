@@ -144,7 +144,7 @@ export default function ActivitiesPage() {
     setPageActions([
       {
         key: 'add',
-        label: 'Thêm mới hoạt động mới',
+        label: 'Thêm hoạt động mới',
         icon: <FontAwesomeIcon icon={faPlus} />,
         type: 'primary',
         className: 'admin-navbar__add-button',

@@ -1,11 +1,11 @@
 -- CreateEnum
-CREATE TYPE "VaiTro" AS ENUM ('SINHVIEN', 'GIANGVIEN', 'NHANVIEN', 'ADMIN');
+CREATE TYPE "VaiTro" AS ENUM ('SINHVIEN', 'GIANGVIEN', 'ADMIN');
 
 -- CreateEnum
 CREATE TYPE "GioiTinh" AS ENUM ('Nam', 'Nữ', 'Khác');
 
 -- CreateEnum
-CREATE TYPE "TrangThaiDangKy" AS ENUM ('DANG_KY', 'DA_HUY', 'DA_THAM_GIA', 'VANG_MAT', 'CHO_DUYET');
+CREATE TYPE "TrangThaiDangKy" AS ENUM ('DANG_KY', 'DANG_THAM_GIA', 'DA_HUY', 'DA_THAM_GIA', 'VANG_MAT', 'CHO_DUYET');
 
 -- CreateEnum
 CREATE TYPE "TrangThaiPhanHoi" AS ENUM ('CHO_DUYET', 'DA_DUYET', 'BI_TU_CHOI');
@@ -21,6 +21,12 @@ CREATE TYPE "AttendanceMethod" AS ENUM ('QR', 'PHOTO');
 
 -- CreateEnum
 CREATE TYPE "FaceMatchStatus" AS ENUM ('APPROVED', 'REVIEW', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "LoaiPhanCong" AS ENUM ('CHU_NHIEM', 'GIANG_DAY');
+
+-- CreateEnum
+CREATE TYPE "TrangThaiDuyetHoatDong" AS ENUM ('CHO_DUYET', 'DA_DUYET', 'BI_TU_CHOI');
 
 -- CreateTable
 CREATE TABLE "NguoiDung" (
@@ -44,8 +50,35 @@ CREATE TABLE "NguoiDung" (
     "ghiChu" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lopHocId" TEXT,
 
     CONSTRAINT "NguoiDung_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Khoa" (
+    "id" TEXT NOT NULL,
+    "maKhoa" VARCHAR(50) NOT NULL,
+    "tenKhoa" VARCHAR(255) NOT NULL,
+    "moTa" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Khoa_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LopHoc" (
+    "id" TEXT NOT NULL,
+    "maLop" TEXT NOT NULL,
+    "tenLop" TEXT NOT NULL,
+    "khoaId" TEXT NOT NULL,
+    "namNhapHoc" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LopHoc_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -98,6 +131,10 @@ CREATE TABLE "HoatDong" (
     "hanDangKy" TIMESTAMP(3),
     "hanHuyDangKy" TIMESTAMP(3),
     "phuongThucDiemDanh" "AttendanceMethod" NOT NULL DEFAULT 'QR',
+    "trangThaiDuyet" "TrangThaiDuyetHoatDong" NOT NULL DEFAULT 'DA_DUYET',
+    "nguoiTaoId" TEXT,
+    "nguoiPhuTrachId" TEXT,
+    "lyDoTuChoi" TEXT,
     "hocKyId" TEXT,
     "namHocId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -187,6 +224,19 @@ CREATE TABLE "FaceProfile" (
     CONSTRAINT "FaceProfile_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "PhanCong" (
+    "id" TEXT NOT NULL,
+    "giangVienId" TEXT NOT NULL,
+    "lopHocId" TEXT NOT NULL,
+    "namHocId" TEXT NOT NULL,
+    "loaiPhanCong" "LoaiPhanCong" NOT NULL DEFAULT 'CHU_NHIEM',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PhanCong_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "NguoiDung_email_key" ON "NguoiDung"("email");
 
@@ -204,6 +254,18 @@ CREATE INDEX "NguoiDung_vaiTro_isActive_idx" ON "NguoiDung"("vaiTro", "isActive"
 
 -- CreateIndex
 CREATE INDEX "NguoiDung_resetPasswordTokenExpiresAt_idx" ON "NguoiDung"("resetPasswordTokenExpiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Khoa_maKhoa_key" ON "Khoa"("maKhoa");
+
+-- CreateIndex
+CREATE INDEX "Khoa_maKhoa_idx" ON "Khoa"("maKhoa");
+
+-- CreateIndex
+CREATE INDEX "Khoa_isActive_idx" ON "Khoa"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LopHoc_maLop_key" ON "LopHoc"("maLop");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NamHoc_ma_key" ON "NamHoc"("ma");
@@ -228,6 +290,15 @@ CREATE INDEX "HocKy_batDau_ketThuc_idx" ON "HocKy"("batDau", "ketThuc");
 
 -- CreateIndex
 CREATE INDEX "HoatDong_isPublished_batDauLuc_idx" ON "HoatDong"("isPublished", "batDauLuc");
+
+-- CreateIndex
+CREATE INDEX "HoatDong_trangThaiDuyet_idx" ON "HoatDong"("trangThaiDuyet");
+
+-- CreateIndex
+CREATE INDEX "HoatDong_nguoiTaoId_idx" ON "HoatDong"("nguoiTaoId");
+
+-- CreateIndex
+CREATE INDEX "HoatDong_nguoiPhuTrachId_idx" ON "HoatDong"("nguoiPhuTrachId");
 
 -- CreateIndex
 CREATE INDEX "HoatDong_hocKyId_idx" ON "HoatDong"("hocKyId");
@@ -277,6 +348,27 @@ CREATE INDEX "ThongBao_nguoiDungId_createdAt_idx" ON "ThongBao"("nguoiDungId", "
 -- CreateIndex
 CREATE UNIQUE INDEX "FaceProfile_nguoiDungId_key" ON "FaceProfile"("nguoiDungId");
 
+-- CreateIndex
+CREATE INDEX "PhanCong_giangVienId_idx" ON "PhanCong"("giangVienId");
+
+-- CreateIndex
+CREATE INDEX "PhanCong_lopHocId_idx" ON "PhanCong"("lopHocId");
+
+-- CreateIndex
+CREATE INDEX "PhanCong_namHocId_idx" ON "PhanCong"("namHocId");
+
+-- CreateIndex
+CREATE INDEX "PhanCong_loaiPhanCong_idx" ON "PhanCong"("loaiPhanCong");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PhanCong_giangVienId_lopHocId_namHocId_loaiPhanCong_key" ON "PhanCong"("giangVienId", "lopHocId", "namHocId", "loaiPhanCong");
+
+-- AddForeignKey
+ALTER TABLE "NguoiDung" ADD CONSTRAINT "NguoiDung_lopHocId_fkey" FOREIGN KEY ("lopHocId") REFERENCES "LopHoc"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LopHoc" ADD CONSTRAINT "LopHoc_khoaId_fkey" FOREIGN KEY ("khoaId") REFERENCES "Khoa"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "HocKy" ADD CONSTRAINT "HocKy_namHocId_fkey" FOREIGN KEY ("namHocId") REFERENCES "NamHoc"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -285,6 +377,12 @@ ALTER TABLE "HoatDong" ADD CONSTRAINT "HoatDong_hocKyId_fkey" FOREIGN KEY ("hocK
 
 -- AddForeignKey
 ALTER TABLE "HoatDong" ADD CONSTRAINT "HoatDong_namHocId_fkey" FOREIGN KEY ("namHocId") REFERENCES "NamHoc"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HoatDong" ADD CONSTRAINT "HoatDong_nguoiTaoId_fkey" FOREIGN KEY ("nguoiTaoId") REFERENCES "NguoiDung"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HoatDong" ADD CONSTRAINT "HoatDong_nguoiPhuTrachId_fkey" FOREIGN KEY ("nguoiPhuTrachId") REFERENCES "NguoiDung"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DangKyHoatDong" ADD CONSTRAINT "DangKyHoatDong_nguoiDungId_fkey" FOREIGN KEY ("nguoiDungId") REFERENCES "NguoiDung"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -318,3 +416,12 @@ ALTER TABLE "ThongBao" ADD CONSTRAINT "ThongBao_nguoiDungId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "FaceProfile" ADD CONSTRAINT "FaceProfile_nguoiDungId_fkey" FOREIGN KEY ("nguoiDungId") REFERENCES "NguoiDung"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PhanCong" ADD CONSTRAINT "PhanCong_giangVienId_fkey" FOREIGN KEY ("giangVienId") REFERENCES "NguoiDung"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PhanCong" ADD CONSTRAINT "PhanCong_lopHocId_fkey" FOREIGN KEY ("lopHocId") REFERENCES "LopHoc"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PhanCong" ADD CONSTRAINT "PhanCong_namHocId_fkey" FOREIGN KEY ("namHocId") REFERENCES "NamHoc"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

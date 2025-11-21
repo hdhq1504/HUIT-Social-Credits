@@ -1,50 +1,34 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Card, Form, Input, Modal, Select, Space, Table, Tag } from 'antd';
-import dayjs from 'dayjs';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import classNames from 'classnames/bind';
+import { Input, Select, Tag } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch, faFilePdf, faFileExcel } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
-import { ROUTE_PATHS } from '@/config/routes.config';
+import AdminTable from '@/admin/components/AdminTable/AdminTable';
 import councilApi, { COUNCIL_QUERY_KEYS } from '@/api/council.api';
 import academicsApi, { ACADEMICS_QUERY_KEY } from '@/api/academics.api';
+import studentsApi from '@/api/students.api';
 import useToast from '@/components/Toast/Toast';
+import useDebounce from '@/hooks/useDebounce';
 import styles from './CouncilPage.module.scss';
 
-const STATUS_TAGS = {
-  PREPARING: { color: 'default', label: 'Đang chuẩn bị' },
-  IN_PROGRESS: { color: 'processing', label: 'Đang xét' },
-  FINALIZED: { color: 'success', label: 'Đã chốt' },
-};
+const cx = classNames.bind(styles);
+const { Option } = Select;
+const PAGE_SIZE = 20;
 
-const statusTag = (status) => {
-  const meta = STATUS_TAGS[status] || { color: 'default', label: status };
-  return (
-    <Tag color={meta.color} className={styles['council-page__status-tag']}>
-      {meta.label}
-    </Tag>
-  );
-};
-
-export default function CouncilPage() {
-  const [filters, setFilters] = useState({ academicYear: 'all', semesterLabel: 'all', status: 'all' });
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [form] = Form.useForm();
+function CouncilPage() {
+  const [filters, setFilters] = useState({ facultyCode: null, search: '', namHocId: null, hocKyId: null });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: PAGE_SIZE });
   const { contextHolder, open: openToast } = useToast();
   const { setPageActions } = useContext(AdminPageContext);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const debouncedSearch = useDebounce(filters.search, 400);
 
-  useEffect(() => {
-    setPageActions([
-      {
-        key: 'create-council',
-        label: 'Thành lập hội đồng',
-        type: 'primary',
-        onClick: () => setIsCreateModalOpen(true),
-      },
-    ]);
-    return () => setPageActions(null);
-  }, [setPageActions]);
+  const { data: facultiesData } = useQuery({
+    queryKey: ['faculties'],
+    queryFn: studentsApi.getFaculties,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data: academics } = useQuery({
     queryKey: ACADEMICS_QUERY_KEY,
@@ -52,218 +36,300 @@ export default function CouncilPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const queryFilters = useMemo(
+    () => ({
+      ...filters,
+      search: debouncedSearch,
+    }),
+    [filters, debouncedSearch],
+  );
+
   const { data, isLoading } = useQuery({
-    queryKey: [...COUNCIL_QUERY_KEYS.base, filters],
-    queryFn: () => councilApi.list(filters),
+    queryKey: COUNCIL_QUERY_KEYS.students(queryFilters),
+    queryFn: () => councilApi.getStudents(queryFilters),
   });
 
-  const createMutation = useMutation({
-    mutationFn: (values) => councilApi.create(values),
-    onSuccess: async () => {
-      openToast({ message: 'Tạo hội đồng thành công!', variant: 'success' });
-      setIsCreateModalOpen(false);
-      form.resetFields();
-      await queryClient.invalidateQueries({ queryKey: COUNCIL_QUERY_KEYS.base });
+  const exportPdfMutation = useMutation({
+    mutationFn: () => councilApi.exportPdf(queryFilters),
+    onSuccess: () => {
+      openToast({ message: 'Xuất PDF thành công!', variant: 'success' });
     },
     onError: (error) => {
-      openToast({ message: error.response?.data?.error || 'Không thể tạo hội đồng.', variant: 'danger' });
+      openToast({ message: error.response?.data?.error || 'Không thể xuất PDF.', variant: 'danger' });
     },
   });
 
-  const councils = data?.councils ?? [];
+  const exportExcelMutation = useMutation({
+    mutationFn: () => councilApi.exportExcel(queryFilters),
+    onSuccess: () => {
+      openToast({ message: 'Xuất Excel thành công!', variant: 'success' });
+    },
+    onError: (error) => {
+      openToast({ message: error.response?.data?.error || 'Không thể xuất Excel.', variant: 'danger' });
+    },
+  });
+
+  useEffect(() => {
+    setPageActions([
+      {
+        key: 'export-pdf',
+        label: 'Xuất PDF',
+        icon: <FontAwesomeIcon icon={faFilePdf} />,
+        type: 'primary',
+        className: 'admin-navbar__btn--primary',
+        onClick: () => exportPdfMutation.mutate(),
+        loading: exportPdfMutation.isPending,
+      },
+      {
+        key: 'export-excel',
+        label: 'Xuất Excel',
+        icon: <FontAwesomeIcon icon={faFileExcel} />,
+        type: 'primary',
+        className: 'admin-navbar__btn--primary',
+        onClick: () => exportExcelMutation.mutate(),
+        loading: exportExcelMutation.isPending,
+      },
+    ]);
+    return () => setPageActions(null);
+  }, [setPageActions, exportPdfMutation, exportExcelMutation]);
+
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, [debouncedSearch, filters.facultyCode, filters.namHocId, filters.hocKyId]);
+
+  const students = data?.students ?? [];
 
   const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value || 'all' }));
+    setFilters((prev) => ({ ...prev, [key]: value || null }));
   };
 
   const columns = useMemo(
     () => [
       {
-        title: 'Tên hội đồng',
-        dataIndex: 'name',
-        key: 'name',
-        render: (_, record) => (
-          <Space direction="vertical" size={2}>
-            <span>{record.name}</span>
-            <small>{record.description || '—'}</small>
-          </Space>
-        ),
+        title: 'STT',
+        key: 'index',
+        width: 60,
+        align: 'center',
       },
       {
-        title: 'Năm học / Học kỳ',
-        key: 'time',
-        render: (_, record) => (
-          <Space direction="vertical" size={2}>
-            <span>{record.academicYear}</span>
-            <small>{record.semesterLabel}</small>
-          </Space>
-        ),
+        title: 'MSSV',
+        dataIndex: 'studentCode',
+        key: 'studentCode',
+        width: 110,
       },
       {
-        title: 'Khoa phụ trách',
-        dataIndex: 'facultyCode',
-        key: 'facultyCode',
-        render: (value) => value || 'Toàn trường',
+        title: 'Họ tên',
+        dataIndex: 'fullName',
+        key: 'fullName',
+        width: 200,
       },
       {
-        title: 'Trạng thái',
-        dataIndex: 'status',
-        key: 'status',
-        render: (status) => statusTag(status),
+        title: 'Lớp',
+        dataIndex: 'classCode',
+        key: 'classCode',
+        width: 90,
+        align: 'center',
       },
       {
-        title: 'Số thành viên',
-        dataIndex: 'membersCount',
-        key: 'members',
+        title: 'Điểm N1',
+        dataIndex: 'groupOnePoints',
+        key: 'groupOnePoints',
+        width: 80,
+        align: 'center',
+      },
+      {
+        title: 'Tổng điểm N1',
+        dataIndex: 'groupOneTotalEffective',
+        key: 'groupOneTotalEffective',
+        width: 100,
+        align: 'center',
+      },
+      {
+        title: 'Kết quả N1',
+        dataIndex: 'groupOneResult',
+        key: 'groupOneResult',
+        width: 120,
+        align: 'center',
+      },
+      {
+        title: 'Điểm N2,3',
+        dataIndex: 'groupTwoThreePoints',
+        key: 'groupTwoThreePoints',
+        width: 95,
+        align: 'center',
+      },
+      {
+        title: 'Dư N1',
+        dataIndex: 'groupOneOverflow',
+        key: 'groupOneOverflow',
+        width: 75,
+        align: 'center',
+      },
+      {
+        title: 'Tổng điểm N2,3',
+        dataIndex: 'groupTwoThreeTotalEffective',
+        key: 'groupTwoThreeTotalEffective',
+        width: 115,
+        align: 'center',
+      },
+      {
+        title: 'Kết quả N2,3',
+        dataIndex: 'groupTwoThreeResult',
+        key: 'groupTwoThreeResult',
+        width: 120,
+        align: 'center',
+      },
+      {
+        title: 'Kết quả đánh giá',
+        dataIndex: 'overallResult',
+        key: 'overallResult',
+        width: 150,
+        align: 'center',
+      },
+      {
+        title: 'Đợt cấp CN',
+        dataIndex: 'certificationDate',
+        key: 'certificationDate',
         width: 130,
-      },
-      {
-        title: 'Số sinh viên',
-        dataIndex: 'studentCount',
-        key: 'students',
-        width: 130,
-      },
-      {
-        title: 'Ngày tạo',
-        dataIndex: 'createdAt',
-        key: 'createdAt',
-        render: (value) => (value ? dayjs(value).format('DD/MM/YYYY') : '--'),
+        align: 'center',
       },
     ],
     [],
   );
 
-  const handleCreate = async () => {
-    try {
-      const values = await form.validateFields();
-      const selectedYear = yearOptions.find((year) => year.id === values.namHocId);
-      const selectedSemester = semesterOptions.find((semester) => semester.id === values.hocKyId);
-      await createMutation.mutateAsync({
-        name: values.name,
-        description: values.description,
-        facultyCode: values.facultyCode,
-        namHocId: values.namHocId,
-        hocKyId: values.hocKyId,
-        academicYear: selectedYear?.nienKhoa || selectedYear?.ten || selectedYear?.ma || 'Năm học',
-        semester: selectedSemester?.ten || selectedSemester?.ma || 'Học kỳ',
-      });
-    } catch (error) {
-      if (!error?.errorFields) {
-        openToast({ message: 'Không thể tạo hội đồng.', variant: 'danger' });
-      }
-    }
-  };
+  const columnRenderers = useMemo(
+    () => ({
+      index: ({ index }) => (pagination.current - 1) * pagination.pageSize + index + 1,
+      groupOneResult: ({ value }) => (
+        <Tag
+          className={cx(
+            'council-page__status-tag',
+            value === 'Đạt' ? 'council-page__status-tag--success' : 'council-page__status-tag--error',
+          )}
+        >
+          {value}
+        </Tag>
+      ),
+      groupTwoThreeResult: ({ value }) => (
+        <Tag
+          className={cx(
+            'council-page__status-tag',
+            value === 'Đạt' ? 'council-page__status-tag--success' : 'council-page__status-tag--error',
+          )}
+        >
+          {value}
+        </Tag>
+      ),
+      overallResult: ({ value }) => (
+        <Tag
+          className={cx(
+            'council-page__status-tag',
+            value === 'Đủ điều kiện' ? 'council-page__status-tag--success' : 'council-page__status-tag--warning',
+          )}
+        >
+          {value}
+        </Tag>
+      ),
+      certificationDate: ({ value }) =>
+        value || <Tag className={cx('council-page__status-tag', 'council-page__status-tag--default')}>Chưa cấp CN</Tag>,
+    }),
+    [pagination],
+  );
 
   const yearOptions = academics?.academicYears ?? [];
   const semesterOptions = academics?.semesters ?? [];
-  const formattedYearOptions = yearOptions.map((year) => ({
-    value: year.nienKhoa || year.ten || year.ma || year.id,
-    label: year.ten || year.nienKhoa || year.ma || 'Năm học',
-  }));
-  const formattedSemesterOptions = semesterOptions.map((semester) => ({
-    value: semester.ten || semester.ma || semester.id,
-    label: semester.ten || semester.ma || 'Học kỳ',
-  }));
+  const facultyOptions = facultiesData ?? [];
 
   return (
-    <div className={styles['council-page']}>
+    <div className={cx('council-page')}>
       {contextHolder}
-      <Card>
-        <Space className={styles['council-page__filters']}>
-          <Select
-            placeholder="Năm học"
-            value={filters.academicYear}
-            style={{ minWidth: 160 }}
-            onChange={(value) => handleFilterChange('academicYear', value)}
-            options={[{ value: 'all', label: 'Tất cả' }, ...formattedYearOptions]}
-          />
-          <Select
-            placeholder="Học kỳ"
-            value={filters.semesterLabel}
-            style={{ minWidth: 140 }}
-            onChange={(value) => handleFilterChange('semesterLabel', value)}
-            options={[{ value: 'all', label: 'Tất cả' }, ...formattedSemesterOptions]}
-          />
-          <Select
-            placeholder="Trạng thái"
-            value={filters.status}
-            style={{ minWidth: 140 }}
-            onChange={(value) => handleFilterChange('status', value)}
-            options={[
-              { value: 'all', label: 'Tất cả' },
-              { value: 'PREPARING', label: 'Đang chuẩn bị' },
-              { value: 'IN_PROGRESS', label: 'Đang xét' },
-              { value: 'FINALIZED', label: 'Đã chốt' },
-            ]}
-          />
-        </Space>
-      </Card>
 
-      <Card className={styles['council-page__table-card']}>
-        <Table
-          rowKey="id"
-          dataSource={councils}
-          columns={columns}
-          loading={isLoading}
-          pagination={false}
-          onRow={(record) => ({
-            onClick: () => navigate(`${ROUTE_PATHS.ADMIN.COUNCIL}/${record.id}`),
-            style: { cursor: 'pointer' },
-          })}
+      <div className={cx('council-page__filter-bar')}>
+        <Input
+          placeholder="Tìm kiếm sinh viên..."
+          className={cx('council-page__filter-search')}
+          prefix={<FontAwesomeIcon icon={faSearch} />}
+          value={filters.search}
+          onChange={(e) => handleFilterChange('search', e.target.value)}
+          allowClear
         />
-        <div className={styles['council-page__footer-text']}>
-          Tổng số hội đồng: <strong>{councils.length}</strong>
-        </div>
-      </Card>
+        <Select
+          placeholder="Khoa"
+          className={cx('council-page__filter-select')}
+          value={filters.facultyCode}
+          onChange={(value) => handleFilterChange('facultyCode', value)}
+          allowClear
+        >
+          <Option value={null}>Tất cả các khoa</Option>
+          {facultyOptions.map((faculty) => (
+            <Option key={faculty.maKhoa} value={faculty.maKhoa}>
+              {faculty.tenKhoa}
+            </Option>
+          ))}
+        </Select>
+        <Select
+          placeholder="Năm học"
+          className={cx('council-page__filter-select')}
+          value={filters.namHocId}
+          onChange={(value) => handleFilterChange('namHocId', value)}
+          allowClear
+        >
+          <Option value={null}>Tất cả năm học</Option>
+          {yearOptions.map((year) => (
+            <Option key={year.id} value={year.id}>
+              {year.code}
+            </Option>
+          ))}
+        </Select>
+        <Select
+          placeholder="Học kỳ"
+          className={cx('council-page__filter-select')}
+          value={filters.hocKyId}
+          onChange={(value) => handleFilterChange('hocKyId', value)}
+          allowClear
+        >
+          <Option value={null}>Tất cả học kỳ</Option>
+          {semesterOptions.map((semester) => (
+            <Option key={semester.id} value={semester.id}>
+              {semester.label}
+            </Option>
+          ))}
+        </Select>
+      </div>
 
-      <Modal
-        title="Thành lập hội đồng xét điểm"
-        open={isCreateModalOpen}
-        onCancel={() => {
-          setIsCreateModalOpen(false);
-          form.resetFields();
-        }}
-        onOk={handleCreate}
-        confirmLoading={createMutation.isPending}
-        okText="Tạo hội đồng"
-        cancelText="Hủy"
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="Tên hội đồng"
-            name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên hội đồng' }]}
-          >
-            <Input placeholder="Ví dụ: Hội đồng xét điểm CTXH HK1" />
-          </Form.Item>
-          <Form.Item label="Năm học" name="namHocId" rules={[{ required: true, message: 'Vui lòng chọn năm học' }]}>
-            <Select
-              showSearch
-              optionFilterProp="label"
-              options={yearOptions.map((year) => ({
-                value: year.id,
-                label: year.ten || year.nienKhoa || year.ma,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="Học kỳ" name="hocKyId" rules={[{ required: true, message: 'Vui lòng chọn học kỳ' }]}>
-            <Select
-              showSearch
-              optionFilterProp="label"
-              options={semesterOptions.map((semester) => ({
-                value: semester.id,
-                label: semester.ten,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="Khoa / lớp phụ trách" name="facultyCode">
-            <Input placeholder="Nhập mã khoa nếu có" />
-          </Form.Item>
-          <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={3} placeholder="Ghi chú thêm về hội đồng" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <div className={cx('council-page__content')}>
+        <div className={cx('council-page__content-header')}>
+          <h3>Kết quả đạt chứng chỉ sinh viên</h3>
+          <div className={cx('council-page__stats')}>
+            Tổng số: <strong>{students.length}</strong>
+            {filters.facultyCode && (
+              <span className={cx('council-page__qualified')}>
+                {' · '}Đủ điều kiện:{' '}
+                <strong>{students.filter((s) => s.overallResult === 'Đủ điều kiện').length}</strong>
+              </span>
+            )}
+          </div>
+        </div>
+        <AdminTable
+          rowKey={(record, index) => `${record.studentCode}-${index}`}
+          dataSource={students}
+          columns={columns}
+          columnRenderers={columnRenderers}
+          loading={isLoading}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: students.length,
+            onChange: (page, pageSize) => {
+              setPagination({ current: page, pageSize });
+            },
+            showSizeChanger: false,
+          }}
+          className={cx('council-page__table')}
+        />
+      </div>
     </div>
   );
 }
+
+export default CouncilPage;

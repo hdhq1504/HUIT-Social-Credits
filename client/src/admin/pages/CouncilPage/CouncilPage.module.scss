@@ -1,28 +1,165 @@
 .council-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  width: 100%;
 
-.council-page__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+  &__filter-bar {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--primary-color);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    flex-wrap: wrap;
 
-.council-page__table-card {
-  .ant-card-body {
-    padding: 0;
+    :global(.ant-input-affix-wrapper) {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-family: 'Montserrat';
+      color: var(--black-color);
+      background: var(--white-color);
+
+      input {
+        background: var(--white-color);
+        font-size: 14px;
+
+        &::placeholder {
+          color: var(--muted-color);
+        }
+      }
+    }
+
+    :global(.ant-select) {
+      min-width: 180px;
+      height: 42px;
+
+      .ant-select-selector {
+        height: 42px !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-color) !important;
+        font-size: 14px !important;
+        font-family: 'Montserrat';
+        color: var(--black-color);
+        background: var(--white-color) !important;
+        padding: 0 14px !important;
+        display: flex;
+        align-items: center;
+
+        input::placeholder {
+          color: var(--muted-color);
+        }
+      }
+    }
   }
-}
 
-.council-page__status-tag {
-  text-transform: uppercase;
-  font-weight: 600;
-}
+  &__filter-search {
+    flex: 1;
+    min-width: 200px;
+  }
 
-.council-page__footer-text {
-  margin-top: 12px;
-  color: #7a7a7a;
-  font-size: 13px;
+  &__filter-select {
+    min-width: 180px;
+  }
+
+  &__content {
+    background: var(--white-color);
+    border-radius: 12px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.25);
+    outline: 1px solid #f4f4f4;
+    overflow: hidden;
+  }
+
+  &__content-header {
+    padding: 24px;
+    border-bottom: 0.56px #f4f4f4 solid;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      color: var(--primary-color);
+      font-size: 18px;
+      font-family: 'Montserrat';
+      font-weight: 600;
+      margin: 0;
+    }
+  }
+
+  &__stats {
+    font-size: 14px;
+    color: var(--black-color);
+
+    strong {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+  }
+
+  &__qualified {
+    margin-left: 8px;
+  }
+
+  &__status-tag {
+    font-family: 'Montserrat';
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 0;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: none;
+
+    &--success {
+      background-color: rgba(25, 120, 135, 0.12);
+      color: var(--success-color);
+    }
+
+    &--warning {
+      background-color: rgba(255, 152, 0, 0.12);
+      color: var(--warning-color);
+    }
+
+    &--error {
+      background-color: rgba(220, 53, 69, 0.12);
+      color: var(--danger-color);
+    }
+
+    &--default {
+      background-color: var(--border-color);
+      color: var(--black-color);
+    }
+  }
+
+  &__table {
+    :global(.ant-table-thead > tr > th) {
+      background: #f4f4f4;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--black-color);
+      padding: 16px 12px;
+
+      &:first-child {
+        padding-left: 24px;
+      }
+    }
+
+    :global(.ant-table-tbody > tr > td) {
+      padding: 16px 12px;
+      font-size: 14px;
+      color: var(--black-color);
+
+      &:first-child {
+        padding-left: 24px;
+      }
+    }
+
+    :global(.ant-table-tbody > tr.ant-table-row-selected > td) {
+      background: var(--secondary-color);
+    }
+  }
 }

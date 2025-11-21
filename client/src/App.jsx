@@ -20,7 +20,6 @@ import ActivitiesAddEditPage from './admin/pages/ActivitiesAddEditPage/Activitie
 import ActivitiesDetailPage from './admin/pages/ActivitiesDetailPage/ActivitiesDetailPage';
 import FeedbackDetailPage from './admin/pages/FeedbackDetailPage/FeedbackDetailPage';
 import ScoringDetailPage from './admin/pages/ScoringDetailPage/ScoringDetailPage';
-import CouncilDetailPage from './admin/pages/CouncilDetailPage/CouncilDetailPage';
 import UsersAddEditPage from './admin/pages/UsersAddEditPage/UsersAddEditPage';
 
 const queryClient = new QueryClient({
@@ -40,7 +39,6 @@ function App() {
     initialize();
   }, [initialize]);
 
-  // Component to handle root path redirects based on user role
   const RootRedirect = () => {
     const { isLoggedIn, user } = useAuthStore();
 
@@ -52,7 +50,6 @@ function App() {
       }
     }
 
-    // Default to home page for guests and students
     const Page = publicRoutes[0].component;
     const Layout = publicRoutes[0].layout || Fragment;
     return (
@@ -83,10 +80,8 @@ function App() {
               );
             })}
 
-            {/* Root path with role-based redirect */}
             <Route path={ROUTE_PATHS.PUBLIC.HOME} element={<RootRedirect />} />
 
-            {/* Other public routes (skip first one as it's the home route) */}
             {publicRoutes.slice(1).map((route, index) => {
               const Page = route.component;
               const Layout = route.layout || Fragment;
@@ -143,7 +138,6 @@ function App() {
               <Route path="activities/:id" element={<ActivitiesDetailPage />} />
               <Route path="scoring/:id" element={<ScoringDetailPage />} />
               <Route path="feedback/:id" element={<FeedbackDetailPage />} />
-              <Route path="council/:id" element={<CouncilDetailPage />} />
               <Route path="users/create" element={<UsersAddEditPage />} />
               <Route path="users/:id/edit" element={<UsersAddEditPage />} />
             </Route>
