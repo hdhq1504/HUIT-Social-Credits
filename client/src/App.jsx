@@ -40,6 +40,28 @@ function App() {
     initialize();
   }, [initialize]);
 
+  // Component to handle root path redirects based on user role
+  const RootRedirect = () => {
+    const { isLoggedIn, user } = useAuthStore();
+
+    if (isLoggedIn && user) {
+      if (user.role === 'ADMIN') {
+        return <Navigate to={ROUTE_PATHS.ADMIN.DASHBOARD} replace />;
+      } else if (user.role === 'GIANGVIEN') {
+        return <Navigate to={ROUTE_PATHS.TEACHER.CLASSES} replace />;
+      }
+    }
+
+    // Default to home page for guests and students
+    const Page = publicRoutes[0].component;
+    const Layout = publicRoutes[0].layout || Fragment;
+    return (
+      <Layout>
+        <Page />
+      </Layout>
+    );
+  };
+
   return (
     <ConfigProvider locale={viVN}>
       <QueryClientProvider client={queryClient}>
@@ -61,7 +83,11 @@ function App() {
               );
             })}
 
-            {publicRoutes.map((route, index) => {
+            {/* Root path with role-based redirect */}
+            <Route path={ROUTE_PATHS.PUBLIC.HOME} element={<RootRedirect />} />
+
+            {/* Other public routes (skip first one as it's the home route) */}
+            {publicRoutes.slice(1).map((route, index) => {
               const Page = route.component;
               const Layout = route.layout || Fragment;
 

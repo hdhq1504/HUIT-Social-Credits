@@ -52,14 +52,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #f0f0f0;
 
     h3 {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
-      color: #262626;
+      color: var(--primary-color);
     }
   }
 
@@ -156,8 +154,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 16px;
-    border-top: 1px solid #f0f0f0;
   }
 
   &__pagination-summary {

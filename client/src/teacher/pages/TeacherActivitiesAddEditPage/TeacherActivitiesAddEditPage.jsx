@@ -432,6 +432,26 @@ const ActivitiesAddEditPage = () => {
                     <Input placeholder="Nhập địa điểm tổ chức..." />
                   </Form.Item>
                 </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="semester"
+                    label="Học kỳ"
+                    className={cx('activities__group')}
+                    tooltip="Tự động tính dựa trên ngày bắt đầu"
+                  >
+                    <Input placeholder="Tự động" disabled />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="academicYear"
+                    label="Năm học"
+                    className={cx('activities__group')}
+                    tooltip="Tự động tính dựa trên ngày bắt đầu"
+                  >
+                    <Input placeholder="Tự động" disabled />
+                  </Form.Item>
+                </Col>
               </Row>
             </section>
 

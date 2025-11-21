@@ -111,25 +111,12 @@ const getStatusTag = (status) => {
 const getApprovalStatusTag = (approvalStatus) => {
   switch (approvalStatus) {
     case 'CHO_DUYET':
-      return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--pending')} color="orange">
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Chờ duyệt
-        </Tag>
-      );
+      return <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--pending')}>Chờ duyệt</Tag>;
     case 'DA_DUYET':
-      return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--approved')} color="green">
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Đã duyệt
-        </Tag>
-      );
+      return <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--approved')}>Đã duyệt</Tag>;
     case 'BI_TU_CHOI':
       return (
-        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--rejected')} color="red">
-          <FontAwesomeIcon icon={faCircleDot} className={cx('activities-page__status-dot')} />
-          Bị từ chối
-        </Tag>
+        <Tag className={cx('activities-page__status-tag', 'activities-page__status-tag--rejected')}>Bị từ chối</Tag>
       );
     default:
       return null;

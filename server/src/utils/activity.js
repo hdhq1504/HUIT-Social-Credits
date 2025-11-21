@@ -826,6 +826,7 @@ const mapActivity = (activity, registration, options = {}) => {
     pointGroupLabel,
     isFeatured: activity.isFeatured,
     isPublished: activity.isPublished,
+    approvalStatus: activity.trangThaiDuyet,
     semester: semesterLabel,
     academicYear: academicYearLabel,
     semesterDisplay,

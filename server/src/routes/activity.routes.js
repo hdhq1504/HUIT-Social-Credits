@@ -33,7 +33,7 @@ router.get('/:id', optionalAuth, getActivity);
 router.get('/:id/registrations', requireRoles('ADMIN', 'GIANGVIEN'), listActivityRegistrationsAdmin);
 router.post('/:id/registrations', requireRoles('SINHVIEN'), registerForActivity);
 router.post('/:id/registrations/cancel', requireRoles('SINHVIEN'), cancelActivityRegistration);
-router.post('/:id/attendance', requireRoles('ADMIN', 'GIANGVIEN'), markAttendance);
+router.post('/:id/attendance', requireRoles('ADMIN', 'GIANGVIEN', 'SINHVIEN'), markAttendance);
 router.post('/:id/feedback', requireRoles('SINHVIEN'), submitActivityFeedback);
 
 export default router;

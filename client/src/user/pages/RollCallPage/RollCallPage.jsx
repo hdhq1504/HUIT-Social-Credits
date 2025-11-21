@@ -329,6 +329,9 @@ function RollCallPage() {
                   {...registration.activity}
                   variant="vertical"
                   state={effectiveState}
+                  registration={registration}
+                  requiresFaceEnrollment={registration.activity?.requiresFaceEnrollment}
+                  faceEnrollment={registration.activity?.faceEnrollment}
                   onRegistered={handleRegister}
                   onCancelRegister={handleCancel}
                   onConfirmPresent={handleAttendance}

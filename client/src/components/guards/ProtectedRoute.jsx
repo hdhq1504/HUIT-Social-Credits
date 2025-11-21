@@ -27,7 +27,16 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    return <Navigate to={ROUTE_PATHS.PUBLIC.HOME} replace />;
+    // Redirect to appropriate page based on user role
+    let redirectPath = ROUTE_PATHS.PUBLIC.HOME;
+
+    if (user?.role === 'ADMIN') {
+      redirectPath = ROUTE_PATHS.ADMIN.DASHBOARD;
+    } else if (user?.role === 'GIANGVIEN') {
+      redirectPath = ROUTE_PATHS.TEACHER.CLASSES;
+    }
+
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

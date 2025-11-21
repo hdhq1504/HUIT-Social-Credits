@@ -13,7 +13,14 @@ function GuestRoute({ children }) {
       return <Navigate to={from} replace />;
     }
 
-    const redirectPath = user.role === 'ADMIN' ? ROUTE_PATHS.ADMIN.DASHBOARD : ROUTE_PATHS.PUBLIC.HOME;
+    // Redirect based on user role
+    let redirectPath = ROUTE_PATHS.PUBLIC.HOME; // Default for SINHVIEN
+
+    if (user.role === 'ADMIN') {
+      redirectPath = ROUTE_PATHS.ADMIN.DASHBOARD;
+    } else if (user.role === 'GIANGVIEN') {
+      redirectPath = ROUTE_PATHS.TEACHER.CLASSES;
+    }
 
     return <Navigate to={redirectPath} replace />;
   }
