@@ -4,6 +4,13 @@ const HEADER_LINE_1 = "TRƯỜNG ĐẠI HỌC CÔNG THƯƠNG THÀNH PHỐ HỒ C
 const HEADER_LINE_2 = "PHÒNG CÔNG TÁC SINH VIÊN & THANH TRA GIÁO DỤC";
 const TITLE = "KẾT QUẢ THỰC HIỆN MÔN HỌC GIÁO DỤC NGHỀ NGHIỆP & CÔNG TÁC XÃ HỘI";
 
+/**
+ * Tạo file Excel danh sách chứng nhận.
+ * @param {Object} params - Tham số đầu vào.
+ * @param {Array} params.students - Danh sách sinh viên.
+ * @param {string} params.facultyName - Tên khoa (tùy chọn).
+ * @returns {Buffer} Buffer của file Excel.
+ */
 export const generateCertificationExcel = ({ students, facultyName }) => {
   const workbook = XLSX.utils.book_new();
 

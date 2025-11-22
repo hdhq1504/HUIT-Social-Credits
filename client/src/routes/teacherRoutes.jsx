@@ -1,9 +1,15 @@
+import { lazy } from 'react';
 import { faChalkboardUser, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
-import TeacherClassDetailPage from '../teacher/pages/TeacherClassDetailPage';
-import TeacherStudentDetailPage from '../teacher/pages/TeacherStudentDetailPage';
-import TeacherActivitiesPage from '../teacher/pages/TeacherActivitiesPage/TeacherActivitiesPage';
-import TeacherActivitiesAddEditPage from '../teacher/pages/TeacherActivitiesAddEditPage/TeacherActivitiesAddEditPage';
-import TeacherActivitiesDetailPage from '../teacher/pages/TeacherActivitiesDetailPage/TeacherActivitiesDetailPage';
+
+const TeacherClassDetailPage = lazy(() => import('../teacher/pages/TeacherClassDetailPage'));
+const TeacherStudentDetailPage = lazy(() => import('../teacher/pages/TeacherStudentDetailPage'));
+const TeacherActivitiesPage = lazy(() => import('../teacher/pages/TeacherActivitiesPage/TeacherActivitiesPage'));
+const TeacherActivitiesAddEditPage = lazy(
+  () => import('../teacher/pages/TeacherActivitiesAddEditPage/TeacherActivitiesAddEditPage'),
+);
+const TeacherActivitiesDetailPage = lazy(
+  () => import('../teacher/pages/TeacherActivitiesDetailPage/TeacherActivitiesDetailPage'),
+);
 
 const teacherRoutes = [
   {

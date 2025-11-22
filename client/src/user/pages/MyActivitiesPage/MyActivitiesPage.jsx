@@ -132,7 +132,10 @@ function MyActivitiesPage() {
   }, [filteredRegistrations, registrations.length]);
 
   const stats = useMemo(() => {
-    const registered = filteredRegistrations.filter((item) => item.status === 'DANG_KY');
+    const registered = filteredRegistrations.filter(
+      (item) =>
+        item.status === 'DANG_KY' && !['check_in', 'check_out', 'attendance_open'].includes(item.activity?.state),
+    );
     const attended = filteredRegistrations.filter((item) => item.status === 'DA_THAM_GIA');
     const canceled = filteredRegistrations.filter((item) => item.status === 'DA_HUY');
     const absent = filteredRegistrations.filter((item) => item.status === 'VANG_MAT');

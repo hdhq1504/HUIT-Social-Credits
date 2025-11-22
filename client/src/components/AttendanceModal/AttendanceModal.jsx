@@ -310,7 +310,7 @@ function AttendanceModal({
                 screenshotFormat="image/jpeg"
                 videoConstraints={videoConstraints}
                 className={cx('check-modal__webcam')}
-                mirrored={false}
+                mirrored
                 playsInline
                 onUserMedia={() => {
                   const videoEl = webcamRef.current?.video || webcamRef.current?.videoRef?.current;

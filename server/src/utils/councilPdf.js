@@ -24,6 +24,13 @@ const fillCellBackground = (doc, x, y, width, height, color) => {
   doc.fillColor('black');
 };
 
+/**
+ * Tạo file PDF danh sách chứng nhận.
+ * @param {Object} params - Tham số đầu vào.
+ * @param {Array} params.students - Danh sách sinh viên.
+ * @param {string} params.facultyName - Tên khoa (tùy chọn).
+ * @returns {Promise<Buffer>} Promise trả về Buffer của file PDF.
+ */
 export const generateCertificationPdf = async ({ students, facultyName }) => {
   return new Promise((resolve, reject) => {
     try {

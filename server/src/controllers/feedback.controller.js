@@ -262,6 +262,11 @@ const buildListWhereClause = ({ search, faculty, className, activityId, status }
   return { AND: filters };
 };
 
+/**
+ * Lấy danh sách phản hồi (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listFeedbacks = async (req, res) => {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({ error: "Forbidden" });
@@ -314,6 +319,11 @@ export const listFeedbacks = async (req, res) => {
   });
 };
 
+/**
+ * Lấy chi tiết phản hồi.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getFeedbackDetail = async (req, res) => {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({ error: "Forbidden" });
@@ -342,6 +352,11 @@ export const getFeedbackDetail = async (req, res) => {
   });
 };
 
+/**
+ * Duyệt hoặc từ chối phản hồi.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const decideFeedbackStatus = async (req, res) => {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({ error: "Forbidden" });

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import classNames from 'classnames/bind';
-import { Modal, Tag, Select, Input } from 'antd';
+import { Modal, Tag, Select, Input, Button } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import Alert from '../Alert/Alert';
@@ -30,12 +30,21 @@ function RegisterModal({
   attendanceMethodLabel,
   reasons = ['Bận lịch đột xuất', 'Trùng lịch thi/học', 'Lý do sức khỏe', 'Khác'],
   showConflictAlert = false,
+  activityStartTime = null,
   confirmLoading = false,
 }) {
   const isCancel = variant === 'cancel';
   const modalTitle = isCancel ? 'Xác nhận hủy hoạt động' : 'Xác nhận đăng ký hoạt động';
   const [reason, setReason] = useState();
   const [note, setNote] = useState('');
+
+  // Check if attempting to register after activity has started
+  const isLateRegistration = useMemo(() => {
+    if (isCancel || !activityStartTime) return false;
+    const now = new Date();
+    const startTime = new Date(activityStartTime);
+    return now > startTime;
+  }, [activityStartTime, isCancel]);
 
   const normalizedRegistrationDeadline =
     registrationDeadline && registrationDeadline !== '--' ? registrationDeadline : null;
@@ -152,10 +161,20 @@ function RegisterModal({
           </div>
         )}
 
-        {showConflictAlert && (
+        {isLateRegistration && (
+          <Alert
+            title="Không thể đăng ký"
+            message="Không thể đăng ký hoạt động sau khi đã bắt đầu."
+            type="danger"
+            showIcon={true}
+            onClose={() => {}}
+          />
+        )}
+
+        {showConflictAlert && !isLateRegistration && (
           <Alert
             title="Xung đột lịch trình"
-            message="Hoạt động này trùng thời gian với hoạt động khác bạn đã đăng ký"
+            message="Hoạt động này trùng thời gian với hoạt động khác bạn đã đăng ký."
             type="warning"
             showIcon={true}
             onClose={() => {}}
@@ -164,16 +183,18 @@ function RegisterModal({
       </div>
 
       <div className={cx('register-confirm__footer')}>
-        <button
+        <Button
           className={cx('register-confirm__confirm-button', isCancel && 'register-confirm__confirm-button--danger')}
           onClick={handleConfirm}
-          disabled={confirmLoading || (isCancel && !reason)}
+          disabled={(isCancel && !reason) || isLateRegistration}
+          loading={confirmLoading}
+          type="primary"
         >
-          {confirmLoading ? 'Đang xử lý...' : isCancel ? 'Xác nhận hủy' : 'Xác nhận đăng ký'}
-        </button>
-        <button className={cx('register-confirm__cancel-button')} onClick={onCancel}>
+          {isCancel ? 'Xác nhận hủy' : 'Xác nhận đăng ký'}
+        </Button>
+        <Button className={cx('register-confirm__cancel-button')} onClick={onCancel}>
           Hủy bỏ
-        </button>
+        </Button>
       </div>
     </Modal>
   );

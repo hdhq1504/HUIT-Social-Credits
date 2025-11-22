@@ -30,15 +30,39 @@ export const DEFAULT_POINT_GROUP = 'NHOM_2';
 
 const hasPointGroup = (value) => Object.prototype.hasOwnProperty.call(POINT_GROUPS, value);
 
+/**
+ * Kiểm tra xem mã nhóm điểm có hợp lệ không.
+ * @param {string} value - Mã nhóm điểm.
+ * @returns {boolean} True nếu hợp lệ.
+ */
 export const isValidPointGroup = (value) => hasPointGroup(value);
 
+/**
+ * Chuẩn hóa mã nhóm điểm (về mặc định nếu không hợp lệ).
+ * @param {string} value - Mã nhóm điểm.
+ * @returns {string} Mã nhóm điểm hợp lệ.
+ */
 export const normalizePointGroup = (value) =>
   hasPointGroup(value) ? value : DEFAULT_POINT_GROUP;
 
+/**
+ * Lấy tên hiển thị của nhóm điểm.
+ * @param {string} value - Mã nhóm điểm.
+ * @returns {string} Tên nhóm điểm.
+ */
 export const getPointGroupLabel = (value) => POINT_GROUPS[normalizePointGroup(value)].label;
 
+/**
+ * Lấy điểm mục tiêu của nhóm điểm.
+ * @param {string} value - Mã nhóm điểm.
+ * @returns {number} Điểm mục tiêu.
+ */
 export const getPointGroupTarget = (value) => POINT_GROUPS[normalizePointGroup(value)].target;
 
+/**
+ * Lấy danh sách tóm tắt các nhóm điểm.
+ * @returns {Array<Object>} Danh sách nhóm điểm { id, label, target }.
+ */
 export const getPointGroupSummary = () =>
   Object.values(POINT_GROUPS).map(({ id, label, target }) => ({
     id,
@@ -46,9 +70,19 @@ export const getPointGroupSummary = () =>
     target,
   }));
 
+/**
+ * Tính tổng điểm mục tiêu của tất cả các nhóm.
+ * @returns {number} Tổng điểm mục tiêu.
+ */
 export const getTotalTargetPoints = () =>
   Object.values(POINT_GROUPS).reduce((sum, group) => sum + group.target, 0);
 
+/**
+ * Tính toán điểm rèn luyện của người dùng.
+ * @param {string} userId - ID người dùng.
+ * @param {string} [hocKyId] - ID học kỳ (tùy chọn).
+ * @returns {Promise<Object>} Tổng điểm và chi tiết theo nhóm.
+ */
 export const calculateUserPoints = async (userId, hocKyId) => {
   if (!userId) {
     return { tongDiem: 0, diemTheoNhom: [] };

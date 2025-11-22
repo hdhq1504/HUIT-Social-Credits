@@ -31,54 +31,6 @@
     }
   }
 
-  &__filter-bar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 16px 20px;
-    border-radius: 10px;
-    background: var(--primary-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-    input,
-    select {
-      padding: 10px 14px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      outline: none;
-      font-family: 'Montserrat';
-      transition: 0.2s;
-    }
-
-    input {
-      flex: 1;
-
-      &::placeholder {
-        color: var(--muted-color);
-      }
-    }
-
-    select {
-      appearance: none;
-      padding-right: 30px;
-      background: var(--white-color) no-repeat right 10px center;
-      background-size: 10px;
-    }
-
-    .dashboard__filter-btn {
-      padding: 10px 18px;
-      border-radius: 8px;
-      border: none;
-      background: var(--orange-color);
-      color: var(--white-color);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-  }
-
   &__stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

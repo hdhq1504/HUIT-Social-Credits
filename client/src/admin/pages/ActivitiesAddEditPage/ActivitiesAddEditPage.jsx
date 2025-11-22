@@ -1,7 +1,20 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Form, Input, Select, InputNumber, DatePicker, TimePicker, Upload, Row, Col, ConfigProvider, Spin } from 'antd';
+import {
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  DatePicker,
+  TimePicker,
+  Upload,
+  Row,
+  Col,
+  ConfigProvider,
+  Spin,
+  Switch,
+} from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCircleInfo,
@@ -115,6 +128,7 @@ const ActivitiesAddEditPage = () => {
         attendanceMethod: activityData.attendanceMethod || 'qr',
         registrationDeadline: activityData.registrationDeadline ? dayjs(activityData.registrationDeadline) : null,
         cancellationDeadline: activityData.cancellationDeadline ? dayjs(activityData.cancellationDeadline) : null,
+        isFeatured: activityData.isFeatured || false,
 
         // Map ngày/giờ
         startDate: activityData.startTime ? dayjs(activityData.startTime) : null,
@@ -225,6 +239,7 @@ const ActivitiesAddEditPage = () => {
       attendanceMethod: values.attendanceMethod,
       registrationDeadline: values.registrationDeadline ? values.registrationDeadline.toISOString() : null,
       cancellationDeadline: values.cancellationDeadline ? values.cancellationDeadline.toISOString() : null,
+      isFeatured: values.isFeatured || false,
     };
 
     if (coverImagePayload !== undefined) {
@@ -438,6 +453,18 @@ const ActivitiesAddEditPage = () => {
                     rules={[{ required: true, message: 'Vui lòng nhập địa điểm!' }]}
                   >
                     <Input placeholder="Nhập địa điểm tổ chức..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="isFeatured"
+                    label="Hoạt động nổi bật"
+                    valuePropName="checked"
+                    className={cx('activities__group')}
+                    tooltip="Hoạt động nổi bật sẽ hiển thị trên trang chủ"
+                    initialValue={false}
+                  >
+                    <Switch checkedChildren="Có" unCheckedChildren="Không" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>

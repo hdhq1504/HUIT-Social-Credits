@@ -54,7 +54,7 @@ const normalizeAcademicYearLabel = (value) => {
   return null;
 };
 
-const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA", "CHO_DUYET"];
+const ACTIVE_REG_STATUSES = ["DANG_KY", "DANG_THAM_GIA", "DA_THAM_GIA", "CHO_DUYET"];
 const REGISTRATION_STATUSES = ["DANG_KY", "DA_HUY", "DA_THAM_GIA", "VANG_MAT", "CHO_DUYET"];
 const FEEDBACK_STATUSES = ["CHO_DUYET", "DA_DUYET", "BI_TU_CHOI"];
 const FEEDBACK_STATUS_LABELS = {
@@ -605,6 +605,14 @@ const mapRegistration = (registration, activity) => {
   };
 };
 
+/**
+ * Xử lý ảnh bìa hoạt động (upload, xóa, giữ nguyên).
+ * @param {Object} params - Tham số đầu vào.
+ * @param {string} params.activityId - ID hoạt động.
+ * @param {Object} params.payload - Dữ liệu ảnh mới (hoặc null để xóa).
+ * @param {Object} params.existing - Metadata ảnh hiện tại.
+ * @returns {Promise<Object>} Metadata mới và danh sách file cần xóa.
+ */
 const processActivityCover = async ({ activityId, payload, existing }) => {
   if (payload === undefined) {
     return { metadata: existing ?? null, removed: [] };
@@ -677,6 +685,12 @@ const processActivityCover = async ({ activityId, payload, existing }) => {
   };
 };
 
+/**
+ * Xác định trạng thái hiển thị của hoạt động đối với người dùng.
+ * @param {Object} activity - Dữ liệu hoạt động.
+ * @param {Object} registration - Dữ liệu đăng ký của user (nếu có).
+ * @returns {string} Trạng thái (guest, registered, check_in, check_out, ...).
+ */
 const determineState = (activity, registration) => {
   const start = toDate(activity?.batDauLuc);
   const end = toDate(activity?.ketThucLuc);
@@ -716,22 +730,29 @@ const determineState = (activity, registration) => {
       return "canceled";
     case "VANG_MAT":
       return "absent";
-    case "CHO_DUYET":
-      return "attendance_review";
-    case "DA_THAM_GIA": {
-      const faceSummary = summarizeFaceHistoryRaw(registration.lichSuDiemDanh ?? []);
-      const needsManualReview = faceSummary?.requiresReview ?? false;
+    case "CHO_DUYET": {
       const feedback = registration.phanHoi;
       if (!feedback) {
         const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
         const availableAt = feedbackAvailableAt ? new Date(feedbackAvailableAt) : null;
         if (availableAt && now < availableAt) {
-          return "feedback_waiting";
-        }
-        if (!needsManualReview) {
-          return "feedback_accepted";
+          return "attendance_review";
         }
         return "feedback_pending";
+      }
+      switch (feedback.trangThai) {
+        case "DA_DUYET":
+          return "feedback_accepted";
+        case "BI_TU_CHOI":
+          return "feedback_denied";
+        default:
+          return "feedback_reviewing";
+      }
+    }
+    case "DA_THAM_GIA": {
+      const feedback = registration.phanHoi;
+      if (!feedback) {
+        return "completed";
       }
       switch (feedback.trangThai) {
         case "DA_DUYET":
@@ -747,6 +768,13 @@ const determineState = (activity, registration) => {
   }
 };
 
+/**
+ * Map dữ liệu hoạt động sang format API.
+ * @param {Object} activity - Dữ liệu hoạt động từ DB.
+ * @param {Object} registration - Dữ liệu đăng ký của user (nếu có).
+ * @param {Object} options - Các tùy chọn map thêm.
+ * @returns {Object|null} Object hoạt động đã format.
+ */
 const mapActivity = (activity, registration, options = {}) => {
   if (!activity) return null;
 

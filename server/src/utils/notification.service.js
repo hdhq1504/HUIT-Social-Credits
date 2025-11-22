@@ -45,6 +45,21 @@ const buildEmailHtml = ({ greetingName, messageLines, footerLines }) => {
   `;
 };
 
+/**
+ * Gửi thông báo cho người dùng (DB + Email).
+ * @param {Object} params - Tham số thông báo.
+ * @param {string} params.userId - ID người dùng nhận thông báo.
+ * @param {Object} [params.user] - Object user (nếu có sẵn để tránh query lại).
+ * @param {string} params.title - Tiêu đề thông báo.
+ * @param {string} params.message - Nội dung thông báo.
+ * @param {string} [params.type="info"] - Loại thông báo (info, success, warning, error).
+ * @param {Object} [params.data] - Dữ liệu đính kèm.
+ * @param {string} [params.emailSubject] - Tiêu đề email (nếu khác title).
+ * @param {string} [params.emailText] - Nội dung email text (nếu khác message).
+ * @param {string} [params.emailHtml] - Nội dung email HTML (nếu muốn custom hoàn toàn).
+ * @param {Array<string>} [params.emailMessageLines] - Các dòng nội dung email (để tạo HTML mặc định).
+ * @returns {Promise<Object>} Record thông báo đã tạo.
+ */
 export const notifyUser = async ({
   userId,
   user,

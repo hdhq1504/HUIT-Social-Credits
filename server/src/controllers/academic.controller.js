@@ -1,6 +1,11 @@
 import prisma from "../prisma.js";
 import { mapAcademicYearRecord, mapSemesterRecord } from "../utils/academic.js";
 
+/**
+ * Lấy danh sách năm học và học kỳ (đã format).
+ * @param {Object} _req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listSemesters = async (_req, res) => {
   const academicYears = await prisma.namHoc.findMany({
     include: {
@@ -28,6 +33,11 @@ export const listSemesters = async (_req, res) => {
   res.json({ academicYears: years, semesters });
 };
 
+/**
+ * Lấy danh sách năm học (đã format).
+ * @param {Object} _req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listAcademicYears = async (_req, res) => {
   const academicYears = await prisma.namHoc.findMany({
     include: {
@@ -41,6 +51,11 @@ export const listAcademicYears = async (_req, res) => {
   res.json({ academicYears: academicYears.map(mapAcademicYearRecord).filter(Boolean) });
 };
 
+/**
+ * Xác định học kỳ dựa trên ngày tháng.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const resolveAcademicPeriod = async (req, res) => {
   const { date } = req.query;
   const target = date ? new Date(date) : null;
@@ -67,6 +82,12 @@ export const resolveAcademicPeriod = async (req, res) => {
 };
 
 // Admin CRUD operations for NamHoc
+
+/**
+ * Lấy danh sách năm học (Admin CRUD).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getNamHocs = async (req, res) => {
   try {
     const { page = 1, pageSize = 10 } = req.query;
@@ -110,6 +131,11 @@ export const getNamHocs = async (req, res) => {
   }
 };
 
+/**
+ * Tạo năm học mới.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const createNamHoc = async (req, res) => {
   try {
     const { ma, nienKhoa, ten, batDau, ketThuc } = req.body;
@@ -141,6 +167,11 @@ export const createNamHoc = async (req, res) => {
   }
 };
 
+/**
+ * Cập nhật năm học.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const updateNamHoc = async (req, res) => {
   try {
     const { id } = req.params;
@@ -164,6 +195,11 @@ export const updateNamHoc = async (req, res) => {
   }
 };
 
+/**
+ * Xóa năm học.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const deleteNamHoc = async (req, res) => {
   try {
     const { id } = req.params;
@@ -187,6 +223,11 @@ export const deleteNamHoc = async (req, res) => {
   }
 };
 
+/**
+ * Kích hoạt năm học.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const activateNamHoc = async (req, res) => {
   try {
     const { id } = req.params;
@@ -208,6 +249,11 @@ export const activateNamHoc = async (req, res) => {
   }
 };
 
+/**
+ * Lấy danh sách học kỳ của một năm học.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getHocKys = async (req, res) => {
   try {
     const { namHocId } = req.params;
@@ -224,6 +270,11 @@ export const getHocKys = async (req, res) => {
   }
 };
 
+/**
+ * Tạo học kỳ mới.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const createHocKy = async (req, res) => {
   try {
     const { namHocId } = req.params;
@@ -252,6 +303,11 @@ export const createHocKy = async (req, res) => {
   }
 };
 
+/**
+ * Cập nhật học kỳ.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const updateHocKy = async (req, res) => {
   try {
     const { id } = req.params;
@@ -276,6 +332,11 @@ export const updateHocKy = async (req, res) => {
   }
 };
 
+/**
+ * Xóa học kỳ.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const deleteHocKy = async (req, res) => {
   try {
     const { id } = req.params;

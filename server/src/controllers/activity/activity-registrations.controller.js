@@ -361,6 +361,46 @@ export const registerForActivity = async (req, res) => {
   const activity = await prisma.hoatDong.findUnique({ where: { id: activityId, isPublished: true } });
   if (!activity) return res.status(404).json({ error: "Hoạt động không tồn tại" });
 
+  const now = new Date();
+
+  if (activity.hanDangKy && now > new Date(activity.hanDangKy)) {
+    return res.status(400).json({ error: "Đã quá hạn đăng ký hoạt động" });
+  }
+
+  if (activity.batDauLuc && now > new Date(activity.batDauLuc)) {
+    return res.status(400).json({ error: "Không thể đăng ký sau khi hoạt động đã bắt đầu" });
+  }
+
+  const userActiveRegistrations = await prisma.dangKyHoatDong.findMany({
+    where: {
+      nguoiDungId: userId,
+      trangThai: { in: ACTIVE_REG_STATUSES },
+      hoatDongId: { not: activityId },
+    },
+    include: {
+      hoatDong: {
+        select: {
+          id: true,
+          tieuDe: true,
+          batDauLuc: true,
+          ketThucLuc: true,
+        },
+      },
+    },
+  });
+  const hasConflict = userActiveRegistrations.some((reg) => {
+    const regStart = reg.hoatDong?.batDauLuc ? new Date(reg.hoatDong.batDauLuc) : null;
+    const regEnd = reg.hoatDong?.ketThucLuc ? new Date(reg.hoatDong.ketThucLuc) : null;
+    const actStart = activity.batDauLuc ? new Date(activity.batDauLuc) : null;
+    const actEnd = activity.ketThucLuc ? new Date(activity.ketThucLuc) : null;
+    if (!regStart || !regEnd || !actStart || !actEnd) return false;
+    return actStart < regEnd && actEnd > regStart;
+  });
+  if (hasConflict) {
+    return res.status(409).json({
+      error: "Hoạt động này trùng thời gian với hoạt động khác bạn đã đăng ký",
+    });
+  }
   const activeCount = await prisma.dangKyHoatDong.count({
     where: {
       hoatDongId: activityId,

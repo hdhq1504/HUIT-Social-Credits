@@ -1,17 +1,17 @@
+import { lazy } from 'react';
 import { ROUTE_PATHS } from '@/config/routes.config';
-import {
-  DashboardPage,
-  ActivitiesPage,
-  ScoringPage,
-  FeedbackPage,
-  ReportsPage,
-  CouncilPage,
-  SystemPage,
-  UsersPage,
-  StudentsPage,
-  LecturersPage,
-  AcademicYearsPage,
-} from '@/admin/pages';
+
+const DashboardPage = lazy(() => import('@/admin/pages/DashboardPage/DashboardPage'));
+const ActivitiesPage = lazy(() => import('@/admin/pages/ActivitiesPage/ActivitiesPage'));
+const ScoringPage = lazy(() => import('@/admin/pages/ScoringPage/ScoringPage'));
+const FeedbackPage = lazy(() => import('@/admin/pages/FeedbackPage/FeedbackPage'));
+const ReportsPage = lazy(() => import('@/admin/pages/ReportsPage/ReportsPage'));
+const CouncilPage = lazy(() => import('@/admin/pages/CouncilPage/CouncilPage'));
+const SystemPage = lazy(() => import('@/admin/pages/SystemPage/SystemPage'));
+const UsersPage = lazy(() => import('@/admin/pages/UsersPage/UsersPage'));
+const StudentsPage = lazy(() => import('@/admin/pages/StudentsPage/StudentsPage'));
+const LecturersPage = lazy(() => import('@/admin/pages/LecturersPage/LecturersPage'));
+const AcademicYearsPage = lazy(() => import('@/admin/pages/AcademicYearsPage/AcademicYearsPage'));
 
 const lastPathSegment = (path) => path.split('/').pop();
 

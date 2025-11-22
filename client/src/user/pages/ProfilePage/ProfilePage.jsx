@@ -301,6 +301,9 @@ function ProfilePage() {
       const { data } = await http.get('/auth/me');
       return data?.user ?? null;
     },
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 30 * 1000, // 30 seconds
   });
 
   const {
@@ -429,7 +432,7 @@ function ProfilePage() {
       Lop: meData.classCode,
       NgaySinh: meData.dateOfBirth,
       Sdt: meData.phoneNumber,
-      AnhDaiDien: meData.avatarUrl,
+      avatarUrl: meData.avatarUrl,
       GioiTinh: genderValue,
       Khoa: meData.departmentCode,
     });

@@ -279,6 +279,7 @@
   &__confirm-button,
   &__cancel-button {
     padding: 12px 16px;
+    height: auto;
     border-radius: 8px;
     font-size: 15px;
     font-weight: 700;
@@ -301,8 +302,9 @@
     color: var(--white-color);
     border: none;
 
-    &:hover:not(:disabled) {
-      opacity: 0.9;
+    &:hover {
+      background-color: var(--orange-color) !important;
+      opacity: 0.8;
     }
 
     &:disabled {
@@ -321,7 +323,9 @@
     color: var(--black-color);
 
     &:hover {
-      background-color: #fafafa;
+      border: 1px solid var(--border-color) !important;
+      color: var(--black-color) !important;
+      opacity: 0.6;
     }
   }
 

@@ -17,8 +17,20 @@ if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
   });
 }
 
+/**
+ * Biến kiểm tra xem chức năng gửi email có được bật hay không.
+ */
 export const isEmailEnabled = Boolean(transporter);
 
+/**
+ * Gửi email.
+ * @param {Object} params - Tham số gửi email.
+ * @param {string|Array} params.to - Địa chỉ email người nhận.
+ * @param {string} params.subject - Tiêu đề email.
+ * @param {string} params.text - Nội dung email dạng text.
+ * @param {string} params.html - Nội dung email dạng HTML.
+ * @returns {Promise<Object>} Kết quả gửi email.
+ */
 export const sendMail = async ({ to, subject, text, html }) => {
   if (!transporter) {
     return { accepted: [], rejected: [], pending: [], skipped: true };

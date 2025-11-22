@@ -34,6 +34,15 @@ const ATTENDANCE_METHOD_BADGES = {
   photo: { label: 'Chụp Ảnh', className: 'activity-detail__checkin-badge--photo' },
 };
 
+// Helper function to check if two time ranges overlap
+const checkTimeOverlap = (start1, end1, start2, end2) => {
+  const s1 = new Date(start1);
+  const e1 = new Date(end1);
+  const s2 = new Date(start2);
+  const e2 = new Date(end2);
+  return s1 < e2 && e1 > s2;
+};
+
 function ActivityDetailPage() {
   const { id } = useParams();
   const invalidateActivityQueries = useInvalidateActivities();
@@ -72,6 +81,14 @@ function ActivityDetailPage() {
     enabled: !!id && !loading,
     staleTime: 60000,
     cacheTime: 5 * 60 * 1000,
+  });
+
+  // Fetch user's registered activities to check for schedule conflicts
+  const { data: myRegistrations = [] } = useQuery({
+    queryKey: ['activities', 'mine'],
+    queryFn: () => activitiesApi.listMine({ status: 'DANG_KY' }),
+    enabled: !!userId && !loading,
+    staleTime: 30000,
   });
 
   const notFound = isError && error?.response?.status === 404;
@@ -147,6 +164,19 @@ function ActivityDetailPage() {
 
     return { checkin, checkout };
   }, [activity?.registration?.attendanceHistory, activity?.registration?.checkInAt]);
+
+  // Check for schedule conflicts with user's registered activities
+  const hasScheduleConflict = useMemo(() => {
+    if (!activity?.startTime || !activity?.endTime || !myRegistrations.length) return false;
+
+    return myRegistrations.some((registration) => {
+      const regActivity = registration.activity;
+      if (!regActivity || regActivity.id === activity.id) return false;
+      if (!regActivity.startTime || !regActivity.endTime) return false;
+
+      return checkTimeOverlap(activity.startTime, activity.endTime, regActivity.startTime, regActivity.endTime);
+    });
+  }, [activity?.startTime, activity?.endTime, activity?.id, myRegistrations]);
 
   const handleOpenRegister = () => {
     setModalVariant('confirm');
@@ -798,6 +828,9 @@ function ActivityDetailPage() {
         cancellationDeadline={cancellationDeadlineLabel}
         attendanceMethod={activity?.attendanceMethod}
         attendanceMethodLabel={activity?.attendanceMethodLabel}
+        showConflictAlert={hasScheduleConflict}
+        activityStartTime={activity?.startTime}
+        confirmLoading={registerMutation.isPending}
       />
 
       <AttendanceModal

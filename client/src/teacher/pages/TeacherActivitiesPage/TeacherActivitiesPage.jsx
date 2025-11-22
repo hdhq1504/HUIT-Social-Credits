@@ -4,7 +4,7 @@ import classNames from 'classnames/bind';
 import { useQuery } from '@tanstack/react-query';
 import { Input, Select, DatePicker, Tag, Tooltip, ConfigProvider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faPenToSquare, faSort, faCircleDot, faSearch, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faPenToSquare, faSort, faSearch, faPlus } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import viVN from 'antd/locale/vi_VN';
 import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
@@ -98,7 +98,7 @@ export default function TeacherActivitiesPage() {
     setPageActions([
       {
         key: 'add',
-        label: 'Thêm mới hoạt động mới',
+        label: 'Thêm hoạt động mới',
         icon: <FontAwesomeIcon icon={faPlus} />,
         type: 'primary',
         className: 'admin-navbar__add-button',
@@ -117,23 +117,25 @@ export default function TeacherActivitiesPage() {
   const filteredActivities = useMemo(() => {
     const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
-    return activities.filter((activity) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        [activity.title, activity.location, activity.code]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(normalizedSearch));
+    return activities
+      .filter((activity) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          [activity.title, activity.location, activity.code]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(normalizedSearch));
 
-      const matchesGroup = selectedGroup === 'all' || activity.pointGroup === selectedGroup;
+        const matchesGroup = selectedGroup === 'all' || activity.pointGroup === selectedGroup;
 
-      const matchesApprovalStatus =
-        selectedApprovalStatus === 'all' || activity.approvalStatus === selectedApprovalStatus;
+        const matchesApprovalStatus =
+          selectedApprovalStatus === 'all' || activity.approvalStatus === selectedApprovalStatus;
 
-      const matchesDate =
-        !selectedDate || (activity.startTime && dayjs(activity.startTime).isSame(selectedDate, 'day'));
+        const matchesDate =
+          !selectedDate || (activity.startTime && dayjs(activity.startTime).isSame(selectedDate, 'day'));
 
-      return matchesSearch && matchesGroup && matchesApprovalStatus && matchesDate;
-    });
+        return matchesSearch && matchesGroup && matchesApprovalStatus && matchesDate;
+      })
+      .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
   }, [activities, debouncedSearch, selectedGroup, selectedApprovalStatus, selectedDate]);
 
   useEffect(() => {

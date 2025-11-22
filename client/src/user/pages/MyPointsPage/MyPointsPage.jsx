@@ -53,14 +53,24 @@ function MyPointsPage() {
     const determineStatus = (state) => {
       switch (state) {
         case 'completed':
+          return { key: 'completed', label: 'Đã hoàn thành' };
         case 'feedback_accepted':
           return { key: 'confirmed', label: 'Đã xác nhận' };
         case 'feedback_denied':
           return { key: 'denied', label: 'Từ chối' };
         case 'feedback_pending':
-          return { key: 'pending', label: 'Chưa gửi minh chứng' };
+          return { key: 'pending', label: 'Chờ gửi minh chứng' };
         case 'feedback_reviewing':
-          return { key: 'pending', label: 'Đang phản hồi' };
+        case 'attendance_review':
+          return { key: 'reviewing', label: 'Đang xét duyệt' };
+        case 'feedback_waiting':
+          return { key: 'waiting', label: 'Đang chờ' };
+        case 'ended':
+          return { key: 'ended', label: 'Đã kết thúc' };
+        case 'canceled':
+          return { key: 'canceled', label: 'Đã hủy' };
+        case 'absent':
+          return { key: 'absent', label: 'Vắng mặt' };
         default:
           return { key: 'pending', label: 'Đang cập nhật' };
       }
@@ -168,12 +178,15 @@ function MyPointsPage() {
           let tagClass = 'pending';
           let icon = faClock;
 
-          if (status === 'confirmed') {
+          if (status === 'completed' || status === 'confirmed') {
             tagClass = 'confirmed';
             icon = faCheck;
-          } else if (status === 'denied') {
+          } else if (status === 'denied' || status === 'canceled' || status === 'absent') {
             tagClass = 'denied';
             icon = faCircleXmark;
+          } else if (status === 'reviewing' || status === 'waiting') {
+            tagClass = 'reviewing';
+            icon = faClock;
           }
 
           return (
@@ -183,6 +196,7 @@ function MyPointsPage() {
                 'my-points__tag--confirmed': tagClass === 'confirmed',
                 'my-points__tag--pending': tagClass === 'pending',
                 'my-points__tag--denied': tagClass === 'denied',
+                'my-points__tag--reviewing': tagClass === 'reviewing',
               })}
             >
               <FontAwesomeIcon icon={icon} className={cx('my-points__tag-icon')} aria-hidden />
@@ -247,7 +261,6 @@ function MyPointsPage() {
     <section className={cx('my-points')}>
       {contextHolder}
       <div className={cx('my-points__container')}>
-        {/* Header */}
         <header className={cx('my-points__header')}>
           <nav className={cx('my-points__breadcrumb')} aria-label="Breadcrumb">
             <Link to={ROUTE_PATHS.PUBLIC.HOME}>Trang chủ</Link> / <span>Kết quả của tôi</span>
@@ -256,7 +269,6 @@ function MyPointsPage() {
           <Label title="Kết quả" highlight="của tôi" leftDivider={false} rightDivider showSubtitle={false} />
         </header>
 
-        {/* Progress Section */}
         <article className={cx('my-points__progress')}>
           <ProgressSection
             currentPoints={progressSection.currentPoints}
@@ -274,7 +286,6 @@ function MyPointsPage() {
           />
         </article>
 
-        {/* Bảng điểm chi tiết */}
         <article className={cx('my-points__scores')} id="score-table" aria-label="Bảng điểm chi tiết">
           <div className={cx('my-points__scores-header')}>
             <h2 className={cx('my-points__scores-title')}>Bảng điểm chi tiết</h2>

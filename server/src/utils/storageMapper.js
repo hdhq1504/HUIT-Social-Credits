@@ -41,6 +41,12 @@ const resolvePublicUrl = (bucket, path, fallbackUrl = null) => {
   }
 };
 
+/**
+ * Chuẩn hóa metadata của file lưu trữ.
+ * @param {Object|string} value - Metadata hoặc đường dẫn file.
+ * @param {Object} options - Tùy chọn (allowedBuckets, fallbackBucket).
+ * @returns {Object|null} Metadata đã chuẩn hóa.
+ */
 export const sanitizeStorageMetadata = (
   value,
   { allowedBuckets = defaultBucketSet, fallbackBucket = null } = {},
@@ -113,6 +119,12 @@ export const sanitizeStorageMetadata = (
   return metadata;
 };
 
+/**
+ * Chuẩn hóa danh sách file lưu trữ.
+ * @param {Array} list - Danh sách file.
+ * @param {Object} options - Tùy chọn.
+ * @returns {Array<Object>} Danh sách metadata đã chuẩn hóa.
+ */
 export const sanitizeStorageList = (
   list,
   { allowedBuckets = defaultBucketSet, fallbackBucket = null, limit = 10 } = {},
@@ -135,6 +147,12 @@ export const sanitizeStorageList = (
   return sanitized.slice(0, limit);
 };
 
+/**
+ * Map metadata file sang format response API.
+ * @param {Object|string} value - Metadata hoặc đường dẫn.
+ * @param {Object} options - Tùy chọn.
+ * @returns {Object|null} Object response.
+ */
 export const mapStorageForResponse = (value, { fallbackBucket = null } = {}) => {
   if (!value) return null;
   if (typeof value === "string") {
@@ -172,6 +190,12 @@ export const mapStorageForResponse = (value, { fallbackBucket = null } = {}) => 
   };
 };
 
+/**
+ * Map danh sách file sang format response API.
+ * @param {Array} list - Danh sách file.
+ * @param {Object} options - Tùy chọn.
+ * @returns {Array<Object>} Danh sách response.
+ */
 export const mapStorageListForResponse = (list, { fallbackBucket = null } = {}) => {
   if (!Array.isArray(list)) return [];
   return list
@@ -179,6 +203,11 @@ export const mapStorageListForResponse = (list, { fallbackBucket = null } = {}) 
     .filter(Boolean);
 };
 
+/**
+ * Trích xuất danh sách đường dẫn file từ danh sách metadata.
+ * @param {Array} list - Danh sách metadata.
+ * @returns {Array<string>} Danh sách đường dẫn.
+ */
 export const extractStoragePaths = (list) => {
   if (!Array.isArray(list)) return [];
   return list

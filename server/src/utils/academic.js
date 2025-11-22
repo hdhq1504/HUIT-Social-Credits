@@ -44,6 +44,11 @@ const deriveStaticSemester = (value) => {
   return { semester, academicYear };
 };
 
+/**
+ * Xác định thông tin học kỳ dựa trên ngày tháng.
+ * @param {Date|string|number} value - Ngày cần xác định.
+ * @returns {Object} Thông tin học kỳ và năm học.
+ */
 export const deriveSemesterInfo = (value) => deriveStaticSemester(value);
 
 const mapAcademicYearLabel = (year) => {
@@ -59,6 +64,11 @@ const normalizeIso = (value) => {
   return date ? date.toISOString() : null;
 };
 
+/**
+ * Xác định học kỳ và năm học dựa trên ngày, có tra cứu database.
+ * @param {Date|string|number} value - Ngày cần xác định.
+ * @returns {Promise<Object>} Thông tin chi tiết về học kỳ và năm học.
+ */
 export const resolveAcademicPeriodForDate = async (value) => {
   const targetDate = toDate(value);
   if (!targetDate) {
@@ -104,6 +114,12 @@ export const resolveAcademicPeriodForDate = async (value) => {
   };
 };
 
+/**
+ * Map dữ liệu học kỳ từ database sang format API.
+ * @param {Object} semester - Record học kỳ từ Prisma.
+ * @param {Object} academicYear - Record năm học tương ứng.
+ * @returns {Object|null} Object học kỳ đã format.
+ */
 export const mapSemesterRecord = (semester, academicYear) => {
   if (!semester) return null;
   const year = academicYear || semester.namHoc || null;
@@ -127,6 +143,11 @@ export const mapSemesterRecord = (semester, academicYear) => {
   };
 };
 
+/**
+ * Map dữ liệu năm học từ database sang format API.
+ * @param {Object} year - Record năm học từ Prisma.
+ * @returns {Object|null} Object năm học đã format.
+ */
 export const mapAcademicYearRecord = (year) => {
   if (!year) return null;
   return {

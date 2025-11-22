@@ -1,6 +1,11 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
 
+/**
+ * Lấy danh sách sinh viên (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getStudents = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, search, khoaId, lopId, status } = req.query;
@@ -55,6 +60,7 @@ export const getStudents = async (req, res) => {
                 select: {
                   id: true,
                   tenKhoa: true,
+                  maKhoa: true
                 }
               }
             }
@@ -86,6 +92,7 @@ export const getStudents = async (req, res) => {
       classCode: student.lopHoc?.maLop || null,
       className: student.lopHoc?.tenLop || null,
       department: student.lopHoc?.khoa?.tenKhoa || null,
+      departmentCode: student.lopHoc?.khoa?.maKhoa || null,
       departmentId: student.lopHoc?.khoa?.id || null,
     }));
 
@@ -104,6 +111,11 @@ export const getStudents = async (req, res) => {
   }
 };
 
+/**
+ * Tạo sinh viên mới (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const createStudent = async (req, res) => {
   try {
     const { maSV, hoTen, email, password, lopHocId, ngaySinh, gioiTinh, soDT } = req.body;
@@ -145,6 +157,11 @@ export const createStudent = async (req, res) => {
   }
 };
 
+/**
+ * Cập nhật thông tin sinh viên (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -187,6 +204,11 @@ export const updateStudent = async (req, res) => {
   }
 };
 
+/**
+ * Xóa sinh viên (Soft delete).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -202,6 +224,11 @@ export const deleteStudent = async (req, res) => {
   }
 }
 
+/**
+ * Lấy danh sách lớp theo khoa.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getClassesByFaculty = async (req, res) => {
   try {
     const { khoaId } = req.params;
@@ -216,6 +243,11 @@ export const getClassesByFaculty = async (req, res) => {
   }
 }
 
+/**
+ * Lấy danh sách khoa.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getFaculties = async (req, res) => {
   try {
     const faculties = await prisma.khoa.findMany({

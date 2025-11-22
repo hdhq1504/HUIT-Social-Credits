@@ -50,6 +50,7 @@ import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@/api/activities.api';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
 import { sanitizeHtml } from '@/utils/sanitize';
 import useToast from '@/components/Toast/Toast';
+import fallbackImage from '@/assets/images/fallback-cover.png';
 import styles from './ActivitiesDetailPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -293,12 +294,18 @@ function ActivitiesDetailPage() {
   // Sinh viên tham gia
   const participantData = useMemo(
     () =>
-      (activity?.participantRegistrations ?? []).map((registration, index) => ({
-        key: registration.id || `registration-${index}`,
-        order: index + 1,
-        ...registration,
-        user: registration.student || registration.user || null,
-      })),
+      (activity?.participantRegistrations ?? [])
+        .map((registration, index) => ({
+          key: registration.id || `registration-${index}`,
+          order: index + 1,
+          ...registration,
+          user: registration.student || registration.user || null,
+        }))
+        .sort((a, b) => {
+          const aTime = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
+          const bTime = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
+          return bTime - aTime;
+        }),
     [activity?.participantRegistrations],
   );
 
@@ -436,7 +443,7 @@ function ActivitiesDetailPage() {
           <Row gutter={[20, 20]}>
             <Col xs={24} md={8} lg={6}>
               <Image
-                src={activity.coverImage || 'https://placehold.co/250x250/eeee/00008B?text=HUIT'}
+                src={activity.coverImage || fallbackImage}
                 alt={activity.title}
                 className={cx('activity-detail__image')}
                 preview={false}

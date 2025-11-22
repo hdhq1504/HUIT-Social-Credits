@@ -1,15 +1,15 @@
+import { lazy } from 'react';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { DefaultLayout, HeaderOnly } from '@/layouts';
-import {
-  HomePage,
-  ListActivitiesPage,
-  ActivityDetailPage,
-  MyActivitiesPage,
-  MyPointsPage,
-  ProfilePage,
-  RollCallPage,
-  FeedbackPage,
-} from '@/pages';
+
+const HomePage = lazy(() => import('@/user/pages/HomePage/HomePage'));
+const ListActivitiesPage = lazy(() => import('@/user/pages/ListActivitiesPage/ListActivitiesPage'));
+const ActivityDetailPage = lazy(() => import('@/user/pages/ActivityDetailPage/ActivityDetailPage'));
+const MyActivitiesPage = lazy(() => import('@/user/pages/MyActivitiesPage/MyActivitiesPage'));
+const MyPointsPage = lazy(() => import('@/user/pages/MyPointsPage/MyPointsPage'));
+const ProfilePage = lazy(() => import('@/user/pages/ProfilePage/ProfilePage'));
+const RollCallPage = lazy(() => import('@/user/pages/RollCallPage/RollCallPage'));
+const FeedbackPage = lazy(() => import('@/user/pages/FeedbackPage/FeedbackPage'));
 
 export const publicRoutes = [
   {

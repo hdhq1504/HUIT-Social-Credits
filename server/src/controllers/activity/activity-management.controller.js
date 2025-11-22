@@ -31,6 +31,7 @@ export const createActivity = async (req, res) => {
     attendanceMethod,
     registrationDeadline,
     cancellationDeadline,
+    isFeatured,
   } = req.body;
   const hasCoverImage = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
     || Object.prototype.hasOwnProperty.call(req.body ?? {}, "hinhAnh");
@@ -82,7 +83,8 @@ export const createActivity = async (req, res) => {
       nguoiTaoId: req.user?.sub || null,
       nguoiPhuTrachId: req.user?.sub || null,
       trangThaiDuyet: isTeacher ? 'CHO_DUYET' : 'DA_DUYET',
-      isPublished: isAdmin, // Only publish immediately if admin creates it
+      isPublished: isAdmin,
+      isFeatured: typeof isFeatured === 'boolean' ? isFeatured : false,
     };
 
     const newActivity = await prisma.hoatDong.create({
@@ -210,6 +212,10 @@ export const updateActivity = async (req, res) => {
       hocKyId: academicPeriod.hocKyId,
       namHocId: academicPeriod.namHocId,
     };
+
+    if (typeof isFeatured === 'boolean') {
+      updateData.isFeatured = isFeatured;
+    }
 
     if (hasCoverImage) {
       updateData.hinhAnh = coverResult?.metadata ?? null;

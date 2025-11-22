@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 import prisma from "../prisma.js";
+import { uploadBase64Image, removeFiles, buildPublicUrl } from "../utils/supabaseStorage.js";
+import { env } from "../env.js";
 
 const ROLE_VALUES = new Set(["SINHVIEN", "GIANGVIEN", "NHANVIEN", "ADMIN"]);
 const STATUS_VALUES = new Set(["active", "inactive"]);
@@ -134,6 +136,11 @@ const assertAdmin = (req) => {
   }
 };
 
+/**
+ * Lấy danh sách người dùng (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listUsers = async (req, res) => {
   try {
     assertAdmin(req);
@@ -193,6 +200,11 @@ export const listUsers = async (req, res) => {
   });
 };
 
+/**
+ * Lấy thông tin chi tiết người dùng theo ID (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getUserById = async (req, res) => {
   try {
     assertAdmin(req);
@@ -233,6 +245,11 @@ export const getUserById = async (req, res) => {
   }
 };
 
+/**
+ * Tạo người dùng mới (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const createUser = async (req, res) => {
   try {
     assertAdmin(req);
@@ -240,7 +257,7 @@ export const createUser = async (req, res) => {
     return res.status(error.statusCode || 500).json({ error: error.message });
   }
 
-  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive } =
+  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive, avatarImage } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
@@ -289,6 +306,26 @@ export const createUser = async (req, res) => {
       },
     });
 
+    // Handle avatar upload if provided
+    if (avatarImage?.dataUrl) {
+      try {
+        const uploadResult = await uploadBase64Image({
+          dataUrl: avatarImage.dataUrl,
+          bucket: env.SUPABASE_AVATAR_BUCKET,
+          pathPrefix: createdUser.id,
+          fileName: avatarImage.fileName || 'avatar',
+        });
+
+        await prisma.nguoiDung.update({
+          where: { id: createdUser.id },
+          data: { avatarUrl: uploadResult.url },
+        });
+      } catch (uploadError) {
+        console.error('Avatar upload failed:', uploadError);
+        // Continue without avatar if upload fails
+      }
+    }
+
     res.status(201).json({
       message: "Thêm người dùng thành công",
       user: mapUserForResponse(createdUser),
@@ -299,6 +336,11 @@ export const createUser = async (req, res) => {
   }
 };
 
+/**
+ * Cập nhật thông tin người dùng (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const updateUser = async (req, res) => {
   try {
     assertAdmin(req);
@@ -307,7 +349,7 @@ export const updateUser = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive } =
+  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive, avatarImage } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
@@ -332,7 +374,7 @@ export const updateUser = async (req, res) => {
   try {
     const existing = await prisma.nguoiDung.findUnique({
       where: { id },
-      select: { id: true, email: true },
+      select: { id: true, email: true, avatarUrl: true },
     });
 
     if (!existing) {
@@ -368,6 +410,48 @@ export const updateUser = async (req, res) => {
       updateData.matKhau = await bcrypt.hash(normalizedPassword, 10);
     }
 
+    // Handle avatar upload if provided
+    if (avatarImage) {
+      if (avatarImage === null) {
+        // Remove avatar
+        if (existing.avatarUrl) {
+          try {
+            // Extract path from URL to delete from storage
+            const oldPath = existing.avatarUrl.split('/').slice(-2).join('/');
+            await removeFiles(env.SUPABASE_AVATAR_BUCKET, [oldPath]);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup old avatar:', cleanupError);
+          }
+        }
+        updateData.avatarUrl = null;
+      } else if (avatarImage.dataUrl) {
+        // Upload new avatar
+        try {
+          const uploadResult = await uploadBase64Image({
+            dataUrl: avatarImage.dataUrl,
+            bucket: env.SUPABASE_AVATAR_BUCKET,
+            pathPrefix: id,
+            fileName: avatarImage.fileName || 'avatar',
+          });
+
+          // Clean up old avatar if exists
+          if (existing.avatarUrl) {
+            try {
+              const oldPath = existing.avatarUrl.split('/').slice(-2).join('/');
+              await removeFiles(env.SUPABASE_AVATAR_BUCKET, [oldPath]);
+            } catch (cleanupError) {
+              console.error('Failed to cleanup old avatar:', cleanupError);
+            }
+          }
+
+          updateData.avatarUrl = uploadResult.url;
+        } catch (uploadError) {
+          console.error('Avatar upload failed:', uploadError);
+          return res.status(500).json({ error: 'Không thể upload avatar' });
+        }
+      }
+    }
+
     const updatedUser = await prisma.nguoiDung.update({ where: { id }, data: updateData });
 
     res.json({ message: "Cập nhật người dùng thành công", user: mapUserForResponse(updatedUser) });
@@ -380,6 +464,11 @@ export const updateUser = async (req, res) => {
   }
 };
 
+/**
+ * Xóa người dùng (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const deleteUser = async (req, res) => {
   try {
     assertAdmin(req);

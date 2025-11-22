@@ -11,6 +11,7 @@ import avatar from '@assets/images/profile.png';
 import Notification from '@components/Notification/Notification';
 import notificationsApi, { NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY } from '@api/notifications.api';
 import useAuthStore from '@stores/useAuthStore';
+import http from '@utils/http';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import styles from './Header.module.scss';
 
@@ -22,6 +23,19 @@ function Header() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Fetch dữ liệu user hiện tại cho đồng bộ ảnh avatar
+  const { data: currentUserData } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const { data } = await http.get('/auth/me');
+      return data?.user ?? null;
+    },
+    enabled: isLoggedIn,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 30 * 1000, // 30 giây
+  });
   const { data: unreadData, refetch: refetchUnread } = useQuery({
     queryKey: NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
     queryFn: () => notificationsApi.getUnreadCount(),
@@ -110,11 +124,6 @@ function Header() {
 
   const renderLoggedInMenu = () => (
     <div className={cx('header__menu')}>
-      <div className={cx('header__menu-header')}>
-        {user?.role !== 'SINHVIEN' && (
-          <span>Xin chào {user?.fullName || user?.TenNguoiDung || user?.hoTen || user?.email}</span>
-        )}
-      </div>
 
       {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
       {user?.role !== 'ADMIN' && (
@@ -256,7 +265,11 @@ function Header() {
           >
             <div className={cx('header__avatar')}>
               {isLoggedIn ? (
-                <img className={cx('header__avatar-image')} src={user?.AnhDaiDien || avatar} alt="Avatar" />
+                <img
+                  className={cx('header__avatar-image')}
+                  src={currentUserData?.avatarUrl || user?.avatarUrl || avatar}
+                  alt="Avatar"
+                />
               ) : (
                 <User className={cx('header__avatar-placeholder')} />
               )}

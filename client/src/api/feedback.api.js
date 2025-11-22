@@ -12,6 +12,11 @@ const normalizeParams = (params = {}) =>
   }, {});
 
 export const feedbackApi = {
+  /**
+   * Lấy danh sách phản hồi.
+   * @param {Object} params - Tham số truy vấn.
+   * @returns {Promise<Object>} Danh sách phản hồi.
+   */
   async list(params = {}) {
     const { data } = await http.get('/feedback', {
       params: normalizeParams(params),
@@ -19,11 +24,21 @@ export const feedbackApi = {
     return data;
   },
 
+  /**
+   * Lấy chi tiết phản hồi.
+   * @param {string|number} id - ID phản hồi.
+   * @returns {Promise<Object>} Chi tiết phản hồi.
+   */
   async detail(id) {
     const { data } = await http.get(`/feedback/${id}`);
     return data;
   },
 
+  /**
+   * Xử lý phản hồi (Duyệt/Từ chối/Trả lời).
+   * @param {Object} payload - Dữ liệu xử lý.
+   * @returns {Promise<Object>} Kết quả xử lý.
+   */
   async decide(payload = {}) {
     const { data } = await http.post('/feedback/decision', payload);
     return data;

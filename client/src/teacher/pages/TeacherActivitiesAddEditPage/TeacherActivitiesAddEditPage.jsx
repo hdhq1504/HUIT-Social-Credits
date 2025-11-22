@@ -245,17 +245,17 @@ const ActivitiesAddEditPage = () => {
         key: 'cancel',
         label: 'Hủy',
         icon: <FontAwesomeIcon icon={faXmark} />,
-        type: 'default',
-        className: 'activities__btn--cancel',
+        type: 'primary',
+        className: 'admin-navbar__btn--primary',
         onClick: handleBackToList,
         disabled: isMutating,
       },
       {
         key: 'save',
-        label: isMutating ? 'Đang lưu...' : 'Lưu hoạt động',
+        label: 'Lưu',
         icon: isMutating ? <Spin /> : <FontAwesomeIcon icon={faFloppyDisk} />,
         type: 'primary',
-        className: 'activities__btn--save',
+        className: 'admin-navbar__btn--primary',
         onClick: () => form.submit(),
         loading: isMutating,
       },
@@ -626,8 +626,8 @@ const ActivitiesAddEditPage = () => {
                   <div className={cx('activities__status-icon', 'activities__status-icon--blue')}>
                     <FontAwesomeIcon icon={faUser} />
                   </div>
-                  <div className={cx('activities-add-edit-page__info-item')}>
-                    <span>Giảng viên</span>
+                  <div className={cx('activities__status-text')}>
+                    <span>Người tạo</span>
                     <p>{user?.hoTen || user?.email || 'Chưa cập nhật'}</p>
                   </div>
                 </div>

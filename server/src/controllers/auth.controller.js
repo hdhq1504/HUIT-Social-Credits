@@ -22,6 +22,11 @@ const buildForgotPasswordResponse = (message, otp) => {
   return { message };
 };
 
+/**
+ * Đăng nhập người dùng.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const login = async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: "Email và mật khẩu là bắt buộc" });
@@ -43,6 +48,11 @@ export const login = async (req, res) => {
   });
 };
 
+/**
+ * Lấy thông tin người dùng hiện tại (Me).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const me = async (req, res) => {
   const user = await prisma.nguoiDung.findUnique({
     where: { id: req.user.sub },
@@ -79,6 +89,11 @@ export const me = async (req, res) => {
   });
 };
 
+/**
+ * Làm mới access token bằng refresh token.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const refresh = async (req, res) => {
   const token = req.cookies?.refresh_token;
   if (!token) return res.status(401).json({ error: "Missing refresh token" });
@@ -99,6 +114,11 @@ export const refresh = async (req, res) => {
   }
 };
 
+/**
+ * Đăng xuất người dùng.
+ * @param {Object} _req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const logout = async (_req, res) => {
   res.clearCookie("refresh_token", { ...cookieOpts, maxAge: 0 });
   res.json({ message: "Đã đăng xuất" });
@@ -108,6 +128,11 @@ export const logout = async (_req, res) => {
 
 // ... (existing code)
 
+/**
+ * Yêu cầu đặt lại mật khẩu (Gửi OTP).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const requestPasswordReset = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   if (!email) {
@@ -168,6 +193,11 @@ export const requestPasswordReset = async (req, res) => {
   );
 };
 
+/**
+ * Xác thực mã OTP đặt lại mật khẩu.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const verifyPasswordResetOtp = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   const otp = req.body?.otp?.trim();
@@ -197,6 +227,11 @@ export const verifyPasswordResetOtp = async (req, res) => {
   return res.json({ message: "Mã xác nhận hợp lệ" });
 };
 
+/**
+ * Đặt lại mật khẩu mới bằng OTP.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const resetPasswordWithOtp = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   const otp = req.body?.otp?.trim();
@@ -242,6 +277,11 @@ export const resetPasswordWithOtp = async (req, res) => {
   return res.json({ message: "Đặt lại mật khẩu thành công" });
 };
 
+/**
+ * Đổi mật khẩu (đã đăng nhập).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const changePassword = async (req, res) => {
   const userId = req.user?.sub;
   const { currentPassword, newPassword } = req.body || {};

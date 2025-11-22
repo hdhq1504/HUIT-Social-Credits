@@ -235,8 +235,8 @@ function RollCallPage() {
                 fileName: file?.name || `attendance_${Date.now()}.jpg`,
               }
             : undefined,
-          ...(descriptorPayload ? { faceDescriptor: descriptorPayload } : {}),
-          ...(faceErrorPayload && !descriptorPayload ? { faceError: faceErrorPayload } : {}),
+          faceDescriptor,
+          faceError,
         },
       });
     },

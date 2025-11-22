@@ -1,5 +1,10 @@
 import prisma from "../prisma.js";
 
+/**
+ * Lấy danh sách giảng viên (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getTeachers = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, search, status } = req.query;
@@ -95,6 +100,11 @@ export const getTeachers = async (req, res) => {
   }
 };
 
+/**
+ * Phân công chủ nhiệm cho giảng viên.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const assignHomeroom = async (req, res) => {
   try {
     const { teacherId, classIds } = req.body; // classIds is array of strings
@@ -148,6 +158,11 @@ export const assignHomeroom = async (req, res) => {
   }
 }
 
+/**
+ * Lấy danh sách lớp học khả dụng cho phân công.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getAvailableClasses = async (req, res) => {
   try {
     // Get classes that don't have a homeroom teacher OR just all classes?

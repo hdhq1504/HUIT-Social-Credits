@@ -14,6 +14,7 @@ import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
 import { formatDateTime } from '@utils/datetime';
 import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
+import fallbackImage from '@/assets/images/fallback-cover.png';
 import styles from './CardActivity.module.scss';
 
 const cx = classNames.bind(styles);
@@ -558,7 +559,10 @@ function CardActivity(props) {
         };
       case 'completed':
         return {
-          buttons: [btn(L.details, openDetails), btn(L.complete, () => onComplete?.(activity), { variant: 'success' })],
+          buttons: [
+            btn(L.details, openDetails),
+            btn(L.complete, () => onComplete?.(activity), { variant: 'success', disabled: true }),
+          ],
         };
       case 'canceled':
         return {
@@ -576,7 +580,6 @@ function CardActivity(props) {
           buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
         };
       case 'check_in':
-        // If already checked in, show disabled button
         if (hasCheckin && !hasCheckout) {
           return {
             status: isCheckoutReady
@@ -592,7 +595,6 @@ function CardActivity(props) {
           };
         }
 
-        // Not checked in yet
         return {
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
@@ -712,7 +714,7 @@ function CardActivity(props) {
       {/* toast context holder */}
       {contextHolder}
       <div className={cx('activity-card__cover')}>
-        <img src={coverImage} alt={title} className={cx('activity-card__img')} />{' '}
+        <img src={coverImage || fallbackImage} alt={title} className={cx('activity-card__img')} />{' '}
         {isFeatured && <div className={cx('activity-card__badge')}>{badgeText}</div>}
       </div>
 
@@ -799,7 +801,7 @@ function CardActivity(props) {
         </div>
       </div>
 
-      {/* Register modal: truyền props cần thiết, confirmLoading từ state */}
+      {/* Modal đăng ký hoạt động */}
       <RegisterModal
         open={registerModalOpen}
         onCancel={handleCloseRegister}
@@ -819,7 +821,7 @@ function CardActivity(props) {
         {...registerModalProps}
       />
 
-      {/* CheckModal: điểm danh (camera / upload) */}
+      {/* Modal điểm danh hoạt động (checkin/checkout) */}
       <AttendanceModal
         open={checkModalOpen}
         onCancel={handleCloseAttendance}
@@ -836,7 +838,7 @@ function CardActivity(props) {
         phase={attendanceStep}
       />
 
-      {/* FeedbackModal chỉ mở khi user muốn gửi phản hồi */}
+      {/* Modal phản hồi (chỉ mở khi hệ thống chưa cộng điểm trong vòng 1-2 ngày) */}
       <FeedbackModal
         open={feedbackModalOpen}
         onSubmit={handleSubmitFeedback}

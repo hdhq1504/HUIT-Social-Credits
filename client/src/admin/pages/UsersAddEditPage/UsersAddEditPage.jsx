@@ -1,14 +1,15 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Button, Col, Form, Input, Row, Select, Spin, Switch } from 'antd';
+import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faFloppyDisk, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faFloppyDisk, faUserPlus, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
+import { fileToDataUrl } from '@/utils/file';
 import styles from './UsersAddEditPage.module.scss';
 
 const cx = classNames.bind(styles);
@@ -20,7 +21,7 @@ const ROLE_OPTIONS = [
   { label: 'Quản trị viên', value: 'ADMIN' },
 ];
 
-const buildPayloadFromValues = (values) => ({
+const buildPayloadFromValues = (values, avatarData) => ({
   fullName: values.fullName?.trim(),
   email: values.email?.trim(),
   role: values.role,
@@ -31,6 +32,7 @@ const buildPayloadFromValues = (values) => ({
   departmentCode: values.departmentCode?.trim() || undefined,
   phoneNumber: values.phoneNumber?.trim() || undefined,
   isActive: values.isActive,
+  avatarImage: avatarData,
 });
 
 const UsersAddEditPage = () => {
@@ -41,6 +43,8 @@ const UsersAddEditPage = () => {
   const isEditMode = Boolean(id);
   const { setBreadcrumbs, setPageActions } = useContext(AdminPageContext);
   const { contextHolder, open: openToast } = useToast();
+  const [avatarFileList, setAvatarFileList] = useState([]);
+  const [avatarData, setAvatarData] = useState(null);
 
   const handleBackToList = useCallback(() => {
     navigate(ROUTE_PATHS.ADMIN.USERS);
@@ -110,6 +114,18 @@ const UsersAddEditPage = () => {
       password: '',
       confirmPassword: '',
     });
+
+    // Load existing avatar if present
+    if (user.avatarUrl) {
+      setAvatarFileList([
+        {
+          uid: '-1',
+          name: 'avatar',
+          status: 'done',
+          url: user.avatarUrl,
+        },
+      ]);
+    }
   }, [detailQuery.data, form, isEditMode]);
 
   const createMutation = useMutation({
@@ -136,8 +152,25 @@ const UsersAddEditPage = () => {
     },
   });
 
-  const handleSubmit = (values) => {
-    const payload = buildPayloadFromValues(values);
+  const handleSubmit = async (values) => {
+    let avatarPayload = avatarData;
+
+    // Process new avatar file if uploaded
+    if (avatarFileList.length > 0 && avatarFileList[0].originFileObj) {
+      try {
+        const file = avatarFileList[0].originFileObj;
+        const dataUrl = await fileToDataUrl(file);
+        avatarPayload = {
+          dataUrl,
+          fileName: file.name,
+        };
+      } catch {
+        openToast({ message: 'Không thể xử lý ảnh avatar', variant: 'danger' });
+        return;
+      }
+    }
+
+    const payload = buildPayloadFromValues(values, avatarPayload);
 
     if (isEditMode) {
       updateMutation.mutate(payload);
@@ -195,6 +228,53 @@ const UsersAddEditPage = () => {
                   ]}
                 >
                   <Input placeholder="ví dụ: sinhvien@huit.edu.vn" allowClear />
+                </Form.Item>
+              </Col>
+
+              {/* Avatar Upload */}
+              <Col xs={24}>
+                <Form.Item label="Avatar người dùng">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <Avatar
+                      size={80}
+                      src={avatarFileList[0]?.url || avatarFileList[0]?.thumbUrl}
+                      icon={<FontAwesomeIcon icon={faCamera} />}
+                      style={{ backgroundColor: '#f0f0f0' }}
+                    />
+                    <Upload
+                      listType="picture"
+                      fileList={avatarFileList}
+                      beforeUpload={(file) => {
+                        const isImage = file.type.startsWith('image/');
+                        if (!isImage) {
+                          openToast({ message: 'Chỉ chấp nhận file ảnh!', variant: 'danger' });
+                          return Upload.LIST_IGNORE;
+                        }
+                        const isLt5M = file.size / 1024 / 1024 < 5;
+                        if (!isLt5M) {
+                          openToast({ message: 'Ảnh phải nhỏ hơn 5MB!', variant: 'danger' });
+                          return Upload.LIST_IGNORE;
+                        }
+                        return false;
+                      }}
+                      onChange={({ fileList: newFileList }) => {
+                        setAvatarFileList(newFileList.slice(-1));
+                      }}
+                      onRemove={() => {
+                        setAvatarFileList([]);
+                        setAvatarData(null);
+                      }}
+                      maxCount={1}
+                      accept="image/*"
+                    >
+                      <Button icon={<FontAwesomeIcon icon={faCamera} />}>
+                        {avatarFileList.length > 0 ? 'Thay đổi avatar' : 'Upload avatar'}
+                      </Button>
+                    </Upload>
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
+                    Hỗ trợ: JPG, PNG, WEBP. Kích thước tối đa: 5MB
+                  </div>
                 </Form.Item>
               </Col>
 

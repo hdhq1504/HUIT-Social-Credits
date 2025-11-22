@@ -18,7 +18,7 @@ import useAuthStore from '@stores/useAuthStore';
 import Button from '../Button/Button';
 import useToast from '@components/Toast/Toast';
 import Label from '../Label/Label';
-import fallbackImage from '@assets/images/activity-cover.png';
+import fallbackImage from '@assets/images/fallback-cover.png';
 import styles from './ProofStatusSection.module.scss';
 
 const cx = classNames.bind(styles);
@@ -80,7 +80,7 @@ function ProofStatusSection() {
           label: 'Đang xử lý',
         };
 
-        const reason = mapping.status === 'rejected' && feedback?.content ? String(feedback.content).trim() : null;
+        const reason = mapping.status === 'rejected' && feedback?.reason ? String(feedback.reason).trim() : null;
 
         const infoParts = [];
         if (activity?.pointGroupLabel) infoParts.push(activity.pointGroupLabel);

@@ -8,6 +8,10 @@ const supabaseClient = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
   })
   : null;
 
+/**
+ * Kiểm tra xem Supabase đã được cấu hình chưa.
+ * @returns {boolean} True nếu đã cấu hình.
+ */
 export const isSupabaseConfigured = () => Boolean(supabaseClient);
 
 const ensureClient = () => {
@@ -70,6 +74,16 @@ export const buildPublicUrl = (bucket, path) => {
   return null;
 };
 
+/**
+ * Upload ảnh base64 lên Supabase Storage.
+ * @param {Object} params - Tham số upload.
+ * @param {string} params.dataUrl - Chuỗi base64 data URL.
+ * @param {string} params.bucket - Tên bucket.
+ * @param {string} params.pathPrefix - Tiền tố đường dẫn.
+ * @param {string} params.fileName - Tên file (tùy chọn).
+ * @param {Object} params.metadata - Metadata tùy chỉnh (tùy chọn).
+ * @returns {Promise<Object>} Thông tin file đã upload.
+ */
 export const uploadBase64Image = async ({
   dataUrl,
   bucket,
@@ -104,6 +118,12 @@ export const uploadBase64Image = async ({
   };
 };
 
+/**
+ * Xóa file khỏi Supabase Storage.
+ * @param {string} bucket - Tên bucket.
+ * @param {Array<string>} paths - Danh sách đường dẫn file cần xóa.
+ * @returns {Promise<void>}
+ */
 export const removeFiles = async (bucket, paths = []) => {
   if (!isSupabaseConfigured()) return;
   if (!bucket || !Array.isArray(paths) || !paths.length) return;
@@ -116,6 +136,13 @@ export const removeFiles = async (bucket, paths = []) => {
   }
 };
 
+/**
+ * Tạo đường dẫn lưu trữ cho minh chứng điểm danh.
+ * @param {Object} params - Tham số.
+ * @param {string} params.userId - ID người dùng.
+ * @param {string} params.activityId - ID hoạt động.
+ * @returns {string} Đường dẫn thư mục.
+ */
 export const buildAttendancePath = ({ userId, activityId }) => {
   const safeUser = userId?.replace(/[^a-zA-Z0-9_-]/g, "");
   const safeActivity = activityId?.replace(/[^a-zA-Z0-9_-]/g, "");

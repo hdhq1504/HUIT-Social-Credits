@@ -1,6 +1,3 @@
 import { createContext } from 'react';
 
-export const TeacherPageContext = createContext({
-  setPageActions: () => {},
-  setBreadcrumbs: () => {},
-});
+export const TeacherPageContext = createContext(null);

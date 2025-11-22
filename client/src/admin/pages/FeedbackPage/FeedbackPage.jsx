@@ -104,7 +104,14 @@ function FeedbackPage() {
 
   const stats = data?.stats ?? {};
   const filters = data?.filters ?? {};
-  const feedbacks = data?.feedbacks ?? [];
+  const feedbacks = useMemo(() => {
+    const list = data?.feedbacks ?? [];
+    return list.sort((a, b) => {
+      const ta = new Date(a.submittedAt || 0).getTime();
+      const tb = new Date(b.submittedAt || 0).getTime();
+      return tb - ta;
+    });
+  }, [data?.feedbacks]);
   const totalItems = data?.pagination?.total ?? 0;
 
   useEffect(() => {

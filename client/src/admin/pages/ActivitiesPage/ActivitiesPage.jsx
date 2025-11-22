@@ -207,26 +207,28 @@ export default function ActivitiesPage() {
   const filteredActivities = useMemo(() => {
     const normalizedSearch = debouncedSearch.trim().toLowerCase();
 
-    return activities.filter((activity) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        [activity.title, activity.location, activity.code]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(normalizedSearch));
+    return activities
+      .filter((activity) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          [activity.title, activity.location, activity.code]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(normalizedSearch));
 
-      const matchesGroup = selectedGroup === 'all' || activity.pointGroup === selectedGroup;
+        const matchesGroup = selectedGroup === 'all' || activity.pointGroup === selectedGroup;
 
-      const statusCategory = deriveStatusCategory(activity);
-      const matchesStatus = selectedStatus === 'all' || statusCategory === selectedStatus;
+        const statusCategory = deriveStatusCategory(activity);
+        const matchesStatus = selectedStatus === 'all' || statusCategory === selectedStatus;
 
-      const matchesApprovalStatus =
-        selectedApprovalStatus === 'all' || activity.approvalStatus === selectedApprovalStatus;
+        const matchesApprovalStatus =
+          selectedApprovalStatus === 'all' || activity.approvalStatus === selectedApprovalStatus;
 
-      const matchesDate =
-        !selectedDate || (activity.startTime && dayjs(activity.startTime).isSame(selectedDate, 'day'));
+        const matchesDate =
+          !selectedDate || (activity.startTime && dayjs(activity.startTime).isSame(selectedDate, 'day'));
 
-      return matchesSearch && matchesGroup && matchesStatus && matchesDate && matchesApprovalStatus;
-    });
+        return matchesSearch && matchesGroup && matchesStatus && matchesDate && matchesApprovalStatus;
+      })
+      .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
   }, [activities, debouncedSearch, selectedGroup, selectedStatus, selectedDate, selectedApprovalStatus]);
 
   useEffect(() => {

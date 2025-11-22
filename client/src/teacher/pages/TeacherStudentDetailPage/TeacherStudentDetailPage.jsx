@@ -109,19 +109,22 @@ export default function TeacherStudentDetailPage() {
     {
       title: 'Tên hoạt động',
       dataIndex: ['hoatDong', 'ten'],
+      align: 'center',
       key: 'activityName',
     },
     {
       title: 'Loại',
       dataIndex: ['hoatDong', 'loai'],
+      align: 'center',
       key: 'loai',
       width: 150,
     },
     {
       title: 'Ngày tổ chức',
       dataIndex: ['hoatDong', 'ngayToChuc'],
+      align: 'center',
       key: 'ngayToChuc',
-      width: 120,
+      width: 150,
       render: (date) => (date ? new Date(date).toLocaleDateString('vi-VN') : '--'),
     },
     {
@@ -152,7 +155,7 @@ export default function TeacherStudentDetailPage() {
       title: 'Điểm danh',
       dataIndex: 'diemDanh',
       key: 'diemDanh',
-      width: 100,
+      width: 150,
       align: 'center',
       render: (value) => (value ? <Tag color="success">Có mặt</Tag> : <Tag>Vắng</Tag>),
     },
@@ -212,10 +215,10 @@ export default function TeacherStudentDetailPage() {
         ) : (
           <>
             <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="MSSV">{scoreData?.student?.maSV}</Descriptions.Item>
-              <Descriptions.Item label="Email">{scoreData?.student?.email}</Descriptions.Item>
+              <Descriptions.Item label="MSSV">{selectedStudent?.maSV}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedStudent?.email}</Descriptions.Item>
               <Descriptions.Item label="Lớp" span={2}>
-                {scoreData?.student?.lopHoc?.maLop} - {scoreData?.student?.lopHoc?.tenLop}
+                {data?.classInfo?.maLop} - {data?.classInfo?.tenLop}
               </Descriptions.Item>
               <Descriptions.Item label="Tổng điểm" span={2}>
                 <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--primary-color)' }}>

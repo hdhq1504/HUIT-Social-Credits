@@ -12,21 +12,43 @@ const normalizeParams = (params = {}) =>
   }, {});
 
 const registrationsApi = {
+  /**
+   * Lấy danh sách đăng ký (Admin).
+   * @param {Object} params - Tham số truy vấn.
+   * @returns {Promise<Object>} Danh sách đăng ký.
+   */
   async list(params = {}) {
     const { data } = await http.get('/registrations', { params: normalizeParams(params) });
     return data;
   },
 
+  /**
+   * Lấy chi tiết đăng ký.
+   * @param {string|number} id - ID đăng ký.
+   * @returns {Promise<Object>} Chi tiết đăng ký.
+   */
   async detail(id) {
     const { data } = await http.get(`/registrations/${id}`);
     return data;
   },
 
+  /**
+   * Xử lý đăng ký (Duyệt/Từ chối).
+   * @param {string|number} id - ID đăng ký.
+   * @param {Object} payload - Dữ liệu xử lý.
+   * @returns {Promise<Object>} Kết quả xử lý.
+   */
   async decide(id, payload = {}) {
     const { data } = await http.post(`/registrations/${id}/decision`, payload);
     return data;
   },
 
+  /**
+   * Lấy danh sách đăng ký theo hoạt động.
+   * @param {string|number} activityId - ID hoạt động.
+   * @param {Object} params - Tham số truy vấn.
+   * @returns {Promise<Object>} Danh sách đăng ký của hoạt động.
+   */
   async listByActivity(activityId, params = {}) {
     const { data } = await http.get(`/activities/${activityId}/registrations`, {
       params: normalizeParams(params),

@@ -6,6 +6,11 @@ export const COUNCIL_QUERY_KEYS = {
 };
 
 const councilApi = {
+  /**
+   * Lấy danh sách sinh viên thuộc hội đồng (theo bộ lọc).
+   * @param {Object} filters - Các bộ lọc (facultyCode, search, namHocId, hocKyId).
+   * @returns {Promise<Object>} Danh sách sinh viên và thông tin phân trang.
+   */
   getStudents: async (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);
@@ -17,6 +22,11 @@ const councilApi = {
     return response.data;
   },
 
+  /**
+   * Xuất danh sách sinh viên ra file PDF.
+   * @param {Object} filters - Các bộ lọc để xuất dữ liệu.
+   * @returns {Promise<void>} Tải xuống file PDF.
+   */
   exportPdf: async (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);
@@ -38,6 +48,11 @@ const councilApi = {
     window.URL.revokeObjectURL(url);
   },
 
+  /**
+   * Xuất danh sách sinh viên ra file Excel.
+   * @param {Object} filters - Các bộ lọc để xuất dữ liệu.
+   * @returns {Promise<void>} Tải xuống file Excel.
+   */
   exportExcel: async (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.facultyCode) params.append('facultyCode', filters.facultyCode);

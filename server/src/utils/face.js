@@ -32,6 +32,11 @@ const coerceArrayLike = (value) => {
   return null;
 };
 
+/**
+ * Chuẩn hóa descriptor khuôn mặt (mảng số).
+ * @param {Array|Object} descriptor - Descriptor đầu vào.
+ * @returns {Array<number>|null} Mảng descriptor đã chuẩn hóa hoặc null.
+ */
 export const normalizeDescriptor = (descriptor) => {
   const arrayLike = coerceArrayLike(descriptor);
   if (!arrayLike) return null;
@@ -42,6 +47,11 @@ export const normalizeDescriptor = (descriptor) => {
   return values;
 };
 
+/**
+ * Chuẩn hóa danh sách descriptor khuôn mặt.
+ * @param {Array} collection - Danh sách descriptor.
+ * @returns {Array<Array<number>>} Danh sách descriptor đã chuẩn hóa.
+ */
 export const normalizeDescriptorCollection = (collection) => {
   const arrayLike = coerceArrayLike(collection);
   if (!arrayLike) return [];
@@ -50,6 +60,12 @@ export const normalizeDescriptorCollection = (collection) => {
     .filter((descriptor) => Array.isArray(descriptor) && descriptor.length);
 };
 
+/**
+ * Tính khoảng cách Euclidean giữa 2 descriptor.
+ * @param {Array<number>} a - Descriptor A.
+ * @param {Array<number>} b - Descriptor B.
+ * @returns {number|null} Khoảng cách hoặc null nếu lỗi.
+ */
 export const computeDistance = (a, b) => {
   if (!Array.isArray(a) || !Array.isArray(b)) return null;
   if (a.length !== b.length) return null;
@@ -61,6 +77,15 @@ export const computeDistance = (a, b) => {
   return Math.sqrt(sum);
 };
 
+/**
+ * Đánh giá kết quả so khớp khuôn mặt.
+ * @param {Object} params - Tham số đầu vào.
+ * @param {Array} params.descriptor - Descriptor cần kiểm tra.
+ * @param {Array} params.profileDescriptors - Danh sách descriptor mẫu.
+ * @param {number} params.matchThreshold - Ngưỡng khớp (mặc định 0.45).
+ * @param {number} params.reviewThreshold - Ngưỡng cần xem xét (mặc định 0.6).
+ * @returns {Object} Kết quả đánh giá { status, score, reason }.
+ */
 export const evaluateFaceMatch = ({ descriptor, profileDescriptors, matchThreshold = MATCH_THRESHOLD, reviewThreshold = REVIEW_THRESHOLD }) => {
   const normalizedDescriptor = normalizeDescriptor(descriptor);
   if (!normalizedDescriptor) {
@@ -91,6 +116,11 @@ export const evaluateFaceMatch = ({ descriptor, profileDescriptors, matchThresho
   return { status: "REJECTED", score: bestScore };
 };
 
+/**
+ * Tóm tắt thông tin profile khuôn mặt.
+ * @param {Object} profile - Profile khuôn mặt từ DB.
+ * @returns {Object} Thông tin tóm tắt { enrolled, sampleCount, updatedAt }.
+ */
 export const summarizeFaceProfile = (profile) => {
   if (!profile) {
     return { enrolled: false, sampleCount: 0, updatedAt: null };

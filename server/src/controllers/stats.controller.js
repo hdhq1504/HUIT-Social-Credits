@@ -75,6 +75,11 @@ const safeTrim = (value) => {
   return trimmed || null;
 };
 
+/**
+ * Lấy tóm tắt tiến độ tích lũy điểm của sinh viên.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getProgressSummary = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -166,11 +171,11 @@ export const getProgressSummary = async (req, res) => {
       id: GROUP_ONE_KEY,
       name: "Nhóm 1",
       target: groupOneTarget,
-      current: groupOneRawPoints,
+      current: groupOneEffectivePoints,
       remaining: groupOneRemaining,
       status: groupOneStatus,
       note: groupOneNote,
-      value: `${groupOneRawPoints}/${groupOneTarget}`,
+      value: `${groupOneEffectivePoints}/${groupOneTarget}`,
       details: {
         rawPoints: groupOneRawPoints,
         effectivePoints: groupOneEffectivePoints,
@@ -315,6 +320,11 @@ const mapFeedbackSummaries = (feedbacks = []) =>
     avatarUrl: feedback.nguoiDung?.avatarUrl ?? null
   }));
 
+/**
+ * Lấy dữ liệu tổng quan cho Dashboard Admin.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getAdminDashboardOverview = async (req, res) => {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({ error: "Forbidden" });
@@ -406,6 +416,11 @@ export const getAdminDashboardOverview = async (req, res) => {
   res.json({ overview, chart, upcoming, feedbacks });
 };
 
+/**
+ * Lấy báo cáo thống kê chi tiết cho Admin.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getAdminReportsSummary = async (req, res) => {
   if (req.user?.role !== "ADMIN") {
     return res.status(403).json({ error: "Forbidden" });

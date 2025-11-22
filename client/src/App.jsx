@@ -1,7 +1,7 @@
-import { useEffect, Fragment } from 'react';
+import { useEffect, Fragment, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, Spin } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import { publicRoutes, protectedUserRoutes } from './routes/userRoutes';
 import { authRoutes } from './routes/authRoutes';
@@ -16,11 +16,19 @@ import TeacherLayout from './teacher/layouts/TeacherLayout/TeacherLayout';
 import useAuthStore from './stores/useAuthStore';
 import { ROUTE_PATHS } from './config/routes.config';
 
-import ActivitiesAddEditPage from './admin/pages/ActivitiesAddEditPage/ActivitiesAddEditPage';
-import ActivitiesDetailPage from './admin/pages/ActivitiesDetailPage/ActivitiesDetailPage';
-import FeedbackDetailPage from './admin/pages/FeedbackDetailPage/FeedbackDetailPage';
-import ScoringDetailPage from './admin/pages/ScoringDetailPage/ScoringDetailPage';
-import UsersAddEditPage from './admin/pages/UsersAddEditPage/UsersAddEditPage';
+// Lazy load admin detail pages
+const ActivitiesAddEditPage = lazy(() => import('./admin/pages/ActivitiesAddEditPage/ActivitiesAddEditPage'));
+const ActivitiesDetailPage = lazy(() => import('./admin/pages/ActivitiesDetailPage/ActivitiesDetailPage'));
+const FeedbackDetailPage = lazy(() => import('./admin/pages/FeedbackDetailPage/FeedbackDetailPage'));
+const ScoringDetailPage = lazy(() => import('./admin/pages/ScoringDetailPage/ScoringDetailPage'));
+const UsersAddEditPage = lazy(() => import('./admin/pages/UsersAddEditPage/UsersAddEditPage'));
+
+// Loading fallback
+const PageLoader = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+    <Spin size="large" tip="Đang tải..." />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,102 +71,104 @@ function App() {
     <ConfigProvider locale={viVN}>
       <QueryClientProvider client={queryClient}>
         <Router>
-          <ScrollToTop />
-          <Routes>
-            {authRoutes.map((route, index) => {
-              const Page = route.component;
-              return (
-                <Route
-                  key={`auth-${index}`}
-                  path={route.path}
-                  element={
-                    <GuestRoute>
-                      <Page />
-                    </GuestRoute>
-                  }
-                />
-              );
-            })}
+          <Suspense fallback={<PageLoader />}>
+            <ScrollToTop />
+            <Routes>
+              {authRoutes.map((route, index) => {
+                const Page = route.component;
+                return (
+                  <Route
+                    key={`auth-${index}`}
+                    path={route.path}
+                    element={
+                      <GuestRoute>
+                        <Page />
+                      </GuestRoute>
+                    }
+                  />
+                );
+              })}
 
-            <Route path={ROUTE_PATHS.PUBLIC.HOME} element={<RootRedirect />} />
+              <Route path={ROUTE_PATHS.PUBLIC.HOME} element={<RootRedirect />} />
 
-            {publicRoutes.slice(1).map((route, index) => {
-              const Page = route.component;
-              const Layout = route.layout || Fragment;
+              {publicRoutes.slice(1).map((route, index) => {
+                const Page = route.component;
+                const Layout = route.layout || Fragment;
 
-              return (
-                <Route
-                  key={`public-${index}`}
-                  path={route.path}
-                  element={
-                    <Layout>
-                      <Page />
-                    </Layout>
-                  }
-                />
-              );
-            })}
-
-            {protectedUserRoutes.map((route, index) => {
-              const Page = route.component;
-              const Layout = route.layout || Fragment;
-
-              return (
-                <Route
-                  key={`user-${index}`}
-                  path={route.path}
-                  element={
-                    <ProtectedRoute>
+                return (
+                  <Route
+                    key={`public-${index}`}
+                    path={route.path}
+                    element={
                       <Layout>
                         <Page />
                       </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-              );
-            })}
-
-            <Route
-              path={ROUTE_PATHS.ADMIN.ROOT}
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to={ROUTE_PATHS.ADMIN.DASHBOARD} replace />} />
-
-              {adminRoutes.map((route) => {
-                const Page = route.component;
-                return <Route key={route.path} path={route.path} element={<Page />} />;
+                    }
+                  />
+                );
               })}
 
-              <Route path="activities/create" element={<ActivitiesAddEditPage />} />
-              <Route path="activities/:id/edit" element={<ActivitiesAddEditPage />} />
-              <Route path="activities/:id" element={<ActivitiesDetailPage />} />
-              <Route path="scoring/:id" element={<ScoringDetailPage />} />
-              <Route path="feedback/:id" element={<FeedbackDetailPage />} />
-              <Route path="users/create" element={<UsersAddEditPage />} />
-              <Route path="users/:id/edit" element={<UsersAddEditPage />} />
-            </Route>
-
-            <Route
-              path={ROUTE_PATHS.TEACHER.ROOT}
-              element={
-                <ProtectedRoute allowedRoles={['GIANGVIEN']}>
-                  <TeacherLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to={ROUTE_PATHS.TEACHER.CLASSES} replace />} />
-              {teacherRoutes.map((route) => {
+              {protectedUserRoutes.map((route, index) => {
                 const Page = route.component;
-                return <Route key={route.path} path={route.path} element={<Page />} />;
-              })}
-            </Route>
+                const Layout = route.layout || Fragment;
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+                return (
+                  <Route
+                    key={`user-${index}`}
+                    path={route.path}
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Page />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                );
+              })}
+
+              <Route
+                path={ROUTE_PATHS.ADMIN.ROOT}
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to={ROUTE_PATHS.ADMIN.DASHBOARD} replace />} />
+
+                {adminRoutes.map((route) => {
+                  const Page = route.component;
+                  return <Route key={route.path} path={route.path} element={<Page />} />;
+                })}
+
+                <Route path="activities/create" element={<ActivitiesAddEditPage />} />
+                <Route path="activities/:id/edit" element={<ActivitiesAddEditPage />} />
+                <Route path="activities/:id" element={<ActivitiesDetailPage />} />
+                <Route path="scoring/:id" element={<ScoringDetailPage />} />
+                <Route path="feedback/:id" element={<FeedbackDetailPage />} />
+                <Route path="users/create" element={<UsersAddEditPage />} />
+                <Route path="users/:id/edit" element={<UsersAddEditPage />} />
+              </Route>
+
+              <Route
+                path={ROUTE_PATHS.TEACHER.ROOT}
+                element={
+                  <ProtectedRoute allowedRoles={['GIANGVIEN']}>
+                    <TeacherLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to={ROUTE_PATHS.TEACHER.CLASSES} replace />} />
+                {teacherRoutes.map((route) => {
+                  const Page = route.component;
+                  return <Route key={route.path} path={route.path} element={<Page />} />;
+                })}
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </Router>
       </QueryClientProvider>
     </ConfigProvider>

@@ -214,6 +214,11 @@ const fetchStudentsWithScores = async (filters) => {
   });
 };
 
+/**
+ * Lấy danh sách sinh viên đủ điều kiện cấp chứng nhận.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listStudentsCertifications = async (req, res) => {
   try {
     ensureManager(req);
@@ -225,6 +230,11 @@ export const listStudentsCertifications = async (req, res) => {
   res.json({ students });
 };
 
+/**
+ * Xuất danh sách chứng nhận ra file PDF.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const exportCertificationPdf = async (req, res) => {
   try {
     ensureManager(req);
@@ -254,6 +264,11 @@ export const exportCertificationPdf = async (req, res) => {
   res.send(buffer);
 };
 
+/**
+ * Xuất danh sách chứng nhận ra file Excel.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const exportCertificationExcel = async (req, res) => {
   try {
     ensureManager(req);
