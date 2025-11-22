@@ -42,7 +42,7 @@ import { ADMIN_DASHBOARD_QUERY_KEY } from '@/api/stats.api';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import { deriveSemesterInfo } from '@/utils/semester';
 import { fileToDataUrl } from '@/utils/file';
-import defaultCover from '@/assets/images/activity-cover.png';
+import defaultCover from '@/assets/images/fallback-cover.png';
 import styles from './ActivitiesAddEditPage.module.scss';
 
 dayjs.locale('vi');

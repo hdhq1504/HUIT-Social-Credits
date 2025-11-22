@@ -21,13 +21,8 @@ import studentRoutes from "./src/routes/student.routes.js";
 import teacherHomeroomRoutes from "./src/routes/teacher.homeroom.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
-/**
- * Express application entry point.
- * Configures middlewares, routes, and error handling.
- */
 const app = express();
 
-// Security middlewares
 app.use(helmet());
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
@@ -37,10 +32,8 @@ app.use(cors({
 }));
 app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 
-// Health check endpoint
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-// Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/notifications", notificationRoutes);
@@ -57,7 +50,6 @@ app.use("/api/teacher/homeroom", teacherHomeroomRoutes);
 app.use("/api/admin/teachers", adminTeacherRoutes);
 app.use("/api/admin/students", studentRoutes);
 
-// Global error handler
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "production") {
