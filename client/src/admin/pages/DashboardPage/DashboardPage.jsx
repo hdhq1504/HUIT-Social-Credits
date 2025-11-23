@@ -16,6 +16,10 @@ import {
   faPlus,
   faSpinner,
   faCheck,
+  faPenToSquare,
+  faXmark,
+  faCircleCheck,
+  faClipboardCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
@@ -72,7 +76,8 @@ export default function DashboardPage() {
     return rows.map((row) => ({
       name: row.label ?? `T${row.month ?? ''}`,
       group1: row.group1 ?? 0,
-      group23: row.group23 ?? 0,
+      group2: row.group2 ?? 0,
+      group3: row.group3 ?? 0,
     }));
   }, [dashboardData?.chart, year]);
 
@@ -150,7 +155,6 @@ export default function DashboardPage() {
     // Bạn cần cập nhật logic map dữ liệu và hàm getIconForActivity() bên dưới
     // -----
 
-    // Hàm helper để chọn icon và style dựa trên loại
     const getIconForActivity = (activity) => {
       const type = activity.type || 'CREATED';
 
@@ -165,6 +169,31 @@ export default function DashboardPage() {
             icon: faUsers,
             className: 'dashboard__recent-icon-wrapper--register',
           };
+        case 'UPDATED':
+          return {
+            icon: faPenToSquare,
+            className: 'dashboard__recent-icon-wrapper--update',
+          };
+        case 'CANCELLED':
+          return {
+            icon: faXmark,
+            className: 'dashboard__recent-icon-wrapper--cancel',
+          };
+        case 'APPROVED':
+          return {
+            icon: faCircleCheck,
+            className: 'dashboard__recent-icon-wrapper--approved',
+          };
+        case 'FEEDBACK_RECEIVED':
+          return {
+            icon: faComments,
+            className: 'dashboard__recent-icon-wrapper--feedback',
+          };
+        case 'ATTENDANCE_CHECKED':
+          return {
+            icon: faClipboardCheck,
+            className: 'dashboard__recent-icon-wrapper--attendance',
+          };
         case 'CREATED':
         default:
           return {
@@ -176,12 +205,59 @@ export default function DashboardPage() {
 
     const mappedActivities = recentActivities.map((activity) => {
       const iconInfo = getIconForActivity(activity);
+
+      let title = '';
+      let desc = '';
+
+      const activityTitle = activity.title || 'Hoạt động';
+      const maxCapacity = activity.maxCapacity || 0;
+      const currentParticipants = activity.participantsCount || 0;
+      const organizer = activity.organizer || 'Hệ thống';
+
+      switch (activity.type) {
+        case 'COMPLETED':
+          title = `Hoạt động "${activityTitle}"`;
+          desc = `${currentParticipants} sinh viên đã tham gia thành công.`;
+          break;
+        case 'REGISTERED':
+          title = `${currentParticipants} sinh viên mới đăng ký tham...`;
+          desc = `Hoạt động "${activityTitle}" có thêm ${currentParticipants} người đăng ký.`;
+          break;
+        case 'UPDATED':
+          title = `Cập nhật hoạt động "${activityTitle}"`;
+          desc = `${organizer} đã chỉnh sửa thông tin hoạt động.`;
+          break;
+        case 'CANCELLED':
+          title = `Hủy hoạt động "${activityTitle}"`;
+          desc = `Hoạt động đã bị hủy bởi ${organizer}.`;
+          break;
+        case 'APPROVED':
+          title = `Phê duyệt hoạt động "${activityTitle}"`;
+          desc = `${organizer} đã phê duyệt hoạt động này.`;
+          break;
+        case 'FEEDBACK_RECEIVED':
+          title = `Nhận phản hồi mới cho "${activityTitle}"`;
+          desc = `${currentParticipants} sinh viên đã gửi phản hồi.`;
+          break;
+        case 'ATTENDANCE_CHECKED':
+          title = `Điểm danh hoạt động "${activityTitle}"`;
+          desc = `${currentParticipants} sinh viên đã được điểm danh.`;
+          break;
+        case 'CREATED':
+        default:
+          title = `Tạo hoạt động mới "${activityTitle}"`;
+          desc = maxCapacity
+            ? `${organizer} tạo hoạt động mới với sức chứa ${maxCapacity} người.`
+            : `${organizer} tạo hoạt động mới.`;
+          break;
+      }
+
       return {
         id: activity.id,
         icon: iconInfo.icon,
         iconClassName: iconInfo.className,
-        title: `Tạo hoạt động mới "${activity.title || 'Hoạt động'}"`,
-        desc: activity.description || `Hoạt động mới với sức chứa ${activity.maxCapacity || '...'} người.`,
+        title,
+        desc,
         time: activity.createdAt ? dayjs(activity.createdAt).fromNow() : 'Vừa xong',
       };
     });
@@ -250,7 +326,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartRows[year]} barCategoryGap={18} barGap={6}>
+            <BarChart data={chartRows} barCategoryGap={18} barGap={6}>
               <CartesianGrid stroke="#B3B3B3" strokeOpacity={0.35} vertical={false} />
               <XAxis
                 dataKey="name"
@@ -280,8 +356,9 @@ export default function DashboardPage() {
                 iconSize={10}
                 wrapperStyle={{ paddingTop: 14 }}
               />
-              <Bar dataKey="group1" name="Hoạt động nhóm 1" fill="#00008B" barSize={12} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="group23" name="Hoạt động nhóm 2,3" fill="#FF5C00" barSize={12} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="group1" name="Nhóm 1" fill="#00008B" barSize={12} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="group2" name="Nhóm 2" fill="#FF5C00" barSize={12} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="group3" name="Nhóm 3" fill="#10B981" barSize={12} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

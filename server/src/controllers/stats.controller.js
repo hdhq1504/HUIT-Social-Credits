@@ -267,13 +267,15 @@ const buildChartData = (activities = []) => {
     }
     const yearBucket = buckets.get(year);
     if (!yearBucket.has(month)) {
-      yearBucket.set(month, { group1: 0, group23: 0 });
+      yearBucket.set(month, { group1: 0, group2: 0, group3: 0 });
     }
     const target = yearBucket.get(month);
     if (activity.nhomDiem === GROUP_ONE_KEY) {
       target.group1 += 1;
-    } else {
-      target.group23 += 1;
+    } else if (activity.nhomDiem === GROUP_TWO_KEY) {
+      target.group2 += 1;
+    } else if (activity.nhomDiem === GROUP_THREE_KEY) {
+      target.group3 += 1;
     }
   });
 
@@ -283,12 +285,13 @@ const buildChartData = (activities = []) => {
     .forEach(([year, months]) => {
       const rows = [];
       for (let month = 1; month <= 12; month += 1) {
-        const entry = months.get(month) ?? { group1: 0, group23: 0 };
+        const entry = months.get(month) ?? { group1: 0, group2: 0, group3: 0 };
         rows.push({
           month,
           label: monthLabel(month),
           group1: entry.group1,
-          group23: entry.group23
+          group2: entry.group2,
+          group3: entry.group3
         });
       }
       chart[year] = rows;

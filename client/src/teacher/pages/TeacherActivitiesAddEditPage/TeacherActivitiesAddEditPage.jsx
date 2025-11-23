@@ -537,26 +537,6 @@ const ActivitiesAddEditPage = () => {
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item
-                    name="benefits"
-                    label="Quyền lợi"
-                    className={cx('activities__group')}
-                    tooltip="Mỗi quyền lợi 1 dòng"
-                  >
-                    <TextArea rows={4} placeholder="Các quyền lợi mà sinh viên sẽ nhận được..." />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="responsibilities"
-                    label="Trách nhiệm"
-                    className={cx('activities__group')}
-                    tooltip="Mỗi trách nhiệm 1 dòng"
-                  >
-                    <TextArea rows={4} placeholder="Các trách nhiệm của sinh viên khi tham gia..." />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
                     name="requirements"
                     label="Yêu cầu tham gia"
                     className={cx('activities__group')}
