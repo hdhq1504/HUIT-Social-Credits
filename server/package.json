@@ -12,7 +12,8 @@
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
-    "seed": "node src/seed/seed.js"
+    "seed": "node src/seed/seed.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
