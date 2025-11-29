@@ -91,13 +91,16 @@ const mapUserForResponse = (user) => ({
   role: user.vaiTro,
   studentCode: user.maSV,
   staffCode: user.maCB,
-  classCode: user.maLop,
-  departmentCode: user.maKhoa,
+  classCode: user.maLop || user.lopHoc?.maLop,
+  departmentCode: user.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa,
   phoneNumber: user.soDT,
   isActive: user.isActive,
   lastLoginAt: user.lastLoginAt,
   createdAt: user.createdAt,
-  avatarUrl: user.avatarUrl
+  avatarUrl: user.avatarUrl,
+  classId: user.lopHoc?.id,
+  majorId: user.lopHoc?.nganhHoc?.id,
+  facultyId: user.lopHoc?.nganhHoc?.khoa?.id
 });
 
 const sanitizeString = (value) => {
@@ -117,6 +120,12 @@ const normalizeRoleInput = (value) => {
   if (!value) return undefined;
   const upper = String(value).trim().toUpperCase();
   return ROLE_VALUES.has(upper) ? upper : undefined;
+};
+
+const normalizeGender = (value) => {
+  if (!value) return undefined;
+  const validGenders = ["Nam", "Nữ", "Khác"];
+  return validGenders.includes(value) ? value : undefined;
 };
 
 const normalizeActiveState = (value, fallback = true) => {
@@ -183,7 +192,21 @@ export const listUsers = async (req, res) => {
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
-        avatarUrl: true
+        avatarUrl: true,
+        lopHoc: {
+          select: {
+            maLop: true,
+            nganhHoc: {
+              select: {
+                khoa: {
+                  select: {
+                    maKhoa: true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }),
     prisma.nguoiDung.count({ where })
@@ -230,7 +253,28 @@ export const getUserById = async (req, res) => {
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
-        avatarUrl: true
+        createdAt: true,
+        avatarUrl: true,
+        lopHoc: {
+          select: {
+            id: true,
+            maLop: true,
+            tenLop: true,
+            nganhHoc: {
+              select: {
+                id: true,
+                tenNganh: true,
+                khoa: {
+                  select: {
+                    id: true,
+                    tenKhoa: true,
+                    maKhoa: true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
 
@@ -257,16 +301,15 @@ export const createUser = async (req, res) => {
     return res.status(error.statusCode || 500).json({ error: error.message });
   }
 
-  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive, avatarImage } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, phoneNumber, isActive, avatarImage, gender } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
   const normalizedEmail = normalizeEmail(email);
   const normalizedRole = normalizeRoleInput(role) ?? "SINHVIEN";
+  const normalizedGender = normalizeGender(gender);
   const normalizedStudentCode = sanitizeString(studentCode) ?? null;
   const normalizedStaffCode = sanitizeString(staffCode) ?? null;
-  const normalizedClassCode = sanitizeString(classCode) ?? null;
-  const normalizedDepartmentCode = sanitizeString(departmentCode) ?? null;
   const normalizedPhoneNumber = sanitizeString(phoneNumber) ?? null;
   const normalizedPassword = sanitizeString(password);
   const activeState = normalizeActiveState(isActive, true);
@@ -297,13 +340,35 @@ export const createUser = async (req, res) => {
         email: normalizedEmail,
         matKhau: hashedPassword,
         vaiTro: normalizedRole,
+        gioiTinh: normalizedGender,
         maSV: normalizedStudentCode,
         maCB: normalizedStaffCode,
-        maLop: normalizedClassCode,
-        maKhoa: normalizedDepartmentCode,
+        lopHocId: lopHocId || null,
         soDT: normalizedPhoneNumber,
         isActive: activeState,
       },
+      include: {
+        lopHoc: {
+          select: {
+            id: true,
+            maLop: true,
+            tenLop: true,
+            nganhHoc: {
+              select: {
+                id: true,
+                tenNganh: true,
+                khoa: {
+                  select: {
+                    id: true,
+                    tenKhoa: true,
+                    maKhoa: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     // Handle avatar upload if provided
@@ -349,16 +414,15 @@ export const updateUser = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, email, role, password, studentCode, staffCode, classCode, departmentCode, phoneNumber, isActive, avatarImage } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, phoneNumber, isActive, avatarImage, gender } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
   const normalizedEmail = normalizeEmail(email);
   const normalizedRole = normalizeRoleInput(role);
+  const normalizedGender = normalizeGender(gender);
   const normalizedStudentCode = sanitizeString(studentCode);
   const normalizedStaffCode = sanitizeString(staffCode);
-  const normalizedClassCode = sanitizeString(classCode);
-  const normalizedDepartmentCode = sanitizeString(departmentCode);
   const normalizedPhoneNumber = sanitizeString(phoneNumber);
   const normalizedPassword = sanitizeString(password);
   const activeState = normalizeActiveState(isActive, undefined);
@@ -392,10 +456,10 @@ export const updateUser = async (req, res) => {
       hoTen: normalizedName,
       ...(normalizedEmail ? { email: normalizedEmail } : {}),
       ...(normalizedRole ? { vaiTro: normalizedRole } : {}),
+      ...(normalizedGender ? { gioiTinh: normalizedGender } : {}),
       maSV: normalizedStudentCode ?? null,
       maCB: normalizedStaffCode ?? null,
-      maLop: normalizedClassCode ?? null,
-      maKhoa: normalizedDepartmentCode ?? null,
+      ...(lopHocId !== undefined ? { lopHocId } : {}),
       soDT: normalizedPhoneNumber ?? null,
     };
 
@@ -410,13 +474,10 @@ export const updateUser = async (req, res) => {
       updateData.matKhau = await bcrypt.hash(normalizedPassword, 10);
     }
 
-    // Handle avatar upload if provided
     if (avatarImage) {
       if (avatarImage === null) {
-        // Remove avatar
         if (existing.avatarUrl) {
           try {
-            // Extract path from URL to delete from storage
             const oldPath = existing.avatarUrl.split('/').slice(-2).join('/');
             await removeFiles(env.SUPABASE_AVATAR_BUCKET, [oldPath]);
           } catch (cleanupError) {
@@ -425,7 +486,6 @@ export const updateUser = async (req, res) => {
         }
         updateData.avatarUrl = null;
       } else if (avatarImage.dataUrl) {
-        // Upload new avatar
         try {
           const uploadResult = await uploadBase64Image({
             dataUrl: avatarImage.dataUrl,
@@ -434,7 +494,6 @@ export const updateUser = async (req, res) => {
             fileName: avatarImage.fileName || 'avatar',
           });
 
-          // Clean up old avatar if exists
           if (existing.avatarUrl) {
             try {
               const oldPath = existing.avatarUrl.split('/').slice(-2).join('/');
@@ -452,7 +511,32 @@ export const updateUser = async (req, res) => {
       }
     }
 
-    const updatedUser = await prisma.nguoiDung.update({ where: { id }, data: updateData });
+    const updatedUser = await prisma.nguoiDung.update({
+      where: { id },
+      data: updateData,
+      include: {
+        lopHoc: {
+          select: {
+            id: true,
+            maLop: true,
+            tenLop: true,
+            nganhHoc: {
+              select: {
+                id: true,
+                tenNganh: true,
+                khoa: {
+                  select: {
+                    id: true,
+                    tenKhoa: true,
+                    maKhoa: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
 
     res.json({ message: "Cập nhật người dùng thành công", user: mapUserForResponse(updatedUser) });
   } catch (error) {

@@ -4,7 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, Empty, Spin } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faGraduationCap, faChevronRight, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+  faUsers,
+  faGraduationCap,
+  faChevronRight,
+  faCalendarAlt,
+  faClipboardList,
+} from '@fortawesome/free-solid-svg-icons';
 import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import teacherApi from '@/api/teacher.api';
@@ -24,10 +30,13 @@ export default function TeacherClassDetailPage() {
     return () => setBreadcrumbs(null);
   }, [setBreadcrumbs]);
 
-  const { data: classes, isLoading } = useQuery({
+  const { data: classData, isLoading } = useQuery({
     queryKey: ['teacher', 'my-classes'],
     queryFn: teacherApi.getMyClasses,
   });
+
+  const classes = classData?.classes || [];
+  const activityCount = classData?.activityCount ?? 0;
 
   const handleClassClick = (classId) => {
     navigate(buildPath.teacherClassStudents(classId));
@@ -41,7 +50,7 @@ export default function TeacherClassDetailPage() {
     );
   }
 
-  if (!classes || classes.length === 0) {
+  if (classes.length === 0) {
     return (
       <div className={cx('teacher-classes')}>
         <div className={cx('teacher-classes__header')}>
@@ -53,8 +62,7 @@ export default function TeacherClassDetailPage() {
     );
   }
 
-  // Calculate statistics
-  const totalStudents = classes.reduce((sum, item) => sum + (item.studentCount || 0), 0);
+  // Tính toán năm nhập học mới nhất
   const latestEnrollmentYear = Math.max(...classes.map((item) => item.namNhapHoc));
 
   return (
@@ -71,11 +79,11 @@ export default function TeacherClassDetailPage() {
         </div>
         <div className={cx('teacher-classes__stat-card')}>
           <div className={cx('teacher-classes__stat-icon', 'teacher-classes__stat-icon--total-students')}>
-            <FontAwesomeIcon icon={faUsers} />
+            <FontAwesomeIcon icon={faClipboardList} />
           </div>
           <div className={cx('teacher-classes__stat-content')}>
-            <p>Tổng sĩ số quản lý</p>
-            <h3>{totalStudents}</h3>
+            <p>Tổng số hoạt động đã tạo</p>
+            <h3>{activityCount}</h3>
           </div>
         </div>
         <div className={cx('teacher-classes__stat-card')}>
@@ -110,7 +118,11 @@ export default function TeacherClassDetailPage() {
             <div className={cx('teacher-classes__card-body')}>
               <div className={cx('teacher-classes__card-info')}>
                 <span className={cx('teacher-classes__card-label')}>Khoa:</span>
-                <span className={cx('teacher-classes__card-value')}>{classItem.khoa.tenKhoa}</span>
+                <span className={cx('teacher-classes__card-value')}>{classItem.nganhHoc?.khoa?.tenKhoa}</span>
+              </div>
+              <div className={cx('teacher-classes__card-info')}>
+                <span className={cx('teacher-classes__card-label')}>Ngành:</span>
+                <span className={cx('teacher-classes__card-value')}>{classItem.nganhHoc?.tenNganh}</span>
               </div>
               <div className={cx('teacher-classes__card-info')}>
                 <span className={cx('teacher-classes__card-label')}>Năm nhập học:</span>

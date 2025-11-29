@@ -4,7 +4,8 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
-  getClassesByFaculty,
+  getMajorsByFaculty,
+  getClassesByMajor,
   getFaculties
 } from "../controllers/student.controller.js";
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
@@ -49,10 +50,17 @@ router.delete("/:id", deleteStudent);
 router.get("/faculties", getFaculties);
 
 /**
- * @route GET /api/students/classes/:khoaId
- * @desc Lấy danh sách lớp theo khoa
+ * @route GET /api/students/faculties/:khoaId/majors
+ * @desc Lấy danh sách ngành theo khoa
  * @access Admin
  */
-router.get("/classes/:khoaId", getClassesByFaculty);
+router.get("/faculties/:khoaId/majors", getMajorsByFaculty);
+
+/**
+ * @route GET /api/students/majors/:nganhHocId/classes
+ * @desc Lấy danh sách lớp theo ngành
+ * @access Admin
+ */
+router.get("/majors/:nganhHocId/classes", getClassesByMajor);
 
 export default router;

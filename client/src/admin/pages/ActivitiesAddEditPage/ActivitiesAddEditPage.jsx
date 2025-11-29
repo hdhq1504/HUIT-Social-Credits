@@ -445,7 +445,7 @@ const ActivitiesAddEditPage = () => {
                     <TimePicker placeholder="--:--" format="HH:mm" style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={24}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     name="location"
                     label="Địa điểm"
@@ -524,7 +524,25 @@ const ActivitiesAddEditPage = () => {
                     name="registrationDeadline"
                     label="Hạn đăng ký"
                     className={cx('activities__group')}
-                    rules={[{ required: true, message: 'Vui lòng chọn hạn đăng ký!' }]}
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn hạn đăng ký!' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          const startDate = getFieldValue('startDate');
+                          const startTime = getFieldValue('startTime');
+                          if (!value || !startDate || !startTime) {
+                            return Promise.resolve();
+                          }
+                        
+                          const startDateTime = startDate.hour(startTime.hour()).minute(startTime.minute()).second(0);
+
+                          if (value.isAfter(startDateTime)) {
+                            return Promise.reject(new Error('Hạn đăng ký phải trước thời gian bắt đầu!'));
+                          }
+                          return Promise.resolve();
+                        },
+                      }),
+                    ]}
                   >
                     <DatePicker
                       showTime

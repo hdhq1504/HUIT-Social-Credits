@@ -27,7 +27,8 @@ const PAGE_SIZE = 10;
 
 const ATTENDANCE_TONES = {
   DANG_KY: { tone: 'warning', icon: faClock, label: 'Đang xử lý' },
-  DA_THAM_GIA: { tone: 'success', icon: faCheckCircle, label: 'Hoàn thành' },
+  DANG_THAM_GIA: { tone: 'success', icon: faCheckCircle, label: 'Đúng giờ' },
+  DA_THAM_GIA: { tone: 'success', icon: faCheckCircle, label: 'Đúng giờ' },
   VANG_MAT: { tone: 'danger', icon: faTimesCircle, label: 'Vắng mặt' },
   DA_HUY: { tone: 'neutral', icon: faTimesCircle, label: 'Đã hủy' },
 };

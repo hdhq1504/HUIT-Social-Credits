@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Table, Spin, Button, Modal, Descriptions, Tag, Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faEye, faFileExport } from '@fortawesome/free-solid-svg-icons';
 import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import teacherApi from '@/api/teacher.api';
@@ -50,6 +50,22 @@ export default function TeacherStudentDetailPage() {
   const handleCloseModal = () => {
     setIsScoreModalOpen(false);
     setSelectedStudent(null);
+  };
+
+  const handleExportClass = async () => {
+    try {
+      const blob = await teacherApi.exportHomeroomClassScores(classId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DiemRenLuyen_${data?.classInfo?.maLop}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export error:', error);
+    }
   };
 
   const columns = [
@@ -180,6 +196,14 @@ export default function TeacherStudentDetailPage() {
           className={cx('student-detail__back-button')}
         >
           Quay lại
+        </Button>
+        <Button
+          icon={<FontAwesomeIcon icon={faFileExport} />}
+          onClick={handleExportClass}
+          style={{ marginLeft: 'auto' }}
+          className={cx('student-detail__export-button')}
+        >
+          Xuất danh sách điểm
         </Button>
       </div>
 

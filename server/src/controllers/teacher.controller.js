@@ -49,10 +49,16 @@ export const getTeachers = async (req, res) => {
                   tenLop: true,
                   maLop: true,
                   namNhapHoc: true,
-                  khoa: {
+                  nganhHoc: {
                     select: {
                       id: true,
-                      tenKhoa: true,
+                      tenNganh: true,
+                      khoa: {
+                        select: {
+                          id: true,
+                          tenKhoa: true,
+                        }
+                      }
                     }
                   }
                 }
@@ -81,7 +87,7 @@ export const getTeachers = async (req, res) => {
       isActive: teacher.isActive,
       lastLoginAt: teacher.lastLoginAt,
       avatarUrl: teacher.avatarUrl,
-      department: teacher.phanCong?.[0]?.lopHoc?.khoa?.tenKhoa || null,
+      department: teacher.phanCong?.[0]?.lopHoc?.nganhHoc?.khoa?.tenKhoa || null,
       homeroomClasses: teacher.phanCong?.map(pc => pc.lopHoc) || [],
     }));
 
@@ -173,7 +179,14 @@ export const getAvailableClasses = async (req, res) => {
         id: true,
         tenLop: true,
         maLop: true,
-        khoa: { select: { tenKhoa: true } },
+        nganhHoc: {
+          select: {
+            tenNganh: true,
+            khoa: {
+              select: { tenKhoa: true }
+            }
+          }
+        },
         phanCong: {
           where: {
             loaiPhanCong: 'CHU_NHIEM',

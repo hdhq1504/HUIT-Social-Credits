@@ -94,6 +94,18 @@ const teacherApi = {
     const { data } = await http.get(`/teacher/homeroom/students/${studentId}/scores`);
     return data;
   },
+
+  /**
+   * Xuất danh sách điểm của lớp chủ nhiệm.
+   * @param {string|number} classId - ID lớp chủ nhiệm.
+   * @returns {Promise<Blob>} File Excel.
+   */
+  async exportHomeroomClassScores(classId) {
+    const response = await http.get(`/teacher/homeroom/classes/${classId}/export-scores`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 export default teacherApi;

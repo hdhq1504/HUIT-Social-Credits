@@ -205,7 +205,8 @@ const REGISTRATION_STATUS_LABELS = {
 
 const ATTENDANCE_STATUS_LABELS = {
   DANG_KY: "Đang xử lý",
-  DA_THAM_GIA: "Hoàn thành",
+  DANG_THAM_GIA: "Đúng giờ",
+  DA_THAM_GIA: "Đúng giờ",
   VANG_MAT: "Vắng mặt",
   DA_HUY: "Đã hủy",
   CHO_DUYET: "Chờ duyệt"

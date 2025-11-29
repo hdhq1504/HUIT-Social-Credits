@@ -56,11 +56,17 @@ export const getStudents = async (req, res) => {
               id: true,
               tenLop: true,
               maLop: true,
-              khoa: {
+              nganhHoc: {
                 select: {
                   id: true,
-                  tenKhoa: true,
-                  maKhoa: true
+                  tenNganh: true,
+                  khoa: {
+                    select: {
+                      id: true,
+                      tenKhoa: true,
+                      maKhoa: true
+                    }
+                  }
                 }
               }
             }
@@ -69,7 +75,7 @@ export const getStudents = async (req, res) => {
         skip: Number(skip),
         take: Number(pageSize),
         orderBy: [
-          { lopHoc: { khoa: { tenKhoa: 'asc' } } },
+          { lopHoc: { nganhHoc: { khoa: { tenKhoa: 'asc' } } } },
           { lopHoc: { tenLop: 'asc' } },
           { hoTen: 'asc' }
         ],
@@ -91,9 +97,9 @@ export const getStudents = async (req, res) => {
       avatarUrl: student.avatarUrl,
       classCode: student.lopHoc?.maLop || null,
       className: student.lopHoc?.tenLop || null,
-      department: student.lopHoc?.khoa?.tenKhoa || null,
-      departmentCode: student.lopHoc?.khoa?.maKhoa || null,
-      departmentId: student.lopHoc?.khoa?.id || null,
+      department: student.lopHoc?.nganhHoc?.khoa?.tenKhoa || null,
+      departmentCode: student.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
+      departmentId: student.lopHoc?.nganhHoc?.khoa?.id || null,
     }));
 
     res.json({
@@ -233,8 +239,64 @@ export const getClassesByFaculty = async (req, res) => {
   try {
     const { khoaId } = req.params;
     const classes = await prisma.lopHoc.findMany({
-      where: { khoaId },
-      select: { id: true, tenLop: true, maLop: true }
+      where: {
+        nganhHoc: {
+          khoaId: khoaId
+        }
+      },
+      select: { id: true, tenLop: true, maLop: true },
+      orderBy: { tenLop: 'asc' }
+    });
+    res.json(classes);
+  } catch (error) {
+    console.error("Get classes error:", error);
+    res.status(500).json({ error: "Lỗi server khi lấy danh sách lớp" });
+  }
+}
+
+/**
+ * Lấy danh sách ngành học theo khoa.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
+export const getMajorsByFaculty = async (req, res) => {
+  try {
+    const { khoaId } = req.params;
+    const majors = await prisma.nganhHoc.findMany({
+      where: {
+        khoaId: khoaId,
+        isActive: true
+      },
+      select: {
+        id: true,
+        tenNganh: true,
+        maNganh: true
+      },
+      orderBy: { tenNganh: 'asc' }
+    });
+    res.json(majors);
+  } catch (error) {
+    console.error("Get majors error:", error);
+    res.status(500).json({ error: "Lỗi server khi lấy danh sách ngành" });
+  }
+}
+
+/**
+ * Lấy danh sách lớp theo ngành học.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
+export const getClassesByMajor = async (req, res) => {
+  try {
+    const { nganhHocId } = req.params;
+    const classes = await prisma.lopHoc.findMany({
+      where: { nganhHocId: nganhHocId },
+      select: {
+        id: true,
+        tenLop: true,
+        maLop: true
+      },
+      orderBy: { tenLop: 'asc' }
     });
     res.json(classes);
   } catch (error) {

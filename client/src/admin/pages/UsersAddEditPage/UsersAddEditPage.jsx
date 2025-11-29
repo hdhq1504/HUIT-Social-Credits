@@ -7,6 +7,7 @@ import { faArrowLeft, faFloppyDisk, faUserPlus, faCamera } from '@fortawesome/fr
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
+import studentsApi from '@/api/students.api';
 import { ROUTE_PATHS, buildPath } from '@/config/routes.config';
 import useToast from '@/components/Toast/Toast';
 import { fileToDataUrl } from '@/utils/file';
@@ -28,11 +29,11 @@ const buildPayloadFromValues = (values, avatarData) => ({
   password: values.password?.trim() || undefined,
   studentCode: values.studentCode?.trim() || undefined,
   staffCode: values.staffCode?.trim() || undefined,
-  classCode: values.classCode?.trim() || undefined,
-  departmentCode: values.departmentCode?.trim() || undefined,
+  lopHocId: values.classId ?? null,
   phoneNumber: values.phoneNumber?.trim() || undefined,
   isActive: values.isActive,
   avatarImage: avatarData,
+  gender: values.gender,
 });
 
 const UsersAddEditPage = () => {
@@ -45,6 +46,8 @@ const UsersAddEditPage = () => {
   const { contextHolder, open: openToast } = useToast();
   const [avatarFileList, setAvatarFileList] = useState([]);
   const [avatarData, setAvatarData] = useState(null);
+  const [selectedFacultyId, setSelectedFacultyId] = useState(null);
+  const [selectedMajorId, setSelectedMajorId] = useState(null);
 
   const handleBackToList = useCallback(() => {
     navigate(ROUTE_PATHS.ADMIN.USERS);
@@ -96,6 +99,23 @@ const UsersAddEditPage = () => {
     },
   });
 
+  const facultiesQuery = useQuery({
+    queryKey: ['faculties'],
+    queryFn: () => studentsApi.getFaculties(),
+  });
+
+  const majorsQuery = useQuery({
+    queryKey: ['majors', selectedFacultyId],
+    queryFn: () => studentsApi.getMajorsByFaculty(selectedFacultyId),
+    enabled: !!selectedFacultyId,
+  });
+
+  const classesQuery = useQuery({
+    queryKey: ['classes', selectedMajorId],
+    queryFn: () => studentsApi.getClassesByMajor(selectedMajorId),
+    enabled: !!selectedMajorId,
+  });
+
   useEffect(() => {
     if (!isEditMode) return;
     const user = detailQuery.data?.user;
@@ -107,15 +127,19 @@ const UsersAddEditPage = () => {
       role: user.role || 'SINHVIEN',
       studentCode: user.studentCode || '',
       staffCode: user.staffCode || '',
-      classCode: user.classCode || '',
-      departmentCode: user.departmentCode || '',
+      classId: user.classId || '',
+      majorId: user.majorId || '',
+      facultyId: user.facultyId || '',
       phoneNumber: user.phoneNumber || '',
       isActive: Boolean(user.isActive),
       password: '',
       confirmPassword: '',
+      gender: user.gender || user.gioiTinh || undefined,
     });
 
-    // Load existing avatar if present
+    if (user.facultyId) setSelectedFacultyId(user.facultyId);
+    if (user.majorId) setSelectedMajorId(user.majorId);
+
     if (user.avatarUrl) {
       setAvatarFileList([
         {
@@ -155,7 +179,6 @@ const UsersAddEditPage = () => {
   const handleSubmit = async (values) => {
     let avatarPayload = avatarData;
 
-    // Process new avatar file if uploaded
     if (avatarFileList.length > 0 && avatarFileList[0].originFileObj) {
       try {
         const file = avatarFileList[0].originFileObj;
@@ -231,6 +254,20 @@ const UsersAddEditPage = () => {
                 </Form.Item>
               </Col>
 
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Giới tính"
+                  name="gender"
+                  rules={[{ required: true, message: 'Vui lòng chọn giới tính.' }]}
+                >
+                  <Select placeholder="Chọn giới tính">
+                    <Select.Option value="Nam">Nam</Select.Option>
+                    <Select.Option value="Nữ">Nữ</Select.Option>
+                    <Select.Option value="Khác">Khác</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
               {/* Avatar Upload */}
               <Col xs={24}>
                 <Form.Item label="Avatar người dùng">
@@ -301,14 +338,54 @@ const UsersAddEditPage = () => {
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label="Mã lớp" name="classCode">
-                  <Input placeholder="Nhập mã lớp" allowClear />
+              <Col xs={24} md={8}>
+                <Form.Item label="Khoa" name="facultyId">
+                  <Select
+                    placeholder="Chọn khoa"
+                    options={facultiesQuery.data?.map((f) => ({
+                      label: f.tenKhoa,
+                      value: f.id,
+                    }))}
+                    onChange={(value) => {
+                      setSelectedFacultyId(value);
+                      setSelectedMajorId(null);
+                      form.setFieldsValue({ majorId: null, classId: null });
+                    }}
+                    loading={facultiesQuery.isLoading}
+                    allowClear
+                  />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label="Mã khoa" name="departmentCode">
-                  <Input placeholder="Nhập mã khoa" allowClear />
+              <Col xs={24} md={8}>
+                <Form.Item label="Ngành" name="majorId">
+                  <Select
+                    placeholder="Chọn ngành"
+                    options={majorsQuery.data?.map((m) => ({
+                      label: m.tenNganh,
+                      value: m.id,
+                    }))}
+                    onChange={(value) => {
+                      setSelectedMajorId(value);
+                      form.setFieldsValue({ classId: null });
+                    }}
+                    loading={majorsQuery.isLoading}
+                    disabled={!selectedFacultyId}
+                    allowClear
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item label="Lớp" name="classId">
+                  <Select
+                    placeholder="Chọn lớp"
+                    options={classesQuery.data?.map((c) => ({
+                      label: c.tenLop,
+                      value: c.id,
+                    }))}
+                    loading={classesQuery.isLoading}
+                    disabled={!selectedMajorId}
+                    allowClear
+                  />
                 </Form.Item>
               </Col>
 

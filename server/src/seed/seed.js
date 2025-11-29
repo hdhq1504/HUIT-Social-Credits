@@ -34,35 +34,79 @@ const seed = async () => {
     const hashed = await bcrypt.hash(plainPassword, 10);
 
     // ==================== SEED KHOA ====================
-    const khoaData = [
-      {
+    const khoaCNTT = await prisma.khoa.upsert({
+      where: { maKhoa: "CNTT" },
+      update: {
+        tenKhoa: "Khoa Công nghệ thông tin",
+        moTa: "Khoa Công nghệ thông tin - Đào tạo các ngành liên quan đến công nghệ thông tin",
+        isActive: true,
+      },
+      create: {
         maKhoa: "CNTT",
-        tenKhoa: "Công nghệ Thông tin",
-        moTa: "Khoa Công nghệ Thông tin - Đào tạo các ngành về phần mềm, mạng máy tính, an ninh mạng",
+        tenKhoa: "Khoa Công nghệ thông tin",
+        moTa: "Khoa Công nghệ thông tin - Đào tạo các ngành liên quan đến công nghệ thông tin",
+        isActive: true,
+      },
+    });
+
+    console.log("✓ Đã tạo Khoa:", khoaCNTT.tenKhoa);
+
+    // ==================== SEED NGÀNH HỌC ====================
+    const nganhHocData = [
+      {
+        maNganh: "CNTT",
+        tenNganh: "Công nghệ thông tin",
+        moTa: "Ngành Công nghệ thông tin - Đào tạo về phần mềm, mạng máy tính",
+        khoaId: khoaCNTT.id,
       },
       {
-        maKhoa: "ATTT",
-        tenKhoa: "An toàn thông tin",
-        moTa: "Khoa An toàn Thông tin - Đào tạo về bảo mật, dữ liệu, mạng máy tính",
+        maNganh: "ATTT",
+        tenNganh: "An toàn thông tin",
+        moTa: "Ngành An toàn thông tin - Đào tạo về bảo mật, an ninh mạng",
+        khoaId: khoaCNTT.id,
       },
       {
-        maKhoa: "KHDL",
-        tenKhoa: "Khoa học dữ liệu",
-        moTa: "Khoa Khoa học dữ liệu - Đào tạo về dữ liệu, AI, máy học",
+        maNganh: "KHDL",
+        tenNganh: "Khoa học dữ liệu",
+        moTa: "Ngành Khoa học dữ liệu - Đào tạo về dữ liệu, AI, máy học",
+        khoaId: khoaCNTT.id,
       },
     ];
 
-    for (const khoa of khoaData) {
-      await prisma.khoa.upsert({
-        where: { maKhoa: khoa.maKhoa },
-        update: {
-          tenKhoa: khoa.tenKhoa,
-          moTa: khoa.moTa,
-          isActive: true,
-        },
-        create: khoa,
-      });
-    }
+    const nganhCNTT = await prisma.nganhHoc.upsert({
+      where: { maNganh: "CNTT" },
+      update: {
+        tenNganh: nganhHocData[0].tenNganh,
+        moTa: nganhHocData[0].moTa,
+        khoaId: khoaCNTT.id,
+        isActive: true,
+      },
+      create: nganhHocData[0],
+    });
+
+    await prisma.nganhHoc.upsert({
+      where: { maNganh: "ATTT" },
+      update: {
+        tenNganh: nganhHocData[1].tenNganh,
+        moTa: nganhHocData[1].moTa,
+        khoaId: khoaCNTT.id,
+        isActive: true,
+      },
+      create: nganhHocData[1],
+    });
+
+    await prisma.nganhHoc.upsert({
+      where: { maNganh: "KHDL" },
+      update: {
+        tenNganh: nganhHocData[2].tenNganh,
+        moTa: nganhHocData[2].moTa,
+        khoaId: khoaCNTT.id,
+        isActive: true,
+      },
+      create: nganhHocData[2],
+    });
+
+    console.log("✓ Đã tạo 3 Ngành học thuộc Khoa CNTT");
 
     // ==================== SEED GIẢNG VIÊN ====================
     const lecturer = await prisma.nguoiDung.upsert({
@@ -89,13 +133,9 @@ const seed = async () => {
       },
     });
 
-    // Lấy khoa CNTT để dùng ID cho lớp học
-    const khoaCNTT = await prisma.khoa.findUnique({
-      where: { maKhoa: "CNTT" },
-    });
-
-    if (!khoaCNTT) {
-      throw new Error("Không tìm thấy khoa CNTT");
+    // Lấy ngành CNTT để dùng ID cho lớp học
+    if (!nganhCNTT) {
+      throw new Error("Không tìm thấy ngành CNTT");
     }
 
     // ==================== SEED LỚP HỌC ====================
@@ -103,21 +143,21 @@ const seed = async () => {
       {
         maLop: "13DHTH01",
         tenLop: "13 Đại học Tin học 01",
-        khoaId: khoaCNTT.id,
+        nganhHocId: nganhCNTT.id,
         namNhapHoc: 2022,
         giangVienChuNhiemId: lecturer.id,
       },
       {
         maLop: "13DHTH02",
         tenLop: "13 Đại học Tin học 02",
-        khoaId: khoaCNTT.id,
+        nganhHocId: nganhCNTT.id,
         namNhapHoc: 2022,
         giangVienChuNhiemId: lecturer.id,
       },
       {
         maLop: "13DHTH03",
         tenLop: "13 Đại học Tin học 03",
-        khoaId: khoaCNTT.id,
+        nganhHocId: nganhCNTT.id,
         namNhapHoc: 2022,
         giangVienChuNhiemId: null,
       },
@@ -128,13 +168,13 @@ const seed = async () => {
         where: { maLop: lop.maLop },
         update: {
           tenLop: lop.tenLop,
-          khoaId: lop.khoaId,
+          nganhHocId: lop.nganhHocId,
           namNhapHoc: lop.namNhapHoc,
         },
         create: {
           maLop: lop.maLop,
           tenLop: lop.tenLop,
-          khoaId: lop.khoaId,
+          nganhHocId: lop.nganhHocId,
           namNhapHoc: lop.namNhapHoc,
         },
       });

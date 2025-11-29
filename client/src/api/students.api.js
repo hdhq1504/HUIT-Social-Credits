@@ -71,6 +71,26 @@ export const studentsApi = {
     const { data } = await http.get('/admin/students/faculties');
     return data;
   },
+
+  /**
+   * Lấy danh sách ngành theo khoa.
+   * @param {string|number} facultyId - ID khoa.
+   * @returns {Promise<Array>} Danh sách ngành.
+   */
+  async getMajorsByFaculty(facultyId) {
+    const { data } = await http.get(`/admin/students/faculties/${facultyId}/majors`);
+    return data;
+  },
+
+  /**
+   * Lấy danh sách lớp theo ngành.
+   * @param {string|number} majorId - ID ngành.
+   * @returns {Promise<Array>} Danh sách lớp.
+   */
+  async getClassesByMajor(majorId) {
+    const { data } = await http.get(`/admin/students/majors/${majorId}/classes`);
+    return data;
+  },
 };
 
 export default studentsApi;

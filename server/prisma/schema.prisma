@@ -55,31 +55,51 @@ model NguoiDung {
 }
 
 model Khoa {
-  id        String   @id @default(cuid())
-  maKhoa    String   @unique @db.VarChar(50)
-  tenKhoa   String   @db.VarChar(255)
-  moTa      String?  @db.Text
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String      @id @default(cuid())
+  maKhoa    String      @unique @db.VarChar(50)
+  tenKhoa   String      @db.VarChar(255)
+  moTa      String?     @db.Text
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   
-  lopHoc    LopHoc[]
+  nganhHoc  NganhHoc[]
 
   @@index([maKhoa])
   @@index([isActive])
 }
 
+model NganhHoc {
+  id        String   @id @default(cuid())
+  maNganh   String   @unique @db.VarChar(50)
+  tenNganh  String   @db.VarChar(255)
+  moTa      String?  @db.Text
+  isActive  Boolean  @default(true)
+  khoaId    String
+  khoa      Khoa     @relation(fields: [khoaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  lopHoc    LopHoc[]
+
+  @@index([maNganh])
+  @@index([khoaId])
+  @@index([isActive])
+}
+
 model LopHoc {
-  id            String   @id @default(uuid())
-  maLop         String   @unique
-  tenLop        String   
-  khoaId        String
-  khoa          Khoa        @relation(fields: [khoaId], references: [id])
+  id            String      @id @default(uuid())
+  maLop         String      @unique
+  tenLop        String      
+  nganhHocId    String
+  nganhHoc      NganhHoc    @relation(fields: [nganhHocId], references: [id])
   namNhapHoc    Int      
   sinhVien      NguoiDung[] @relation("SinhVienLop")
   phanCong      PhanCong[]  @relation("PhanCongLopHoc")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  
+  @@index([nganhHocId])
 }
 
 model NamHoc {

@@ -97,12 +97,7 @@ function MyPointsPage() {
           date: dateValue,
           status: statusInfo.key,
           statusLabel: statusInfo.label,
-          semester:
-            activity.semesterDisplay ||
-            (activity.semester && activity.academicYear
-              ? `${activity.semester} - ${activity.academicYear}`
-              : activity.semester) ||
-            null,
+          semester: activity.semester || null,
           academicYear: activity.academicYear || null,
         };
       })

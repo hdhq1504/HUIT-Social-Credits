@@ -16,7 +16,8 @@
     gap: 16px;
   }
 
-  &__back-button {
+  &__back-button,
+  &__export-button {
     height: 36px;
     display: flex;
     align-items: center;
