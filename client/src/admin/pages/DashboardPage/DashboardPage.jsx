@@ -150,11 +150,6 @@ export default function DashboardPage() {
       return <li className={cx('dashboard__recent-item')}>Không có hoạt động gần đây.</li>;
     }
 
-    // -----
-    // TODO: Khi API của bạn trả về một "luồng thông báo" (thay vì chỉ hoạt động)
-    // Bạn cần cập nhật logic map dữ liệu và hàm getIconForActivity() bên dưới
-    // -----
-
     const getIconForActivity = (activity) => {
       const type = activity.type || 'CREATED';
 
@@ -371,7 +366,7 @@ export default function DashboardPage() {
         <div className={cx('dashboard__upcoming')}>
           <div className={cx('dashboard__upcoming-header')}>
             <h3>Hoạt động sắp diễn ra</h3>
-            <a href="/upcoming" className={cx('dashboard__upcoming-view-more')}>
+            <a href={ROUTE_PATHS.ADMIN.ACTIVITIES} className={cx('dashboard__upcoming-view-more')}>
               Xem tất cả <FontAwesomeIcon icon={faArrowRight} />
             </a>
           </div>
@@ -407,7 +402,7 @@ export default function DashboardPage() {
         <div className={cx('dashboard__feedback')}>
           <div className={cx('dashboard__feedback-header')}>
             <h3>Phản hồi chờ xử lý</h3>
-            <a href="/pending" className={cx('dashboard__feedback-view-more')}>
+            <a href={ROUTE_PATHS.ADMIN.FEEDBACKS} className={cx('dashboard__feedback-view-more')}>
               Xem tất cả <FontAwesomeIcon icon={faArrowRight} />
             </a>
           </div>
@@ -418,7 +413,7 @@ export default function DashboardPage() {
               pendingFeedback.map((feedback, idx) => (
                 <div key={feedback.id || idx} className={cx('dashboard__feedback-item')}>
                   <img
-                    src={feedback.avatarUrl || `https://i.pravatar.cc/40?img=${idx + 5}`}
+                    src={feedback.avatarUrl}
                     alt={feedback.name}
                     className={cx('dashboard__feedback-avatar')}
                   />

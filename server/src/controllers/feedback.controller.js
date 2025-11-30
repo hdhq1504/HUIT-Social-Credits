@@ -216,7 +216,7 @@ const buildFilterOptions = async () => {
       orderBy: { maKhoa: 'asc' }
     }),
     prisma.lopHoc.findMany({
-      where: { nguoiDung: { some: { phanHoi: { some: {} } } } },
+      where: { sinhVien: { some: { phanHoi: { some: {} } } } },
       select: { maLop: true },
       orderBy: { maLop: 'asc' }
     }),

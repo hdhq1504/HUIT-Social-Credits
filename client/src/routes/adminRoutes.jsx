@@ -71,21 +71,12 @@ export const adminRoutes = [
     },
   },
   {
-    path: lastPathSegment(ROUTE_PATHS.ADMIN.USERS), // 'users'
-    component: UsersPage,
-    meta: {
-      key: 'users',
-      label: 'Quản lý tài khoản',
-      icon: 'UserGearOutlined',
-    },
-  },
-  {
     path: lastPathSegment(ROUTE_PATHS.ADMIN.STUDENTS), // 'students'
     component: StudentsPage,
     meta: {
       key: 'students',
       label: 'Quản lý sinh viên',
-      icon: 'TeamOutlined',
+      icon: 'StudentOutlined',
     },
   },
   {
@@ -95,6 +86,15 @@ export const adminRoutes = [
       key: 'lecturers',
       label: 'Quản lý giảng viên',
       icon: 'UserTieOutlined',
+    },
+  },
+  {
+    path: lastPathSegment(ROUTE_PATHS.ADMIN.USERS), // 'users'
+    component: UsersPage,
+    meta: {
+      key: 'users',
+      label: 'Quản lý tài khoản',
+      icon: 'UserGearOutlined',
     },
   },
   {

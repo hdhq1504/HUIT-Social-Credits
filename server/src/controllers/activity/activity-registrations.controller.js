@@ -145,7 +145,7 @@ export const listRegistrationsAdmin = async (req, res) => {
         orderBy: { maKhoa: 'asc' }
       }),
       prisma.lopHoc.findMany({
-        where: { nguoiDung: { some: { dangKy: { some: {} } } } },
+        where: { sinhVien: { some: { dangKy: { some: {} } } } },
         select: { maLop: true },
         orderBy: { maLop: 'asc' }
       }),

@@ -116,8 +116,21 @@ function ForgotPasswordForm() {
       return;
     }
 
-    if (password.length < 8) {
-      setErrorMessage('Mật khẩu mới phải có ít nhất 8 ký tự.');
+    if (password.length < 6) {
+      setErrorMessage('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      return;
+    }
+
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasUpperCase) {
+      setErrorMessage('Mật khẩu phải chứa ít nhất 1 ký tự viết hoa.');
+      return;
+    }
+
+    if (!hasSpecialChar) {
+      setErrorMessage('Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.');
       return;
     }
 
