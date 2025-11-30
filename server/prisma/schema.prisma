@@ -23,8 +23,6 @@ model NguoiDung {
   gioiTinh                    GioiTinh?
   maSV                        String?             @db.VarChar(50)
   maCB                        String?             @db.VarChar(50)
-  maLop                       String?             @db.VarChar(50)
-  maKhoa                      String?             @db.VarChar(255)
   soDT                        String?             @db.VarChar(30)
   ngaySinh                    DateTime?
   avatarUrl                   String?             @db.VarChar(255)
@@ -46,24 +44,29 @@ model NguoiDung {
   hoatDongPhuTrach            HoatDong[]          @relation("HoatDongNguoiPhuTrach")
   lopHocId                    String?
   lopHoc                      LopHoc?             @relation("SinhVienLop", fields: [lopHocId], references: [id])
+  khoaId                      String?
+  khoa                        Khoa?               @relation(fields: [khoaId], references: [id])
 
   @@index([email])
   @@index([maSV])
   @@index([maCB])
   @@index([vaiTro, isActive])
   @@index([resetPasswordTokenExpiresAt])
+  @@index([lopHocId])
+  @@index([khoaId])
 }
 
 model Khoa {
-  id        String      @id @default(cuid())
-  maKhoa    String      @unique @db.VarChar(50)
-  tenKhoa   String      @db.VarChar(255)
-  moTa      String?     @db.Text
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  
+  id        String   @id @default(cuid())
+  maKhoa    String   @unique @db.VarChar(50)
+  tenKhoa   String   @db.VarChar(255)
+  moTa      String?  @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   nganhHoc  NganhHoc[]
+  nguoiDung NguoiDung[]
 
   @@index([maKhoa])
   @@index([isActive])
@@ -79,8 +82,8 @@ model NganhHoc {
   khoa      Khoa     @relation(fields: [khoaId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  lopHoc    LopHoc[]
+
+  lopHoc LopHoc[]
 
   @@index([maNganh])
   @@index([khoaId])
@@ -88,90 +91,90 @@ model NganhHoc {
 }
 
 model LopHoc {
-  id            String      @id @default(uuid())
-  maLop         String      @unique
-  tenLop        String      
-  nganhHocId    String
-  nganhHoc      NganhHoc    @relation(fields: [nganhHocId], references: [id])
-  namNhapHoc    Int      
-  sinhVien      NguoiDung[] @relation("SinhVienLop")
-  phanCong      PhanCong[]  @relation("PhanCongLopHoc")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
+  id         String      @id @default(uuid())
+  maLop      String      @unique
+  tenLop     String
+  nganhHocId String
+  nganhHoc   NganhHoc    @relation(fields: [nganhHocId], references: [id])
+  namNhapHoc Int
+  sinhVien   NguoiDung[] @relation("SinhVienLop")
+  phanCong   PhanCong[]  @relation("PhanCongLopHoc")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
   @@index([nganhHocId])
 }
 
 model NamHoc {
-  id             String           @id @default(cuid())
-  ma             String           @unique
-  nienKhoa       String           @unique
-  ten            String?
-  batDau         DateTime
-  ketThuc        DateTime
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  hocKy          HocKy[]          @relation
-  hoatDong       HoatDong[]       @relation("HoatDongNamHoc")
-  phanCong       PhanCong[]       @relation("PhanCongNamHoc")
+  id        String     @id @default(cuid())
+  ma        String     @unique
+  nienKhoa  String     @unique
+  ten       String?
+  batDau    DateTime
+  ketThuc   DateTime
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  hocKy     HocKy[]    @relation
+  hoatDong  HoatDong[] @relation("HoatDongNamHoc")
+  phanCong  PhanCong[] @relation("PhanCongNamHoc")
 
   @@index([isActive, batDau])
   @@index([batDau, ketThuc])
 }
 
 model HocKy {
-  id             String           @id @default(cuid())
-  ma             String           @unique
-  ten            String
-  thuTu          Int?
-  moTa           String?
-  batDau         DateTime
-  ketThuc        DateTime
-  isActive       Boolean          @default(true)
-  namHocId       String
-  namHoc         NamHoc           @relation(fields: [namHocId], references: [id], onDelete: Cascade)
-  hoatDong       HoatDong[]       @relation("HoatDongHocKy")
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id        String     @id @default(cuid())
+  ma        String     @unique
+  ten       String
+  thuTu     Int?
+  moTa      String?
+  batDau    DateTime
+  ketThuc   DateTime
+  isActive  Boolean    @default(true)
+  namHocId  String
+  namHoc    NamHoc     @relation(fields: [namHocId], references: [id], onDelete: Cascade)
+  hoatDong  HoatDong[] @relation("HoatDongHocKy")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@index([namHocId, isActive, thuTu])
   @@index([batDau, ketThuc])
 }
 
 model HoatDong {
-  id                 String                   @id @default(cuid())
+  id                 String                 @id @default(cuid())
   tieuDe             String
-  moTa               String?                  @db.Text
+  moTa               String?                @db.Text
   yeuCau             Json?
   huongDan           Json?
-  diemCong           Int                      @default(0)
+  diemCong           Int                    @default(0)
   batDauLuc          DateTime?
   ketThucLuc         DateTime?
   diaDiem            String?
   sucChuaToiDa       Int?
   hinhAnh            Json?
-  isFeatured         Boolean                  @default(false)
-  isPublished        Boolean                  @default(true)
+  isFeatured         Boolean                @default(false)
+  isPublished        Boolean                @default(true)
   hanDangKy          DateTime?
   hanHuyDangKy       DateTime?
-  phuongThucDiemDanh AttendanceMethod         @default(QR)
-  trangThaiDuyet     TrangThaiDuyetHoatDong   @default(DA_DUYET)
+  phuongThucDiemDanh AttendanceMethod       @default(PHOTO)
+  trangThaiDuyet     TrangThaiDuyetHoatDong @default(DA_DUYET)
   nguoiTaoId         String?
   nguoiPhuTrachId    String?
-  lyDoTuChoi         String?                  @db.Text
+  lyDoTuChoi         String?                @db.Text
   hocKyId            String?
   namHocId           String?
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
   dangKy             DangKyHoatDong[]
   phanHoi            PhanHoiHoatDong[]
-  nhomDiem           NhomDiem                 @default(NHOM_2)
+  nhomDiem           NhomDiem               @default(NHOM_2)
   DiemDanhNguoiDung  DiemDanhNguoiDung[]
-  hocKyRef           HocKy?                   @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
-  namHocRef          NamHoc?                  @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
-  nguoiTao           NguoiDung?               @relation("HoatDongNguoiTao", fields: [nguoiTaoId], references: [id])
-  nguoiPhuTrach      NguoiDung?               @relation("HoatDongNguoiPhuTrach", fields: [nguoiPhuTrachId], references: [id])
+  hocKyRef           HocKy?                 @relation("HoatDongHocKy", fields: [hocKyId], references: [id])
+  namHocRef          NamHoc?                @relation("HoatDongNamHoc", fields: [namHocId], references: [id])
+  nguoiTao           NguoiDung?             @relation("HoatDongNguoiTao", fields: [nguoiTaoId], references: [id])
+  nguoiPhuTrach      NguoiDung?             @relation("HoatDongNguoiPhuTrach", fields: [nguoiPhuTrachId], references: [id])
 
   @@index([isPublished, batDauLuc])
   @@index([trangThaiDuyet])
@@ -263,7 +266,7 @@ model ThongBao {
   daDocLuc    DateTime?
   createdAt   DateTime  @default(now())
 
-  nguoiDung  NguoiDung @relation(fields: [nguoiDungId], references: [id])
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id])
 
   @@index([nguoiDungId, daDoc])
   @@index([nguoiDungId, createdAt])
@@ -281,16 +284,16 @@ model FaceProfile {
 }
 
 model PhanCong {
-  id           String        @id @default(cuid())
+  id           String       @id @default(cuid())
   giangVienId  String
-  giangVien    NguoiDung     @relation("PhanCongGiangVien", fields: [giangVienId], references: [id], onDelete: Cascade)
+  giangVien    NguoiDung    @relation("PhanCongGiangVien", fields: [giangVienId], references: [id], onDelete: Cascade)
   lopHocId     String
-  lopHoc       LopHoc        @relation("PhanCongLopHoc", fields: [lopHocId], references: [id], onDelete: Cascade)
+  lopHoc       LopHoc       @relation("PhanCongLopHoc", fields: [lopHocId], references: [id], onDelete: Cascade)
   namHocId     String
-  namHoc       NamHoc        @relation("PhanCongNamHoc", fields: [namHocId], references: [id])
-  loaiPhanCong LoaiPhanCong  @default(CHU_NHIEM)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  namHoc       NamHoc       @relation("PhanCongNamHoc", fields: [namHocId], references: [id])
+  loaiPhanCong LoaiPhanCong @default(CHU_NHIEM)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@unique([giangVienId, lopHocId, namHocId, loaiPhanCong])
   @@index([giangVienId])
@@ -338,7 +341,6 @@ enum NhomDiem {
 }
 
 enum AttendanceMethod {
-  QR
   PHOTO
 }
 

@@ -25,14 +25,16 @@ export const getStudents = async (req, res) => {
       }),
     };
 
-    // Filter by khoaId through lopHoc relation
+    // Lọc theo khoa
     if (khoaId) {
       where.lopHoc = {
-        khoaId: khoaId
+        nganhHoc: {
+          khoaId: khoaId
+        }
       };
     }
 
-    // Filter by lopId
+    // Lọc theo lớp
     if (lopId) {
       where.lopHocId = lopId;
     }
@@ -83,7 +85,6 @@ export const getStudents = async (req, res) => {
       prisma.nguoiDung.count({ where }),
     ]);
 
-    // Map students to include department and class info
     const mappedStudents = students.map(student => ({
       id: student.id,
       studentCode: student.maSV,

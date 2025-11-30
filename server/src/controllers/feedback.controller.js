@@ -20,8 +20,25 @@ const FEEDBACK_LIST_INCLUDE = {
       hoTen: true,
       email: true,
       maSV: true,
-      maKhoa: true,
-      maLop: true,
+      lopHoc: {
+        select: {
+          maLop: true,
+          nganhHoc: {
+            select: {
+              khoa: {
+                select: {
+                  maKhoa: true
+                }
+              }
+            }
+          }
+        }
+      },
+      khoa: {
+        select: {
+          maKhoa: true
+        }
+      },
       avatarUrl: true
     }
   },
@@ -41,8 +58,25 @@ const FEEDBACK_DETAIL_INCLUDE = {
       hoTen: true,
       email: true,
       maSV: true,
-      maKhoa: true,
-      maLop: true,
+      lopHoc: {
+        select: {
+          maLop: true,
+          nganhHoc: {
+            select: {
+              khoa: {
+                select: {
+                  maKhoa: true
+                }
+              }
+            }
+          }
+        }
+      },
+      khoa: {
+        select: {
+          maKhoa: true
+        }
+      },
       avatarUrl: true,
       soDT: true
     }
@@ -109,8 +143,8 @@ const mapStudentSummary = (student) => {
     name: normalizeString(student.hoTen) || normalizeString(student.email) || "Người dùng",
     email: student.email ?? null,
     studentCode: student.maSV ?? null,
-    faculty: student.maKhoa ?? null,
-    className: student.maLop ?? null,
+    faculty: student.khoa?.maKhoa || student.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
+    className: student.lopHoc?.maLop || null,
     avatarUrl: student.avatarUrl ?? null,
     phone: student.soDT ?? null
   };
@@ -176,15 +210,15 @@ const getFeedbackStats = async () => {
 
 const buildFilterOptions = async () => {
   const [facultiesRaw, classesRaw, activitiesRaw] = await Promise.all([
-    prisma.nguoiDung.findMany({
-      where: { phanHoi: { some: {} }, maKhoa: { not: null } },
+    prisma.khoa.findMany({
+      where: { nguoiDung: { some: { phanHoi: { some: {} } } } },
       select: { maKhoa: true },
-      distinct: ["maKhoa"]
+      orderBy: { maKhoa: 'asc' }
     }),
-    prisma.nguoiDung.findMany({
-      where: { phanHoi: { some: {} }, maLop: { not: null } },
+    prisma.lopHoc.findMany({
+      where: { nguoiDung: { some: { phanHoi: { some: {} } } } },
       select: { maLop: true },
-      distinct: ["maLop"]
+      orderBy: { maLop: 'asc' }
     }),
     prisma.hoatDong.findMany({
       where: { phanHoi: { some: {} } },
@@ -197,13 +231,11 @@ const buildFilterOptions = async () => {
   const faculties = facultiesRaw
     .map((item) => normalizeString(item.maKhoa))
     .filter(Boolean)
-    .sort(sortAlpha)
     .map((value) => ({ value, label: value }));
 
   const classes = classesRaw
     .map((item) => normalizeString(item.maLop))
     .filter(Boolean)
-    .sort(sortAlpha)
     .map((value) => ({ value, label: value }));
 
   const activities = activitiesRaw
@@ -231,12 +263,19 @@ const buildListWhereClause = ({ search, faculty, className, activityId, status }
 
   const normalizedFaculty = normalizeString(faculty);
   if (normalizedFaculty) {
-    filters.push({ nguoiDung: { maKhoa: normalizedFaculty } });
+    filters.push({
+      nguoiDung: {
+        OR: [
+          { khoa: { maKhoa: normalizedFaculty } },
+          { lopHoc: { nganhHoc: { khoa: { maKhoa: normalizedFaculty } } } }
+        ]
+      }
+    });
   }
 
   const normalizedClass = normalizeString(className);
   if (normalizedClass) {
-    filters.push({ nguoiDung: { maLop: normalizedClass } });
+    filters.push({ nguoiDung: { lopHoc: { maLop: normalizedClass } } });
   }
 
   const normalizedActivity = normalizeString(activityId);

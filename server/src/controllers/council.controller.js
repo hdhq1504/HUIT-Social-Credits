@@ -122,7 +122,13 @@ const fetchStudentsWithScores = async (filters) => {
   };
 
   if (facultyCode) {
-    studentWhere.maKhoa = facultyCode;
+    studentWhere.lopHoc = {
+      nganhHoc: {
+        khoa: {
+          maKhoa: facultyCode
+        }
+      }
+    };
   }
 
   if (search) {
@@ -139,12 +145,24 @@ const fetchStudentsWithScores = async (filters) => {
       id: true,
       maSV: true,
       hoTen: true,
-      maLop: true,
-      maKhoa: true,
+      lopHoc: {
+        select: {
+          maLop: true,
+          nganhHoc: {
+            select: {
+              khoa: {
+                select: {
+                  maKhoa: true
+                }
+              }
+            }
+          }
+        }
+      }
     },
     orderBy: [
-      { maKhoa: "asc" },
-      { maLop: "asc" },
+      { lopHoc: { nganhHoc: { khoa: { maKhoa: "asc" } } } },
+      { lopHoc: { maLop: "asc" } },
       { maSV: "asc" },
     ],
   });
@@ -199,8 +217,8 @@ const fetchStudentsWithScores = async (filters) => {
     return {
       studentCode: student.maSV,
       fullName: student.hoTen,
-      classCode: student.maLop,
-      facultyCode: student.maKhoa,
+      classCode: student.lopHoc?.maLop,
+      facultyCode: student.lopHoc?.nganhHoc?.khoa?.maKhoa,
       groupOnePoints: scores.groupOne.raw,
       groupOneTotalEffective: scores.groupOne.effective,
       groupOneResult: scores.groupOne.result,

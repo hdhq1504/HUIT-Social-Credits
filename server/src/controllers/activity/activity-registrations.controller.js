@@ -97,11 +97,18 @@ export const listRegistrationsAdmin = async (req, res) => {
   }
 
   if (normalizedFaculty) {
-    conditions.push({ nguoiDung: { maKhoa: normalizedFaculty } });
+    conditions.push({
+      nguoiDung: {
+        OR: [
+          { khoa: { maKhoa: normalizedFaculty } },
+          { lopHoc: { nganhHoc: { khoa: { maKhoa: normalizedFaculty } } } }
+        ]
+      }
+    });
   }
 
   if (normalizedClassName) {
-    conditions.push({ nguoiDung: { maLop: normalizedClassName } });
+    conditions.push({ nguoiDung: { lopHoc: { maLop: normalizedClassName } } });
   }
 
   const searchCondition = buildRegistrationSearchCondition(searchTerm);
@@ -132,15 +139,15 @@ export const listRegistrationsAdmin = async (req, res) => {
       prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
       prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
       prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
-      prisma.nguoiDung.findMany({
-        where: { dangKy: { some: {} }, maKhoa: { not: null } },
+      prisma.khoa.findMany({
+        where: { nguoiDung: { some: { dangKy: { some: {} } } } },
         select: { maKhoa: true },
-        distinct: ["maKhoa"],
+        orderBy: { maKhoa: 'asc' }
       }),
-      prisma.nguoiDung.findMany({
-        where: { dangKy: { some: {} }, maLop: { not: null } },
+      prisma.lopHoc.findMany({
+        where: { nguoiDung: { some: { dangKy: { some: {} } } } },
         select: { maLop: true },
-        distinct: ["maLop"],
+        orderBy: { maLop: 'asc' }
       }),
       prisma.hoatDong.findMany({
         where: { dangKy: { some: {} } },
@@ -152,13 +159,11 @@ export const listRegistrationsAdmin = async (req, res) => {
 
   const faculties = facultiesRaw
     .map((item) => sanitizeOptionalText(item.maKhoa, 100))
-    .filter(Boolean)
-    .sort(sortAlpha);
+    .filter(Boolean);
 
   const classes = classesRaw
     .map((item) => sanitizeOptionalText(item.maLop, 100))
-    .filter(Boolean)
-    .sort(sortAlpha);
+    .filter(Boolean);
 
   const activities = activitiesRaw
     .map((item) => ({ id: item.id, title: sanitizeOptionalText(item.tieuDe, 255) || "Hoạt động" }))
@@ -542,8 +547,6 @@ export const listMyActivities = async (req, res) => {
   const normalizedFeedback =
     feedbackStatus && feedbackStatus !== "ALL"
       ? feedbackStatus === "NONE"
-        ? "NONE"
-        : sanitizeStatusFilter(feedbackStatus, FEEDBACK_STATUSES)
       : undefined;
 
   const registrations = await prisma.dangKyHoatDong.findMany({

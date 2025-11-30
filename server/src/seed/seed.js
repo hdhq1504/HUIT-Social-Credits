@@ -116,7 +116,7 @@ const seed = async () => {
         hoTen: "Nguyễn Thế Hũu",
         vaiTro: "GIANGVIEN",
         maCB: "GV001",
-        maKhoa: "CNTT",
+        khoa: { connect: { maKhoa: "CNTT" } },
         isActive: true,
       },
       create: {
@@ -125,8 +125,7 @@ const seed = async () => {
         hoTen: "Nguyễn Thế Hữu",
         vaiTro: "GIANGVIEN",
         maCB: "GV001",
-        maKhoa: "CNTT",
-        maLop: null,
+        khoa: { connect: { maKhoa: "CNTT" } },
         soDT: "0912345678",
         avatarUrl: "/images/profile.png",
         isActive: true,
@@ -188,7 +187,6 @@ const seed = async () => {
     });
 
     if (activeNamHoc) {
-      // Create PhanCong records for homeroom teachers
       for (const lop of lopHocData) {
         if (lop.giangVienChuNhiemId) {
           const lopHoc = await prisma.lopHoc.findUnique({
@@ -229,7 +227,6 @@ const seed = async () => {
         gioiTinh: "Nam",
         maLop: "13DHTH02",
         vaiTro: "SINHVIEN",
-        maKhoa: "CNTT",
         soDT: "0931318657",
         ngaySinh: new Date("2004-04-15"),
       },
@@ -238,7 +235,6 @@ const seed = async () => {
         hoTen: "Trần Thị Bích",
         gioiTinh: "Nữ",
         maLop: "13DHTH01",
-        maKhoa: "CNTT",
         soDT: "0912345671",
         ngaySinh: new Date("2004-01-20"),
       },
@@ -247,7 +243,6 @@ const seed = async () => {
         hoTen: "Lê Minh Cường",
         gioiTinh: "Nam",
         maLop: "13DHTH02",
-        maKhoa: "CNTT",
         soDT: "0912345672",
         ngaySinh: new Date("2004-02-15"),
       },
@@ -256,7 +251,6 @@ const seed = async () => {
         hoTen: "Phạm Văn Dũng",
         gioiTinh: "Nam",
         maLop: "13DHTH03",
-        maKhoa: "CNTT",
         soDT: "0912345673",
         ngaySinh: new Date("2004-03-10"),
       },
@@ -265,7 +259,6 @@ const seed = async () => {
         hoTen: "Võ Thị Em",
         gioiTinh: "Nữ",
         maLop: "13DHTH01",
-        maKhoa: "CNTT",
         soDT: "0912345674",
         ngaySinh: new Date("2004-05-05"),
       },
@@ -274,7 +267,6 @@ const seed = async () => {
         hoTen: "Nguyễn Hoàng Phúc",
         gioiTinh: "Nam",
         maLop: "13DHTH02",
-        maKhoa: "CNTT",
         soDT: "0912345675",
         ngaySinh: new Date("2004-06-22"),
       },
@@ -287,13 +279,14 @@ const seed = async () => {
 
       if (lop) {
         const maSV = student.email.split("@")[0];
+        const { maLop, ...studentData } = student;
         await prisma.nguoiDung.upsert({
           where: { email: student.email },
           update: {
             lopHocId: lop.id,
           },
           create: {
-            ...student,
+            ...studentData,
             maSV,
             matKhau: hashed,
             vaiTro: "SINHVIEN",
@@ -661,7 +654,7 @@ const seed = async () => {
         sucChuaToiDa: activity.sucChuaToiDa,
         hinhAnh: activity.hinhAnh,
         isFeatured: activity.isFeatured,
-        phuongThucDiemDanh: activity.phuongThucDiemDanh ?? "PHOTO",
+        phuongThucDiemDanh: "PHOTO",
         hocKyId: activity.hocKyId ?? academicPeriod.hocKyId,
         namHocId: activity.namHocId ?? academicPeriod.namHocId,
         isPublished: activity.isPublished ?? true,

@@ -75,7 +75,7 @@ export const adminRoutes = [
     component: UsersPage,
     meta: {
       key: 'users',
-      label: 'Quản lý người dùng',
+      label: 'Quản lý tài khoản',
       icon: 'UserGearOutlined',
     },
   },

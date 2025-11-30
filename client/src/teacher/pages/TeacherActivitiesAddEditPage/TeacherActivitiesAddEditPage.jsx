@@ -337,7 +337,7 @@ const ActivitiesAddEditPage = () => {
           maxCapacity: 0,
           semester: '',
           academicYear: '',
-          attendanceMethod: 'qr',
+          attendanceMethod: 'photo',
         }}
       >
         <div className={cx('activities__container')}>
@@ -471,17 +471,14 @@ const ActivitiesAddEditPage = () => {
                     <InputNumber min={0} placeholder="0" style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}>
+                <Col xs={24} md={12} style={{ display: 'none' }}>
                   <Form.Item
                     name="attendanceMethod"
                     label="Phương thức điểm danh"
                     className={cx('activities__group')}
-                    rules={[{ required: true, message: 'Vui lòng chọn phương thức!' }]}
+                    initialValue="photo"
                   >
-                    <Select placeholder="Chọn phương thức">
-                      <Option value="qr">QR Code</Option>
-                      <Option value="photo">Chụp Ảnh</Option>
-                    </Select>
+                    <Input type="hidden" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>

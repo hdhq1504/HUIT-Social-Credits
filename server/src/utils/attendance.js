@@ -1,30 +1,23 @@
 const ATTENDANCE_METHOD_MAP = {
-  QR: "qr",
   PHOTO: "photo"
 };
 
 const LABEL_MAP = {
-  qr: "QR Code",
   photo: "Chụp Ảnh"
 };
 
 /**
  * Chuẩn hóa giá trị phương thức điểm danh.
  * @param {string} value - Giá trị đầu vào.
- * @returns {string|null} Giá trị chuẩn hóa (QR, PHOTO) hoặc null.
+ * @returns {string|null} Giá trị chuẩn hóa (PHOTO) hoặc null.
  */
 export const normalizeAttendanceMethod = (value) => {
   if (!value) return null;
   const normalized = String(value).trim().toLowerCase();
-  if (normalized === "face") {
+  if (normalized === "face" || normalized === "photo") {
     return "PHOTO";
   }
-  const entry = Object.entries(ATTENDANCE_METHOD_MAP).find(([, apiValue]) => apiValue === normalized);
-  if (entry) {
-    return entry[0];
-  }
-  const key = normalized.toUpperCase();
-  return ATTENDANCE_METHOD_MAP[key] ? key : null;
+  return null;
 };
 
 /**
@@ -34,15 +27,11 @@ export const normalizeAttendanceMethod = (value) => {
  */
 export const mapAttendanceMethodToApi = (value) => {
   if (!value) return null;
-  if (String(value).trim().toLowerCase() === "face") {
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "face" || normalized === "photo" || normalized === "qr") { // Allow qr to map to photo or null? Better to just map to photo or null. Let's stick to photo.
     return "photo";
   }
-  if (ATTENDANCE_METHOD_MAP[value]) {
-    return ATTENDANCE_METHOD_MAP[value];
-  }
-  const normalized = String(value).trim().toLowerCase();
-  const entry = Object.entries(ATTENDANCE_METHOD_MAP).find(([, apiValue]) => apiValue === normalized);
-  return entry ? entry[1] : null;
+  return null;
 };
 
 /**
@@ -58,9 +47,9 @@ export const getAttendanceMethodLabel = (value) => {
 
 /**
  * Lấy phương thức điểm danh mặc định.
- * @returns {string} "QR".
+ * @returns {string} "PHOTO".
  */
-export const getDefaultAttendanceMethod = () => "QR";
+export const getDefaultAttendanceMethod = () => "PHOTO";
 
 export default {
   normalizeAttendanceMethod,

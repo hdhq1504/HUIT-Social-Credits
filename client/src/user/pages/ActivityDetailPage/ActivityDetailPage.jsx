@@ -96,21 +96,17 @@ function ActivityDetailPage() {
 
   useEffect(() => {
     let mounted = true;
-    if (activity?.attendanceMethod === 'photo') {
-      ensureModelsLoaded()
-        .then(() => {
-          if (mounted) setFaceModelsReady(true);
-        })
-        .catch(() => {
-          if (mounted) setFaceModelsReady(false);
-        });
-    } else {
-      setFaceModelsReady(false);
-    }
+    ensureModelsLoaded()
+      .then(() => {
+        if (mounted) setFaceModelsReady(true);
+      })
+      .catch(() => {
+        if (mounted) setFaceModelsReady(false);
+      });
     return () => {
       mounted = false;
     };
-  }, [activity?.attendanceMethod]);
+  }, []);
 
   const capacityInfo = useMemo(() => {
     if (!activity) return { current: 0, total: 0, hasLimit: false };
@@ -125,17 +121,11 @@ function ActivityDetailPage() {
     capacityInfo.total > 0 ? Math.min(100, Math.round((capacityInfo.current / capacityInfo.total) * 100)) : 0;
 
   const attendanceDisplay = useMemo(() => {
-    if (!activity?.attendanceMethod) return null;
-    const method = activity.attendanceMethod;
-    const base = ATTENDANCE_METHOD_BADGES[method] || {
-      label: activity.attendanceMethodLabel || method,
+    return {
+      label: 'Chụp ảnh',
       className: 'activity-detail__checkin-badge--photo',
     };
-    return {
-      label: activity.attendanceMethodLabel || base.label,
-      className: base.className,
-    };
-  }, [activity?.attendanceMethod, activity?.attendanceMethodLabel]);
+  }, []);
 
   const registrationDeadlineLabel = useMemo(() => {
     if (!activity?.registrationDeadline) return null;
@@ -404,7 +394,7 @@ function ActivityDetailPage() {
         });
         return;
       }
-      if (activity?.attendanceMethod === 'photo' && !faceModelsReady) {
+      if (!faceModelsReady) {
         toast({
           message: 'Hệ thống đang tải mô hình nhận diện khuôn mặt. Vui lòng thử lại sau giây lát.',
           variant: 'warning',

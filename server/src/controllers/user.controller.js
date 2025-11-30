@@ -14,7 +14,7 @@ const SORTABLE_FIELDS = {
   email: ['email'],
   identifier: ['maSV', 'maCB'],
   role: ['vaiTro'],
-  departmentCode: ['maKhoa', 'maLop'],
+  departmentCode: ['khoaId', 'lopHocId'],
   phoneNumber: ['soDT'],
   isActive: ['isActive'],
   lastLoginAt: ['lastLoginAt'],
@@ -91,8 +91,8 @@ const mapUserForResponse = (user) => ({
   role: user.vaiTro,
   studentCode: user.maSV,
   staffCode: user.maCB,
-  classCode: user.maLop || user.lopHoc?.maLop,
-  departmentCode: user.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa,
+  classCode: user.lopHoc?.maLop,
+  departmentCode: user.khoa?.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa,
   phoneNumber: user.soDT,
   isActive: user.isActive,
   lastLoginAt: user.lastLoginAt,
@@ -100,7 +100,8 @@ const mapUserForResponse = (user) => ({
   avatarUrl: user.avatarUrl,
   classId: user.lopHoc?.id,
   majorId: user.lopHoc?.nganhHoc?.id,
-  facultyId: user.lopHoc?.nganhHoc?.khoa?.id
+  facultyId: user.khoa?.id || user.lopHoc?.nganhHoc?.khoa?.id,
+  gender: user.gioiTinh
 });
 
 const sanitizeString = (value) => {
@@ -186,20 +187,29 @@ export const listUsers = async (req, res) => {
         vaiTro: true,
         maSV: true,
         maCB: true,
-        maLop: true,
-        maKhoa: true,
         soDT: true,
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
         avatarUrl: true,
+        gioiTinh: true,
+        khoa: {
+          select: {
+            id: true,
+            maKhoa: true,
+            tenKhoa: true
+          }
+        },
         lopHoc: {
           select: {
+            id: true,
             maLop: true,
             nganhHoc: {
               select: {
+                id: true,
                 khoa: {
                   select: {
+                    id: true,
                     maKhoa: true
                   }
                 }
@@ -247,14 +257,19 @@ export const getUserById = async (req, res) => {
         vaiTro: true,
         maSV: true,
         maCB: true,
-        maLop: true,
-        maKhoa: true,
         soDT: true,
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
-        createdAt: true,
         avatarUrl: true,
+        gioiTinh: true,
+        khoa: {
+          select: {
+            id: true,
+            maKhoa: true,
+            tenKhoa: true
+          }
+        },
         lopHoc: {
           select: {
             id: true,
@@ -301,7 +316,7 @@ export const createUser = async (req, res) => {
     return res.status(error.statusCode || 500).json({ error: error.message });
   }
 
-  const { fullName, email, role, password, studentCode, staffCode, lopHocId, phoneNumber, isActive, avatarImage, gender } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
@@ -343,11 +358,13 @@ export const createUser = async (req, res) => {
         gioiTinh: normalizedGender,
         maSV: normalizedStudentCode,
         maCB: normalizedStaffCode,
-        lopHocId: lopHocId || null,
+        lopHoc: lopHocId ? { connect: { id: lopHocId } } : undefined,
+        khoa: facultyId ? { connect: { id: facultyId } } : undefined,
         soDT: normalizedPhoneNumber,
         isActive: activeState,
       },
       include: {
+        khoa: true,
         lopHoc: {
           select: {
             id: true,
@@ -414,7 +431,7 @@ export const updateUser = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, email, role, password, studentCode, staffCode, lopHocId, phoneNumber, isActive, avatarImage, gender } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
@@ -459,7 +476,8 @@ export const updateUser = async (req, res) => {
       ...(normalizedGender ? { gioiTinh: normalizedGender } : {}),
       maSV: normalizedStudentCode ?? null,
       maCB: normalizedStaffCode ?? null,
-      ...(lopHocId !== undefined ? { lopHocId } : {}),
+      ...(lopHocId !== undefined ? { lopHoc: lopHocId ? { connect: { id: lopHocId } } : { disconnect: true } } : {}),
+      ...(facultyId !== undefined ? { khoa: facultyId ? { connect: { id: facultyId } } : { disconnect: true } } : {}),
       soDT: normalizedPhoneNumber ?? null,
     };
 
@@ -515,6 +533,7 @@ export const updateUser = async (req, res) => {
       where: { id },
       data: updateData,
       include: {
+        khoa: true,
         lopHoc: {
           select: {
             id: true,

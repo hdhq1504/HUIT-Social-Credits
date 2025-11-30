@@ -1,9 +1,9 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar } from 'antd';
+import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar, Tag } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faFloppyDisk, faUserPlus, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faFloppyDisk, faUserPlus, faCamera, faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
@@ -18,7 +18,6 @@ const cx = classNames.bind(styles);
 const ROLE_OPTIONS = [
   { label: 'Sinh viên', value: 'SINHVIEN' },
   { label: 'Giảng viên', value: 'GIANGVIEN' },
-  { label: 'Nhân viên', value: 'NHANVIEN' },
   { label: 'Quản trị viên', value: 'ADMIN' },
 ];
 
@@ -41,11 +40,13 @@ const UsersAddEditPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const role = Form.useWatch('role', form);
+  const isActive = Form.useWatch('isActive', form);
   const isEditMode = Boolean(id);
   const { setBreadcrumbs, setPageActions } = useContext(AdminPageContext);
   const { contextHolder, open: openToast } = useToast();
   const [avatarFileList, setAvatarFileList] = useState([]);
-  const [avatarData, setAvatarData] = useState(null);
+  const [avatarData] = useState(null);
   const [selectedFacultyId, setSelectedFacultyId] = useState(null);
   const [selectedMajorId, setSelectedMajorId] = useState(null);
 
@@ -208,7 +209,7 @@ const UsersAddEditPage = () => {
   return (
     <div className={cx('users-add-edit-page')}>
       {contextHolder}
-      <div className={cx('users-add-edit-page__card')}>
+      <div className={cx('users-add-edit-page__container')}>
         <div className={cx('users-add-edit-page__header')}>
           <div className={cx('users-add-edit-page__icon')}>
             <FontAwesomeIcon icon={isEditMode ? faFloppyDisk : faUserPlus} />
@@ -231,56 +232,13 @@ const UsersAddEditPage = () => {
           initialValues={{ isActive: true, role: 'SINHVIEN' }}
         >
           <Spin spinning={isLoadingDetail}>
-            <Row gutter={[24, 12]}>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Họ và tên"
-                  name="fullName"
-                  rules={[{ required: true, message: 'Vui lòng nhập họ và tên.' }]}
-                >
-                  <Input placeholder="Nhập họ và tên" allowClear />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Email"
-                  name="email"
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập email.' },
-                    { type: 'email', message: 'Email không hợp lệ.' },
-                  ]}
-                >
-                  <Input placeholder="ví dụ: sinhvien@huit.edu.vn" allowClear />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Giới tính"
-                  name="gender"
-                  rules={[{ required: true, message: 'Vui lòng chọn giới tính.' }]}
-                >
-                  <Select placeholder="Chọn giới tính">
-                    <Select.Option value="Nam">Nam</Select.Option>
-                    <Select.Option value="Nữ">Nữ</Select.Option>
-                    <Select.Option value="Khác">Khác</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              {/* Avatar Upload */}
-              <Col xs={24}>
-                <Form.Item label="Avatar người dùng">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <Avatar
-                      size={80}
-                      src={avatarFileList[0]?.url || avatarFileList[0]?.thumbUrl}
-                      icon={<FontAwesomeIcon icon={faCamera} />}
-                      style={{ backgroundColor: '#f0f0f0' }}
-                    />
+            <Row gutter={24}>
+              <Col xs={24} lg={8}>
+                <div className={cx('users-add-edit-page__sidebar-card')}>
+                  <div className={cx('users-add-edit-page__avatar-section')}>
                     <Upload
-                      listType="picture"
-                      fileList={avatarFileList}
+                      listType="picture-card"
+                      showUploadList={false}
                       beforeUpload={(file) => {
                         const isImage = file.type.startsWith('image/');
                         if (!isImage) {
@@ -297,158 +255,229 @@ const UsersAddEditPage = () => {
                       onChange={({ fileList: newFileList }) => {
                         setAvatarFileList(newFileList.slice(-1));
                       }}
-                      onRemove={() => {
-                        setAvatarFileList([]);
-                        setAvatarData(null);
-                      }}
                       maxCount={1}
                       accept="image/*"
                     >
-                      <Button icon={<FontAwesomeIcon icon={faCamera} />}>
-                        {avatarFileList.length > 0 ? 'Thay đổi avatar' : 'Upload avatar'}
-                      </Button>
+                      <div className={cx('users-add-edit-page__avatar-wrapper')}>
+                        <Avatar
+                          size={120}
+                          src={
+                            avatarFileList[0]?.url ||
+                            avatarFileList[0]?.thumbUrl ||
+                            (avatarFileList[0]?.originFileObj
+                              ? URL.createObjectURL(avatarFileList[0].originFileObj)
+                              : null)
+                          }
+                          icon={<FontAwesomeIcon icon={faCamera} />}
+                          style={{ backgroundColor: '#f1f5f9', color: '#cbd5e1', fontSize: '40px' }}
+                        />
+                        <div className={cx('users-add-edit-page__avatar-overlay')}>
+                          <FontAwesomeIcon icon={faCamera} />
+                        </div>
+                      </div>
                     </Upload>
+                    <div className={cx('users-add-edit-page__upload-hint')}>Nhấn để thay đổi ảnh đại diện</div>
+                    <Tag
+                      className={cx(
+                        'users-add-edit-page__status-tag',
+                        isActive
+                          ? 'users-add-edit-page__status-tag--active'
+                          : 'users-add-edit-page__status-tag--inactive',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faCircleDot} className={cx('users-add-edit-page__status-icon')} />
+                      {isActive ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+                    </Tag>
                   </div>
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
-                    Hỗ trợ: JPG, PNG, WEBP. Kích thước tối đa: 5MB
+
+                  <Form.Item name="isActive" label="Đang hoạt động" valuePropName="checked">
+                    <Switch checkedChildren="Có" unCheckedChildren="Không" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Vai trò hệ thống"
+                    name="role"
+                    rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}
+                  >
+                    <Select options={ROLE_OPTIONS} placeholder="Chọn vai trò" />
+                  </Form.Item>
+                </div>
+              </Col>
+
+              {/* Main Content */}
+              <Col xs={24} lg={16}>
+                <div className={cx('users-add-edit-page__main-card')}>
+                  {/* Section 1: Personal Info */}
+                  <div className={cx('users-add-edit-page__section-title')}>Thông tin chung</div>
+                  <Row gutter={24}>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Họ và tên"
+                        name="fullName"
+                        rules={[{ required: true, message: 'Vui lòng nhập họ và tên.' }]}
+                      >
+                        <Input placeholder="Nhập họ và tên" allowClear />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập email.' },
+                          { type: 'email', message: 'Email không hợp lệ.' },
+                        ]}
+                      >
+                        <Input placeholder="ví dụ: sinhvien@huit.edu.vn" allowClear />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Số điện thoại" name="phoneNumber">
+                        <Input placeholder="Nhập số điện thoại" allowClear />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Giới tính"
+                        name="gender"
+                        rules={[{ required: true, message: 'Vui lòng chọn giới tính.' }]}
+                      >
+                        <Select placeholder="Chọn giới tính">
+                          <Select.Option value="Nam">Nam</Select.Option>
+                          <Select.Option value="Nữ">Nữ</Select.Option>
+                          <Select.Option value="Khác">Khác</Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <div className={cx('users-add-edit-page__divider')} />
+
+                  <div className={cx('users-add-edit-page__section-title')}>Thông tin học vấn / Công tác</div>
+                  <Row gutter={24}>
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Mã sinh viên" name="studentCode">
+                        <Input placeholder="Nhập mã sinh viên" allowClear disabled={role !== 'SINHVIEN'} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label="Mã cán bộ" name="staffCode">
+                        <Input placeholder="Nhập mã cán bộ" allowClear disabled={role === 'SINHVIEN'} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Form.Item label="Khoa" name="facultyId">
+                        <Select
+                          placeholder="Chọn khoa"
+                          options={facultiesQuery.data?.map((f) => ({
+                            label: f.tenKhoa,
+                            value: f.id,
+                          }))}
+                          onChange={(value) => {
+                            setSelectedFacultyId(value);
+                            setSelectedMajorId(null);
+                            form.setFieldsValue({ majorId: null, classId: null });
+                          }}
+                          loading={facultiesQuery.isLoading}
+                          allowClear
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Form.Item label="Ngành" name="majorId">
+                        <Select
+                          placeholder="Chọn ngành"
+                          options={majorsQuery.data?.map((m) => ({
+                            label: m.tenNganh,
+                            value: m.id,
+                          }))}
+                          onChange={(value) => {
+                            setSelectedMajorId(value);
+                            form.setFieldsValue({ classId: null });
+                          }}
+                          loading={majorsQuery.isLoading}
+                          disabled={!selectedFacultyId || role !== 'SINHVIEN'}
+                          allowClear
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Form.Item label="Lớp" name="classId">
+                        <Select
+                          placeholder="Chọn lớp"
+                          options={classesQuery.data?.map((c) => ({
+                            label: c.tenLop,
+                            value: c.id,
+                          }))}
+                          loading={classesQuery.isLoading}
+                          disabled={!selectedMajorId || role !== 'SINHVIEN'}
+                          allowClear
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <div className={cx('users-add-edit-page__divider')} />
+
+                  <div className={cx('users-add-edit-page__section-title')}>Bảo mật</div>
+                  <Row gutter={24}>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Mật khẩu"
+                        name="password"
+                        rules={[
+                          ...(isEditMode ? [] : [{ required: true, message: 'Vui lòng nhập mật khẩu.' }]),
+                          { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự.' },
+                        ]}
+                      >
+                        <Input.Password
+                          placeholder={isEditMode ? 'Để trống nếu không thay đổi' : 'Nhập mật khẩu'}
+                          visibilityToggle
+                          allowClear
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Xác nhận mật khẩu"
+                        name="confirmPassword"
+                        dependencies={['password']}
+                        rules={[
+                          ...(isEditMode ? [] : [{ required: true, message: 'Vui lòng xác nhận mật khẩu.' }]),
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              const password = getFieldValue('password');
+                              if (!password && !value) {
+                                return Promise.resolve();
+                              }
+                              if (value === password) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error('Mật khẩu xác nhận không khớp.'));
+                            },
+                          }),
+                        ]}
+                      >
+                        <Input.Password placeholder="Nhập lại mật khẩu" visibilityToggle allowClear />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <div className={cx('users-add-edit-page__actions')}>
+                    <Button onClick={handleBackToList}>Hủy</Button>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={isSubmitting}
+                      icon={<FontAwesomeIcon icon={faFloppyDisk} />}
+                    >
+                      {isEditMode ? 'Cập nhật' : 'Tạo người dùng'}
+                    </Button>
                   </div>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label="Vai trò" name="role" rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}>
-                  <Select options={ROLE_OPTIONS} placeholder="Chọn vai trò" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label="Số điện thoại" name="phoneNumber">
-                  <Input placeholder="Nhập số điện thoại" allowClear />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item label="Mã sinh viên" name="studentCode">
-                  <Input placeholder="Nhập mã sinh viên" allowClear />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label="Mã cán bộ" name="staffCode">
-                  <Input placeholder="Nhập mã cán bộ" allowClear />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={8}>
-                <Form.Item label="Khoa" name="facultyId">
-                  <Select
-                    placeholder="Chọn khoa"
-                    options={facultiesQuery.data?.map((f) => ({
-                      label: f.tenKhoa,
-                      value: f.id,
-                    }))}
-                    onChange={(value) => {
-                      setSelectedFacultyId(value);
-                      setSelectedMajorId(null);
-                      form.setFieldsValue({ majorId: null, classId: null });
-                    }}
-                    loading={facultiesQuery.isLoading}
-                    allowClear
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Ngành" name="majorId">
-                  <Select
-                    placeholder="Chọn ngành"
-                    options={majorsQuery.data?.map((m) => ({
-                      label: m.tenNganh,
-                      value: m.id,
-                    }))}
-                    onChange={(value) => {
-                      setSelectedMajorId(value);
-                      form.setFieldsValue({ classId: null });
-                    }}
-                    loading={majorsQuery.isLoading}
-                    disabled={!selectedFacultyId}
-                    allowClear
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Lớp" name="classId">
-                  <Select
-                    placeholder="Chọn lớp"
-                    options={classesQuery.data?.map((c) => ({
-                      label: c.tenLop,
-                      value: c.id,
-                    }))}
-                    loading={classesQuery.isLoading}
-                    disabled={!selectedMajorId}
-                    allowClear
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Mật khẩu"
-                  name="password"
-                  rules={[
-                    ...(isEditMode ? [] : [{ required: true, message: 'Vui lòng nhập mật khẩu.' }]),
-                    { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự.' },
-                  ]}
-                >
-                  <Input.Password
-                    placeholder={isEditMode ? 'Để trống nếu không thay đổi' : 'Nhập mật khẩu'}
-                    visibilityToggle
-                    allowClear
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="Xác nhận mật khẩu"
-                  name="confirmPassword"
-                  dependencies={['password']}
-                  rules={[
-                    ...(isEditMode ? [] : [{ required: true, message: 'Vui lòng xác nhận mật khẩu.' }]),
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        const password = getFieldValue('password');
-                        if (!password && !value) {
-                          return Promise.resolve();
-                        }
-                        if (value === password) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp.'));
-                      },
-                    }),
-                  ]}
-                >
-                  <Input.Password placeholder="Nhập lại mật khẩu" visibilityToggle allowClear />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24}>
-                <Form.Item name="isActive" label="Đang hoạt động" valuePropName="checked">
-                  <Switch />
-                </Form.Item>
+                </div>
               </Col>
             </Row>
           </Spin>
-
-          <div className={cx('users-add-edit-page__actions')}>
-            <Button onClick={handleBackToList}>Hủy</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting}
-              icon={<FontAwesomeIcon icon={faFloppyDisk} />}
-            >
-              {isEditMode ? 'Cập nhật' : 'Tạo'}
-            </Button>
-          </div>
         </Form>
       </div>
     </div>

@@ -113,8 +113,25 @@ const USER_PUBLIC_FIELDS = {
   email: true,
   avatarUrl: true,
   maSV: true,
-  maLop: true,
-  maKhoa: true
+  lopHoc: {
+    select: {
+      maLop: true,
+      nganhHoc: {
+        select: {
+          khoa: {
+            select: {
+              maKhoa: true
+            }
+          }
+        }
+      }
+    }
+  },
+  khoa: {
+    select: {
+      maKhoa: true
+    }
+  }
 };
 
 const ACTIVITY_INCLUDE = {
@@ -136,8 +153,25 @@ const ACTIVITY_INCLUDE = {
           email: true,
           avatarUrl: true,
           maSV: true,
-          maKhoa: true,
-          maLop: true
+          lopHoc: {
+            select: {
+              maLop: true,
+              nganhHoc: {
+                select: {
+                  khoa: {
+                    select: {
+                      maKhoa: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          khoa: {
+            select: {
+              maKhoa: true
+            }
+          }
         }
       }
     },
@@ -171,9 +205,26 @@ const ADMIN_STUDENT_FIELDS = {
   email: true,
   avatarUrl: true,
   maSV: true,
-  maKhoa: true,
-  maLop: true,
-  soDT: true
+  soDT: true,
+  lopHoc: {
+    select: {
+      maLop: true,
+      nganhHoc: {
+        select: {
+          khoa: {
+            select: {
+              maKhoa: true
+            }
+          }
+        }
+      }
+    }
+  },
+  khoa: {
+    select: {
+      maKhoa: true
+    }
+  }
 };
 
 const ADMIN_REGISTRATION_INCLUDE = {
@@ -336,8 +387,8 @@ const mapStudentProfile = (user, { includeContact = false } = {}) => {
     email: user.email ?? null,
     avatarUrl: user.avatarUrl ?? null,
     studentCode: user.maSV ?? null,
-    faculty: user.maKhoa ?? null,
-    className: user.maLop ?? null
+    faculty: user.khoa?.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
+    className: user.lopHoc?.maLop || null
   };
 
   if (includeContact) {

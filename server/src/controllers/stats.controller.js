@@ -466,8 +466,25 @@ export const getAdminReportsSummary = async (req, res) => {
             hoTen: true,
             email: true,
             maSV: true,
-            maLop: true,
-            maKhoa: true
+            lopHoc: {
+              select: {
+                maLop: true,
+                nganhHoc: {
+                  select: {
+                    khoa: {
+                      select: {
+                        maKhoa: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            khoa: {
+              select: {
+                maKhoa: true
+              }
+            }
           }
         },
         hoatDong: {
@@ -502,8 +519,8 @@ export const getAdminReportsSummary = async (req, res) => {
     if (!student || !activity) return;
 
     const numericPoints = Number(activity.diemCong) || 0;
-    const classCode = safeTrim(student.maLop) ?? "Chưa cập nhật";
-    const facultyCode = safeTrim(student.maKhoa) ?? "Chưa cập nhật";
+    const classCode = safeTrim(student.lopHoc?.maLop) ?? "Chưa cập nhật";
+    const facultyCode = safeTrim(student.khoa?.maKhoa || student.lopHoc?.nganhHoc?.khoa?.maKhoa) ?? "Chưa cập nhật";
     const studentName = safeTrim(student.hoTen) ?? safeTrim(student.email) ?? "Sinh viên";
     const studentId = student.id;
 

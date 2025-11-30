@@ -65,9 +65,26 @@ export const me = async (req, res) => {
       ngaySinh: true,
       soDT: true,
       gioiTinh: true,
-      maLop: true,
-      maKhoa: true,
-      avatarUrl: true
+      avatarUrl: true,
+      lopHoc: {
+        select: {
+          maLop: true,
+          nganhHoc: {
+            select: {
+              khoa: {
+                select: {
+                  maKhoa: true
+                }
+              }
+            }
+          }
+        }
+      },
+      khoa: {
+        select: {
+          maKhoa: true
+        }
+      }
     }
   });
   if (!user) return res.status(404).json({ error: "User không tồn tại" });
@@ -82,8 +99,8 @@ export const me = async (req, res) => {
       dateOfBirth: user.ngaySinh,
       phoneNumber: user.soDT,
       gender: user.gioiTinh,
-      classCode: user.maLop,
-      departmentCode: user.maKhoa,
+      classCode: user.lopHoc?.maLop,
+      departmentCode: user.khoa?.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa,
       avatarUrl: user.avatarUrl
     }
   });
