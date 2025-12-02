@@ -332,7 +332,11 @@ const UsersAddEditPage = () => {
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Số điện thoại" name="phoneNumber">
+                      <Form.Item
+                        label="Số điện thoại"
+                        name="phoneNumber"
+                        rules={[{ pattern: /^(0[3|5|7|8|9])+([0-9]{8})$/, message: 'Số điện thoại không hợp lệ.' }]}
+                      >
                         <Input placeholder="Nhập số điện thoại" allowClear />
                       </Form.Item>
                     </Col>
@@ -356,7 +360,16 @@ const UsersAddEditPage = () => {
                   <div className={cx('users-add-edit-page__section-title')}>Thông tin học vấn / Công tác</div>
                   <Row gutter={24}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Mã sinh viên" name="studentCode">
+                      <Form.Item
+                        label="Mã sinh viên"
+                        name="studentCode"
+                        rules={[
+                          {
+                            pattern: /^[a-zA-Z0-9]{8,20}$/,
+                            message: 'Mã sinh viên không hợp lệ (8-20 ký tự chữ và số).',
+                          },
+                        ]}
+                      >
                         <Input placeholder="Nhập mã sinh viên" allowClear disabled={role !== 'SINHVIEN'} />
                       </Form.Item>
                     </Col>

@@ -124,7 +124,6 @@ function Header() {
 
   const renderLoggedInMenu = () => (
     <div className={cx('header__menu')}>
-
       {/* Chỉ hiển thị menu sinh viên nếu không phải admin */}
       {user?.role !== 'ADMIN' && (
         <>

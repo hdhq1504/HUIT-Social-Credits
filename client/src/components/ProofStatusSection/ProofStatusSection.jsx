@@ -46,7 +46,7 @@ function ProofStatusSection() {
 
   const { data: registrations = [], isFetching } = useQuery({
     queryKey: [...MY_ACTIVITIES_QUERY_KEY, 'proof-status'],
-    queryFn: () => activitiesApi.listMine({ status: 'DA_THAM_GIA' }),
+    queryFn: () => activitiesApi.listMine(),
     enabled: isLoggedIn,
     staleTime: 30 * 1000,
     retry: 1,
@@ -80,7 +80,8 @@ function ProofStatusSection() {
           label: 'Đang xử lý',
         };
 
-        const reason = mapping.status === 'rejected' && feedback?.reason ? String(feedback.reason).trim() : null;
+        const reason =
+          mapping.status === 'rejected' && feedback?.rejectedReason ? String(feedback.rejectedReason).trim() : null;
 
         const infoParts = [];
         if (activity?.pointGroupLabel) infoParts.push(activity.pointGroupLabel);

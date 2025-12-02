@@ -412,11 +412,7 @@ export default function DashboardPage() {
             ) : pendingFeedback.length ? (
               pendingFeedback.map((feedback, idx) => (
                 <div key={feedback.id || idx} className={cx('dashboard__feedback-item')}>
-                  <img
-                    src={feedback.avatarUrl}
-                    alt={feedback.name}
-                    className={cx('dashboard__feedback-avatar')}
-                  />
+                  <img src={feedback.avatarUrl} alt={feedback.name} className={cx('dashboard__feedback-avatar')} />
                   <div className={cx('dashboard__feedback-content')}>
                     <div
                       style={{

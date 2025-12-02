@@ -622,6 +622,16 @@ function CardActivity(props) {
           status: pill(L.waitingFeedback, 'warning'),
           buttons: [btn(L.details, openDetails), btn(L.processing, () => {}, { variant: 'muted', disabled: true })],
         };
+      case 'attendance_review':
+        return {
+          status: pill('• Chờ mở phản hồi', 'warning'),
+          buttons: [btn(L.details, openDetails), btn(L.processing, () => {}, { variant: 'muted', disabled: true })],
+        };
+      case 'feedback_closed':
+        return {
+          status: pill('• Hết hạn phản hồi', 'muted'),
+          buttons: [btn(L.details, openDetails), btn('Đã hết hạn', () => {}, { variant: 'muted', disabled: true })],
+        };
       case 'feedback_pending':
         return {
           status: pill('• Chưa được cộng điểm', 'danger'),

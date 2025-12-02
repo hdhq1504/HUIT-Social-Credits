@@ -10,6 +10,8 @@ import {
   getClassesByFaculty
 } from "../controllers/student.controller.js";
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { createStudentSchema, updateStudentSchema } from "../utils/validationSchemas.js";
 
 const router = Router();
 
@@ -27,14 +29,14 @@ router.get("/", getStudents);
  * @desc Tạo sinh viên mới
  * @access Admin
  */
-router.post("/", createStudent);
+router.post("/", validate(createStudentSchema), createStudent);
 
 /**
  * @route PUT /api/students/:id
  * @desc Cập nhật thông tin sinh viên
  * @access Admin
  */
-router.put("/:id", updateStudent);
+router.put("/:id", validate(updateStudentSchema), updateStudent);
 
 /**
  * @route DELETE /api/students/:id

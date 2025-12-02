@@ -6,6 +6,7 @@ import {
   buildActivityResponse,
   mapFeedback,
   sanitizeFeedbackAttachmentList,
+  computeFeedbackWindow,
 } from "../../utils/activity.js";
 import { extractStoragePaths } from "../../utils/storageMapper.js";
 
@@ -26,15 +27,34 @@ export const submitActivityFeedback = async (req, res) => {
 
   const registration = await prisma.dangKyHoatDong.findUnique({
     where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
-    include: { phanHoi: true, hoatDong: true },
+    include: { phanHoi: true, hoatDong: true, lichSuDiemDanh: true },
   });
 
   if (!registration || registration.trangThai === "DA_HUY") {
     return res.status(404).json({ error: "Bạn chưa đăng ký hoạt động này hoặc đã hủy trước đó" });
   }
 
-  if (registration.trangThai !== "DA_THAM_GIA") {
-    return res.status(400).json({ error: "Bạn cần tham gia hoạt động trước khi gửi phản hồi" });
+  if (registration.trangThai !== "CHO_DUYET") {
+    return res.status(400).json({ error: "Kết quả điểm danh đã được xử lý, không thể gửi phản hồi" });
+  }
+
+  const history = registration.lichSuDiemDanh || [];
+  const hasFaceIssue = history.some((entry) =>
+    ["REVIEW", "REJECTED"].includes(entry.faceMatch)
+  );
+
+  if (!hasFaceIssue) {
+    return res.status(400).json({ error: "Bạn không thuộc diện cần phản hồi minh chứng (không có ảnh cần kiểm tra)" });
+  }
+
+  const { start, end } = computeFeedbackWindow(registration.hoatDong, registration);
+  const now = new Date();
+
+  if (now < start) {
+    return res.status(400).json({ error: "Chưa đến thời gian gửi phản hồi (vui lòng chờ 24h sau khi điểm danh)" });
+  }
+  if (now > end) {
+    return res.status(400).json({ error: "Đã hết hạn gửi phản hồi" });
   }
 
   const existingFeedback = registration.phanHoi ?? null;

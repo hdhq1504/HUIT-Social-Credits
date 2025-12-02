@@ -16,19 +16,14 @@ const cx = classNames.bind(styles);
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errors, setErrors] = useState({});
   const { contextHolder, open: openToast } = useToast();
   const navigate = useNavigate();
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }) => {
-      try {
-        const user = await authApi.login(email, password);
-        return user;
-      } catch (error) {
-        const message = error?.response?.data?.error || 'Đăng nhập thất bại. Vui lòng thử lại.';
-        throw new Error(message);
-      }
+      const user = await authApi.login(email, password);
+      return user;
     },
     onSuccess: (user) => {
       openToast({ message: 'Đăng nhập thành công!', variant: 'success' });
@@ -46,27 +41,24 @@ function LoginForm() {
       }, 500);
     },
     onError: (error) => {
-      openToast({ message: error.message, variant: 'danger' });
+      const responseData = error?.response?.data;
+      if (responseData?.details) {
+        const newErrors = {};
+        responseData.details.forEach((err) => {
+          newErrors[err.field] = err.message;
+        });
+        setErrors(newErrors);
+      } else {
+        const message = responseData?.error || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        setErrors({ general: message });
+        openToast({ message: message, variant: 'danger' });
+      }
     },
   });
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
-
-    if (!email || !password) {
-      setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu.');
-      return;
-    }
-
-    if (email !== 'Admin' && email !== 'admin@gmail.com') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setErrorMessage('Email không hợp lệ. Vui lòng nhập email đầy đủ (ví dụ: example@gmail.com).');
-        return;
-      }
-    }
-
+    setErrors({});
     loginMutation.mutate({ email, password });
   };
 
@@ -94,6 +86,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                error={errors.email}
               />
             </div>
             <div className={cx('login-form__field')}>
@@ -104,9 +97,10 @@ function LoginForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                error={errors.password}
               />
             </div>
-            {errorMessage && <p className={cx('login-form__error')}>{errorMessage}</p>}
+            {errors.general && <p className={cx('login-form__error')}>{errors.general}</p>}
           </div>
 
           <div className={cx('login-form__meta')}>

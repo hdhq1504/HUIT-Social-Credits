@@ -137,8 +137,8 @@ function FeedbackDetailPage() {
     decideMutation.mutateAsync({ ids: [feedback.id], status: 'BI_TU_CHOI', reason: rejectReason });
   }, [decideMutation, rejectReason, feedback?.id]);
 
-  const approveDisabled = decideMutation.isPending || !feedback || feedback.status === 'DA_DUYET';
-  const rejectDisabled = decideMutation.isPending || !feedback || feedback.status === 'BI_TU_CHOI';
+  const approveDisabled = decideMutation.isPending || !feedback || feedback.status !== 'CHO_DUYET';
+  const rejectDisabled = decideMutation.isPending || !feedback || feedback.status !== 'CHO_DUYET';
 
   useEffect(() => {
     setBreadcrumbs([
@@ -153,7 +153,7 @@ function FeedbackDetailPage() {
         icon: <FontAwesomeIcon icon={faXmark} />,
         type: 'default',
         className: 'admin-navbar__btn--danger',
-        onClick: handleRejectSubmit,
+        onClick: () => setRejectModalOpen(true),
         disabled: rejectDisabled,
       },
       {
@@ -490,8 +490,15 @@ function FeedbackDetailPage() {
         onOk={handleRejectSubmit}
         okText="Xác nhận"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !rejectReason.trim().length, loading: decideMutation.isPending }}
-        cancelButtonProps={{ disabled: decideMutation.isPending }}
+        okButtonProps={{
+          disabled: !rejectReason.trim().length,
+          loading: decideMutation.isPending,
+          style: { backgroundColor: 'var(--success-color)', borderColor: 'var(--success-color)' },
+        }}
+        cancelButtonProps={{
+          disabled: decideMutation.isPending,
+          style: { backgroundColor: 'var(--danger-color)', borderColor: 'var(--danger-color)', color: '#fff' },
+        }}
         destroyOnClose
       >
         <p>Vui lòng cung cấp lý do từ chối phản hồi này.</p>

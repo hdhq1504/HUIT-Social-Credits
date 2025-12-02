@@ -127,10 +127,6 @@ export const createStudent = async (req, res) => {
   try {
     const { maSV, hoTen, email, password, lopHocId, ngaySinh, gioiTinh, soDT } = req.body;
 
-    if (!maSV || !hoTen || !email || !password) {
-      return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
-    }
-
     const existingUser = await prisma.nguoiDung.findFirst({
       where: {
         OR: [{ email }, { maSV }],

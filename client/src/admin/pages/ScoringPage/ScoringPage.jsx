@@ -130,7 +130,10 @@ function ScoringPage() {
     }
 
     const stats = data?.stats ?? {};
-    const faculties = (data?.filterOptions?.faculties ?? []).map((value) => ({ label: value, value }));
+    const faculties = (data?.filterOptions?.faculties ?? []).map((item) => {
+      if (typeof item === 'string') return { label: item, value: item };
+      return { label: item.label, value: item.value };
+    });
     const classes = (data?.filterOptions?.classes ?? []).map((value) => ({ label: value, value }));
     const activities = (data?.filterOptions?.activities ?? []).map((item) => ({ label: item.title, value: item.id }));
     setFilterOptions({ faculties, classes, activities });
@@ -286,16 +289,18 @@ function ScoringPage() {
       checkIn: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkin')),
       checkOut: ({ record }) => renderAttendanceStatus(getAttendanceEntry(record.attendanceHistory, 'checkout')),
       status: ({ record }) => {
-        const meta = REGISTRATION_STATUS_META[record.status] || REGISTRATION_STATUS_META.DANG_KY;
-        const label = record.statusLabel || meta.label;
-        const color = meta.color;
-        const icon = meta.icon;
+        let meta = REGISTRATION_STATUS_META[record.status] || REGISTRATION_STATUS_META.DANG_KY;
+        let label = record.statusLabel || meta.label;
+        let tone = meta.color;
 
-        return (
-          <Tag icon={<FontAwesomeIcon icon={icon} />} color={color} className={cx('scoring-page__status-tag')}>
-            {label}
-          </Tag>
-        );
+        if (record.feedback?.status === 'BI_TU_CHOI') {
+          meta = { color: 'error', icon: faTimesCircle, label: 'Từ chối' };
+          label = 'Từ chối';
+          tone = 'error';
+        }
+
+        const toneClass = `scoring-page__status-tag--${tone}`;
+        return <Tag className={cx('scoring-page__status-tag', toneClass)}>{label}</Tag>;
       },
       action: ({ record }) => (
         <Tooltip title="Xem chi tiết">

@@ -62,4 +62,10 @@
     border-color: var(--primary-color);
     box-shadow: 0 0 4px rgba(106, 90, 205, 0.5);
   }
+
+  &__error {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 2px;
+  }
 }

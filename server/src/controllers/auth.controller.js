@@ -29,7 +29,6 @@ const buildForgotPasswordResponse = (message, otp) => {
  */
 export const login = async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: "Email và mật khẩu là bắt buộc" });
 
   const user = await prisma.nguoiDung.findUnique({ where: { email } });
   if (!user || !user.isActive) return res.status(401).json({ error: "Thông tin đăng nhập không hợp lệ" });
@@ -141,10 +140,6 @@ export const logout = async (_req, res) => {
   res.json({ message: "Đã đăng xuất" });
 };
 
-
-
-// ... (existing code)
-
 /**
  * Yêu cầu đặt lại mật khẩu (Gửi OTP).
  * @param {Object} req - Express request object.
@@ -152,9 +147,6 @@ export const logout = async (_req, res) => {
  */
 export const requestPasswordReset = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
-  if (!email) {
-    return res.status(400).json({ error: "Vui lòng cung cấp email" });
-  }
 
   const user = await prisma.nguoiDung.findUnique({ where: { email } });
   if (!user || !user.isActive) {
@@ -202,9 +194,6 @@ export const requestPasswordReset = async (req, res) => {
   return res.json(
     buildForgotPasswordResponse(
       `Mã xác nhận đã được gửi tới ${email}. Mã có hiệu lực trong ${RESET_TOKEN_TTL_MINUTES} phút.`,
-      // Only return OTP in dev mode if absolutely necessary, but plan says to remove it or hide it.
-      // For security, we should NOT return it.
-      // However, the buildForgotPasswordResponse function handles env check.
       otp
     )
   );
@@ -218,10 +207,6 @@ export const requestPasswordReset = async (req, res) => {
 export const verifyPasswordResetOtp = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   const otp = req.body?.otp?.trim();
-
-  if (!email || !otp) {
-    return res.status(400).json({ error: "Vui lòng cung cấp email và mã xác nhận" });
-  }
 
   const user = await prisma.nguoiDung.findUnique({ where: { email } });
   if (!user || !user.isActive) {
@@ -253,14 +238,6 @@ export const resetPasswordWithOtp = async (req, res) => {
   const email = req.body?.email?.trim().toLowerCase();
   const otp = req.body?.otp?.trim();
   const newPassword = req.body?.newPassword;
-
-  if (!email || !otp || !newPassword) {
-    return res.status(400).json({ error: "Vui lòng cung cấp email, mã xác nhận và mật khẩu mới" });
-  }
-
-  if (newPassword.length < 8) {
-    return res.status(400).json({ error: "Mật khẩu mới phải có ít nhất 8 ký tự" });
-  }
 
   const user = await prisma.nguoiDung.findUnique({ where: { email } });
   if (!user || !user.isActive) {
@@ -305,14 +282,6 @@ export const changePassword = async (req, res) => {
 
   if (!userId) {
     return res.status(401).json({ error: "Không được phép" });
-  }
-
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ error: "Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới" });
-  }
-
-  if (newPassword.length < 8) {
-    return res.status(400).json({ error: "Mật khẩu mới phải có ít nhất 8 ký tự" });
   }
 
   const user = await prisma.nguoiDung.findUnique({ where: { id: userId } });

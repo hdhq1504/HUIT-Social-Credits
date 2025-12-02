@@ -1,7 +1,3 @@
-const ATTENDANCE_METHOD_MAP = {
-  PHOTO: "photo"
-};
-
 const LABEL_MAP = {
   photo: "Chụp Ảnh"
 };
@@ -28,7 +24,7 @@ export const normalizeAttendanceMethod = (value) => {
 export const mapAttendanceMethodToApi = (value) => {
   if (!value) return null;
   const normalized = String(value).trim().toLowerCase();
-  if (normalized === "face" || normalized === "photo" || normalized === "qr") { // Allow qr to map to photo or null? Better to just map to photo or null. Let's stick to photo.
+  if (normalized === "face" || normalized === "photo") {
     return "photo";
   }
   return null;

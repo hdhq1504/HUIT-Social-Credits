@@ -43,6 +43,7 @@ function InputField({ id, name, label, required, hint, icon, className, inputCla
       </div>
 
       {hint && <p className={cx('input-field__hint')}>{hint}</p>}
+      {restProps.error && <p className={cx('input-field__error')}>{restProps.error}</p>}
     </div>
   );
 }

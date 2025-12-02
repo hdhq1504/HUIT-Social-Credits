@@ -27,7 +27,8 @@ const FEEDBACK_LIST_INCLUDE = {
             select: {
               khoa: {
                 select: {
-                  maKhoa: true
+                  maKhoa: true,
+                  tenKhoa: true
                 }
               }
             }
@@ -36,7 +37,8 @@ const FEEDBACK_LIST_INCLUDE = {
       },
       khoa: {
         select: {
-          maKhoa: true
+          maKhoa: true,
+          tenKhoa: true
         }
       },
       avatarUrl: true
@@ -65,7 +67,8 @@ const FEEDBACK_DETAIL_INCLUDE = {
             select: {
               khoa: {
                 select: {
-                  maKhoa: true
+                  maKhoa: true,
+                  tenKhoa: true
                 }
               }
             }
@@ -74,7 +77,8 @@ const FEEDBACK_DETAIL_INCLUDE = {
       },
       khoa: {
         select: {
-          maKhoa: true
+          maKhoa: true,
+          tenKhoa: true
         }
       },
       avatarUrl: true,
@@ -95,7 +99,13 @@ const FEEDBACK_DETAIL_INCLUDE = {
         select: {
           id: true
         }
-      }
+      },
+      hocKyRef: {
+        include: {
+          namHoc: true
+        }
+      },
+      namHocRef: true
     }
   },
   dangKy: {
@@ -143,7 +153,7 @@ const mapStudentSummary = (student) => {
     name: normalizeString(student.hoTen) || normalizeString(student.email) || "Người dùng",
     email: student.email ?? null,
     studentCode: student.maSV ?? null,
-    faculty: student.khoa?.maKhoa || student.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
+    faculty: student.khoa?.tenKhoa || student.lopHoc?.nganhHoc?.khoa?.tenKhoa || student.khoa?.maKhoa || student.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
     className: student.lopHoc?.maLop || null,
     avatarUrl: student.avatarUrl ?? null,
     phone: student.soDT ?? null
@@ -161,7 +171,10 @@ const mapActivitySummary = (activity) => {
     pointGroup: activity.nhomDiem ?? null,
     location: activity.diaDiem ?? null,
     maxParticipants: activity.sucChuaToiDa ?? null,
-    participantCount: Array.isArray(activity.dangKy) ? activity.dangKy.length : 0
+    participantCount: Array.isArray(activity.dangKy) ? activity.dangKy.length : 0,
+    semesterDisplay: activity.hocKyRef
+      ? `${activity.hocKyRef.ten} - ${activity.hocKyRef.namHoc?.ten || ""}`
+      : activity.namHocRef?.ten || null
   };
 };
 
@@ -211,9 +224,9 @@ const getFeedbackStats = async () => {
 const buildFilterOptions = async () => {
   const [facultiesRaw, classesRaw, activitiesRaw] = await Promise.all([
     prisma.khoa.findMany({
-      where: { nguoiDung: { some: { phanHoi: { some: {} } } } },
-      select: { maKhoa: true },
-      orderBy: { maKhoa: 'asc' }
+      where: { isActive: true },
+      select: { maKhoa: true, tenKhoa: true },
+      orderBy: { tenKhoa: 'asc' }
     }),
     prisma.lopHoc.findMany({
       where: { sinhVien: { some: { phanHoi: { some: {} } } } },
@@ -228,10 +241,10 @@ const buildFilterOptions = async () => {
 
   const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
 
-  const faculties = facultiesRaw
-    .map((item) => normalizeString(item.maKhoa))
-    .filter(Boolean)
-    .map((value) => ({ value, label: value }));
+  const faculties = facultiesRaw.map((item) => ({
+    label: normalizeString(item.tenKhoa) || item.maKhoa,
+    value: normalizeString(item.maKhoa)
+  })).filter(item => item.value);
 
   const classes = classesRaw
     .map((item) => normalizeString(item.maLop))

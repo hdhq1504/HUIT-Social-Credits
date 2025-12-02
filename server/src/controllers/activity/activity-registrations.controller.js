@@ -19,7 +19,6 @@ import {
   REGISTRATION_STATUSES,
   sanitizeOptionalText,
   sanitizeStatusFilter,
-  FEEDBACK_STATUSES,
 } from "../../utils/activity.js";
 
 export const listActivityRegistrationsAdmin = async (req, res) => {
@@ -140,9 +139,9 @@ export const listRegistrationsAdmin = async (req, res) => {
       prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
       prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
       prisma.khoa.findMany({
-        where: { nguoiDung: { some: { dangKy: { some: {} } } } },
-        select: { maKhoa: true },
-        orderBy: { maKhoa: 'asc' }
+        where: { isActive: true },
+        select: { maKhoa: true, tenKhoa: true },
+        orderBy: { tenKhoa: 'asc' }
       }),
       prisma.lopHoc.findMany({
         where: { sinhVien: { some: { dangKy: { some: {} } } } },
@@ -157,9 +156,10 @@ export const listRegistrationsAdmin = async (req, res) => {
 
   const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
 
-  const faculties = facultiesRaw
-    .map((item) => sanitizeOptionalText(item.maKhoa, 100))
-    .filter(Boolean);
+  const faculties = facultiesRaw.map((item) => ({
+    label: sanitizeOptionalText(item.tenKhoa, 255) || item.maKhoa,
+    value: sanitizeOptionalText(item.maKhoa, 100)
+  })).filter(item => item.value);
 
   const classes = classesRaw
     .map((item) => sanitizeOptionalText(item.maLop, 100))

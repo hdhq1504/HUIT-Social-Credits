@@ -49,7 +49,8 @@ const formatDateTime = (value) => {
   return dayjs(value).format('HH:mm DD/MM/YYYY');
 };
 
-const resolveStatusKey = (status) => {
+const resolveStatusKey = (status, feedbackStatus) => {
+  if (feedbackStatus === 'BI_TU_CHOI') return 'rejected';
   switch (status) {
     case 'DA_THAM_GIA':
       return 'approved';
@@ -116,6 +117,17 @@ const buildHistoryEntries = (record) => {
     });
   }
 
+  if (record.feedback?.status === 'BI_TU_CHOI' && record.feedback.updatedAt) {
+    entries.push({
+      id: `${record.feedback.id}-rejected`,
+      timestamp: dayjs(record.feedback.updatedAt).valueOf(),
+      time: formatDateTime(record.feedback.updatedAt),
+      actor: 'Quản trị viên',
+      action: 'Từ chối phản hồi',
+      status: 'rejected',
+    });
+  }
+
   return entries.sort((a, b) => a.timestamp - b.timestamp);
 };
 
@@ -163,7 +175,7 @@ function ScoringDetailPage() {
     });
   }, [decideMutation]);
 
-  const statusKey = resolveStatusKey(record?.status);
+  const statusKey = resolveStatusKey(record?.status, record?.feedback?.status);
 
   const attendanceMap = useMemo(() => buildAttendanceMap(record?.attendanceHistory), [record?.attendanceHistory]);
   const historyEntries = useMemo(() => buildHistoryEntries(record), [record]);

@@ -15,7 +15,6 @@ import {
   sanitizeStorageList,
   mapStorageForResponse,
   mapStorageListForResponse,
-  extractStoragePaths,
 } from "./storageMapper.js";
 
 const normalizeSemesterLabel = (value) => {
@@ -120,7 +119,8 @@ const USER_PUBLIC_FIELDS = {
         select: {
           khoa: {
             select: {
-              maKhoa: true
+              maKhoa: true,
+              tenKhoa: true
             }
           }
         }
@@ -129,7 +129,8 @@ const USER_PUBLIC_FIELDS = {
   },
   khoa: {
     select: {
-      maKhoa: true
+      maKhoa: true,
+      tenKhoa: true
     }
   }
 };
@@ -160,7 +161,8 @@ const ACTIVITY_INCLUDE = {
                 select: {
                   khoa: {
                     select: {
-                      maKhoa: true
+                      maKhoa: true,
+                      tenKhoa: true
                     }
                   }
                 }
@@ -169,7 +171,8 @@ const ACTIVITY_INCLUDE = {
           },
           khoa: {
             select: {
-              maKhoa: true
+              maKhoa: true,
+              tenKhoa: true
             }
           }
         }
@@ -213,7 +216,8 @@ const ADMIN_STUDENT_FIELDS = {
         select: {
           khoa: {
             select: {
-              maKhoa: true
+              maKhoa: true,
+              tenKhoa: true
             }
           }
         }
@@ -222,7 +226,8 @@ const ADMIN_STUDENT_FIELDS = {
   },
   khoa: {
     select: {
-      maKhoa: true
+      maKhoa: true,
+      tenKhoa: true
     }
   }
 };
@@ -387,7 +392,7 @@ const mapStudentProfile = (user, { includeContact = false } = {}) => {
     email: user.email ?? null,
     avatarUrl: user.avatarUrl ?? null,
     studentCode: user.maSV ?? null,
-    faculty: user.khoa?.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
+    faculty: user.khoa?.tenKhoa || user.lopHoc?.nganhHoc?.khoa?.tenKhoa || user.khoa?.maKhoa || user.lopHoc?.nganhHoc?.khoa?.maKhoa || null,
     className: user.lopHoc?.maLop || null
   };
 
@@ -588,7 +593,7 @@ const mapFeedback = (feedback) => {
     content: feedback.noiDung,
     rating: feedback.danhGia ?? null,
     attachments: normalizeAttachments(feedback.minhChung),
-    rejectedReason: feedback.lyDoTuChoi ?? null,
+    rejectedReason: feedback.lydoTuChoi ?? null,
     submittedAt: feedback.taoLuc?.toISOString() ?? null,
     updatedAt: feedback.capNhatLuc?.toISOString() ?? null
   };
@@ -602,7 +607,7 @@ const computeCheckoutAvailableAt = (activity) => {
   return threshold.toISOString();
 };
 
-const computeFeedbackAvailableAt = (activity, registration) => {
+const computeFeedbackWindow = (activity, registration) => {
   const baseTime = registration?.duyetLuc
     ? new Date(registration.duyetLuc)
     : registration?.diemDanhLuc
@@ -610,8 +615,10 @@ const computeFeedbackAvailableAt = (activity, registration) => {
       : toDate(activity?.ketThucLuc) || toDate(activity?.batDauLuc) || new Date();
 
   const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-  const available = new Date(baseTime.getTime() + ONE_DAY_MS);
-  return available.toISOString();
+  // const start = new Date(baseTime.getTime() + ONE_DAY_MS);
+  const start = new Date(baseTime.getTime()); // TEST: Mở ngay lập tức
+  const end = new Date(start.getTime() + 3 * ONE_DAY_MS);
+  return { start, end };
 };
 
 const mapRegistration = (registration, activity) => {
@@ -622,7 +629,7 @@ const mapRegistration = (registration, activity) => {
   const hasCheckin = attendanceHistory.some((entry) => entry.phase === "checkin");
   const hasCheckout = attendanceHistory.some((entry) => entry.phase === "checkout");
   const checkoutAvailableAt = computeCheckoutAvailableAt(activity);
-  const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
+  const feedbackWindow = computeFeedbackWindow(activity, registration);
   const faceSummary = summarizeFaceHistoryMapped(attendanceHistory);
   return {
     id: registration.id,
@@ -649,7 +656,12 @@ const mapRegistration = (registration, activity) => {
       hasCheckout,
       nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
       checkoutAvailableAt,
-      feedbackAvailableAt,
+      nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
+      checkoutAvailableAt,
+      feedbackWindow: {
+        start: feedbackWindow.start.toISOString(),
+        end: feedbackWindow.end.toISOString()
+      },
       face: faceSummary
     },
     feedback: mapFeedback(registration.phanHoi),
@@ -785,10 +797,21 @@ const determineState = (activity, registration) => {
     case "CHO_DUYET": {
       const feedback = registration.phanHoi;
       if (!feedback) {
-        const feedbackAvailableAt = computeFeedbackAvailableAt(activity, registration);
-        const availableAt = feedbackAvailableAt ? new Date(feedbackAvailableAt) : null;
-        if (availableAt && now < availableAt) {
+        const history = registration.lichSuDiemDanh || [];
+        const hasFaceIssue = history.some((entry) =>
+          ["REVIEW", "REJECTED"].includes(entry.faceMatch)
+        );
+
+        if (!hasFaceIssue) {
           return "attendance_review";
+        }
+
+        const { start, end } = computeFeedbackWindow(activity, registration);
+        if (now < start) {
+          return "attendance_review";
+        }
+        if (now > end) {
+          return "feedback_closed";
         }
         return "feedback_pending";
       }
@@ -1001,7 +1024,7 @@ export {
   mapAttendanceEntry,
   mapFeedback,
   computeCheckoutAvailableAt,
-  computeFeedbackAvailableAt,
+  computeFeedbackWindow,
   mapRegistration,
   processActivityCover,
   determineState,
