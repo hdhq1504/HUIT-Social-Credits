@@ -9,7 +9,7 @@ const cookieOpts = {
   httpOnly: true,
   sameSite: "lax",
   secure: env.NODE_ENV === "production",
-  path: "/api/auth",
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000
 };
 
