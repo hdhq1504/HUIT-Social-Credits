@@ -3,7 +3,7 @@ import useAuthStore from '../stores/useAuthStore';
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
-  withCredentials: true, // gửi/nhận cookie refresh_token
+  withCredentials: true,
 });
 
 http.interceptors.request.use((config) => {
@@ -29,6 +29,9 @@ http.interceptors.response.use(
         }).then((token) => {
           original.headers.Authorization = `Bearer ${token}`;
           return http.request(original);
+        }).catch(err => {
+          useAuthStore.getState().logout();
+          return Promise.reject(err);
         });
       }
 
@@ -39,14 +42,17 @@ http.interceptors.response.use(
         const newToken = data?.accessToken;
         if (newToken) {
           useAuthStore.getState().setAccessToken(newToken);
+          pending.forEach((p) => p.resolve(newToken));
+          pending = [];
+          original.headers.Authorization = `Bearer ${newToken}`;
+          return http.request(original);
+        } else {
+          throw new Error('No access token received');
         }
-        pending.forEach((p) => p.resolve(newToken));
-        pending = [];
-        original.headers.Authorization = `Bearer ${newToken}`;
-        return http.request(original);
       } catch (e) {
         pending.forEach((p) => p.reject(e));
         pending = [];
+        useAuthStore.getState().logout();
         throw e;
       } finally {
         isRefreshing = false;

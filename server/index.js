@@ -28,7 +28,10 @@ app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 app.use(cors({
   origin: env.CORS_ORIGIN,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
 }));
 app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 

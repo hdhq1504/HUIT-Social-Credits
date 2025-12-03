@@ -7,7 +7,7 @@ import { sendMail } from "../utils/mailer.js";
 
 const cookieOpts = {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: env.NODE_ENV === "production" ? "none" : "lax",
   secure: env.NODE_ENV === "production",
   path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000

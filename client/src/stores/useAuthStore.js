@@ -42,15 +42,48 @@ const useAuthStore = create(
       },
 
       initialize: async () => {
-        try {
-          const user = await authApi.me();
-          set((state) => ({
-            isLoggedIn: !!state.accessToken,
-            user: normalizeUser(user),
-          }));
-        } catch {
-          set({ isLoggedIn: false, user: null });
+        const state = useAuthStore.getState();
+
+        if (state.accessToken) {
+          try {
+            const user = await authApi.me();
+            set({
+              isLoggedIn: true,
+              user: normalizeUser(user)
+            });
+            return;
+          } catch {
+            // Access token invalid or expired, continue to refresh
+          }
         }
+
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/refresh`,
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data?.accessToken) {
+              set({ accessToken: data.accessToken });
+
+              const user = await authApi.me();
+              set({
+                isLoggedIn: true,
+                user: normalizeUser(user)
+              });
+              return;
+            }
+          }
+        } catch {
+          console.debug('No valid refresh token available');
+        }
+        set({ accessToken: null, isLoggedIn: false, user: null });
       },
     }),
     {
