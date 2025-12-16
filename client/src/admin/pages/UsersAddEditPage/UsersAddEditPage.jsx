@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
 import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar, Tag } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faFloppyDisk, faUserPlus, faCamera, faCircleDot } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faFloppyDisk, faCamera, faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminPageContext } from '@/admin/contexts/AdminPageContext';
 import usersApi, { USERS_QUERY_KEY } from '@/api/users.api';
@@ -68,8 +68,10 @@ const UsersAddEditPage = () => {
     setBreadcrumbs(breadcrumbs);
     setPageActions([
       {
+        type: 'primary',
         key: 'back-to-users',
-        label: 'Quay lại danh sách',
+        label: 'Quay lại',
+        className: 'admin-navbar__btn--primary',
         icon: <FontAwesomeIcon icon={faArrowLeft} />,
         onClick: handleBackToList,
       },
@@ -210,20 +212,6 @@ const UsersAddEditPage = () => {
     <div className={cx('users-add-edit-page')}>
       {contextHolder}
       <div className={cx('users-add-edit-page__container')}>
-        <div className={cx('users-add-edit-page__header')}>
-          <div className={cx('users-add-edit-page__icon')}>
-            <FontAwesomeIcon icon={isEditMode ? faFloppyDisk : faUserPlus} />
-          </div>
-          <div>
-            <h2 className={cx('users-add-edit-page__title')}>{pageTitle}</h2>
-            <p className={cx('users-add-edit-page__subtitle')}>
-              {isEditMode
-                ? 'Cập nhật thông tin tài khoản và trạng thái hoạt động của người dùng.'
-                : 'Nhập thông tin chi tiết để tạo tài khoản người dùng mới vào hệ thống.'}
-            </p>
-          </div>
-        </div>
-
         <Form
           form={form}
           layout="vertical"
@@ -335,7 +323,10 @@ const UsersAddEditPage = () => {
                       <Form.Item
                         label="Số điện thoại"
                         name="phoneNumber"
-                        rules={[{ pattern: /^(0[3|5|7|8|9])+([0-9]{8})$/, message: 'Số điện thoại không hợp lệ.' }]}
+                        rules={[
+                          ...(isEditMode ? [] : [{ required: true, message: 'Vui lòng nhập số điện thoại.' }]),
+                          { pattern: /^(0[3|5|7|8|9])+([0-9]{8})$/, message: 'Số điện thoại không hợp lệ.' },
+                        ]}
                       >
                         <Input placeholder="Nhập số điện thoại" allowClear />
                       </Form.Item>
@@ -364,9 +355,12 @@ const UsersAddEditPage = () => {
                         label="Mã sinh viên"
                         name="studentCode"
                         rules={[
+                          ...(role === 'SINHVIEN' && !isEditMode
+                            ? [{ required: true, message: 'Vui lòng nhập mã sinh viên.' }]
+                            : []),
                           {
-                            pattern: /^[a-zA-Z0-9]{8,20}$/,
-                            message: 'Mã sinh viên không hợp lệ (8-20 ký tự chữ và số).',
+                            pattern: /^[a-zA-Z0-9]{10}$/,
+                            message: 'Mã sinh viên phải có đúng 10 ký tự chữ và số.',
                           },
                         ]}
                       >
@@ -374,7 +368,15 @@ const UsersAddEditPage = () => {
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Mã cán bộ" name="staffCode">
+                      <Form.Item
+                        label="Mã cán bộ"
+                        name="staffCode"
+                        rules={[
+                          ...(role !== 'SINHVIEN' && !isEditMode
+                            ? [{ required: true, message: 'Vui lòng nhập mã cán bộ.' }]
+                            : []),
+                        ]}
+                      >
                         <Input placeholder="Nhập mã cán bộ" allowClear disabled={role === 'SINHVIEN'} />
                       </Form.Item>
                     </Col>
@@ -484,7 +486,7 @@ const UsersAddEditPage = () => {
                       loading={isSubmitting}
                       icon={<FontAwesomeIcon icon={faFloppyDisk} />}
                     >
-                      {isEditMode ? 'Cập nhật' : 'Tạo người dùng'}
+                      {isEditMode ? 'Cập nhật' : 'Tạo'}
                     </Button>
                   </div>
                 </div>

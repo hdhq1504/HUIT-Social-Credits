@@ -1,5 +1,18 @@
 import http from '../utils/http';
 import useAuthStore from '../stores/useAuthStore';
+import { QueryClient } from '@tanstack/react-query';
+
+// Tạo một reference để có thể clear cache từ bên ngoài
+let queryClientRef = null;
+
+/**
+ * Thiết lập queryClient reference để có thể clear cache khi logout.
+ * Được gọi từ App.jsx khi khởi tạo QueryClient.
+ * @param {QueryClient} client - Instance của QueryClient.
+ */
+export const setQueryClientRef = (client) => {
+  queryClientRef = client;
+};
 
 export const authApi = {
   /**
@@ -27,11 +40,16 @@ export const authApi = {
 
   /**
    * Đăng xuất người dùng.
+   * Xóa toàn bộ React Query cache để tránh hiển thị data của user cũ.
    * @returns {Promise<void>}
    */
   logout: async () => {
     await http.post('/auth/logout', {});
     useAuthStore.getState().logout();
+    // Clear toàn bộ React Query cache để tránh hiển thị data của user cũ
+    if (queryClientRef) {
+      queryClientRef.clear();
+    }
   },
 
   /**

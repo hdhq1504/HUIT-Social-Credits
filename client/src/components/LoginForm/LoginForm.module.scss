@@ -3,36 +3,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: calc(100vh - var(--header-height, 80px));
-  padding: 40px 20px;
-
-  &__breadcrumb {
-    font-size: 14px;
-    font-weight: 500;
-    padding: 20px 0;
-
-    span {
-      color: #b3b3b3;
-    }
-
-    a {
-      color: var(--primary-color);
-
-      &:hover {
-        color: var(--orange-color);
-      }
-    }
-
-    @media (max-width: 1024px) and (min-width: 769px) {
-      font-size: 13px;
-      padding: 18px 0;
-    }
-
-    @media (max-width: 768px) {
-      font-size: 12px;
-      padding: 15px 0;
-    }
-  }
+  height: 100vh;
 
   &__card {
     border-radius: 12px;
@@ -42,7 +13,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     width: 100%;
     max-width: var(--content-width);
 
@@ -65,7 +35,7 @@
 
   &__banner {
     width: 50%;
-    height: 635.03px;
+    height: 635px;
     background-size: cover;
     background-position: left;
     position: relative;
@@ -132,7 +102,7 @@
     }
 
     @media (max-width: 1024px) and (min-width: 769px) {
-      padding: 35px 30px;
+      margin: auto;
 
       .login-form__heading {
         font-size: 22px;
@@ -140,8 +110,6 @@
     }
 
     @media (max-width: 768px) {
-      padding: 30px 20px;
-
       .login-form__heading {
         font-size: 20px;
         text-align: center;
@@ -242,6 +210,25 @@
     }
   }
 
+  &__field {
+    &--password {
+      position: relative;
+    }
+  }
+
+  &__password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    cursor: pointer;
+    color: var(--muted-color);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+
   &__fields {
     margin-top: 26px;
 
@@ -289,10 +276,10 @@
     font-weight: 500;
     transition: all 0.3s ease;
     min-width: 140px;
+    cursor: pointer;
 
     &:hover:not(:disabled) {
       background-color: var(--primary-color-dark, #1a1a5e);
-      transform: translateY(-1px);
     }
 
     &:disabled {

@@ -9,6 +9,22 @@ const { TextArea } = Input;
 const { Dragger } = Upload;
 const cx = classNames.bind(styles);
 
+/**
+ * Modal gửi phản hồi về điểm CTXH của hoạt động.
+ * Cho phép sinh viên gửi nội dung phản hồi kèm minh chứng đính kèm.
+ *
+ * @param {Object} props - Props của component.
+ * @param {boolean} props.open - Trạng thái hiển thị modal.
+ * @param {Function} props.onSubmit - Callback khi gửi phản hồi (nhận { content, files, confirm }).
+ * @param {Function} props.onCancel - Callback khi đóng modal.
+ * @param {string} [props.campaignName=''] - Tên hoạt động.
+ * @param {string} [props.groupLabel] - Nhãn nhóm hoạt động.
+ * @param {string} [props.pointsLabel] - Nhãn điểm hiện tại.
+ * @param {string} [props.checkinTime] - Thời gian check-in.
+ * @param {string} [props.checkoutTime] - Thời gian check-out.
+ * @param {boolean} [props.submitLoading=false] - Trạng thái loading khi gửi.
+ * @returns {React.ReactElement} Component FeedbackModal.
+ */
 function FeedbackModal({
   open,
   onSubmit,
@@ -20,6 +36,9 @@ function FeedbackModal({
   checkoutTime,
   submitLoading = false,
 }) {
+  /**
+   * Chuyển file sang base64 để preview.
+   */
   const getBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -35,16 +54,22 @@ function FeedbackModal({
   const [confirm, setConfirm] = useState(false);
   const [fileList, setFileList] = useState([]);
 
-  // Disabled nếu chưa confirm, content empty hoặc chưa có file đính kèm
+  // Vô hiệu hóa submit nếu: chưa confirm, content trống, hoặc chưa có file đính kèm
   const disabled = !confirm || !content.trim() || fileList.length === 0;
 
+  /**
+   * Xử lý khi danh sách file upload thay đổi.
+   * Không auto-upload, giữ list ở state để submit cùng form.
+   */
   const handleChangeUpload = ({ fileList: list }) => {
-    // Không auto-upload, giữ list ở state để submit cùng form
     setFileList(list);
   };
 
+  /**
+   * Xử lý preview file đã upload.
+   * Chuyển file sang base64 nếu chưa có preview URL.
+   */
   const handlePreview = async (file) => {
-    // Nếu chưa có preview, chuyển originFileObj sang base64
     if (!file.url && !file.preview && file.originFileObj) {
       file.preview = await getBase64(file.originFileObj);
     }
@@ -55,8 +80,11 @@ function FeedbackModal({
     }
   };
 
+  /**
+   * Xử lý gửi phản hồi lên server.
+   * Gọi parent callback với content, files và flag confirm.
+   */
   const handleSubmit = () => {
-    // Gọi parent với content, files (File objects), confirm flag
     onSubmit?.({
       content: content.trim(),
       files: fileList.map((f) => f.originFileObj || f),
@@ -64,6 +92,7 @@ function FeedbackModal({
     });
   };
 
+  // Normalize thời gian check-in/check-out để hiển thị
   const resolvedCheckinTime = checkinTime && checkinTime !== '--' ? checkinTime : 'Chưa điểm danh';
   const resolvedCheckoutTime = checkoutTime && checkoutTime !== '--' ? checkoutTime : 'Chưa điểm danh';
 
@@ -125,7 +154,7 @@ function FeedbackModal({
               name="files"
               multiple
               listType="picture-card"
-              beforeUpload={() => false} // important: prevent auto upload
+              beforeUpload={() => false}
               onChange={handleChangeUpload}
               onPreview={handlePreview}
               fileList={fileList}

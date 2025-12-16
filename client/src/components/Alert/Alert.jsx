@@ -7,6 +7,25 @@ import styles from './Alert.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Component hiển thị thông báo cảnh báo hoặc lỗi.
+ * Hỗ trợ 2 loại: warning (cảnh báo) và danger (lỗi).
+ *
+ * @param {Object} props - Props của component.
+ * @param {string} [props.title] - Tiêu đề của thông báo.
+ * @param {string} props.message - Nội dung thông báo (bắt buộc).
+ * @param {'warning'|'danger'} [props.type='warning'] - Loại thông báo.
+ * @param {boolean} [props.showIcon=false] - Hiển thị icon tương ứng với loại thông báo.
+ * @returns {React.ReactElement} Component Alert.
+ *
+ * @example
+ * <Alert
+ *   title="Cảnh báo"
+ *   message="Thao tác này không thể hoàn tác."
+ *   type="warning"
+ *   showIcon
+ * />
+ */
 function Alert({ title, message, type = 'warning', showIcon = false }) {
   return (
     <div className={cx('alert', `alert--${type}`)}>

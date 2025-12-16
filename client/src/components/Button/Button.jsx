@@ -4,6 +4,34 @@ import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Component nút bấm đa năng với nhiều biến thể và trạng thái.
+ * Hỗ trợ hiển thị icon, loading spinner và có thể render như các element khác nhau.
+ *
+ * @param {Object} props - Props của component.
+ * @param {React.ReactNode} props.children - Nội dung hiển thị trong nút.
+ * @param {'primary'|'secondary'|'outline'|'danger'|'success'|'muted'|'orange'} [props.variant='primary'] - Kiểu dáng của nút.
+ * @param {React.ReactNode} [props.icon] - Icon hiển thị bên trái (alias của leftIcon).
+ * @param {React.ReactNode} [props.leftIcon] - Icon hiển thị bên trái.
+ * @param {React.ReactNode} [props.rightIcon] - Icon hiển thị bên phải.
+ * @param {boolean} [props.disabled] - Vô hiệu hóa nút.
+ * @param {boolean} [props.loading=false] - Hiển thị trạng thái loading với spinner.
+ * @param {Function} [props.onClick] - Hàm xử lý khi click nút.
+ * @param {'button'|'submit'|'reset'} [props.type='button'] - Loại button HTML.
+ * @param {'small'|'medium'|'large'} [props.size='medium'] - Kích thước của nút.
+ * @param {boolean} [props.fullWidth=false] - Nút chiếm toàn bộ chiều rộng container.
+ * @param {string} [props.className] - Class CSS bổ sung.
+ * @param {React.ElementType} [props.as='button'] - Element type để render (vd: 'a', Link).
+ * @returns {React.ReactElement} Component Button.
+ *
+ * @example
+ * // Nút primary với icon
+ * <Button variant="primary" leftIcon={<Icon />}>Lưu</Button>
+ *
+ * @example
+ * // Nút loading
+ * <Button loading>Đang xử lý...</Button>
+ */
 function Button({
   children,
   variant = 'primary',

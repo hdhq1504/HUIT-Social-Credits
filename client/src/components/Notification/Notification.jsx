@@ -19,6 +19,7 @@ import useAuthStore from '@stores/useAuthStore';
 
 const cx = classNames.bind(styles);
 
+/** Map icon theo loại thông báo */
 const TYPE_ICON = {
   warning: faTriangleExclamation,
   success: faCalendarCheck,
@@ -26,8 +27,10 @@ const TYPE_ICON = {
   danger: faChartLine,
 };
 
+/** Formatter cho thời gian tương đối */
 const RELATIVE_TIME_FORMATTER = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
 
+/** Các khoảng thời gian để format relative time */
 const RELATIVE_TIME_RANGES = [
   { limit: 60, divisor: 1, unit: 'second' },
   { limit: 3600, divisor: 60, unit: 'minute' },
@@ -38,6 +41,11 @@ const RELATIVE_TIME_RANGES = [
   { limit: Infinity, divisor: 31557600, unit: 'year' },
 ];
 
+/**
+ * Format thời gian thành dạng tương đối (vd: "5 phút trước", "hôm qua").
+ * @param {Date|string|number} value - Giá trị thời gian cần format.
+ * @returns {string} Chuỗi thời gian tương đối.
+ */
 const formatRelativeTime = (value) => {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
@@ -56,10 +64,19 @@ const formatRelativeTime = (value) => {
   return '';
 };
 
+/**
+ * Component hiển thị danh sách thông báo của người dùng.
+ * Hỗ trợ đánh dấu tất cả đã đọc và hiển thị thời gian tương đối.
+ *
+ * @param {Object} props - Props của component.
+ * @param {Function} [props.onMarkAllRead] - Callback khi đánh dấu tất cả đã đọc thành công.
+ * @returns {React.ReactElement} Component Notification.
+ */
 function Notification({ onMarkAllRead }) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const queryClient = useQueryClient();
 
+  // Query lấy danh sách thông báo (tối đa 30)
   const {
     data: notifications = [],
     isLoading,
@@ -67,13 +84,18 @@ function Notification({ onMarkAllRead }) {
   } = useQuery({
     queryKey: NOTIFICATIONS_QUERY_KEY,
     queryFn: () => notificationsApi.list({ limit: 30 }),
-    enabled: isLoggedIn,
-    staleTime: 30_000,
+    enabled: isLoggedIn, // Chỉ fetch khi đã đăng nhập
+    staleTime: 30_000, // Cache 30 giây
   });
 
+  /**
+   * Mutation đánh dấu tất cả thông báo là đã đọc.
+   * Sau khi thành công, invalidate các query liên quan để refresh UI.
+   */
   const markAllMutation = useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
+      // Refresh lại danh sách thông báo và badge count
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY });
       onMarkAllRead?.();
@@ -89,6 +111,7 @@ function Notification({ onMarkAllRead }) {
     },
   });
 
+  // Transform data: thêm timeAgo cho mỗi notification
   const items = useMemo(
     () =>
       notifications.map((notification) => ({
@@ -98,6 +121,10 @@ function Notification({ onMarkAllRead }) {
     [notifications],
   );
 
+  /**
+   * Handler đánh dấu tất cả đã đọc.
+   * Bỏ qua nếu không có item hoặc đang pending.
+   */
   const handleMarkAll = () => {
     if (!items.length || markAllMutation.isPending) return;
     markAllMutation.mutate();

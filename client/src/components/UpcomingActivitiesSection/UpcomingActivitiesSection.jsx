@@ -16,6 +16,7 @@ import styles from './UpcomingActivitiesSection.module.scss';
 const { CheckableTag } = Tag;
 const cx = classNames.bind(styles);
 
+/** Các bộ lọc nhóm hoạt động */
 const GROUP_FILTERS = [
   { key: 'all', label: 'Tất cả' },
   { key: 'NHOM_1', label: 'Nhóm 1' },
@@ -23,6 +24,12 @@ const GROUP_FILTERS = [
   { key: 'NHOM_3', label: 'Nhóm 3' },
 ];
 
+/**
+ * Section hiển thị danh sách hoạt động sắp diễn ra.
+ * Hỗ trợ lọc theo nhóm hoạt động (Nhóm 1, 2, 3).
+ *
+ * @returns {React.ReactElement} Component UpcomingActivitiesSection.
+ */
 function UpcomingActivitiesSection() {
   const [activities, setActivities] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState('all');

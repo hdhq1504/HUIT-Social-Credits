@@ -3,6 +3,21 @@ import { Spin } from 'antd';
 import useAuthStore from '@/stores/useAuthStore';
 import { ROUTE_PATHS } from '@/config/routes.config';
 
+/**
+ * Route guard bảo vệ các trang yêu cầu xác thực.
+ * Chuyển hướng đến trang login nếu chưa đăng nhập.
+ * Chuyển hướng đến trang phù hợp nếu không có quyền truy cập.
+ *
+ * @param {Object} props - Props của component.
+ * @param {React.ReactNode} props.children - Component con được bảo vệ.
+ * @param {string[]} [props.allowedRoles=[]] - Danh sách role được phép truy cập.
+ * @returns {React.ReactElement} Component con hoặc Navigate component.
+ *
+ * @example
+ * <ProtectedRoute allowedRoles={['ADMIN']}>
+ *   <AdminDashboard />
+ * </ProtectedRoute>
+ */
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { isLoggedIn, user } = useAuthStore();
   const location = useLocation();

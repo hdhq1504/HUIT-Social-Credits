@@ -8,17 +8,38 @@ import styles from './CheckboxGroup.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Component nhóm checkbox với tính năng "Chọn tất cả".
+ * Hỗ trợ trạng thái indeterminate khi chọn một phần.
+ *
+ * @param {Object} props - Props của component.
+ * @param {Array<{value: string|number, label?: React.ReactNode, disabled?: boolean}>} props.options - Danh sách options.
+ * @param {Array<string|number>} props.selectedValues - Các giá trị đang được chọn.
+ * @param {Function} props.onChange - Callback khi thay đổi selection (nhận mảng values mới).
+ * @param {string} [props.title='Lọc kết quả nhanh'] - Tiêu đề của filter.
+ * @param {string} [props.sectionLabel='Loại'] - Nhãn của section.
+ * @returns {React.ReactElement} Component CheckboxGroup.
+ */
 function CheckboxGroup({ options, selectedValues, onChange, title = 'Lọc kết quả nhanh', sectionLabel = 'Loại' }) {
-  // Tìm option "Tất cả" nếu có
+  // Tìm option "Tất cả" nếu có (để xử lý select/deselect all)
   const allOpt = options.find((o) => String(o.value) === 'Tất cả') || null;
-  // Các option con (không bao gồm "Tất cả")
+
+  // Các option con (loại trừ "Tất cả")
   const childOptions = allOpt ? options.filter((o) => o !== allOpt) : options;
+
+  // Các giá trị child đang được chọn
   const selectedChildren = selectedValues.filter((v) => String(v) !== 'Tất cả');
-  // allChecked true khi tất cả child được chọn
+
+  // allChecked = true khi tất cả child đều được chọn
   const allChecked = childOptions.length > 0 && selectedChildren.length === childOptions.length;
+
+  // indeterminate = true khi chỉ một phần child được chọn
   const indeterminate = selectedChildren.length > 0 && selectedChildren.length < childOptions.length;
 
-  // Nếu check all -> chọn hết các giá trị child; nếu uncheck -> clear
+  /**
+   * Xử lý khi click vào checkbox "Tất cả".
+   * Check -> chọn tất cả child; Uncheck -> bỏ chọn tất cả.
+   */
   const handleAllChange = (checked) => {
     if (checked) {
       const allValues = childOptions.map((o) => o.value);
@@ -28,10 +49,14 @@ function CheckboxGroup({ options, selectedValues, onChange, title = 'Lọc kết
     }
   };
 
-  // Khi change child list: nếu có allOpt và tất cả child đã chọn -> include "Tất cả"
+  /**
+   * Xử lý khi danh sách child thay đổi.
+   * Nếu tất cả child được chọn, tự động thêm "Tất cả" vào selection.
+   */
   const handleChildChange = (list) => {
     if (allOpt) {
       if (list.length === childOptions.length) {
+        // Đã chọn hết child -> include "Tất cả"
         onChange(['Tất cả', ...list]);
       } else {
         onChange(list);

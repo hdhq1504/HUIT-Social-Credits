@@ -15,6 +15,7 @@ import AdminLayout from './admin/layouts/AdminLayout/AdminLayout';
 import TeacherLayout from './teacher/layouts/TeacherLayout/TeacherLayout';
 import useAuthStore from './stores/useAuthStore';
 import { ROUTE_PATHS } from './config/routes.config';
+import { setQueryClientRef } from './api/auth.api';
 
 // Lazy load admin detail pages
 const ActivitiesAddEditPage = lazy(() => import('./admin/pages/ActivitiesAddEditPage/ActivitiesAddEditPage'));
@@ -39,6 +40,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Thiết lập reference để có thể clear cache khi logout
+setQueryClientRef(queryClient);
 
 function App() {
   const initialize = useAuthStore((state) => state.initialize);

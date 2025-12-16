@@ -2,6 +2,19 @@ import { Navigate, useLocation } from 'react-router-dom';
 import useAuthStore from '@/stores/useAuthStore';
 import { ROUTE_PATHS } from '@/config/routes.config';
 
+/**
+ * Route guard cho các trang dành cho khách (chưa đăng nhập).
+ * Chuyển hướng người dùng đã đăng nhập đến trang phù hợp với role.
+ *
+ * @param {Object} props - Props của component.
+ * @param {React.ReactNode} props.children - Component con (trang khách).
+ * @returns {React.ReactElement} Component con hoặc Navigate component.
+ *
+ * @example
+ * <GuestRoute>
+ *   <LoginPage />
+ * </GuestRoute>
+ */
 function GuestRoute({ children }) {
   const { isLoggedIn, user } = useAuthStore();
   const location = useLocation();

@@ -231,10 +231,18 @@ export const getRegistrationDetailAdmin = async (req, res) => {
     return res.status(404).json({ error: "Đăng ký không tồn tại" });
   }
 
+  // Đếm số lượng đăng ký active riêng
+  const participantCount = await prisma.dangKyHoatDong.count({
+    where: {
+      hoatDongId: registration.hoatDongId,
+      trangThai: { in: ACTIVE_REG_STATUSES },
+    },
+  });
+
   res.json({
     registration: {
       ...mapRegistration(registration, registration.hoatDong),
-      activity: mapActivitySummaryForRegistration(registration.hoatDong),
+      activity: mapActivitySummaryForRegistration(registration.hoatDong, { participantCount }),
     },
   });
 };

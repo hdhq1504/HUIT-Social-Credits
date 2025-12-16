@@ -3,7 +3,7 @@ import prisma from "../prisma.js";
 import { uploadBase64Image, removeFiles, buildPublicUrl } from "../utils/supabaseStorage.js";
 import { env } from "../env.js";
 
-const ROLE_VALUES = new Set(["SINHVIEN", "GIANGVIEN", "NHANVIEN", "ADMIN"]);
+const ROLE_VALUES = new Set(["SINHVIEN", "GIANGVIEN", "ADMIN"]);
 const STATUS_VALUES = new Set(["active", "inactive"]);
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;

@@ -35,8 +35,14 @@ const toTimestamp = (value) => {
   return Number.isNaN(ts) ? null : ts;
 };
 
+/** Offset thời gian cho phép checkout (10 phút trước endTime) */
 const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
 
+/**
+ * Tạo state khởi tạo cho CardActivity.
+ * @param {Object} params - Các tham số khởi tạo.
+ * @returns {Object} State khởi tạo.
+ */
 const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailable }) => ({
   registerModalOpen: false,
   uiState: initialUiState,
@@ -51,6 +57,12 @@ const buildInitialCardState = ({ initialUiState, attendanceStep, checkoutAvailab
   checkoutAvailable,
 });
 
+/**
+ * Reducer quản lý state của CardActivity.
+ * @param {Object} prevState - State hiện tại.
+ * @param {Object} action - Action cần thực hiện.
+ * @returns {Object} State mới.
+ */
 const cardActivityReducer = (prevState, action) => {
   switch (action.type) {
     case 'SET':
@@ -62,6 +74,32 @@ const cardActivityReducer = (prevState, action) => {
   }
 };
 
+/**
+ * Component card hiển thị thông tin hoạt động CTXH.
+ * Hỗ trợ nhiều trạng thái: guest, registered, check_in, check_out, feedback_*.
+ *
+ * @param {Object} props - Props của component.
+ * @param {string} props.id - ID hoạt động.
+ * @param {string} props.title - Tiêu đề hoạt động.
+ * @param {number} [props.points] - Điểm CTXH.
+ * @param {string} [props.dateTime] - Thời gian hiển thị.
+ * @param {string} [props.endTime] - Thời gian kết thúc.
+ * @param {string} [props.location] - Địa điểm.
+ * @param {Array} [props.participants=[]] - Danh sách người tham gia.
+ * @param {number|string} [props.capacity] - Sức chứa.
+ * @param {string} [props.coverImage] - URL ảnh bìa.
+ * @param {boolean} [props.isFeatured=false] - Có phải hoạt động nổi bật không.
+ * @param {string} [props.badgeText='Nổi bật'] - Text badge khi featured.
+ * @param {'vertical'|'horizontal'} [props.variant='vertical'] - Kiểu hiển thị.
+ * @param {string} [props.state='guest'] - Trạng thái UI của card.
+ * @param {Function} [props.onRegister] - Callback khi mở modal đăng ký.
+ * @param {Function} [props.onRegistered] - Callback khi đăng ký thành công.
+ * @param {Function} [props.onCancelRegister] - Callback khi hủy đăng ký.
+ * @param {Function} [props.onConfirmPresent] - Callback khi điểm danh.
+ * @param {Function} [props.onSendFeedback] - Callback khi gửi phản hồi.
+ * @param {boolean} [props.loading=false] - Hiển thị skeleton loading.
+ * @returns {React.ReactElement} Component CardActivity.
+ */
 function CardActivity(props) {
   const {
     id,
@@ -321,12 +359,14 @@ function CardActivity(props) {
     [],
   );
 
-  const isAttendanceBusy = isAttendanceSubmitting || attendanceLoading;
-  const hasCheckin = attendanceSummary?.hasCheckin;
-  const hasCheckout = attendanceSummary?.hasCheckout;
-  const isCheckoutReady = checkoutAvailable || hasCheckout;
-  const isCheckoutPending = uiState === 'check_out' && hasCheckin && !isCheckoutReady;
+  // === Derived states cho UI ===
+  const isAttendanceBusy = isAttendanceSubmitting || attendanceLoading; // Đang xử lý điểm danh
+  const hasCheckin = attendanceSummary?.hasCheckin; // Đã điểm danh đầu giờ
+  const hasCheckout = attendanceSummary?.hasCheckout; // Đã điểm danh cuối giờ
+  const isCheckoutReady = checkoutAvailable || hasCheckout; // Sẵn sàng checkout
+  const isCheckoutPending = uiState === 'check_out' && hasCheckin && !isCheckoutReady; // Chờ mở checkout
 
+  // Mở trang chi tiết hoạt động
   const openDetails = () => {
     if (typeof onDetails === 'function') onDetails(activity);
 
@@ -337,26 +377,35 @@ function CardActivity(props) {
     }
   };
 
+  // Mở modal đăng ký hoạt động
   const handleOpenRegister = () => {
     onRegister?.(activity);
     dispatch({ type: 'SET', payload: { modalVariant: 'confirm', registerModalOpen: true } });
   };
 
+  // Mở modal hủy đăng ký
   const handleOpenCancel = () => {
     dispatch({ type: 'SET', payload: { modalVariant: 'cancel', registerModalOpen: true } });
   };
 
+  // Đóng modal đăng ký/hủy
   const handleCloseRegister = () => dispatch({ type: 'SET', payload: { registerModalOpen: false } });
 
+  /**
+   * Xử lý xác nhận đăng ký hoặc hủy đăng ký.
+   * Phân biệt dựa trên modalVariant: 'confirm' = đăng ký, 'cancel' = hủy.
+   */
   const handleConfirmRegister = async (payload) => {
     dispatch({ type: 'SET', payload: { isRegisterProcessing: true } });
     try {
       if (modalVariant === 'cancel') {
+        // Xử lý hủy đăng ký
         await onCancelRegister?.({ activity, ...payload });
         dispatch({ type: 'SET', payload: { registerModalOpen: false, uiState: 'guest', modalVariant: 'confirm' } });
         onStateChange?.('guest');
         openToast({ message: 'Hủy đăng ký thành công!', variant: 'success' });
       } else {
+        // Xử lý đăng ký mới
         await onRegistered?.({ activity, ...payload });
         dispatch({ type: 'SET', payload: { registerModalOpen: false } });
         if (autoSwitchStateOnRegister) {
@@ -376,7 +425,12 @@ function CardActivity(props) {
     }
   };
 
+  /**
+   * Mở modal điểm danh với phase cụ thể (checkin/checkout).
+   * Kiểm tra yêu cầu đăng ký khuôn mặt trước khi cho phép.
+   */
   const handleOpenAttendance = (phase = attendanceStep ?? 'checkin') => {
+    // Kiểm tra yêu cầu face enrollment
     if (props.requiresFaceEnrollment && !props.faceEnrollment?.enrolled) {
       openToast({
         message: 'Bạn cần đăng ký khuôn mặt trong trang Thông tin sinh viên trước khi điểm danh.',
@@ -390,26 +444,35 @@ function CardActivity(props) {
     });
   };
 
+  // Đóng modal điểm danh và reset ảnh đã chụp
   const handleCloseAttendance = () => {
     dispatch({ type: 'SET', payload: { checkModalOpen: false } });
     dispatch({ type: 'RESET_CAPTURED' });
   };
 
+  // Lưu ảnh đã chụp/chọn vào state
   const handleCaptured = ({ file, previewUrl, dataUrl }) =>
     dispatch({ type: 'SET', payload: { capturedEvidence: { file, previewUrl, dataUrl } } });
 
+  /**
+   * Xử lý gửi điểm danh.
+   * Flow: Validate ảnh -> Chuyển file sang dataUrl -> Phân tích khuôn mặt -> Gọi API -> Cập nhật state.
+   */
   const handleSubmitAttendance = async ({ file, previewUrl, dataUrl }) => {
+    // Merge dữ liệu từ params và capturedEvidence
     const payload = {
       file: file ?? capturedEvidence?.file ?? null,
       previewUrl: previewUrl ?? capturedEvidence?.previewUrl ?? null,
       dataUrl: dataUrl ?? capturedEvidence?.dataUrl ?? null,
     };
 
+    // Validate: phải có ảnh
     if (!payload.file) {
       openToast({ message: 'Không tìm thấy ảnh điểm danh. Vui lòng thử lại.', variant: 'danger' });
       return;
     }
 
+    // Chuyển file sang dataUrl nếu chưa có
     let evidenceDataUrl = payload.dataUrl;
     if (!evidenceDataUrl) {
       try {
@@ -424,6 +487,7 @@ function CardActivity(props) {
 
     dispatch({ type: 'SET', payload: { isAttendanceSubmitting: true } });
     try {
+      // Phân tích khuôn mặt nếu phương thức điểm danh là 'photo'
       let faceDescriptorPayload = null;
       let faceAnalysisError = null;
       if (attendanceMethod === 'photo') {
@@ -440,6 +504,7 @@ function CardActivity(props) {
         }
       }
 
+      // Gọi API điểm danh
       const result = await onConfirmPresent?.({
         activity,
         file: payload.file,
@@ -449,8 +514,12 @@ function CardActivity(props) {
         faceDescriptor: faceDescriptorPayload,
         faceError: !faceDescriptorPayload ? faceAnalysisError : undefined,
       });
+
+      // Đóng modal và reset ảnh
       dispatch({ type: 'SET', payload: { checkModalOpen: false } });
       dispatch({ type: 'RESET_CAPTURED' });
+
+      // Hiển thị toast thành công
       const fallbackMessage =
         phaseToSend === 'checkout' ? 'Gửi điểm danh cuối giờ thành công!' : 'Gửi điểm danh đầu giờ thành công!';
       const responseMessage = result?.message || fallbackMessage;
@@ -460,11 +529,15 @@ function CardActivity(props) {
         message: responseMessage,
         variant: toastVariant,
       });
+
+      // Cập nhật state dựa trên response từ API
       const updatedActivity = result?.activity;
       const nextPhaseFromApi = updatedActivity?.registration?.attendanceSummary?.nextPhase;
       const nextCheckoutAvailableAt = updatedActivity?.registration?.attendanceSummary?.checkoutAvailableAt;
       const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'check_out' : 'details_only');
       const nextAttendanceStep = nextPhaseFromApi || (phaseToSend === 'checkin' ? 'checkout' : 'checkin');
+
+      // Tính toán thời điểm checkout khả dụng
       const nextCheckoutAvailable = nextCheckoutAvailableAt
         ? Date.now() >= new Date(nextCheckoutAvailableAt).getTime()
         : phaseToSend === 'checkin'
@@ -475,6 +548,7 @@ function CardActivity(props) {
 
       checkoutReminderShownRef.current = phaseToSend !== 'checkin';
 
+      // Dispatch state mới
       dispatch({
         type: 'SET',
         payload: {
@@ -485,6 +559,7 @@ function CardActivity(props) {
       });
       onStateChange?.(nextState);
     } catch (error) {
+      // Bỏ qua nếu người dùng chủ động hủy
       if (error?.message === 'ATTENDANCE_ABORTED') return;
       openToast({ message: 'Điểm danh thất bại. Thử lại sau nhé.', variant: 'danger' });
     } finally {
@@ -493,18 +568,25 @@ function CardActivity(props) {
   };
 
   // ==== Feedback handlers ====
+
+  // Mở modal gửi phản hồi điểm CTXH
   const handleOpenFeedback = () => {
     dispatch({ type: 'SET', payload: { feedbackModalOpen: true } });
   };
 
+  // Đóng modal phản hồi
   const handleCloseFeedback = () => dispatch({ type: 'SET', payload: { feedbackModalOpen: false } });
 
+  /**
+   * Xử lý gửi phản hồi điểm CTXH.
+   * Gửi nội dung, files minh chứng và flag xác nhận lên server.
+   */
   const handleSubmitFeedback = async ({ content, files, confirm }) => {
     dispatch({ type: 'SET', payload: { isFeedbackSubmitting: true } });
     try {
       await onSendFeedback?.({ activity, content, files, confirm });
       dispatch({ type: 'SET', payload: { isFeedbackSubmitting: false, feedbackModalOpen: false } });
-      onStateChange?.('feedback_reviewing');
+      onStateChange?.('feedback_reviewing'); // Chuyển sang trạng thái chờ duyệt
       openToast({ message: 'Đã gửi phản hồi. Vui lòng chờ duyệt!', variant: 'success' });
     } catch {
       openToast({ message: 'Gửi phản hồi thất bại. Thử lại sau nhé.', variant: 'danger' });

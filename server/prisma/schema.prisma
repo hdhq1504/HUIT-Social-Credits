@@ -239,7 +239,6 @@ model PhanHoiHoatDong {
   nguoiDungId String
   hoatDongId  String
   noiDung     String
-  danhGia     Int?
   minhChung   Json?
   trangThai   TrangThaiPhanHoi @default(CHO_DUYET)
   lydoTuChoi  String?          @db.Text

@@ -2,6 +2,47 @@ import prisma from "../prisma.js";
 import bcrypt from "bcrypt";
 
 /**
+ * Tách tên thành phần tên và họ + tên đệm.
+ * @param {string} fullName - Họ tên đầy đủ.
+ * @returns {{ firstName: string, rest: string }}
+ */
+const parseName = (fullName) => {
+  if (!fullName || typeof fullName !== 'string') {
+    return { firstName: '', rest: '' };
+  }
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 0) {
+    return { firstName: '', rest: '' };
+  }
+  if (parts.length === 1) {
+    return { firstName: parts[0], rest: '' };
+  }
+  const firstName = parts[parts.length - 1]; // Chữ cuối cùng là tên
+  const rest = parts.slice(0, -1).join(' ');  // Phần còn lại là họ + tên đệm
+  return { firstName, rest };
+};
+
+/**
+ * So sánh tên: ưu tiên theo tên, nếu trùng thì theo họ + tên đệm.
+ * @param {string} nameA - Họ tên A.
+ * @param {string} nameB - Họ tên B.
+ * @returns {number} Kết quả so sánh (-1, 0, 1).
+ */
+const compareNames = (nameA, nameB) => {
+  const a = parseName(nameA);
+  const b = parseName(nameB);
+
+  // So sánh theo tên (chữ cuối) trước
+  const firstNameCompare = a.firstName.localeCompare(b.firstName, 'vi');
+  if (firstNameCompare !== 0) {
+    return firstNameCompare;
+  }
+
+  // Nếu tên giống nhau, so sánh theo họ + tên đệm
+  return a.rest.localeCompare(b.rest, 'vi');
+};
+
+/**
  * Lấy danh sách sinh viên (Admin).
  * @param {Object} req - Express request object.
  * @param {Object} res - Express response object.
@@ -39,51 +80,66 @@ export const getStudents = async (req, res) => {
       where.lopHocId = lopId;
     }
 
-    const [students, total] = await Promise.all([
-      prisma.nguoiDung.findMany({
-        where,
-        select: {
-          id: true,
-          maSV: true,
-          hoTen: true,
-          email: true,
-          ngaySinh: true,
-          gioiTinh: true,
-          soDT: true,
-          isActive: true,
-          lastLoginAt: true,
-          avatarUrl: true,
-          lopHoc: {
-            select: {
-              id: true,
-              tenLop: true,
-              maLop: true,
-              nganhHoc: {
-                select: {
-                  id: true,
-                  tenNganh: true,
-                  khoa: {
-                    select: {
-                      id: true,
-                      tenKhoa: true,
-                      maKhoa: true
-                    }
+    // Lấy tổng số để phân trang
+    const total = await prisma.nguoiDung.count({ where });
+
+    // Lấy tất cả sinh viên thỏa điều kiện (không phân trang ở DB) để sort đúng
+    const allStudents = await prisma.nguoiDung.findMany({
+      where,
+      select: {
+        id: true,
+        maSV: true,
+        hoTen: true,
+        email: true,
+        ngaySinh: true,
+        gioiTinh: true,
+        soDT: true,
+        isActive: true,
+        lastLoginAt: true,
+        avatarUrl: true,
+        lopHoc: {
+          select: {
+            id: true,
+            tenLop: true,
+            maLop: true,
+            nganhHoc: {
+              select: {
+                id: true,
+                tenNganh: true,
+                khoa: {
+                  select: {
+                    id: true,
+                    tenKhoa: true,
+                    maKhoa: true
                   }
                 }
               }
             }
           }
-        },
-        skip: Number(skip),
-        take: Number(pageSize),
-        orderBy: [
-          { lopHoc: { nganhHoc: { khoa: { tenKhoa: 'asc' } } } },
-          { lopHoc: { tenLop: 'asc' } },
-          { hoTen: 'asc' }
-        ],
-      }),
-      prisma.nguoiDung.count({ where }),
-    ]);
+        }
+      },
+    });
+
+    // Sort theo: Khoa -> Lớp -> Tên (chữ cuối)
+    allStudents.sort((a, b) => {
+      // 1. So sánh theo khoa
+      const khoaA = a.lopHoc?.nganhHoc?.khoa?.tenKhoa || '';
+      const khoaB = b.lopHoc?.nganhHoc?.khoa?.tenKhoa || '';
+      const khoaCompare = khoaA.localeCompare(khoaB, 'vi');
+      if (khoaCompare !== 0) return khoaCompare;
+
+      // 2. So sánh theo lớp
+      const lopA = a.lopHoc?.tenLop || '';
+      const lopB = b.lopHoc?.tenLop || '';
+      const lopCompare = lopA.localeCompare(lopB, 'vi');
+      if (lopCompare !== 0) return lopCompare;
+
+      // 3. So sánh theo tên (chữ cuối trước, sau đó họ + tên đệm)
+      return compareNames(a.hoTen, b.hoTen);
+    });
+
+    // Phân trang sau khi sort
+    const students = allStudents.slice(Number(skip), Number(skip) + Number(pageSize));
 
     const mappedStudents = students.map(student => ({
       id: student.id,

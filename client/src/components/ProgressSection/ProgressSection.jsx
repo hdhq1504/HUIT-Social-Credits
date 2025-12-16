@@ -8,6 +8,22 @@ import styles from './ProgressSection.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Section hiển thị tiến độ học tập và điểm CTXH của sinh viên.
+ * Bao gồm điểm hiện tại, điểm mục tiêu, progress bar và trạng thái các nhóm.
+ *
+ * @param {Object} props - Props của component.
+ * @param {number} [props.currentPoints=0] - Điểm hiện tại của sinh viên.
+ * @param {number} [props.targetPoints=100] - Điểm mục tiêu cần đạt.
+ * @param {number} [props.percent=0] - Phần trăm hoàn thành.
+ * @param {Array<{name: string, value: string|number, note: string, status: 'success'|'warning'}>} [props.groups=[]] - Danh sách nhóm điểm.
+ * @param {number} [props.missingPoints=0] - Số điểm còn thiếu.
+ * @param {Function} [props.onViewDetail] - Callback khi click xem chi tiết.
+ * @param {string} [props.imageUrl] - URL ảnh đại diện.
+ * @param {boolean} [props.isQualified=false] - Đạt điều kiện chứng chỉ hay chưa.
+ * @param {Object} [props.requirements] - Yêu cầu chi tiết cho từng nhóm.
+ * @returns {React.ReactElement} Component ProgressSection.
+ */
 function ProgressSection({
   currentPoints = 0,
   targetPoints = 100,

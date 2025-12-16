@@ -27,19 +27,26 @@ import { useParams } from 'react-router-dom';
 
 const cx = classNames.bind(styles);
 
+/** Map trạng thái lịch sử sang thông tin hiển thị */
 const historyStatusMap = {
   submitted: { label: 'Đã gửi', tone: 'info' },
   processing: { label: 'Hệ thống xử lý', tone: 'info' },
   pending: { label: 'Đang chờ duyệt', tone: 'warning' },
   approved: { label: 'Đã duyệt', tone: 'success' },
   rejected: { label: 'Từ chối', tone: 'danger' },
+  late: { label: 'Trễ giờ', tone: 'warning' },
 };
 
+/**
+ * Xác định tone màu dựa trên trạng thái điểm danh.
+ * @param {string} status - Trạng thái điểm danh.
+ * @returns {'success'|'warning'|'danger'|'neutral'} Tone màu.
+ */
 const getAttendanceTone = (status) => {
   if (!status) return 'neutral';
   const normalized = status.toLowerCase();
   if (normalized.includes('đúng') || normalized.includes('hoàn')) return 'success';
-  if (normalized.includes('trễ')) return 'warning';
+  if (normalized.includes('trễ') || normalized.includes('late') || normalized.includes('muộn')) return 'warning';
   if (normalized.includes('vắng') || normalized.includes('không')) return 'danger';
   return 'neutral';
 };
@@ -91,13 +98,23 @@ const buildHistoryEntries = (record) => {
   }
 
   (record.attendanceHistory || []).forEach((entry) => {
+    // Xác định status dựa trên trạng thái điểm danh
+    let entryStatus = 'pending';
+    if (entry.status === 'DA_THAM_GIA') {
+      entryStatus = 'approved';
+    } else if (entry.status === 'VANG_MAT') {
+      entryStatus = 'rejected';
+    } else if (entry.status === 'TRE_GIO' || entry.isLate) {
+      entryStatus = 'late';
+    }
+
     entries.push({
       id: entry.id,
       timestamp: entry.capturedAt ? dayjs(entry.capturedAt).valueOf() : 0,
       time: formatDateTime(entry.capturedAt),
       actor: record.student?.name || 'Sinh viên',
       action: entry.phase === 'checkout' ? 'Điểm danh cuối giờ' : 'Điểm danh đầu giờ',
-      status: entry.status === 'DA_THAM_GIA' ? 'approved' : entry.status === 'VANG_MAT' ? 'rejected' : 'pending',
+      status: entryStatus,
     });
   });
 

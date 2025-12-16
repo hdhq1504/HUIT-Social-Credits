@@ -28,7 +28,6 @@ const ROLE_OPTIONS = [
   { label: 'Tất cả vai trò', value: 'all' },
   { label: 'Sinh viên', value: 'SINHVIEN' },
   { label: 'Giảng viên', value: 'GIANGVIEN' },
-  { label: 'Nhân viên', value: 'NHANVIEN' },
   { label: 'Quản trị viên', value: 'ADMIN' },
 ];
 
@@ -41,7 +40,6 @@ const STATUS_OPTIONS = [
 const ROLE_LABELS = {
   SINHVIEN: 'Sinh viên',
   GIANGVIEN: 'Giảng viên',
-  NHANVIEN: 'Nhân viên',
   ADMIN: 'Quản trị viên',
 };
 
@@ -212,14 +210,14 @@ export default function UsersPage() {
         align: 'center',
       },
       {
-        title: 'Thông tin người dùng',
+        title: 'Họ tên',
         dataIndex: 'fullName',
         key: 'fullName',
         width: 280,
         sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
       },
       {
-        title: 'Mã định danh',
+        title: 'ID',
         dataIndex: 'identifier',
         key: 'identifier',
         width: 160,

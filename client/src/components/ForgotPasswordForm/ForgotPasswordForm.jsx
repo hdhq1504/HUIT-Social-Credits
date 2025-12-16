@@ -10,8 +10,23 @@ import { authApi } from '@api/auth.api';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Lấy thông báo lỗi từ response hoặc trả về fallback.
+ * @param {Error} error - Error object.
+ * @param {string} fallback - Thông báo mặc định.
+ * @returns {string} Thông báo lỗi.
+ */
 const getErrorMessage = (error, fallback) => error?.response?.data?.error || error?.message || fallback;
 
+/**
+ * Component form quên mật khẩu với 4 bước:
+ * 1. Nhập email để nhận OTP
+ * 2. Nhập mã OTP xác thực
+ * 3. Đặt mật khẩu mới
+ * 4. Thành công và chuyển hướng
+ *
+ * @returns {React.ReactElement} Component ForgotPasswordForm.
+ */
 function ForgotPasswordForm() {
   const [step, setStep] = useState(1); // 1: enter email, 2: enter OTP, 3: set new password, 4: success
   const [email, setEmail] = useState('');
@@ -23,30 +38,41 @@ function ForgotPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  // === Mutations cho từng bước ===
+
+  // Bước 1: Gửi OTP đến email
   const requestOtpMutation = useMutation({
     mutationFn: (emailValue) => authApi.requestPasswordReset(emailValue),
   });
 
+  // Bước 2: Xác thực mã OTP
   const verifyOtpMutation = useMutation({
     mutationFn: ({ email: emailValue, otp: otpValue }) => authApi.verifyPasswordResetOtp(emailValue, otpValue),
   });
 
+  // Bước 3: Đặt mật khẩu mới
   const resetPasswordMutation = useMutation({
     mutationFn: ({ email: emailValue, otp: otpValue, newPassword }) =>
       authApi.resetPasswordWithOtp(emailValue, otpValue, newPassword),
   });
 
+  // Tự động đăng nhập sau khi reset thành công
   const loginAfterResetMutation = useMutation({
     mutationFn: ({ email: emailValue, password: passwordValue }) => authApi.login(emailValue, passwordValue),
   });
 
-  // Kiểm tra email hợp lệ (simple regex)
+  /**
+   * Kiểm tra định dạng email hợp lệ.
+   */
   const validateEmail = (value) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value);
   };
 
-  // Xử lý gửi email để nhận OTP
+  /**
+   * Bước 1: Xử lý gửi email để nhận OTP.
+   * Validate email và gọi API gửi mã xác thực.
+   */
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -64,6 +90,7 @@ function ForgotPasswordForm() {
 
     try {
       const { message } = await requestOtpMutation.mutateAsync(normalizedEmail);
+      // Reset các field khác và chuyển sang bước 2
       setEmail(normalizedEmail);
       setOtp('');
       setPassword('');
@@ -75,7 +102,10 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Xử lý xác thực OTP
+  /**
+   * Bước 2: Xử lý xác thực OTP.
+   * Kiểm tra mã OTP và chuyển sang bước đặt mật khẩu nếu hợp lệ.
+   */
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -221,6 +251,9 @@ function ForgotPasswordForm() {
               >
                 {requestOtpMutation.isPending ? 'Đang gửi...' : 'Tiếp tục'}
               </button>
+              <Link to="/login" className={cx('forgot-password__back-link')}>
+                ← Quay lại đăng nhập
+              </Link>
             </div>
           </>
         );

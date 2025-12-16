@@ -15,12 +15,19 @@ import styles from './PersonalActivitiesSection.module.scss';
 
 const cx = classNames.bind(styles);
 
+/** Preset style cho từng hoạt động theo thứ tự */
 const STYLE_PRESETS = [
   { variant: 'orange', icon: faCalendar },
   { variant: 'yellow', icon: faSeedling },
   { variant: 'primary', icon: faGraduationCap },
 ];
 
+/**
+ * Section hiển thị danh sách hoạt động sắp tới của người dùng đã đăng nhập.
+ * Hiển thị tối đa 3 hoạt động gần nhất theo thời gian bắt đầu.
+ *
+ * @returns {React.ReactElement} Component PersonalActivitiesSection.
+ */
 function PersonalActivitiesSection() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 

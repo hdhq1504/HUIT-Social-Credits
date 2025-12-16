@@ -17,6 +17,12 @@ import {
   mapStorageListForResponse,
 } from "./storageMapper.js";
 
+/**
+ * Chuẩn hóa nhãn học kỳ (VD: HK1 -> "Học kỳ 1").
+ * @private
+ * @param {string} value - Nhãn học kỳ cần chuẩn hóa.
+ * @returns {string|null} Nhãn đã chuẩn hóa hoặc null.
+ */
 const normalizeSemesterLabel = (value) => {
   if (!value) return null;
   const trimmed = String(value).trim();
@@ -33,6 +39,12 @@ const normalizeSemesterLabel = (value) => {
   }
 };
 
+/**
+ * Chuẩn hóa nhãn năm học từ string hoặc object.
+ * @private
+ * @param {string|Object} value - Nhãn hoặc record năm học.
+ * @returns {string|null} Nhãn đã chuẩn hóa hoặc null.
+ */
 const normalizeAcademicYearLabel = (value) => {
   if (!value) return null;
   if (typeof value === "string") {
@@ -61,6 +73,13 @@ const FEEDBACK_STATUS_LABELS = {
   DA_DUYET: "Đã duyệt",
   BI_TU_CHOI: "Bị từ chối"
 };
+
+/**
+ * Tạo Set từ danh sách tên bucket (lọc rỗng).
+ * @private
+ * @param {...string} values - Danh sách tên bucket.
+ * @returns {Set<string>} Set chứa các bucket hợp lệ.
+ */
 const buildBucketSet = (...values) =>
   new Set(
     values
@@ -246,7 +265,8 @@ const ADMIN_REGISTRATION_INCLUDE = {
       batDauLuc: true,
       ketThucLuc: true,
       diaDiem: true,
-      phuongThucDiemDanh: true
+      phuongThucDiemDanh: true,
+      sucChuaToiDa: true, // Số lượng tối đa cho phép tham gia
     }
   }
 };
@@ -591,7 +611,6 @@ const mapFeedback = (feedback) => {
     status: feedback.trangThai,
     statusLabel: FEEDBACK_STATUS_LABELS[feedback.trangThai] || feedback.trangThai,
     content: feedback.noiDung,
-    rating: feedback.danhGia ?? null,
     attachments: normalizeAttachments(feedback.minhChung),
     rejectedReason: feedback.lydoTuChoi ?? null,
     submittedAt: feedback.taoLuc?.toISOString() ?? null,
@@ -970,7 +989,14 @@ const buildActivityResponse = async (activityId, userId) => {
   return mapActivity(activity, registration, { faceEnrollment });
 };
 
-const mapActivitySummaryForRegistration = (activity) => {
+/**
+ * Map activity summary cho registration detail.
+ * @param {Object} activity - Activity object từ database.
+ * @param {Object} [options] - Options bổ sung.
+ * @param {number} [options.participantCount] - Số lượng đã đăng ký (tính trước nếu cần).
+ * @returns {Object|null} Activity summary object.
+ */
+const mapActivitySummaryForRegistration = (activity, options = {}) => {
   if (!activity) return null;
   const defaultAttendanceMethod = getDefaultAttendanceMethod();
   const attendanceSource = activity.phuongThucDiemDanh || defaultAttendanceMethod;
@@ -980,16 +1006,29 @@ const mapActivitySummaryForRegistration = (activity) => {
     getAttendanceMethodLabel(attendanceMethod) ||
     getAttendanceMethodLabel(mapAttendanceMethodToApi(defaultAttendanceMethod));
 
+  // Số lượng tối đa được phép tham gia
+  const maxParticipants = activity.sucChuaToiDa ?? null;
+
+  // Số lượng đã đăng ký (từ options hoặc từ activity._count nếu có)
+  const participantCount =
+    options.participantCount ??
+    activity._count?.dangKy ??
+    activity.participantCount ??
+    null;
+
   return {
     id: activity.id,
     title: activity.tieuDe,
     points: activity.diemCong ?? 0,
     pointGroup: normalizePointGroup(activity.nhomDiem),
+    pointGroupLabel: getPointGroupLabel(activity.nhomDiem),
     startTime: activity.batDauLuc?.toISOString() ?? null,
     endTime: activity.ketThucLuc?.toISOString() ?? null,
     location: activity.diaDiem ?? null,
     attendanceMethod,
-    attendanceMethodLabel
+    attendanceMethodLabel,
+    maxParticipants,
+    participantCount,
   };
 };
 

@@ -5,6 +5,12 @@ import styles from './NotFound.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Component hiển thị trang 404 - Không tìm thấy.
+ * Hiển thị hình ảnh 404 và link về trang chủ.
+ *
+ * @returns {React.ReactElement} Component NotFound.
+ */
 function NotFound() {
   return (
     <main className={cx('not-found')}>

@@ -159,7 +159,7 @@ export default function TeacherActivitiesPage() {
         sorter: (a, b) => a.title.localeCompare(b.title),
       },
       {
-        title: 'Nhóm hoạt động',
+        title: 'Nhóm',
         dataIndex: 'pointGroup',
         key: 'pointGroup',
         width: 170,

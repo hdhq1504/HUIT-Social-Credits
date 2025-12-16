@@ -9,6 +9,25 @@ import styles from './AttendanceModal.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Modal điểm danh hoạt động CTXH bằng camera/upload ảnh.
+ * Hỗ trợ chụp ảnh qua webcam, chọn ảnh từ máy và gửi kèm face descriptor.
+ *
+ * @param {Object} props - Props của component.
+ * @param {boolean} props.open - Trạng thái hiển thị modal.
+ * @param {Function} props.onCancel - Callback khi đóng modal.
+ * @param {Function} props.onSubmit - Callback khi gửi điểm danh (nhận { file, previewUrl, dataUrl, faceDescriptor }).
+ * @param {Function} [props.onCapture] - Callback khi chụp/chọn ảnh thành công.
+ * @param {Function} [props.onRetake] - Callback khi chụp lại ảnh.
+ * @param {'checkin'|'checkout'} [props.variant='checkin'] - Loại điểm danh.
+ * @param {string} props.campaignName - Tên hoạt động.
+ * @param {string} [props.groupLabel] - Nhãn nhóm hoạt động.
+ * @param {string} [props.pointsLabel] - Nhãn điểm.
+ * @param {string} props.dateTime - Thời gian diễn ra.
+ * @param {string} props.location - Địa điểm.
+ * @param {boolean} [props.confirmLoading=false] - Trạng thái loading khi gửi.
+ * @returns {React.ReactElement} Component AttendanceModal.
+ */
 function AttendanceModal({
   open,
   onCancel,
@@ -40,20 +59,30 @@ function AttendanceModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasVideoInput, setHasVideoInput] = useState(true);
 
+  /**
+   * Thu hồi object URL cũ để tránh memory leak.
+   */
   const revokePreview = () => {
     if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
     prevUrlRef.current = null;
   };
 
+  /**
+   * Tắt hoàn toàn camera bằng cách dừng tất cả media tracks.
+   * Xử lý nhiều cách lấy stream khác nhau để đảm bảo tắt được.
+   */
   const hardStopCamera = () => {
     try {
+      // Thử lấy video element từ nhiều nguồn
       const videoEl =
         webcamRef.current?.video ||
         webcamRef.current?.videoRef?.current ||
         document.querySelector('.check-modal video');
 
+      // Lấy stream từ nhiều nguồn có thể
       const stream = videoEl?.srcObject || webcamRef.current?.stream || activeStreamRef.current;
 
+      // Dừng tất cả tracks
       if (stream?.getTracks) {
         stream.getTracks().forEach((t) => {
           try {
@@ -100,6 +129,10 @@ function AttendanceModal({
     };
   }, []);
 
+  /**
+   * Liệt kê các thiết bị video có sẵn.
+   * Ưu tiên chọn camera sau (back/rear) nếu có.
+   */
   const enumerateVideoInputs = async () => {
     try {
       const devices = await navigator.mediaDevices?.enumerateDevices?.();
@@ -108,6 +141,7 @@ function AttendanceModal({
       setHasVideoInput(vids.length > 0);
 
       if (vids.length) {
+        // Tìm camera sau (back/rear), nếu không có thì dùng camera đầu tiên
         const backIdx = vids.findIndex((d) => /back|rear|environment/i.test(d.label));
         const idx = backIdx >= 0 ? backIdx : 0;
         setCurrentIndex(idx);
@@ -120,13 +154,19 @@ function AttendanceModal({
       setHasVideoInput(false);
     }
   };
+  /**
+   * Mở camera với xin quyền truy cập.
+   * Xử lý nhiều loại lỗi: quyền bị từ chối, không tìm thấy camera, v.v.
+   */
   const openCamera = async () => {
     try {
+      // Xin quyền trước và dừng ngay stream tạm
       const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       tmp.getTracks().forEach((t) => t.stop());
       await enumerateVideoInputs();
       setIsCameraOn(true);
     } catch (err) {
+      // Xử lý các loại lỗi camera
       if (err?.name === 'NotAllowedError') {
         message.error('Bạn đã từ chối quyền camera. Hãy cấp quyền trong cài đặt trình duyệt và thử lại.');
       } else if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
@@ -138,15 +178,25 @@ function AttendanceModal({
     }
   };
 
+  /**
+   * Chuyển đổi giữa camera trước/sau.
+   * Tắt camera hiện tại, chọn camera tiếp theo và bật lại.
+   */
   const toggleCamera = async () => {
     if (!videoInputs.length) return;
     hardStopCamera();
     const nextIdx = (currentIndex + 1) % videoInputs.length;
     setCurrentIndex(nextIdx);
     setDeviceId(videoInputs[nextIdx].deviceId);
-    setTimeout(() => setIsCameraOn(true), 0);
+    setTimeout(() => setIsCameraOn(true), 0); // Delay nhỏ để đảm bảo re-render
   };
 
+  /**
+   * Chuyển đổi dataURL sang File object.
+   * @param {string} dataUrl - Data URL của ảnh.
+   * @param {string} fileName - Tên file.
+   * @returns {File} File object.
+   */
   const dataURLtoFile = (dataUrl, fileName) => {
     const arr = dataUrl.split(',');
     const mime = arr[0].match(/:(.*?);/)[1] || 'image/jpeg';
@@ -157,6 +207,10 @@ function AttendanceModal({
     return new File([u8arr], fileName, { type: mime });
   };
 
+  /**
+   * Chụp ảnh từ webcam.
+   * Lấy screenshot từ webcam, chuyển sang File, lưu vào state và tắt camera.
+   */
   const handleCapture = () => {
     if (!webcamRef.current) return;
     const dataUrl = webcamRef.current.getScreenshot();
@@ -164,22 +218,28 @@ function AttendanceModal({
       message.error('Không thể chụp ảnh. Hãy thử lại hoặc kiểm tra quyền camera.');
       return;
     }
+    // Chuyển dataUrl sang File object
     const f = dataURLtoFile(dataUrl, `attendance_${Date.now()}.jpg`);
     revokePreview();
     const url = URL.createObjectURL(f);
     prevUrlRef.current = url;
 
+    // Lưu vào state
     setFile(f);
     setPreviewUrl(url);
     setDataUrl(dataUrl);
     setCaptureStage('checkout');
     setIsReadingFile(false);
 
+    // Tắt camera sau khi chụp
     hardStopCamera();
 
     onCapture?.({ file: f, previewUrl: url, dataUrl });
   };
 
+  /**
+   * Chụp lại ảnh - reset state và mở lại camera.
+   */
   const handleRetake = async () => {
     revokePreview();
     setFile(null);
@@ -191,6 +251,10 @@ function AttendanceModal({
     onRetake?.();
   };
 
+  /**
+   * Gửi ảnh điểm danh lên server.
+   * Phân tích khuôn mặt trước khi gửi để đảm bảo ảnh hợp lệ.
+   */
   const handleSubmit = async () => {
     if (confirmLoading || !file) return;
     if (!dataUrl) {
@@ -199,12 +263,14 @@ function AttendanceModal({
     }
 
     try {
+      // Phân tích khuôn mặt để lấy face descriptor
       const descriptor = await computeDescriptorFromDataUrl(dataUrl);
       if (!descriptor || !descriptor.length) {
         message.error('Không phát hiện được khuôn mặt rõ ràng trong ảnh điểm danh. Vui lòng chụp lại.');
         return;
       }
 
+      // Gọi callback với dữ liệu đầy đủ
       onSubmit?.({
         file,
         previewUrl,
@@ -218,6 +284,8 @@ function AttendanceModal({
   };
 
   const fileInputRef = useRef(null);
+
+  // Mở dialog chọn file từ máy
   const openFilePicker = () => fileInputRef.current?.click();
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];

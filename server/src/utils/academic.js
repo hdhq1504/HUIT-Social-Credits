@@ -1,5 +1,11 @@
 import prisma from "../prisma.js";
 
+/**
+ * Chuyển đổi giá trị sang Date object.
+ * @private
+ * @param {Date|string|number} value - Giá trị cần chuyển đổi.
+ * @returns {Date|null} Date object hoặc null nếu không hợp lệ.
+ */
 const toDate = (value) => {
   if (value instanceof Date) {
     return new Date(value.getTime());
@@ -8,9 +14,29 @@ const toDate = (value) => {
   return Number.isNaN(date?.getTime()) ? null : date;
 };
 
+/**
+ * Ngày chuyển từ học kỳ 3 sang học kỳ 1 trong tháng 8.
+ * @constant {number}
+ */
 const FALL_SEMESTER_TRANSITION_DAY = 15;
+
+/**
+ * Ngày bắt đầu học kỳ 3 trong tháng 6.
+ * @constant {number}
+ */
 const SUMMER_SEMESTER_START_DAY = 16;
 
+/**
+ * Xác định học kỳ và năm học từ ngày (tính toán tĩnh, không tra cứu DB).
+ * Quy tắc:
+ * - Học kỳ 1: 15/8 - 31/1 (bao gồm tháng 9-12 và tháng 1)
+ * - Học kỳ 2: 1/2 - 15/6
+ * - Học kỳ 3: 16/6 - 14/8
+ * 
+ * @private
+ * @param {Date|string|number} value - Ngày cần xác định.
+ * @returns {{semester: string|null, academicYear: string|null}} Thông tin học kỳ và năm học.
+ */
 const deriveStaticSemester = (value) => {
   const date = toDate(value);
   if (!date) {
@@ -51,6 +77,14 @@ const deriveStaticSemester = (value) => {
  */
 export const deriveSemesterInfo = (value) => deriveStaticSemester(value);
 
+/**
+ * Lấy nhãn hiển thị của năm học từ record database.
+ * Ưu tiên: ten > nienKhoa > ma.
+ * 
+ * @private
+ * @param {Object} year - Record năm học từ Prisma.
+ * @returns {string|null} Nhãn hiển thị hoặc null.
+ */
 const mapAcademicYearLabel = (year) => {
   if (!year) return null;
   if (typeof year.ten === "string" && year.ten.trim()) return year.ten.trim();
@@ -59,6 +93,12 @@ const mapAcademicYearLabel = (year) => {
   return null;
 };
 
+/**
+ * Chuẩn hóa ngày sang chuỗi ISO.
+ * @private
+ * @param {Date|string|number} value - Giá trị ngày.
+ * @returns {string|null} Chuỗi ISO hoặc null.
+ */
 const normalizeIso = (value) => {
   const date = toDate(value);
   return date ? date.toISOString() : null;

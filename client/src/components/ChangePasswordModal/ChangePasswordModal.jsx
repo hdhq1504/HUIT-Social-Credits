@@ -6,6 +6,17 @@ import { useEffect } from 'react';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Modal đổi mật khẩu.
+ * Cho phép người dùng nhập mật khẩu hiện tại và mật khẩu mới.
+ *
+ * @param {Object} props - Props của component.
+ * @param {boolean} props.open - Trạng thái hiển thị modal.
+ * @param {Function} props.onClose - Callback khi đóng modal.
+ * @param {Function} props.changePassword - Hàm thực hiện đổi mật khẩu (nhận { currentPassword, newPassword }).
+ * @param {Function} [props.onSuccess] - Callback khi đổi mật khẩu thành công.
+ * @returns {React.ReactElement} Component ChangePasswordModal.
+ */
 function ChangePasswordModal({ open, onClose, changePassword, onSuccess }) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

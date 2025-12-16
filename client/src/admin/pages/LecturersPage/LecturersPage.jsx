@@ -231,14 +231,14 @@ export default function LecturersPage() {
         align: 'center',
       },
       {
-        title: 'Thông tin giảng viên',
+        title: 'Họ tên',
         dataIndex: 'fullName',
         key: 'fullName',
         width: 280,
         sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
       },
       {
-        title: 'MSGV',
+        title: 'ID',
         dataIndex: 'staffCode',
         key: 'staffCode',
         width: 140,

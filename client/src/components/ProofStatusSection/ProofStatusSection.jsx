@@ -23,6 +23,7 @@ import styles from './ProofStatusSection.module.scss';
 
 const cx = classNames.bind(styles);
 
+/** Map trạng thái feedback sang hiển thị UI */
 const FEEDBACK_STATE_DISPLAY = {
   feedback_accepted: { status: 'approved', label: 'Đã duyệt' },
   feedback_reviewing: { status: 'processing', label: 'Đang xử lý' },
@@ -30,8 +31,10 @@ const FEEDBACK_STATE_DISPLAY = {
   feedback_denied: { status: 'rejected', label: 'Từ chối' },
 };
 
+/** Các trạng thái feedback được phép hiển thị */
 const ALLOWED_FEEDBACK_STATES = ['feedback_pending', 'feedback_reviewing', 'feedback_accepted', 'feedback_denied'];
 
+/** Map icon theo trạng thái */
 const statusIcons = {
   approved: faCircleCheck,
   processing: faClock,
@@ -39,6 +42,12 @@ const statusIcons = {
   reason: faTriangleExclamation,
 };
 
+/**
+ * Section hiển thị trạng thái phản hồi/minh chứng của các hoạt động.
+ * Cho phép xem và theo dõi tình trạng duyệt minh chứng.
+ *
+ * @returns {React.ReactElement} Component ProofStatusSection.
+ */
 function ProofStatusSection() {
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);

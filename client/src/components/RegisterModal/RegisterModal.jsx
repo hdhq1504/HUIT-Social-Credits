@@ -9,11 +9,36 @@ import styles from './RegisterModal.module.scss';
 const { TextArea } = Input;
 const cx = classNames.bind(styles);
 
+/** Map style cho phương thức điểm danh */
 const ATTENDANCE_METHOD_STYLES = {
   qr: { className: 'register-confirm__chip--qr', fallbackLabel: 'QR Code' },
   photo: { className: 'register-confirm__chip--photo', fallbackLabel: 'Chụp Ảnh' },
 };
 
+/**
+ * Modal xác nhận đăng ký hoặc hủy đăng ký hoạt động CTXH.
+ * Hiển thị thông tin hoạt động và cho phép người dùng xác nhận/hủy.
+ *
+ * @param {Object} props - Props của component.
+ * @param {boolean} props.open - Trạng thái hiển thị modal.
+ * @param {Function} props.onConfirm - Callback khi xác nhận (nhận { variant, reason, note }).
+ * @param {Function} props.onCancel - Callback khi đóng modal.
+ * @param {'confirm'|'cancel'} [props.variant='confirm'] - Loại modal (đăng ký hoặc hủy).
+ * @param {string} props.campaignName - Tên hoạt động.
+ * @param {string} [props.groupLabel] - Nhãn nhóm hoạt động.
+ * @param {string} [props.pointsLabel] - Nhãn điểm.
+ * @param {string} props.dateTime - Thời gian diễn ra.
+ * @param {string} props.location - Địa điểm.
+ * @param {string} [props.registrationDeadline] - Hạn đăng ký.
+ * @param {string} [props.cancellationDeadline] - Hạn hủy đăng ký.
+ * @param {string} [props.attendanceMethod] - Phương thức điểm danh (qr/photo).
+ * @param {string} [props.attendanceMethodLabel] - Nhãn phương thức điểm danh.
+ * @param {string[]} [props.reasons] - Danh sách lý do hủy mặc định.
+ * @param {boolean} [props.showConflictAlert=false] - Hiển thị cảnh báo xung đột lịch.
+ * @param {Date|string} [props.activityStartTime] - Thời gian bắt đầu hoạt động.
+ * @param {boolean} [props.confirmLoading=false] - Trạng thái loading của nút xác nhận.
+ * @returns {React.ReactElement} Component RegisterModal.
+ */
 function RegisterModal({
   open,
   onConfirm,
@@ -33,12 +58,14 @@ function RegisterModal({
   activityStartTime = null,
   confirmLoading = false,
 }) {
-  const isCancel = variant === 'cancel';
+  const isCancel = variant === 'cancel'; // Đang ở chế độ hủy đăng ký
   const modalTitle = isCancel ? 'Xác nhận hủy hoạt động' : 'Xác nhận đăng ký hoạt động';
   const [reason, setReason] = useState();
   const [note, setNote] = useState('');
 
-  // Check if attempting to register after activity has started
+  /**
+   * Kiểm tra xem đang đăng ký muộn (sau khi hoạt động đã bắt đầu) hay không.
+   */
   const isLateRegistration = useMemo(() => {
     if (isCancel || !activityStartTime) return false;
     const now = new Date();
@@ -46,11 +73,15 @@ function RegisterModal({
     return now > startTime;
   }, [activityStartTime, isCancel]);
 
+  // Normalize các deadline để hiển thị
   const normalizedRegistrationDeadline =
     registrationDeadline && registrationDeadline !== '--' ? registrationDeadline : null;
   const normalizedCancellationDeadline =
     cancellationDeadline && cancellationDeadline !== '--' ? cancellationDeadline : null;
 
+  /**
+   * Tạo chip hiển thị phương thức điểm danh.
+   */
   const attendanceChip = (() => {
     if (!attendanceMethod && !attendanceMethodLabel) return null;
     const methodKey = attendanceMethod?.toLowerCase?.();
@@ -61,6 +92,9 @@ function RegisterModal({
     };
   })();
 
+  /**
+   * Xử lý khi người dùng xác nhận đăng ký/hủy.
+   */
   const handleConfirm = () => {
     onConfirm?.({ variant, reason, note });
   };

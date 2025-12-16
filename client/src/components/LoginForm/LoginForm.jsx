@@ -3,7 +3,7 @@ import classNames from 'classnames/bind';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faCircleQuestion, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { Checkbox, Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import InputField from '../InputField/InputField';
@@ -13,18 +13,33 @@ import styles from './LoginForm.module.scss';
 
 const cx = classNames.bind(styles);
 
+/**
+ * Component form đăng nhập.
+ * Xử lý đăng nhập bằng email/password và điều hướng theo role người dùng.
+ *
+ * @returns {React.ReactElement} Component LoginForm.
+ *
+ * @example
+ * <LoginForm />
+ */
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Mutation đăng nhập sử dụng React Query.
+   * Xử lý redirect theo role khi thành công và hiển thị lỗi khi thất bại.
+   */
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }) => {
       const user = await authApi.login(email, password);
       return user;
     },
+    // Redirect dựa trên role người dùng
     onSuccess: (user) => {
       setIsLoading(false);
       const normalizedRole = user?.role?.toUpperCase();
@@ -38,9 +53,11 @@ function LoginForm() {
       }
       navigate(ROUTE_PATHS.PUBLIC.HOME, { replace: true });
     },
+    // Xử lý hiển thị lỗi từ server
     onError: (error) => {
       setIsLoading(false);
       const responseData = error?.response?.data;
+      // Nếu có lỗi cụ thể theo field, hiển thị tương ứng
       if (responseData?.details) {
         const newErrors = {};
         responseData.details.forEach((err) => {
@@ -48,13 +65,16 @@ function LoginForm() {
         });
         setErrors(newErrors);
       } else {
+        // Lỗi chung, hiển thị ở field password
         const message = responseData?.error || responseData?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
-        // Show error on password field since it's a general credentials error
         setErrors({ password: message });
       }
     },
   });
 
+  /**
+   * Handler xử lý submit form đăng nhập.
+   */
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -88,17 +108,23 @@ function LoginForm() {
                 disabled={isLoading}
               />
             </div>
-            <div className={cx('login-form__field')}>
+            <div className={cx('login-form__field', 'login-form__field--password')}>
               <InputField
                 label="Mật khẩu"
                 placeholder="Nhập mật khẩu của bạn"
                 required
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 error={errors.password}
                 disabled={isLoading}
               />
+              <span
+                className={cx('login-form__password-toggle')}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              </span>
             </div>
           </div>
 

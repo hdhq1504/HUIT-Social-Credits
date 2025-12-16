@@ -16,6 +16,18 @@ const toolbarOptions = [
   ['clean'],
 ];
 
+/**
+ * Component rich text editor sử dụng ReactQuill.
+ * Hỗ trợ định dạng văn bản, danh sách, link và hình ảnh.
+ *
+ * @param {Object} props - Props của component.
+ * @param {string} [props.value=''] - Nội dung HTML của editor.
+ * @param {Function} [props.onChange] - Callback khi nội dung thay đổi.
+ * @param {string} [props.placeholder=''] - Placeholder khi editor trống.
+ * @param {string} [props.className=''] - Class CSS bổ sung.
+ * @param {boolean} [props.readOnly=false] - Chế độ chỉ đọc.
+ * @returns {React.ReactElement} Component RichTextEditor.
+ */
 function RichTextEditor({ value, onChange, placeholder, className, readOnly }) {
   const modules = useMemo(
     () => ({

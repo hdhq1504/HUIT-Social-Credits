@@ -3,6 +3,19 @@ import useAuthStore from '../../stores/useAuthStore';
 import Loading from '../../user/pages/Loading/Loading';
 import { ROUTE_PATHS } from '@/config/routes.config';
 
+/**
+ * Route guard chỉ cho phép Admin truy cập.
+ * Chuyển hướng đến trang login nếu chưa đăng nhập hoặc không có quyền admin.
+ *
+ * @param {Object} props - Props của component.
+ * @param {React.ReactNode} props.children - Component con được bảo vệ.
+ * @returns {React.ReactElement} Component con hoặc Navigate/Loading component.
+ *
+ * @example
+ * <AdminRoute>
+ *   <AdminDashboard />
+ * </AdminRoute>
+ */
 function AdminRoute({ children }) {
   const { isLoggedIn, user } = useAuthStore();
 
