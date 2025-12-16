@@ -116,11 +116,11 @@ export const createActivity = async (req, res) => {
           where: { id: newActivity.id },
           data: { hinhAnh: coverResult.metadata },
         });
-        coverResult.removed.forEach((target) => {
-          if (target?.bucket && target?.path) {
-            removeFiles(target.bucket, [target.path]);
-          }
-        });
+        await Promise.all(
+          coverResult.removed
+            .filter((target) => target?.bucket && target?.path)
+            .map((target) => removeFiles(target.bucket, [target.path]))
+        );
       } catch (error) {
         console.error("Không thể xử lý ảnh bìa hoạt động:", error);
         const message =
@@ -156,6 +156,7 @@ export const updateActivity = async (req, res) => {
     attendanceMethod,
     registrationDeadline,
     cancellationDeadline,
+    isFeatured,
   } = req.body;
   const hasCoverImage = Object.prototype.hasOwnProperty.call(req.body ?? {}, "coverImage")
     || Object.prototype.hasOwnProperty.call(req.body ?? {}, "hinhAnh");
@@ -263,11 +264,11 @@ export const updateActivity = async (req, res) => {
         }
         buckets.get(target.bucket).push(target.path);
       });
-      buckets.forEach((paths, bucket) => {
-        if (paths.length) {
-          removeFiles(bucket, paths);
-        }
-      });
+      await Promise.all(
+        Array.from(buckets.entries()).map(([bucket, paths]) =>
+          paths.length ? removeFiles(bucket, paths) : Promise.resolve()
+        )
+      );
     }
 
     const activity = await buildActivityResponse(updated.id, req.user?.sub);

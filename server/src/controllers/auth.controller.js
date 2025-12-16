@@ -257,6 +257,13 @@ export const resetPasswordWithOtp = async (req, res) => {
     return res.status(400).json({ error: "Mã xác nhận không đúng" });
   }
 
+  // Validate độ dài mật khẩu mới
+  const hasUppercase = /[A-Z]/.test(newPassword);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+  if (!newPassword || newPassword.length < 6 || !hasUppercase || !hasSpecialChar) {
+    return res.status(400).json({ error: "Mật khẩu phải có ít nhất 6 ký tự, 1 chữ hoa và 1 ký tự đặc biệt" });
+  }
+
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   await prisma.nguoiDung.update({

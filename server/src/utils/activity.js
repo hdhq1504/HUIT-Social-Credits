@@ -675,8 +675,6 @@ const mapRegistration = (registration, activity) => {
       hasCheckout,
       nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
       checkoutAvailableAt,
-      nextPhase: !hasCheckin ? "checkin" : !hasCheckout ? "checkout" : null,
-      checkoutAvailableAt,
       feedbackWindow: {
         start: feedbackWindow.start.toISOString(),
         end: feedbackWindow.end.toISOString()

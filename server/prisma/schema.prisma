@@ -252,6 +252,7 @@ model PhanHoiHoatDong {
   @@unique([nguoiDungId, hoatDongId])
   @@index([hoatDongId])
   @@index([nguoiDungId])
+  @@index([trangThai, taoLuc])
 }
 
 model ThongBao {

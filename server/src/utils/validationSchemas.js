@@ -13,6 +13,17 @@ const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
 const studentCodeRegex = /^[a-zA-Z0-9]{10}$/;
 
 /**
+ * Regex kiểm tra mật khẩu mạnh:
+ * - Ít nhất 6 ký tự
+ * - Ít nhất 1 chữ hoa
+ * - Ít nhất 1 ký tự đặc biệt
+ * @constant {RegExp}
+ */
+const strongPasswordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/;
+
+const passwordValidationMessage = 'Mật khẩu phải có ít nhất 6 ký tự, 1 chữ hoa và 1 ký tự đặc biệt';
+
+/**
  * Schema validate thông tin đăng nhập.
  * Cho phép email hợp lệ hoặc username 'Admin'.
  * @type {yup.ObjectSchema}
@@ -50,7 +61,9 @@ export const verifyPasswordResetOtpSchema = yup.object({
 export const resetPasswordWithOtpSchema = yup.object({
   email: yup.string().email('Email không hợp lệ').required('Email là bắt buộc'),
   otp: yup.string().required('Mã OTP là bắt buộc'),
-  newPassword: yup.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').required('Mật khẩu mới là bắt buộc'),
+  newPassword: yup.string()
+    .matches(strongPasswordRegex, passwordValidationMessage)
+    .required('Mật khẩu mới là bắt buộc'),
 });
 
 /**
@@ -59,7 +72,9 @@ export const resetPasswordWithOtpSchema = yup.object({
  */
 export const changePasswordSchema = yup.object({
   currentPassword: yup.string().required('Mật khẩu hiện tại là bắt buộc'),
-  newPassword: yup.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').required('Mật khẩu mới là bắt buộc'),
+  newPassword: yup.string()
+    .matches(strongPasswordRegex, passwordValidationMessage)
+    .required('Mật khẩu mới là bắt buộc'),
 });
 
 /**

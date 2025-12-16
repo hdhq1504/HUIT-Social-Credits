@@ -439,46 +439,60 @@ export const registerForActivity = async (req, res) => {
       error: "Hoạt động này trùng thời gian với hoạt động khác bạn đã đăng ký",
     });
   }
-  const activeCount = await prisma.dangKyHoatDong.count({
-    where: {
-      hoatDongId: activityId,
-      trangThai: { in: ACTIVE_REG_STATUSES },
-    },
-  });
+  // Sử dụng transaction để tránh race condition khi nhiều user đăng ký đồng thời
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Kiểm tra số lượng đăng ký hiện tại trong transaction
+      const activeCount = await tx.dangKyHoatDong.count({
+        where: {
+          hoatDongId: activityId,
+          trangThai: { in: ACTIVE_REG_STATUSES },
+        },
+      });
 
-  if (typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0 && activeCount >= activity.sucChuaToiDa) {
-    return res.status(409).json({ error: "Hoạt động đã đủ số lượng" });
-  }
+      if (typeof activity.sucChuaToiDa === "number" && activity.sucChuaToiDa > 0 && activeCount >= activity.sucChuaToiDa) {
+        throw new Error("CAPACITY_EXCEEDED");
+      }
 
-  const existing = await prisma.dangKyHoatDong.findUnique({
-    where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
-  });
+      const existing = await tx.dangKyHoatDong.findUnique({
+        where: { nguoiDungId_hoatDongId: { nguoiDungId: userId, hoatDongId: activityId } },
+      });
 
-  if (existing && existing.trangThai !== "DA_HUY") {
-    return res.status(409).json({ error: "Bạn đã đăng ký hoạt động này" });
-  }
+      if (existing && existing.trangThai !== "DA_HUY") {
+        throw new Error("ALREADY_REGISTERED");
+      }
 
-  if (existing) {
-    await prisma.dangKyHoatDong.update({
-      where: { id: existing.id },
-      data: {
-        trangThai: "DANG_KY",
-        ghiChu: req.body?.note ?? existing.ghiChu,
-        lyDoHuy: null,
-        dangKyLuc: new Date(),
-        diemDanhLuc: null,
-        diemDanhBoiId: null,
-        diemDanhGhiChu: null,
-      },
+      if (existing) {
+        await tx.dangKyHoatDong.update({
+          where: { id: existing.id },
+          data: {
+            trangThai: "DANG_KY",
+            ghiChu: req.body?.note ?? existing.ghiChu,
+            lyDoHuy: null,
+            dangKyLuc: new Date(),
+            diemDanhLuc: null,
+            diemDanhBoiId: null,
+            diemDanhGhiChu: null,
+          },
+        });
+      } else {
+        await tx.dangKyHoatDong.create({
+          data: {
+            nguoiDungId: userId,
+            hoatDongId: activityId,
+            ghiChu: req.body?.note ?? null,
+          },
+        });
+      }
     });
-  } else {
-    await prisma.dangKyHoatDong.create({
-      data: {
-        nguoiDungId: userId,
-        hoatDongId: activityId,
-        ghiChu: req.body?.note ?? null,
-      },
-    });
+  } catch (error) {
+    if (error.message === "CAPACITY_EXCEEDED") {
+      return res.status(409).json({ error: "Hoạt động đã đủ số lượng" });
+    }
+    if (error.message === "ALREADY_REGISTERED") {
+      return res.status(409).json({ error: "Bạn đã đăng ký hoạt động này" });
+    }
+    throw error;
   }
 
   const updated = await buildActivityResponse(activityId, userId);
@@ -624,13 +638,13 @@ export const listMyActivities = async (req, res) => {
       where: { id: { in: absentRegistrationIds } },
       data: { trangThai: "VANG_MAT" },
     });
+    // Cập nhật trạng thái immutably trong mảng registrations
     const absentSet = new Set(absentRegistrationIds);
-    registrations.forEach((registration) => {
-      if (absentSet.has(registration.id)) {
-        // eslint-disable-next-line no-param-reassign
-        registration.trangThai = "VANG_MAT";
+    for (let i = 0; i < registrations.length; i++) {
+      if (absentSet.has(registrations[i].id)) {
+        registrations[i] = { ...registrations[i], trangThai: "VANG_MAT" };
       }
-    });
+    }
   }
 
   const filtered = normalizedFeedback
