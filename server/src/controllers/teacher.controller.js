@@ -78,7 +78,7 @@ export const getTeachers = async (req, res) => {
       prisma.nguoiDung.count({ where }),
     ]);
 
-    // Map teachers to match frontend expectations
+    // Chuyển đổi dữ liệu giảng viên theo định dạng frontend mong đợi
     const mappedTeachers = teachers.map(teacher => ({
       id: teacher.id,
       staffCode: teacher.maCB,
@@ -113,13 +113,13 @@ export const getTeachers = async (req, res) => {
  */
 export const assignHomeroom = async (req, res) => {
   try {
-    const { teacherId, classIds } = req.body; // classIds is array of strings
+    const { teacherId, classIds } = req.body; // classIds là mảng các chuỗi
 
     if (!teacherId || !Array.isArray(classIds)) {
       return res.status(400).json({ error: "Dữ liệu không hợp lệ" });
     }
 
-    // Verify teacher exists and is a GIANGVIEN
+    // Kiểm tra giảng viên tồn tại và có vai trò GIANGVIEN
     const teacher = await prisma.nguoiDung.findUnique({
       where: { id: teacherId }
     });
@@ -128,7 +128,7 @@ export const assignHomeroom = async (req, res) => {
       return res.status(400).json({ error: "Giảng viên không hợp lệ" });
     }
 
-    // Get current academic year
+    // Lấy năm học hiện tại
     const currentNamHoc = await prisma.namHoc.findFirst({
       where: { isActive: true }
     });
@@ -137,7 +137,7 @@ export const assignHomeroom = async (req, res) => {
       return res.status(400).json({ error: "Không tìm thấy năm học hiện tại" });
     }
 
-    // Delete existing assignments for these classes in current year
+    // Xóa các phân công hiện tại cho các lớp này trong năm hiện tại
     await prisma.phanCong.deleteMany({
       where: {
         lopHocId: { in: classIds },
@@ -146,7 +146,7 @@ export const assignHomeroom = async (req, res) => {
       }
     });
 
-    // Create new assignments
+    // Tạo các phân công mới
     await prisma.phanCong.createMany({
       data: classIds.map(lopHocId => ({
         giangVienId: teacherId,
@@ -171,9 +171,9 @@ export const assignHomeroom = async (req, res) => {
  */
 export const getAvailableClasses = async (req, res) => {
   try {
-    // Get classes that don't have a homeroom teacher OR just all classes?
-    // Usually for assignment, we might want to see who is currently assigned.
-    // Let's return all classes with their current homeroom teacher info
+    // Lấy các lớp chưa có giảng viên chủ nhiệm HOẶC tất cả lớp?
+    // Thường khi phân công, ta muốn xem ai đang được phân công.
+    // Trả về tất cả lớp với thông tin giảng viên chủ nhiệm hiện tại
     const classes = await prisma.lopHoc.findMany({
       select: {
         id: true,
@@ -204,7 +204,7 @@ export const getAvailableClasses = async (req, res) => {
       orderBy: { tenLop: 'asc' }
     });
 
-    // Map to include giangVienChuNhiem for frontend compatibility
+    // Chuyển đổi để bao gồm giangVienChuNhiem cho tương thích với frontend
     const mappedClasses = classes.map(cls => ({
       ...cls,
       giangVienChuNhiem: cls.phanCong?.[0]?.giangVien || null

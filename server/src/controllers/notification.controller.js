@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 
+// Chuyển đổi thông báo sang định dạng API
 const mapNotification = (notification) => ({
   id: notification.id,
   title: notification.tieuDe,
@@ -11,6 +12,11 @@ const mapNotification = (notification) => ({
   data: notification.duLieu ?? null
 });
 
+/**
+ * Lấy danh sách thông báo của người dùng.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listNotifications = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -27,6 +33,11 @@ export const listNotifications = async (req, res) => {
   res.json({ notifications: notifications.map(mapNotification) });
 };
 
+/**
+ * Lấy số lượng thông báo chưa đọc.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getUnreadNotificationCount = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -38,6 +49,11 @@ export const getUnreadNotificationCount = async (req, res) => {
   res.json({ count });
 };
 
+/**
+ * Đánh dấu tất cả thông báo là đã đọc.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const markAllNotificationsRead = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });

@@ -60,11 +60,6 @@ const combineDateAndTime = (date, time) => {
   return date.hour(time.hour()).minute(time.minute()).second(0).toISOString();
 };
 
-const combineDayjsDateAndTime = (date, time) => {
-  if (!date || !time) return null;
-  return date.clone().hour(time.hour()).minute(time.minute()).second(0).millisecond(0);
-};
-
 // Helper chuyển mảng về chuỗi (cho TextAreas)
 const arrayToString = (value) => {
   if (Array.isArray(value)) {
@@ -88,7 +83,7 @@ const ActivitiesAddEditPage = () => {
   const [form] = Form.useForm();
   const [coverFileList, setCoverFileList] = useState([]);
   const startDateValue = Form.useWatch('startDate', form);
-  const startTimeValue = Form.useWatch('startTime', form);
+  const registrationDeadlineValue = Form.useWatch('registrationDeadline', form);
   const isEditMode = !!id;
 
   const { setPageActions, setBreadcrumbs } = useContext(AdminPageContext);
@@ -196,8 +191,6 @@ const ActivitiesAddEditPage = () => {
         };
       } catch (error) {
         console.error('Failed to load default cover image', error);
-        // If fallback fails, we might send null or ignore, but let's try to proceed without image or show error
-        // For now, if fallback fails, we just don't set coverImagePayload, which might be acceptable or we can alert.
       }
     } else {
       const [fileItem] = coverFileList;
@@ -307,18 +300,23 @@ const ActivitiesAddEditPage = () => {
   };
 
   useEffect(() => {
-    const combined = combineDayjsDateAndTime(startDateValue, startTimeValue);
-    if (!combined) {
+    // Auto-fill cancellation deadline = registration deadline
+    // This ensures cancellationDeadline ≤ registrationDeadline
+    if (!registrationDeadlineValue) {
       form.setFieldsValue({ cancellationDeadline: null });
       return;
     }
 
-    const suggestedDeadline = combined.subtract(3, 'day');
     const currentValue = form.getFieldValue('cancellationDeadline');
-    if (!currentValue || !currentValue.isSame(suggestedDeadline)) {
-      form.setFieldsValue({ cancellationDeadline: suggestedDeadline });
+    // Only auto-fill if not already set or if registration deadline changed
+    if (!currentValue) {
+      form.setFieldsValue({ cancellationDeadline: registrationDeadlineValue });
+      // Validate the new value
+      setTimeout(() => {
+        form.validateFields(['cancellationDeadline']);
+      }, 0);
     }
-  }, [form, startDateValue, startTimeValue]);
+  }, [form, registrationDeadlineValue]);
 
   useEffect(() => {
     if (!startDateValue) {
@@ -521,6 +519,8 @@ const ActivitiesAddEditPage = () => {
                     name="registrationDeadline"
                     label="Hạn đăng ký"
                     className={cx('activities__group')}
+                    dependencies={['startDate', 'startTime']}
+                    validateTrigger={['onChange', 'onBlur']}
                     rules={[
                       { required: true, message: 'Vui lòng chọn hạn đăng ký!' },
                       ({ getFieldValue }) => ({
@@ -532,9 +532,12 @@ const ActivitiesAddEditPage = () => {
                           }
 
                           const startDateTime = startDate.hour(startTime.hour()).minute(startTime.minute()).second(0);
+                          const minDeadline = startDateTime.subtract(7, 'day');
 
-                          if (value.isAfter(startDateTime)) {
-                            return Promise.reject(new Error('Hạn đăng ký phải trước thời gian bắt đầu!'));
+                          if (value.isAfter(minDeadline)) {
+                            return Promise.reject(
+                              new Error('Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày!'),
+                            );
                           }
                           return Promise.resolve();
                         },
@@ -546,6 +549,11 @@ const ActivitiesAddEditPage = () => {
                       placeholder="dd/mm/yyyy --:--"
                       format="DD/MM/YYYY HH:mm"
                       style={{ width: '100%' }}
+                      onChange={() => {
+                        setTimeout(() => {
+                          form.validateFields(['registrationDeadline']);
+                        }, 0);
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -554,13 +562,35 @@ const ActivitiesAddEditPage = () => {
                     name="cancellationDeadline"
                     label="Hạn hủy đăng ký"
                     className={cx('activities__group')}
-                    rules={[{ required: true, message: 'Vui lòng chọn hạn hủy đăng ký!' }]}
+                    dependencies={['registrationDeadline']}
+                    validateTrigger={['onChange', 'onBlur']}
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn hạn hủy đăng ký!' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          const registrationDeadline = getFieldValue('registrationDeadline');
+                          if (!value || !registrationDeadline) {
+                            return Promise.resolve();
+                          }
+
+                          if (value.isAfter(registrationDeadline)) {
+                            return Promise.reject(new Error('Hạn hủy đăng ký phải trước hoặc bằng hạn đăng ký!'));
+                          }
+                          return Promise.resolve();
+                        },
+                      }),
+                    ]}
                   >
                     <DatePicker
                       showTime
                       placeholder="dd/mm/yyyy --:--"
                       format="DD/MM/YYYY HH:mm"
                       style={{ width: '100%' }}
+                      onChange={() => {
+                        setTimeout(() => {
+                          form.validateFields(['cancellationDeadline']);
+                        }, 0);
+                      }}
                     />
                   </Form.Item>
                 </Col>

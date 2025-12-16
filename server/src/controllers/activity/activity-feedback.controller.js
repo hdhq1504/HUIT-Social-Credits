@@ -10,10 +10,15 @@ import {
 } from "../../utils/activity.js";
 import { extractStoragePaths } from "../../utils/storageMapper.js";
 
+/**
+ * Gửi phản hồi hoạt động của sinh viên.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const submitActivityFeedback = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
-  const { content, rating, attachments } = req.body || {};
+  const { content, attachments } = req.body || {};
 
   if (!content || !String(content).trim()) {
     return res.status(400).json({ error: "Nội dung phản hồi không được bỏ trống" });
@@ -78,10 +83,8 @@ export const submitActivityFeedback = async (req, res) => {
     removalMap.get(bucket).push(item.path);
   });
 
-  const normalizedRating = typeof rating === "number" ? Math.max(1, Math.min(5, rating)) : null;
   const payload = {
     noiDung: String(content).trim(),
-    danhGia: normalizedRating,
     minhChung: normalizedAttachments,
     trangThai: "CHO_DUYET",
     lydoTuChoi: null,
@@ -123,7 +126,6 @@ export const submitActivityFeedback = async (req, res) => {
     emailSubject: `[HUIT Social Credits] Xác nhận gửi phản hồi hoạt động "${activityTitle}"`,
     emailMessageLines: [
       `Phản hồi của bạn cho hoạt động "${activityTitle}" đã được gửi thành công.`,
-      normalizedRating ? `Đánh giá: ${normalizedRating}/5` : null,
       normalizedAttachments.length ? `Số lượng minh chứng: ${normalizedAttachments.length}` : null,
     ],
   });

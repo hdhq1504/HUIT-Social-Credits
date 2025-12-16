@@ -117,20 +117,24 @@ const FEEDBACK_DETAIL_INCLUDE = {
   }
 };
 
+// Chuyển đổi ngày tháng sang chuỗi ISO
 const toIsoString = (value) => (value instanceof Date ? value.toISOString() : value?.toISOString?.() ?? null);
 
+// Chuẩn hóa chuỗi
 const normalizeString = (value) => {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
 };
 
+// Chuẩn hóa lý do từ chối
 const sanitizeReason = (value) => {
   const text = normalizeString(value);
   if (!text) return null;
   return text.slice(0, MAX_REASON_LENGTH);
 };
 
+// Chuyển đổi danh sách minh chứng sang định dạng API
 const mapAttachments = (attachments) =>
   mapStorageListForResponse(attachments, {
     fallbackBucket: env.SUPABASE_FEEDBACK_BUCKET,
@@ -146,6 +150,7 @@ const mapAttachments = (attachments) =>
     storage: item,
   }));
 
+// Chuyển đổi thông tin sinh viên sang định dạng tóm tắt
 const mapStudentSummary = (student) => {
   if (!student) return null;
   return {
@@ -160,6 +165,7 @@ const mapStudentSummary = (student) => {
   };
 };
 
+// Chuyển đổi thông tin hoạt động sang định dạng tóm tắt
 const mapActivitySummary = (activity) => {
   if (!activity) return null;
   return {
@@ -194,7 +200,6 @@ const mapFeedbackDetail = (feedback) => ({
   status: feedback.trangThai,
   statusLabel: STATUS_LABELS[feedback.trangThai] || feedback.trangThai,
   content: feedback.noiDung,
-  rating: feedback.danhGia ?? null,
   reason: feedback.lyDoTuChoi ?? null,
   submittedAt: toIsoString(feedback.taoLuc),
   updatedAt: toIsoString(feedback.capNhatLuc),
@@ -210,6 +215,7 @@ const mapFeedbackDetail = (feedback) => ({
     : null
 });
 
+// Lấy thống kê phản hồi
 const getFeedbackStats = async () => {
   const [total, pending, approved, rejected] = await Promise.all([
     prisma.phanHoiHoatDong.count(),
@@ -221,6 +227,7 @@ const getFeedbackStats = async () => {
   return { total, pending, approved, rejected };
 };
 
+// Xây dựng tùy chọn lọc cho dropdown
 const buildFilterOptions = async () => {
   const [facultiesRaw, classesRaw, activitiesRaw] = await Promise.all([
     prisma.khoa.findMany({
@@ -239,6 +246,7 @@ const buildFilterOptions = async () => {
     })
   ]);
 
+  // Sắp xếp theo bảng chữ cái tiếng Việt
   const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
 
   const faculties = facultiesRaw.map((item) => ({
@@ -266,6 +274,7 @@ const buildFilterOptions = async () => {
   return { faculties, classes, activities, statuses };
 };
 
+// Xây dựng điều kiện lọc danh sách phản hồi
 const buildListWhereClause = ({ search, faculty, className, activityId, status }) => {
   const filters = [];
 

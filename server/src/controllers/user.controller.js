@@ -20,48 +20,56 @@ const SORTABLE_FIELDS = {
   lastLoginAt: ['lastLoginAt'],
 };
 
+// Chuẩn hóa chuỗi tìm kiếm
 const normalizeSearch = (value) => {
   if (!value) return "";
   if (typeof value !== "string") return "";
   return value.trim();
 };
 
+// Chuẩn hóa vai trò người dùng
 const normalizeRole = (value) => {
   if (!value) return undefined;
   const upper = String(value).trim().toUpperCase();
   return ROLE_VALUES.has(upper) ? upper : undefined;
 };
 
+// Chuẩn hóa trạng thái hoạt động
 const normalizeStatus = (value) => {
   if (!value) return undefined;
   const normalized = String(value).trim().toLowerCase();
   return STATUS_VALUES.has(normalized) ? normalized === "active" : undefined;
 };
 
+// Chuẩn hóa số trang
 const normalizePage = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isFinite(parsed) && parsed > 0) return parsed;
   return 1;
 };
 
+// Chuẩn hóa số lượng bản ghi mỗi trang
 const normalizePageSize = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_PAGE_SIZE;
   return Math.min(parsed, MAX_PAGE_SIZE);
 };
 
+// Chuẩn hóa trường sắp xếp
 const normalizeSortBy = (value) => {
   if (!value) return 'createdAt';
   const key = String(value).trim();
   return SORTABLE_FIELDS[key] ? key : 'createdAt';
 };
 
+// Chuẩn hóa chiều sắp xếp
 const normalizeSortOrder = (value) => {
   if (!value) return 'desc';
   const normalized = String(value).trim().toLowerCase();
   return normalized === 'asc' ? 'asc' : 'desc';
 };
 
+// Xây dựng điều kiện sắp xếp cho Prisma
 const buildOrderBy = (sortBy, sortOrder) => {
   const fields = SORTABLE_FIELDS[sortBy] || SORTABLE_FIELDS.createdAt;
   if (Array.isArray(fields) && fields.length > 1) {
@@ -71,6 +79,7 @@ const buildOrderBy = (sortBy, sortOrder) => {
   return { [field]: sortOrder };
 };
 
+// Xây dựng điều kiện tìm kiếm cho Prisma
 const buildSearchCondition = (search) => {
   if (!search) return undefined;
   return {
@@ -104,12 +113,14 @@ const mapUserForResponse = (user) => ({
   gender: user.gioiTinh
 });
 
+// Chuẩn hóa chuỗi (xóa khoảng trắng đầu cuối)
 const sanitizeString = (value) => {
   if (value === undefined || value === null) return undefined;
   const trimmed = String(value).trim();
   return trimmed.length ? trimmed : undefined;
 };
 
+// Chuẩn hóa và validate email
 const normalizeEmail = (value) => {
   const email = sanitizeString(value)?.toLowerCase();
   if (!email) return undefined;
@@ -117,18 +128,21 @@ const normalizeEmail = (value) => {
   return emailRegex.test(email) ? email : null;
 };
 
+// Chuẩn hóa vai trò đầu vào
 const normalizeRoleInput = (value) => {
   if (!value) return undefined;
   const upper = String(value).trim().toUpperCase();
   return ROLE_VALUES.has(upper) ? upper : undefined;
 };
 
+// Chuẩn hóa giới tính
 const normalizeGender = (value) => {
   if (!value) return undefined;
   const validGenders = ["Nam", "Nữ", "Khác"];
   return validGenders.includes(value) ? value : undefined;
 };
 
+// Chuẩn hóa trạng thái kích hoạt
 const normalizeActiveState = (value, fallback = true) => {
   if (value === undefined || value === null) return fallback;
   if (typeof value === "boolean") return value;
@@ -138,6 +152,7 @@ const normalizeActiveState = (value, fallback = true) => {
   return fallback;
 };
 
+// Kiểm tra quyền Admin
 const assertAdmin = (req) => {
   if (req.user?.role !== "ADMIN") {
     const error = new Error("Forbidden");
@@ -388,7 +403,7 @@ export const createUser = async (req, res) => {
       }
     });
 
-    // Handle avatar upload if provided
+    // Xử lý tải lên avatar nếu có
     if (avatarImage?.dataUrl) {
       try {
         const uploadResult = await uploadBase64Image({
@@ -404,7 +419,7 @@ export const createUser = async (req, res) => {
         });
       } catch (uploadError) {
         console.error('Avatar upload failed:', uploadError);
-        // Continue without avatar if upload fails
+        // Tiếp tục mà không có avatar nếu tải lên thất bại
       }
     }
 

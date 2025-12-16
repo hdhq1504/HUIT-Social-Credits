@@ -17,6 +17,7 @@ const COMBINED_GROUP_KEY = "NHOM_23";
 const ACTIVE_REG_STATUSES = ["DANG_KY", "DA_THAM_GIA"];
 const RED_ADDRESS_KEYWORD = "dia chi do";
 
+// Chuẩn hóa văn bản (xóa dấu, chuyển thường)
 const normalizeText = (value) => {
   if (!value) return "";
   return String(value)
@@ -26,6 +27,7 @@ const normalizeText = (value) => {
     .replace(/[^a-z0-9\s]/g, " ");
 };
 
+// Kiểm tra hoạt động có chứa từ khóa "Địa chỉ đỏ"
 const containsRedAddressKeyword = (activity) => {
   if (!activity) return false;
   const sources = [activity.tieuDe, activity.moTa];
@@ -35,18 +37,21 @@ const containsRedAddressKeyword = (activity) => {
   });
 };
 
+// Chuẩn hóa mã định danh
 const sanitizeIdentifier = (value) => {
   if (!value) return null;
   const trimmed = String(value).trim();
   return trimmed || null;
 };
 
+// Xây dựng bộ lọc báo cáo từ query string
 const buildReportFilters = (query = {}) => {
   const yearId = sanitizeIdentifier(query.yearId ?? query.namHocId ?? query.year);
   const semesterId = sanitizeIdentifier(query.semesterId ?? query.hocKyId ?? query.semester);
   return { yearId, semesterId };
 };
 
+// Định dạng nhãn năm học
 const formatYearLabel = (year) => {
   if (!year) return "Năm học";
   const candidates = [year.ten, year.nienKhoa, year.ma];
@@ -58,6 +63,7 @@ const formatYearLabel = (year) => {
   return label ? String(label).trim() : "Năm học";
 };
 
+// Định dạng nhãn học kỳ
 const formatSemesterLabel = (semester) => {
   if (!semester) return "Học kỳ";
   const candidates = [semester.ten, semester.ma];
@@ -69,6 +75,7 @@ const formatSemesterLabel = (semester) => {
   return label ? String(label).trim() : "Học kỳ";
 };
 
+// An toàn trim chuỗi (trả về null nếu rỗng)
 const safeTrim = (value) => {
   if (value === null || value === undefined) return null;
   const trimmed = String(value).trim();

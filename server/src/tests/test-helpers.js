@@ -5,14 +5,14 @@ import prisma from '../prisma.js';
 /**
  * Generate a mock JWT token for testing
  */
-export function generateTestToken(userId, role = 'USER') {
+export function generateTestToken(userId, role = 'SINHVIEN') {
   const payload = {
     sub: userId,
     role,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
   };
-  return jwt.sign(payload, env.JWT_SECRET);
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET);
 }
 
 /**
@@ -23,8 +23,8 @@ export async function createTestUser(overrides = {}) {
     email: `test-${Date.now()}@example.com`,
     matKhau: 'hashedpassword123',
     hoTen: 'Test User',
-    maSinhVien: `SV${Date.now()}`,
-    vaiTro: 'USER',
+    maSV: `SV${Date.now()}`,
+    vaiTro: 'SINHVIEN',
     ...overrides,
   };
 
@@ -48,10 +48,10 @@ export async function createTestActivity(creatorId, overrides = {}) {
     batDauLuc: startTime,
     ketThucLuc: endTime,
     diemCong: 10,
-    nhomDiem: 'HOAT_DONG_KHAC',
-    phuongThucDiemDanh: 'QR',
+    nhomDiem: 'NHOM_2',
+    phuongThucDiemDanh: 'PHOTO',
     isPublished: true,
-    taoBoiId: creatorId,
+    nguoiTaoId: creatorId,
     ...overrides,
   };
 
@@ -145,4 +145,21 @@ export function createMockImageDataUrl() {
  */
 export function createMockFaceDescriptor() {
   return Array(128).fill(0).map(() => Math.random() * 2 - 1);
+}
+
+/**
+ * Create mock evidence metadata (bypasses Supabase upload)
+ * Use this in tests to avoid needing Supabase configured
+ */
+export function createMockEvidenceMetadata(fileName = 'test-photo.png') {
+  return {
+    metadata: {
+      bucket: 'test-bucket',
+      path: `test/${fileName}`,
+      fileName,
+      mimeType: 'image/png',
+      size: 1234,
+      publicUrl: `https://test.supabase.co/storage/v1/object/public/test-bucket/test/${fileName}`,
+    },
+  };
 }

@@ -165,7 +165,7 @@ export const requestPasswordReset = async (req, res) => {
     },
   });
 
-  // Send OTP via email
+  // Gửi OTP qua email
   try {
     await sendMail({
       to: email,

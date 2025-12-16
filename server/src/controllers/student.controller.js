@@ -173,7 +173,7 @@ export const updateStudent = async (req, res) => {
     const student = await prisma.nguoiDung.findUnique({ where: { id } });
     if (!student) return res.status(404).json({ error: "Không tìm thấy sinh viên" });
 
-    // Check unique constraints if changing email/maSV
+    // Kiểm tra ràng buộc duy nhất nếu thay đổi email/maSV
     if ((email && email !== student.email) || (maSV && maSV !== student.maSV)) {
       const existing = await prisma.nguoiDung.findFirst({
         where: {
@@ -215,7 +215,7 @@ export const updateStudent = async (req, res) => {
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    // Soft delete
+    // Xóa mềm
     await prisma.nguoiDung.update({
       where: { id },
       data: { isActive: false }

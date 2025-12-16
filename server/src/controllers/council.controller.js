@@ -7,6 +7,7 @@ const RED_ADDRESS_KEYWORD = "dia chi do";
 const GROUP_ONE_TARGET = 50;
 const GROUP_TWO_THREE_TARGET = 120;
 
+// Chuẩn hóa văn bản (xóa dấu, chuyển thường)
 const normalizeText = (value) => {
   if (!value) return "";
   return String(value)
@@ -16,6 +17,7 @@ const normalizeText = (value) => {
     .replace(/[^a-z0-9\s]/g, " ");
 };
 
+// Kiểm tra hoạt động có chứa từ khóa "Địa chỉ đỏ"
 const containsRedAddressKeyword = (activity) => {
   if (!activity) return false;
   const sources = [activity.tieuDe, activity.moTa];
@@ -25,6 +27,7 @@ const containsRedAddressKeyword = (activity) => {
   });
 };
 
+// Kiểm tra quyền quản lý (Admin hoặc Giảng viên)
 const ensureManager = (req) => {
   const role = req.user?.role;
   if (!MANAGER_ROLES.has(role)) {
@@ -34,6 +37,7 @@ const ensureManager = (req) => {
   }
 };
 
+// Tính điểm của sinh viên theo từng nhóm hoạt động
 const calculateStudentScores = (participations) => {
   const groupOneActivities = [];
   const groupTwoThreeActivities = [];
@@ -75,14 +79,14 @@ const calculateStudentScores = (participations) => {
     }
   });
 
-  // Calculate effective points with overflow logic
+  // Tính điểm hiệu lực với logic tràn điểm
   const groupOneEffective = Math.min(groupOnePoints, GROUP_ONE_TARGET);
   const groupOneOverflow = Math.max(groupOnePoints - GROUP_ONE_TARGET, 0);
   const groupTwoThreeRaw = groupTwoPoints + groupThreePoints;
   const groupTwoThreeWithOverflow = groupTwoThreeRaw + groupOneOverflow;
   const groupTwoThreeEffective = Math.min(groupTwoThreeWithOverflow, GROUP_TWO_THREE_TARGET);
 
-  // Determine pass/fail status
+  // Xác định trạng thái đạt/không đạt
   const groupOnePass = groupOneEffective >= GROUP_ONE_TARGET && hasRedAddress;
   const groupTwoThreePass = groupTwoThreeEffective >= GROUP_TWO_THREE_TARGET;
   const overallPass = groupOnePass && groupTwoThreePass;
@@ -112,10 +116,11 @@ const calculateStudentScores = (participations) => {
   };
 };
 
+// Lấy danh sách sinh viên và tính điểm của từng sinh viên
 const fetchStudentsWithScores = async (filters) => {
   const { facultyCode, search, namHocId, hocKyId } = filters;
 
-  // Build filter for students
+  // Xây dựng bộ lọc cho sinh viên
   const studentWhere = {
     vaiTro: "SINHVIEN",
     isActive: true,
@@ -138,7 +143,7 @@ const fetchStudentsWithScores = async (filters) => {
     ];
   }
 
-  // Fetch students
+  // Lấy danh sách sinh viên
   const students = await prisma.nguoiDung.findMany({
     where: studentWhere,
     select: {
@@ -173,14 +178,14 @@ const fetchStudentsWithScores = async (filters) => {
 
   const studentIds = students.map((s) => s.id);
 
-  // Build activity filter
+  // Xây dựng bộ lọc hoạt động
   const activityFilter = {
     isPublished: true,
   };
   if (namHocId) activityFilter.namHocId = namHocId;
   if (hocKyId) activityFilter.hocKyId = hocKyId;
 
-  // Fetch participations with scores
+  // Lấy thông tin tham gia với điểm
   const participations = await prisma.dangKyHoatDong.findMany({
     where: {
       nguoiDungId: { in: studentIds },
@@ -200,7 +205,7 @@ const fetchStudentsWithScores = async (filters) => {
     },
   });
 
-  // Group participations by student
+  // Nhóm tham gia theo sinh viên
   const participationsByStudent = new Map();
   participations.forEach((p) => {
     if (!participationsByStudent.has(p.nguoiDungId)) {
@@ -209,7 +214,7 @@ const fetchStudentsWithScores = async (filters) => {
     participationsByStudent.get(p.nguoiDungId).push(p);
   });
 
-  // Calculate scores for each student
+  // Tính điểm cho từng sinh viên
   return students.map((student) => {
     const studentParticipations = participationsByStudent.get(student.id) || [];
     const scores = calculateStudentScores(studentParticipations);
@@ -227,7 +232,7 @@ const fetchStudentsWithScores = async (filters) => {
       groupTwoThreeTotalEffective: scores.groupTwoThree.effective,
       groupTwoThreeResult: scores.groupTwoThree.result,
       overallResult: scores.overall.result,
-      certificationDate: null, // TODO: Implement certification tracking
+      certificationDate: null, // TODO: Thêm logic theo dõi chứng chỉ
     };
   });
 };
@@ -262,7 +267,7 @@ export const exportCertificationPdf = async (req, res) => {
 
   const { facultyCode } = req.query || {};
 
-  // Get faculty name if filtering by faculty
+  // Lấy tên khoa nếu lọc theo khoa
   let facultyName = null;
   if (facultyCode) {
     const faculty = await prisma.khoa.findUnique({
@@ -296,7 +301,7 @@ export const exportCertificationExcel = async (req, res) => {
 
   const { facultyCode } = req.query || {};
 
-  // Get faculty name if filtering by faculty
+  // Lấy tên khoa nếu lọc theo khoa
   let facultyName = null;
   if (facultyCode) {
     const faculty = await prisma.khoa.findUnique({

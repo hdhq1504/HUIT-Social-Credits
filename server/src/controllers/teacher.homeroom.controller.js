@@ -222,7 +222,7 @@ export const getStudentScores = async (req, res) => {
       }
     });
 
-    // Map data to match frontend expectations
+    // Chuyển đổi dữ liệu theo định dạng frontend mong đợi
     const activities = registrations.map(reg => {
       let status = 'PENDING';
       if (reg.trangThai === 'DA_THAM_GIA') status = 'APPROVED';
@@ -399,14 +399,14 @@ export const exportClassScores = async (req, res) => {
     // Tạo file Excel
     const wb = XLSX.utils.book_new();
 
-    // Header
+    // Phần tiêu đề
     const wsData = [
       [`DANH SÁCH ĐIỂM RÈN LUYỆN LỚP ${classInfo.maLop} - ${classInfo.tenLop}`],
       [],
       ['STT', 'MSSV', 'Họ và tên', 'Ngày sinh', 'Giới tính', 'Số điện thoại', 'Tổng điểm', 'Điểm Nhóm 1', 'Điểm Nhóm 2,3', 'Tham gia Địa chỉ đỏ', 'Kết quả đánh giá']
     ];
 
-    // Data rows
+    // Các dòng dữ liệu
     data.forEach(item => {
       wsData.push([
         item.stt,
@@ -425,7 +425,7 @@ export const exportClassScores = async (req, res) => {
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Style width
+    // Độ rộng cột
     ws['!cols'] = [
       { wch: 5 },  // STT
       { wch: 15 }, // MSSV

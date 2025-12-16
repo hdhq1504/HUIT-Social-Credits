@@ -24,7 +24,7 @@ export const listActivities = async (req, res) => {
   const searchTerm = sanitizeOptionalText(search, 100);
   const normalizedPointGroup = isValidPointGroup(pointGroup) ? pointGroup : undefined;
 
-  // Build base where clause with search and point group filters
+  // Xây dựng điều kiện lọc cơ bản với tìm kiếm và nhóm điểm
   const baseFilters = {
     ...(normalizedPointGroup ? { nhomDiem: normalizedPointGroup } : {}),
     ...(searchTerm
@@ -37,19 +37,19 @@ export const listActivities = async (req, res) => {
       : {}),
   };
 
-  // Apply role-based filtering
+  // Áp dụng lọc theo vai trò người dùng
   let where;
   if (userRole === 'ADMIN') {
-    // Admins see all activities
+    // Admin có thể xem tất cả hoạt động
     where = baseFilters;
   } else if (userRole === 'GIANGVIEN') {
-    // Teachers only see activities they created (including pending ones)
+    // Giảng viên chỉ xem hoạt động do mình tạo (bao gồm cả đang chờ duyệt)
     where = {
       ...baseFilters,
       nguoiTaoId: currentUserId,
     };
   } else {
-    // Students and public users only see published, approved activities
+    // Sinh viên và người dùng công khai chỉ xem hoạt động đã công bố và được duyệt
     where = {
       ...baseFilters,
       isPublished: true,

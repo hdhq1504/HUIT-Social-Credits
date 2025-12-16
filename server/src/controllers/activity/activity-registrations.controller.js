@@ -21,6 +21,11 @@ import {
   sanitizeStatusFilter,
 } from "../../utils/activity.js";
 
+/**
+ * Lấy danh sách đăng ký của một hoạt động (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listActivityRegistrationsAdmin = async (req, res) => {
   try {
     assertAdmin(req);
@@ -65,6 +70,11 @@ export const listActivityRegistrationsAdmin = async (req, res) => {
   });
 };
 
+/**
+ * Lấy danh sách tất cả đăng ký với bộ lọc (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listRegistrationsAdmin = async (req, res) => {
   try {
     assertAdmin(req);
@@ -194,6 +204,11 @@ export const listRegistrationsAdmin = async (req, res) => {
   });
 };
 
+/**
+ * Lấy chi tiết một đăng ký (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getRegistrationDetailAdmin = async (req, res) => {
   try {
     assertAdmin(req);
@@ -224,6 +239,11 @@ export const getRegistrationDetailAdmin = async (req, res) => {
   });
 };
 
+/**
+ * Duyệt hoặc từ chối minh chứng điểm danh (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const decideRegistrationAttendance = async (req, res) => {
   try {
     assertAdmin(req);
@@ -352,6 +372,11 @@ export const decideRegistrationAttendance = async (req, res) => {
   });
 };
 
+/**
+ * Đăng ký tham gia hoạt động.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const registerForActivity = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
@@ -476,6 +501,11 @@ export const registerForActivity = async (req, res) => {
   });
 };
 
+/**
+ * Hủy đăng ký hoạt động.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const cancelActivityRegistration = async (req, res) => {
   const userId = req.user?.sub;
   const { id: activityId } = req.params;
@@ -538,6 +568,11 @@ export const cancelActivityRegistration = async (req, res) => {
   });
 };
 
+/**
+ * Lấy danh sách hoạt động của tôi.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const listMyActivities = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });

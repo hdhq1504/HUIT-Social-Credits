@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 
+// Kiểm tra quyền Admin
 const assertAdmin = (req) => {
   if (req.user?.role !== "ADMIN") {
     const error = new Error("Forbidden");
@@ -19,11 +20,17 @@ const BACKUP_COLLECTIONS = [
   { key: "notifications", model: "thongBao" }
 ];
 
+// Chuẩn hóa dữ liệu bản ghi
 const sanitizeRecords = (value) => {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => item && typeof item === "object");
 };
 
+/**
+ * Tạo bản sao lưu dữ liệu hệ thống (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const createBackup = async (req, res) => {
   try {
     assertAdmin(req);
@@ -58,6 +65,11 @@ export const createBackup = async (req, res) => {
   }
 };
 
+/**
+ * Khôi phục dữ liệu từ bản sao lưu (Admin).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const restoreBackup = async (req, res) => {
   try {
     assertAdmin(req);

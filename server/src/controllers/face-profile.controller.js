@@ -17,6 +17,7 @@ const MAX_FACE_SAMPLES = 5;
 const FACE_SAMPLE_BUCKET = env.SUPABASE_FACE_BUCKET;
 const FACE_SAMPLE_BUCKET_SET = new Set([FACE_SAMPLE_BUCKET].filter(Boolean));
 
+// Chuẩn hóa đoạn đường dẫn (chỉ cho phép chữ cái, số, gạch dưới)
 const sanitizePathSegment = (value, fallback = "user") => {
   if (!value) return fallback;
   const trimmed = String(value).trim();
@@ -25,6 +26,7 @@ const sanitizePathSegment = (value, fallback = "user") => {
   return normalized || fallback;
 };
 
+// Trích xuất data URL ảnh từ giá trị đầu vào
 const extractSampleDataUrl = (value) => {
   if (!value) return null;
   if (typeof value === "string") {
@@ -38,6 +40,7 @@ const extractSampleDataUrl = (value) => {
   return null;
 };
 
+// Chuẩn hóa danh sách mẫu khuôn mặt
 const sanitizeFaceSamples = (value) =>
   sanitizeStorageList(value, {
     allowedBuckets: FACE_SAMPLE_BUCKET_SET,
@@ -45,6 +48,7 @@ const sanitizeFaceSamples = (value) =>
     limit: MAX_FACE_SAMPLES,
   });
 
+// Lưu mẫu khuôn mặt lên Supabase Storage
 const storeFaceSamples = async (userId, dataUrls) => {
   if (!dataUrls.length) return [];
   if (!isSupabaseConfigured()) {
@@ -69,6 +73,7 @@ const storeFaceSamples = async (userId, dataUrls) => {
     }
     return uploads;
   } catch (error) {
+    // Xóa các ảnh đã upload nếu có lỗi
     const uploadedPaths = extractStoragePaths(uploads);
     if (uploadedPaths.length) {
       await removeFiles(FACE_SAMPLE_BUCKET, uploadedPaths);
@@ -77,6 +82,11 @@ const storeFaceSamples = async (userId, dataUrls) => {
   }
 };
 
+/**
+ * Lấy hồ sơ khuôn mặt của người dùng hiện tại.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const getMyFaceProfile = async (req, res) => {
   const userId = req.user?.sub;
   if (!userId) return res.status(401).json({ error: "Không xác định được người dùng" });
