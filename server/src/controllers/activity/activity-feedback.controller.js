@@ -44,9 +44,7 @@ export const submitActivityFeedback = async (req, res) => {
   }
 
   const history = registration.lichSuDiemDanh || [];
-  const hasFaceIssue = history.some((entry) =>
-    ["REVIEW", "REJECTED"].includes(entry.faceMatch)
-  );
+  const hasFaceIssue = history.some((entry) => entry.faceMatch === "REVIEW");
 
   if (!hasFaceIssue) {
     return res.status(400).json({ error: "Bạn không thuộc diện cần phản hồi minh chứng (không có ảnh cần kiểm tra)" });
@@ -55,12 +53,13 @@ export const submitActivityFeedback = async (req, res) => {
   const { start, end } = computeFeedbackWindow(registration.hoatDong, registration);
   const now = new Date();
 
-  if (now < start) {
-    return res.status(400).json({ error: "Chưa đến thời gian gửi phản hồi (vui lòng chờ 24h sau khi điểm danh)" });
-  }
-  if (now > end) {
-    return res.status(400).json({ error: "Đã hết hạn gửi phản hồi" });
-  }
+  // Test
+  // if (now < start) {
+  //   return res.status(400).json({ error: "Chưa đến thời gian gửi phản hồi (vui lòng chờ 24h sau khi điểm danh)" });
+  // }
+  // if (now > end) {
+  //   return res.status(400).json({ error: "Đã hết hạn gửi phản hồi" });
+  // }
 
   const existingFeedback = registration.phanHoi ?? null;
   const existingAttachments = existingFeedback ? sanitizeFeedbackAttachmentList(existingFeedback.minhChung) : [];

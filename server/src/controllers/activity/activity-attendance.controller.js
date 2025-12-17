@@ -2,10 +2,6 @@ import prisma from "../../prisma.js";
 import { env } from "../../env.js";
 import { notifyUser } from "../../utils/notification.service.js";
 import {
-  getDefaultAttendanceMethod,
-  mapAttendanceMethodToApi,
-} from "../../utils/attendance.js";
-import {
   evaluateFaceMatch,
   FACE_MATCH_CONSTANTS,
   normalizeDescriptor,
@@ -177,7 +173,7 @@ export const markAttendance = async (req, res) => {
   let entryStatus = "DANG_KY";
 
   if (!isCheckout) {
-    if (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED") {
+    if (faceMatchResult?.status === "REVIEW") {
       entryStatus = "CHO_DUYET";
     } else {
       finalStatus = "DANG_THAM_GIA";
@@ -217,7 +213,6 @@ export const markAttendance = async (req, res) => {
     reason: faceMatchResult?.reason ?? null,
     faceError: faceError ? String(faceError).slice(0, 100) : null,
     matchThreshold: FACE_MATCH_CONSTANTS.MATCH_THRESHOLD,
-    reviewThreshold: FACE_MATCH_CONSTANTS.REVIEW_THRESHOLD,
   };
 
   await prisma.$transaction([
@@ -269,7 +264,7 @@ export const markAttendance = async (req, res) => {
       notificationType = "warning";
       notificationAction = "ATTENDANCE_REVIEW";
       emailSubject = `[HUIT Social Credits] Điểm danh chờ duyệt - \"${activity.tieuDe}\"`;
-      if (faceSummary?.approvedCount === 1 && (faceSummary?.rejectedCount ?? 0) === 0) {
+      if (faceSummary?.approvedCount === 1) {
         emailMessageLines.push(
           "Hệ thống chỉ nhận diện trùng khớp một trong hai ảnh điểm danh. Ban quản trị sẽ kiểm tra thủ công."
         );
@@ -290,7 +285,7 @@ export const markAttendance = async (req, res) => {
       );
     }
   } else {
-    if (faceMatchResult?.status === "REVIEW" || faceMatchResult?.status === "REJECTED") {
+    if (faceMatchResult?.status === "REVIEW") {
       responseMessage = "Đã ghi nhận điểm danh đầu giờ, hệ thống đang chờ xác minh khuôn mặt.";
       notificationTitle = "Điểm danh đầu giờ chờ xác minh";
       notificationMessage = `Ảnh điểm danh đầu giờ của bạn cho hoạt động "${activity.tieuDe}" cần được kiểm tra thêm.`;

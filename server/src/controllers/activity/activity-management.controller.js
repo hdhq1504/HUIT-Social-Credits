@@ -61,17 +61,18 @@ export const createActivity = async (req, res) => {
     const registrationDueDate = registrationDue ? toDate(registrationDue) : null;
     const cancellationDueDate = cancellationDue ? toDate(cancellationDue) : null;
 
-    if (startTime && registrationDueDate) {
-      const minDeadline = new Date(startTime.getTime() - 7 * 24 * 60 * 60 * 1000);
-      if (registrationDueDate > minDeadline) {
-        return res.status(400).json({ error: "Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày" });
-      }
-    }
-    if (registrationDueDate && cancellationDueDate) {
-      if (cancellationDueDate > registrationDueDate) {
-        return res.status(400).json({ error: "Hạn hủy đăng ký phải trước hoặc bằng hạn đăng ký" });
-      }
-    }
+    // Test
+    // if (startTime && registrationDueDate) {
+    //   const minDeadline = new Date(startTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+    //   if (registrationDueDate > minDeadline) {
+    //     return res.status(400).json({ error: "Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày" });
+    //   }
+    // }
+    // if (registrationDueDate && cancellationDueDate) {
+    //   if (cancellationDueDate > registrationDueDate) {
+    //     return res.status(400).json({ error: "Hạn hủy đăng ký phải trước hoặc bằng hạn đăng ký" });
+    //   }
+    // }
 
     // Xác định trạng thái duyệt dựa trên vai trò người dùng
     const userRole = req.user?.role;
@@ -194,17 +195,18 @@ export const updateActivity = async (req, res) => {
     const registrationDueDate = registrationDue ? toDate(registrationDue) : null;
     const cancellationDueDate = cancellationDue ? toDate(cancellationDue) : null;
 
-    if (startTime && registrationDueDate) {
-      const minDeadline = new Date(startTime.getTime() - 7 * 24 * 60 * 60 * 1000);
-      if (registrationDueDate > minDeadline) {
-        return res.status(400).json({ error: "Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày" });
-      }
-    }
-    if (registrationDueDate && cancellationDueDate) {
-      if (cancellationDueDate > registrationDueDate) {
-        return res.status(400).json({ error: "Hạn hủy đăng ký phải trước hoặc bằng hạn đăng ký" });
-      }
-    }
+    // Test
+    // if (startTime && registrationDueDate) {
+    //   const minDeadline = new Date(startTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+    //   if (registrationDueDate > minDeadline) {
+    //     return res.status(400).json({ error: "Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày" });
+    //   }
+    // }
+    // if (registrationDueDate && cancellationDueDate) {
+    //   if (cancellationDueDate > registrationDueDate) {
+    //     return res.status(400).json({ error: "Hạn hủy đăng ký phải trước hoặc bằng hạn đăng ký" });
+    //   }
+    // }
 
     let coverResult = null;
     if (hasCoverImage) {

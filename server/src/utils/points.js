@@ -78,7 +78,7 @@ export const getTotalTargetPoints = () =>
   Object.values(POINT_GROUPS).reduce((sum, group) => sum + group.target, 0);
 
 /**
- * Tính toán điểm rèn luyện của người dùng.
+ * Tính toán điểm của người dùng.
  * @param {string} userId - ID người dùng.
  * @param {string} [hocKyId] - ID học kỳ (tùy chọn).
  * @returns {Promise<Object>} Tổng điểm và chi tiết theo nhóm.

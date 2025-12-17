@@ -291,7 +291,6 @@ const ATTENDANCE_STATUS_LABELS = {
 const FACE_MATCH_LABELS = {
   APPROVED: "Khớp khuôn mặt",
   REVIEW: "Cần kiểm tra",
-  REJECTED: "Không khớp",
 };
 
 const summarizeFaceHistoryRaw = (entries = []) => {
@@ -301,19 +300,17 @@ const summarizeFaceHistoryRaw = (entries = []) => {
   const statuses = relevant.map((entry) => entry.faceMatch ?? null);
   const approvedCount = statuses.filter((status) => status === "APPROVED").length;
   const reviewCount = statuses.filter((status) => status === "REVIEW").length;
-  const rejectedCount = statuses.filter((status) => status === "REJECTED").length;
   const missingCount = statuses.filter((status) => status === null).length;
   const hasCheckin = relevant.some((entry) => entry.loai === "CHECKIN");
   const hasCheckout = relevant.some((entry) => entry.loai === "CHECKOUT");
   const requiresReview =
     reviewCount > 0 ||
     missingCount > 0 ||
-    (hasCheckout && approvedCount === 1 && rejectedCount === 0);
+    (hasCheckout && approvedCount === 1);
 
   return {
     approvedCount,
     reviewCount,
-    rejectedCount,
     missingCount,
     hasCheckin,
     hasCheckout,
@@ -328,19 +325,14 @@ const summarizeFaceHistoryMapped = (entries = []) => {
   const statuses = relevant.map((entry) => entry.faceMatch ?? null);
   const approvedCount = statuses.filter((status) => status === "APPROVED").length;
   const reviewCount = statuses.filter((status) => status === "REVIEW").length;
-  const rejectedCount = statuses.filter((status) => status === "REJECTED").length;
   const missingCount = statuses.filter((status) => status === null).length;
   const hasCheckin = relevant.some((entry) => entry.phase === "checkin");
   const hasCheckout = relevant.some((entry) => entry.phase === "checkout");
-  const requiresReview =
-    reviewCount > 0 ||
-    missingCount > 0 ||
-    (hasCheckout && approvedCount === 1 && rejectedCount === 0);
+  const requiresReview = reviewCount > 0 || missingCount > 0;
 
   return {
     approvedCount,
     reviewCount,
-    rejectedCount,
     missingCount,
     hasCheckin,
     hasCheckout,
@@ -815,9 +807,7 @@ const determineState = (activity, registration) => {
       const feedback = registration.phanHoi;
       if (!feedback) {
         const history = registration.lichSuDiemDanh || [];
-        const hasFaceIssue = history.some((entry) =>
-          ["REVIEW", "REJECTED"].includes(entry.faceMatch)
-        );
+        const hasFaceIssue = history.some((entry) => entry.faceMatch === "REVIEW");
 
         if (!hasFaceIssue) {
           return "attendance_review";

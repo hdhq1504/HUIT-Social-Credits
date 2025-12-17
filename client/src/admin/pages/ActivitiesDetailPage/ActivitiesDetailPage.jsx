@@ -88,12 +88,46 @@ const formatDateTime = (isoString, format = 'DD/MM/YYYY HH:mm') => {
   return dayjs(isoString).format(format);
 };
 
-const getStatusTag = (status) => {
-  switch (status) {
+/** Map trạng thái state từ server sang category hiển thị */
+const STATUS_CATEGORY_MAP = {
+  ongoing: 'ongoing',
+  check_in: 'ongoing',
+  check_out: 'ongoing',
+  confirm_out: 'ongoing',
+  attendance_review: 'ongoing',
+  upcoming: 'upcoming',
+  registered: 'upcoming',
+  attendance_closed: 'upcoming',
+  ended: 'ended',
+  feedback_pending: 'ended',
+  feedback_reviewing: 'ended',
+  completed: 'ended',
+  feedback_accepted: 'ended',
+  feedback_waiting: 'ended',
+  feedback_denied: 'ended',
+  canceled: 'ended',
+  absent: 'ended',
+};
+
+/** Xác định category status dựa trên thời gian thực */
+const deriveStatusCategory = (activity) => {
+  if (!activity) return 'upcoming';
+  const mapped = STATUS_CATEGORY_MAP[activity.state];
+  if (mapped) return mapped;
+
+  const now = dayjs();
+  const start = activity.startTime ? dayjs(activity.startTime) : null;
+  const end = activity.endTime ? dayjs(activity.endTime) : null;
+
+  if (start && now.isBefore(start)) return 'upcoming';
+  if (end && now.isAfter(end)) return 'ended';
+  if (start && (!end || now.isBefore(end))) return 'ongoing';
+  return 'upcoming';
+};
+
+const getStatusTag = (category) => {
+  switch (category) {
     case 'ongoing':
-    case 'check_in':
-    case 'check_out':
-    case 'confirm_out':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ongoing')}>
           <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
@@ -101,9 +135,6 @@ const getStatusTag = (status) => {
         </Tag>
       );
     case 'upcoming':
-    case 'guest':
-    case 'registered':
-    case 'attendance_closed':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--upcoming')}>
           <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
@@ -111,10 +142,6 @@ const getStatusTag = (status) => {
         </Tag>
       );
     case 'ended':
-    case 'feedback_pending':
-    case 'feedback_reviewing':
-    case 'completed':
-    case 'feedback_accepted':
       return (
         <Tag className={cx('activity-detail__status-tag', 'activity-detail__status-tag--ended')}>
           <FontAwesomeIcon icon={faCircleDot} className={cx('activity-detail__status-icon')} />
@@ -122,7 +149,7 @@ const getStatusTag = (status) => {
         </Tag>
       );
     default:
-      return <Tag>{status || 'Không rõ'}</Tag>;
+      return <Tag>{category || 'Không rõ'}</Tag>;
   }
 };
 
@@ -506,7 +533,9 @@ function ActivitiesDetailPage() {
                       </div>
                       <div className={cx('activity-detail__item-text')}>
                         <span className={cx('activity-detail__item-label')}>Trạng thái</span>
-                        <div className={cx('activity-detail__item-value')}>{getStatusTag(activity.state)}</div>
+                        <div className={cx('activity-detail__item-value')}>
+                          {getStatusTag(deriveStatusCategory(activity))}
+                        </div>
                       </div>
                     </div>
                   </Col>

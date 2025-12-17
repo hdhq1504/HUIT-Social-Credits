@@ -347,7 +347,6 @@ enum AttendanceMethod {
 enum FaceMatchStatus {
   APPROVED
   REVIEW
-  REJECTED
 }
 
 enum LoaiPhanCong {

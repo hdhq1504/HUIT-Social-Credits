@@ -68,6 +68,7 @@ export default function AcademicYearsPage() {
     onSuccess: () => {
       message.success('Cập nhật năm học thành công');
       queryClient.invalidateQueries(['admin', 'academic-years']);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'semesters'] });
       handleCloseModal();
     },
     onError: (error) => {
@@ -408,7 +409,7 @@ function SemesterManagementModal({ open, year, onClose, onSuccess }) {
   const [editingSemester, setEditingSemester] = useState(null);
   const [semesterForm] = Form.useForm();
 
-  const { data: semesters, isLoading } = useQuery({
+  const { data: semesters } = useQuery({
     queryKey: ['admin', 'semesters', year?.id],
     queryFn: () => academicApi.getHocKys(year.id),
     enabled: !!year,

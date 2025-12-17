@@ -12,7 +12,6 @@ import useAuthStore from '@stores/useAuthStore';
 import http from '@utils/http';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import faceProfileApi from '@api/faceProfile.api';
-import { fileToDataUrl } from '@utils/file';
 import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
 import styles from './ProfilePage.module.scss';
 
@@ -26,7 +25,6 @@ function FaceEnrollmentModal({ open, onCancel, onSave, isSaving, isModelsLoading
   const [captureError, setCaptureError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const webcamRef = useRef(null);
-  const fileInputRef = useRef(null);
   const samplesRef = useRef([]);
 
   useEffect(() => {
@@ -77,65 +75,6 @@ function FaceEnrollmentModal({ open, onCancel, onSave, isSaving, isModelsLoading
       setCaptureError('Không thể phân tích khuôn mặt. Vui lòng thử lại.');
     } finally {
       setIsAnalyzing(false);
-    }
-  };
-
-  const handleSelectFiles = async (event) => {
-    const fileList = Array.from(event.target.files || []);
-    if (!fileList.length || isAnalyzing) return;
-
-    let workingCount = samplesRef.current.length;
-    if (workingCount >= MAX_FACE_SAMPLES) {
-      message.warning(`Bạn chỉ có thể lưu tối đa ${MAX_FACE_SAMPLES} ảnh mẫu.`);
-      if (event.target) event.target.value = '';
-      return;
-    }
-
-    if (!modelsReady) {
-      setCaptureError('Mô hình nhận diện đang tải. Vui lòng chờ hoàn tất trước khi tải ảnh.');
-      if (event.target) event.target.value = '';
-      return;
-    }
-
-    setIsAnalyzing(true);
-    let added = 0;
-    let finalError = null;
-    try {
-      for (const file of fileList) {
-        if (workingCount >= MAX_FACE_SAMPLES) {
-          message.warning(`Bạn chỉ có thể lưu tối đa ${MAX_FACE_SAMPLES} ảnh mẫu.`);
-          break;
-        }
-        const dataUrl = await fileToDataUrl(file);
-        const descriptor = await computeDescriptorFromDataUrl(dataUrl);
-        if (!descriptor?.length) {
-          finalError = 'Không phát hiện khuôn mặt trong ảnh vừa chọn. Hãy thử ảnh khác.';
-          continue;
-        }
-        workingCount += 1;
-        added += 1;
-        setSamples((prev) => [
-          ...prev,
-          {
-            id: Date.now() + workingCount,
-            dataUrl,
-            descriptor,
-          },
-        ]);
-      }
-    } catch (error) {
-      console.error('Không thể phân tích khuôn mặt từ ảnh tải lên', error);
-      finalError = 'Không thể phân tích khuôn mặt từ ảnh đã chọn. Vui lòng thử ảnh khác.';
-    } finally {
-      setIsAnalyzing(false);
-      if (event.target) {
-        event.target.value = '';
-      }
-      if (finalError) {
-        setCaptureError(finalError);
-      } else if (added) {
-        setCaptureError(null);
-      }
     }
   };
 
@@ -222,22 +161,6 @@ function FaceEnrollmentModal({ open, onCancel, onSave, isSaving, isModelsLoading
             >
               Chụp ảnh
             </button>
-            <button
-              type="button"
-              className={cx('profile-page__face-modal-button', 'profile-page__face-modal-button--secondary')}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isModelsLoading || isAnalyzing}
-            >
-              Tải ảnh lên
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className={cx('profile-page__face-modal-file')}
-              onChange={handleSelectFiles}
-            />
           </div>
         </div>
 
@@ -503,9 +426,6 @@ function ProfilePage() {
                 </span>
               )}
             </div>
-            <p className={cx('profile-page__face-description')}>
-              Cung cấp tối thiểu {MIN_FACE_SAMPLES} ảnh khuôn mặt rõ nét để hệ thống xác minh điểm danh tự động.
-            </p>
             <ul className={cx('profile-page__face-meta')}>
               <li>
                 Ảnh đã lưu:{' '}
@@ -524,11 +444,6 @@ function ProfilePage() {
             >
               {faceEnrollmentSummary.enrolled ? 'Cập nhật ảnh khuôn mặt' : 'Đăng ký khuôn mặt'}
             </button>
-            <p className={cx('profile-page__face-hint')}>
-              {faceEnrollmentSummary.enrolled
-                ? 'Bạn có thể cập nhật hồ sơ bất cứ lúc nào để tăng độ chính xác.'
-                : 'Hãy đăng ký hồ sơ khuôn mặt trước khi tham gia điểm danh.'}
-            </p>
           </div>
         </div>
 

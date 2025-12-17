@@ -300,8 +300,6 @@ const ActivitiesAddEditPage = () => {
   };
 
   useEffect(() => {
-    // Auto-fill cancellation deadline = registration deadline
-    // This ensures cancellationDeadline ≤ registrationDeadline
     if (!registrationDeadlineValue) {
       form.setFieldsValue({ cancellationDeadline: null });
       return;
@@ -523,25 +521,26 @@ const ActivitiesAddEditPage = () => {
                     validateTrigger={['onChange', 'onBlur']}
                     rules={[
                       { required: true, message: 'Vui lòng chọn hạn đăng ký!' },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          const startDate = getFieldValue('startDate');
-                          const startTime = getFieldValue('startTime');
-                          if (!value || !startDate || !startTime) {
-                            return Promise.resolve();
-                          }
+                      // Test
+                      // ({ getFieldValue }) => ({
+                      //   validator(_, value) {
+                      //     const startDate = getFieldValue('startDate');
+                      //     const startTime = getFieldValue('startTime');
+                      //     if (!value || !startDate || !startTime) {
+                      //       return Promise.resolve();
+                      //     }
 
-                          const startDateTime = startDate.hour(startTime.hour()).minute(startTime.minute()).second(0);
-                          const minDeadline = startDateTime.subtract(7, 'day');
+                      //     const startDateTime = startDate.hour(startTime.hour()).minute(startTime.minute()).second(0);
+                      //     const minDeadline = startDateTime.subtract(7, 'day');
 
-                          if (value.isAfter(minDeadline)) {
-                            return Promise.reject(
-                              new Error('Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày!'),
-                            );
-                          }
-                          return Promise.resolve();
-                        },
-                      }),
+                      //     if (value.isAfter(minDeadline)) {
+                      //       return Promise.reject(
+                      //         new Error('Hạn đăng ký phải trước thời gian bắt đầu ít nhất 7 ngày!'),
+                      //       );
+                      //     }
+                      //     return Promise.resolve();
+                      //   },
+                      // }),
                     ]}
                   >
                     <DatePicker

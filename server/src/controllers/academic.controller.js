@@ -177,16 +177,64 @@ export const updateNamHoc = async (req, res) => {
     const { id } = req.params;
     const { ma, nienKhoa, ten, batDau, ketThuc } = req.body;
 
+    // Lấy thông tin năm học cũ và các học kỳ
+    const oldNamHoc = await prisma.namHoc.findUnique({
+      where: { id },
+      include: { hocKy: { orderBy: { thuTu: 'asc' } } }
+    });
+
+    if (!oldNamHoc) {
+      return res.status(404).json({ error: "Không tìm thấy năm học" });
+    }
+
+    const newBatDau = batDau ? new Date(batDau) : null;
+    const newKetThuc = ketThuc ? new Date(ketThuc) : null;
+    const hasDateChange = newBatDau || newKetThuc;
+
+    // Cập nhật năm học
     const namHoc = await prisma.namHoc.update({
       where: { id },
       data: {
         ...(ma && { ma }),
         ...(nienKhoa && { nienKhoa }),
         ...(ten !== undefined && { ten }),
-        ...(batDau && { batDau: new Date(batDau) }),
-        ...(ketThuc && { ketThuc: new Date(ketThuc) })
+        ...(newBatDau && { batDau: newBatDau }),
+        ...(newKetThuc && { ketThuc: newKetThuc })
       }
     });
+
+    // Cập nhật thời gian các học kỳ nếu thời gian năm học thay đổi
+    if (hasDateChange && oldNamHoc.hocKy.length > 0) {
+      const oldStart = oldNamHoc.batDau.getTime();
+      const oldEnd = oldNamHoc.ketThuc.getTime();
+      const oldDuration = oldEnd - oldStart;
+
+      const actualNewStart = newBatDau ? newBatDau.getTime() : oldStart;
+      const actualNewEnd = newKetThuc ? newKetThuc.getTime() : oldEnd;
+      const newDuration = actualNewEnd - actualNewStart;
+
+      if (oldDuration > 0 && newDuration > 0) {
+        const semesterUpdates = oldNamHoc.hocKy.map((hocKy) => {
+          // Tính vị trí tương đối của học kỳ trong năm học cũ
+          const startRatio = (hocKy.batDau.getTime() - oldStart) / oldDuration;
+          const endRatio = (hocKy.ketThuc.getTime() - oldStart) / oldDuration;
+
+          // Tính thời gian mới dựa trên tỷ lệ
+          const newHocKyStart = new Date(actualNewStart + startRatio * newDuration);
+          const newHocKyEnd = new Date(actualNewStart + endRatio * newDuration);
+
+          return prisma.hocKy.update({
+            where: { id: hocKy.id },
+            data: {
+              batDau: newHocKyStart,
+              ketThuc: newHocKyEnd
+            }
+          });
+        });
+
+        await Promise.all(semesterUpdates);
+      }
+    }
 
     res.json({ message: "Cập nhật năm học thành công", namHoc });
   } catch (error) {

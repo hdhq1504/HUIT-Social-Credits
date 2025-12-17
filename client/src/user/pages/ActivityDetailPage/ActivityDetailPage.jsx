@@ -122,13 +122,6 @@ function ActivityDetailPage() {
   const percent =
     capacityInfo.total > 0 ? Math.min(100, Math.round((capacityInfo.current / capacityInfo.total) * 100)) : 0;
 
-  const attendanceDisplay = useMemo(() => {
-    return {
-      label: 'Chụp ảnh',
-      className: 'activity-detail__checkin-badge--photo',
-    };
-  }, []);
-
   const registrationDeadlineLabel = useMemo(() => {
     if (!activity?.registrationDeadline) return null;
     const formatted = formatDateTime(activity.registrationDeadline);
@@ -656,20 +649,6 @@ function ActivityDetailPage() {
                     </div>
 
                     <div className={cx('activity-detail__sidebar-checkin')}>
-                      <div className={cx('activity-detail__checkin-label')}>Phương thức điểm danh</div>
-                      <div className={cx('activity-detail__checkin-methods')}>
-                        {attendanceDisplay ? (
-                          <span className={cx('activity-detail__checkin-badge', attendanceDisplay.className)}>
-                            {attendanceDisplay.label}
-                          </span>
-                        ) : (
-                          <span
-                            className={cx('activity-detail__checkin-badge', 'activity-detail__checkin-badge--photo')}
-                          >
-                            Đang cập nhật
-                          </span>
-                        )}
-                      </div>
                       {activity?.requiresFaceEnrollment && !activity?.faceEnrollment?.enrolled && (
                         <p className={cx('activity-detail__sidebar-hint')}>
                           Bạn cần <Link to={ROUTE_PATHS.USER.PROFILE}>đăng ký khuôn mặt</Link> trước khi thực hiện điểm
@@ -697,7 +676,7 @@ function ActivityDetailPage() {
                     key={item.id}
                     {...item}
                     variant="vertical"
-                    state={item.state || 'details_only'}
+                    state={item.state || 'ended'}
                     onRegistered={async ({ note }) => {
                       await activitiesApi.register(item.id, { note });
                       await invalidateActivityQueries(['activities', 'related', id]);

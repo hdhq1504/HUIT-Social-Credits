@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useReducer, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames/bind';
+import { useQuery } from '@tanstack/react-query';
 import { buildPath } from '@/config/routes.config';
 import { Avatar, Skeleton, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
@@ -14,6 +15,8 @@ import useToast from '../Toast/Toast';
 import { fileToDataUrl } from '@utils/file';
 import { formatDateTime } from '@utils/datetime';
 import { computeDescriptorFromDataUrl, ensureModelsLoaded } from '@/services/faceApiService';
+import activitiesApi, { MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import useAuthStore from '@/stores/useAuthStore';
 import fallbackImage from '@/assets/images/fallback-cover.png';
 import styles from './CardActivity.module.scss';
 
@@ -35,8 +38,25 @@ const toTimestamp = (value) => {
   return Number.isNaN(ts) ? null : ts;
 };
 
-/** Offset thời gian cho phép checkout (10 phút trước endTime) */
-const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
+/** Thời gian cho phép checkout (10 phút trước) */
+// const CHECKOUT_OFFSET_MS = 10 * 60 * 1000;
+const CHECKOUT_OFFSET_MS = 0;
+
+/**
+ * Kiểm tra xem 2 khoảng thời gian có trùng nhau không.
+ * @param {Date|string} start1 - Thời gian bắt đầu khoảng 1.
+ * @param {Date|string} end1 - Thời gian kết thúc khoảng 1.
+ * @param {Date|string} start2 - Thời gian bắt đầu khoảng 2.
+ * @param {Date|string} end2 - Thời gian kết thúc khoảng 2.
+ * @returns {boolean} True nếu trùng nhau.
+ */
+const checkTimeOverlap = (start1, end1, start2, end2) => {
+  const s1 = new Date(start1);
+  const e1 = new Date(end1);
+  const s2 = new Date(start2);
+  const e2 = new Date(end2);
+  return s1 < e2 && e1 > s2;
+};
 
 /**
  * Tạo state khởi tạo cho CardActivity.
@@ -74,77 +94,67 @@ const cardActivityReducer = (prevState, action) => {
   }
 };
 
-/**
- * Component card hiển thị thông tin hoạt động CTXH.
- * Hỗ trợ nhiều trạng thái: guest, registered, check_in, check_out, feedback_*.
- *
- * @param {Object} props - Props của component.
- * @param {string} props.id - ID hoạt động.
- * @param {string} props.title - Tiêu đề hoạt động.
- * @param {number} [props.points] - Điểm CTXH.
- * @param {string} [props.dateTime] - Thời gian hiển thị.
- * @param {string} [props.endTime] - Thời gian kết thúc.
- * @param {string} [props.location] - Địa điểm.
- * @param {Array} [props.participants=[]] - Danh sách người tham gia.
- * @param {number|string} [props.capacity] - Sức chứa.
- * @param {string} [props.coverImage] - URL ảnh bìa.
- * @param {boolean} [props.isFeatured=false] - Có phải hoạt động nổi bật không.
- * @param {string} [props.badgeText='Nổi bật'] - Text badge khi featured.
- * @param {'vertical'|'horizontal'} [props.variant='vertical'] - Kiểu hiển thị.
- * @param {string} [props.state='guest'] - Trạng thái UI của card.
- * @param {Function} [props.onRegister] - Callback khi mở modal đăng ký.
- * @param {Function} [props.onRegistered] - Callback khi đăng ký thành công.
- * @param {Function} [props.onCancelRegister] - Callback khi hủy đăng ký.
- * @param {Function} [props.onConfirmPresent] - Callback khi điểm danh.
- * @param {Function} [props.onSendFeedback] - Callback khi gửi phản hồi.
- * @param {boolean} [props.loading=false] - Hiển thị skeleton loading.
- * @returns {React.ReactElement} Component CardActivity.
- */
 function CardActivity(props) {
   const {
+    // Thông tin cơ bản
     id,
     title,
     points,
     dateTime,
+    startTime,
     endTime,
     location,
+    coverImage,
+
+    // Hiển thị
     participants = [],
     capacity,
-    coverImage,
     isFeatured = false,
     badgeText = 'Nổi bật',
     variant = 'vertical',
     className,
     state = 'guest',
-    actions,
-    statusPill,
+    loading = false,
+
+    // Điểm số
+    pointGroup,
+    pointGroupLabel,
+    modalGroupLabel: modalGroupLabelProp,
+
+    // Đăng ký
+    disableRegister = false,
+    autoSwitchStateOnRegister = true,
+    registerModalProps = {},
+    registrationDeadline,
+    cancellationDeadline,
+    showConflictAlert = false,
+    registration,
+
+    // Điểm danh
+    attendanceMethod,
+    attendanceMethodLabel,
+    attendanceLoading = false,
+    checkinTime: checkinTimeProp,
+    checkoutTime: checkoutTimeProp,
+
+    // Callbacks
     onDetails,
     onRegister,
     onRegistered,
     onStateChange,
-    disableRegister = false,
-    buttonLabels = {},
-    registerModalProps = {},
-    autoSwitchStateOnRegister = true,
     onCancelRegister,
     onCheckin,
     onComplete,
     onConfirmPresent,
     onSendFeedback,
-    modalGroupLabel: modalGroupLabelProp,
-    pointGroup,
-    pointGroupLabel,
-    showConflictAlert = false,
-    checkinTime: checkinTimeProp,
-    checkoutTime: checkoutTimeProp,
-    attendanceMethod,
-    attendanceMethodLabel,
-    registrationDeadline,
-    cancellationDeadline,
-    attendanceLoading = false,
-    registration,
-    loading = false,
+
+    // UI overrides
+    actions,
+    statusPill,
+    buttonLabels = {},
   } = props;
+
+  const userId = useAuthStore((state) => state.user?.id);
 
   const attendanceSummary = registration?.attendanceSummary;
   const derivedNextAttendancePhase = attendanceSummary?.nextPhase ?? 'checkin';
@@ -198,6 +208,31 @@ function CardActivity(props) {
       ensureModelsLoaded().catch(() => {});
     }
   }, [attendanceMethod]);
+
+  // Lấy danh sách hoạt động đã đăng ký để kiểm tra xung đột lịch
+  const { data: myRegistrations = [] } = useQuery({
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
+    queryFn: () => activitiesApi.listMine(),
+    enabled: !!userId && !showConflictAlert,
+    staleTime: 30 * 1000,
+    select: (data) => data.filter((r) => r.status === 'DANG_KY'),
+  });
+
+  // Kiểm tra xung đột lịch với các hoạt động đã đăng ký
+  const hasScheduleConflict = useMemo(() => {
+    if (showConflictAlert) return true;
+
+    // Kiểm tra dựa trên danh sách đăng ký
+    if (!startTime || !endTime || !myRegistrations.length) return false;
+
+    return myRegistrations.some((registration) => {
+      const regActivity = registration.activity;
+      if (!regActivity || regActivity.id === id) return false;
+      if (!regActivity.startTime || !regActivity.endTime) return false;
+
+      return checkTimeOverlap(startTime, endTime, regActivity.startTime, regActivity.endTime);
+    });
+  }, [showConflictAlert, startTime, endTime, id, myRegistrations]);
 
   const activity = {
     id,
@@ -534,7 +569,7 @@ function CardActivity(props) {
       const updatedActivity = result?.activity;
       const nextPhaseFromApi = updatedActivity?.registration?.attendanceSummary?.nextPhase;
       const nextCheckoutAvailableAt = updatedActivity?.registration?.attendanceSummary?.checkoutAvailableAt;
-      const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'check_out' : 'details_only');
+      const nextState = updatedActivity?.state || (phaseToSend === 'checkin' ? 'check_out' : 'ended');
       const nextAttendanceStep = nextPhaseFromApi || (phaseToSend === 'checkin' ? 'checkout' : 'checkin');
 
       // Tính toán thời điểm checkout khả dụng
@@ -657,10 +692,6 @@ function CardActivity(props) {
             btn(L.closed, () => {}, { variant: 'muted', disabled: true }),
           ],
         };
-      case 'ended':
-        return {
-          buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
-        };
       case 'check_in':
         if (hasCheckin && !hasCheckout) {
           return {
@@ -688,7 +719,7 @@ function CardActivity(props) {
         };
       case 'check_out':
         return {
-          status: !isCheckoutReady ? pill('• Điểm danh cuối giờ chưa mở', 'warning') : undefined,
+          status: !isCheckoutReady ? pill('• Chưa mở điểm danh', 'warning') : undefined,
           buttons: [
             btn(L.details, openDetails, { variant: 'outline' }),
             btn(L.checkin, () => handleOpenAttendance('checkout'), {
@@ -697,8 +728,10 @@ function CardActivity(props) {
             }),
           ],
         };
-      case 'details_only':
-        return { buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })] };
+      case 'ended':
+        return {
+          buttons: [btn(L.details, openDetails, { variant: 'outline', fullWidth: true })],
+        };
       case 'feedback_waiting':
         return {
           status: pill(L.waitingFeedback, 'warning'),
@@ -909,7 +942,7 @@ function CardActivity(props) {
         cancellationDeadline={formattedCancellationDeadline}
         attendanceMethod={attendanceMethod}
         attendanceMethodLabel={attendanceMethodLabel}
-        showConflictAlert={showConflictAlert}
+        showConflictAlert={hasScheduleConflict}
         {...registerModalProps}
       />
 

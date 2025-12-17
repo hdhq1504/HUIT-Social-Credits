@@ -252,7 +252,6 @@ const buildFilterOptions = async () => {
     })
   ]);
 
-  // Sắp xếp theo bảng chữ cái tiếng Việt
   const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
 
   const faculties = facultiesRaw.map((item) => ({
@@ -451,12 +450,40 @@ export const decideFeedbackStatus = async (req, res) => {
     }
   }
 
-  const updateResult = await prisma.phanHoiHoatDong.updateMany({
-    where: { id: { in: normalizedIds } },
-    data: {
-      trangThai: normalizedStatus,
-      lydoTuChoi: normalizedStatus === "BI_TU_CHOI" ? normalizedReason : null
+  const updateResult = await prisma.$transaction(async (tx) => {
+    // Cập nhật trạng thái phản hồi
+    const feedbackUpdate = await tx.phanHoiHoatDong.updateMany({
+      where: { id: { in: normalizedIds } },
+      data: {
+        trangThai: normalizedStatus,
+        lydoTuChoi: normalizedStatus === "BI_TU_CHOI" ? normalizedReason : null
+      }
+    });
+
+    // Nếu duyệt phản hồi, cập nhật trạng thái đăng ký thành DA_THAM_GIA để cộng điểm
+    if (normalizedStatus === "DA_DUYET") {
+      // Lấy danh sách dangKyId từ các phản hồi được duyệt
+      const feedbacks = await tx.phanHoiHoatDong.findMany({
+        where: { id: { in: normalizedIds } },
+        select: { dangKyId: true }
+      });
+
+      const registrationIds = feedbacks
+        .map((f) => f.dangKyId)
+        .filter(Boolean);
+
+      if (registrationIds.length > 0) {
+        await tx.dangKyHoatDong.updateMany({
+          where: { id: { in: registrationIds } },
+          data: {
+            trangThai: "DA_THAM_GIA",
+            duyetLuc: new Date()
+          }
+        });
+      }
     }
+
+    return feedbackUpdate;
   });
 
   if (updateResult.count === 0) {

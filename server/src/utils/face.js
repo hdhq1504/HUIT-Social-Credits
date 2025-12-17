@@ -1,5 +1,4 @@
 const MATCH_THRESHOLD = 0.45;
-const REVIEW_THRESHOLD = 0.6;
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -83,10 +82,9 @@ export const computeDistance = (a, b) => {
  * @param {Array} params.descriptor - Descriptor cần kiểm tra.
  * @param {Array} params.profileDescriptors - Danh sách descriptor mẫu.
  * @param {number} params.matchThreshold - Ngưỡng khớp (mặc định 0.45).
- * @param {number} params.reviewThreshold - Ngưỡng cần xem xét (mặc định 0.6).
  * @returns {Object} Kết quả đánh giá { status, score, reason }.
  */
-export const evaluateFaceMatch = ({ descriptor, profileDescriptors, matchThreshold = MATCH_THRESHOLD, reviewThreshold = REVIEW_THRESHOLD }) => {
+export const evaluateFaceMatch = ({ descriptor, profileDescriptors, matchThreshold = MATCH_THRESHOLD }) => {
   const normalizedDescriptor = normalizeDescriptor(descriptor);
   if (!normalizedDescriptor) {
     return { status: "REVIEW", score: null, reason: "invalid_descriptor" };
@@ -110,10 +108,7 @@ export const evaluateFaceMatch = ({ descriptor, profileDescriptors, matchThresho
   if (bestScore <= matchThreshold) {
     return { status: "APPROVED", score: bestScore };
   }
-  if (bestScore <= reviewThreshold) {
-    return { status: "REVIEW", score: bestScore };
-  }
-  return { status: "REJECTED", score: bestScore };
+  return { status: "REVIEW", score: bestScore };
 };
 
 /**
@@ -136,7 +131,6 @@ export const summarizeFaceProfile = (profile) => {
 
 export const FACE_MATCH_CONSTANTS = {
   MATCH_THRESHOLD,
-  REVIEW_THRESHOLD,
 };
 
 export default {
