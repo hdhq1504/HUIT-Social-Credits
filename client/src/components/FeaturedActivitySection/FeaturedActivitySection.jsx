@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import classNames from 'classnames/bind';
+import { useQuery } from '@tanstack/react-query';
 import Label from '@components/Label/Label';
 import CardActivity from '@components/CardActivity/CardActivity';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import activitiesApi from '@api/activities.api';
+import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { isRegisterableActivity } from '@utils/activityState';
 import styles from './FeaturedActivitySection.module.scss';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
@@ -14,26 +15,13 @@ import useInvalidateActivities from '@/hooks/useInvalidateActivities';
 const cx = classNames.bind(styles);
 
 function FeaturedActivitySection() {
-  const [activities, setActivities] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const invalidateActivityQueries = useInvalidateActivities();
 
-  // Fetch activities once on mount
-  useEffect(() => {
-    const fetchActivities = async () => {
-      setIsLoading(true);
-      try {
-        const res = await activitiesApi.list();
-        setActivities(res);
-      } catch (err) {
-        // Ghi log để dev debug; UI sẽ hiển thị empty state
-        console.error('Lỗi load activities:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchActivities();
-  }, []);
+  const { data: activities = [], isFetching: isLoading } = useQuery({
+    queryKey: ACTIVITIES_QUERY_KEY,
+    queryFn: activitiesApi.list,
+    staleTime: 30 * 1000, // Cache 30 giây
+  });
 
   // Filter ra những activity được đánh dấu nổi bật + phù hợp trạng thái sử dụng
   const featuredActivities = useMemo(
@@ -88,10 +76,8 @@ function FeaturedActivitySection() {
                     state={a.state || 'guest'}
                     onRegister={(activity) => console.log('Open modal for:', activity)}
                     onRegistered={async ({ activity, note }) => {
-                      // Sau khi register thành công, update local state bằng bản cập nhật server trả về
                       try {
-                        const updated = await activitiesApi.register(activity.id, note ? { note } : {});
-                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await activitiesApi.register(activity.id, note ? { note } : {});
                         await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Register failed', e);
@@ -100,8 +86,7 @@ function FeaturedActivitySection() {
                     }}
                     onCancelRegister={async ({ activity, reason, note }) => {
                       try {
-                        const updated = await activitiesApi.cancel(activity.id, { reason, note });
-                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await activitiesApi.cancel(activity.id, { reason, note });
                         await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Cancel registration failed', e);

@@ -217,12 +217,18 @@ const mapFeedbackDetail = (feedback) => ({
 
 // Lấy thống kê phản hồi
 const getFeedbackStats = async () => {
-  const [total, pending, approved, rejected] = await Promise.all([
-    prisma.phanHoiHoatDong.count(),
-    prisma.phanHoiHoatDong.count({ where: { trangThai: "CHO_DUYET" } }),
-    prisma.phanHoiHoatDong.count({ where: { trangThai: "DA_DUYET" } }),
-    prisma.phanHoiHoatDong.count({ where: { trangThai: "BI_TU_CHOI" } })
-  ]);
+  const statsGrouped = await prisma.phanHoiHoatDong.groupBy({
+    by: ['trangThai'],
+    _count: { id: true }
+  });
+
+  // Chuyển đổi kết quả groupBy thành object stats
+  const statsMap = new Map(statsGrouped.map(item => [item.trangThai, item._count.id]));
+
+  const pending = statsMap.get("CHO_DUYET") ?? 0;
+  const approved = statsMap.get("DA_DUYET") ?? 0;
+  const rejected = statsMap.get("BI_TU_CHOI") ?? 0;
+  const total = pending + approved + rejected;
 
   return { total, pending, approved, rejected };
 };

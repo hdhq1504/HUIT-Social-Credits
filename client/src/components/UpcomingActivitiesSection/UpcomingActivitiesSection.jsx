@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames/bind';
+import { useQuery } from '@tanstack/react-query';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { Tag } from 'antd';
 import Button from '../Button/Button';
 import CardActivity from '../CardActivity/CardActivity';
 import Label from '../Label/Label';
-import activitiesApi from '@api/activities.api';
+import activitiesApi, { ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { isRegisterableActivity } from '@utils/activityState';
 import { ROUTE_PATHS } from '@/config/routes.config';
 import useInvalidateActivities from '@/hooks/useInvalidateActivities';
@@ -31,30 +32,20 @@ const GROUP_FILTERS = [
  * @returns {React.ReactElement} Component UpcomingActivitiesSection.
  */
 function UpcomingActivitiesSection() {
-  const [activities, setActivities] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState('all');
-  const [isLoading, setIsLoading] = useState(true);
   const invalidateActivityQueries = useInvalidateActivities();
+
+  // Sử dụng React Query với shared key để tự động dedupe với FeaturedActivitySection
+  const { data: activities = [], isFetching: isLoading } = useQuery({
+    queryKey: ACTIVITIES_QUERY_KEY,
+    queryFn: activitiesApi.list,
+    staleTime: 30 * 1000, // Cache 30 giây
+  });
 
   const visibleActivities = useMemo(
     () => activities.filter((activity) => isRegisterableActivity(activity)),
     [activities],
   );
-
-  useEffect(() => {
-    const fetchActivities = async () => {
-      setIsLoading(true);
-      try {
-        const res = await activitiesApi.list();
-        setActivities(res);
-      } catch (err) {
-        console.error('Lỗi load activities:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchActivities();
-  }, []);
 
   const filteredActivities = useMemo(() => {
     if (selectedGroup === 'all') return visibleActivities;
@@ -103,8 +94,7 @@ function UpcomingActivitiesSection() {
                     onRegister={(activity) => console.log('Open modal for:', activity)}
                     onRegistered={async ({ activity, note }) => {
                       try {
-                        const updated = await activitiesApi.register(activity.id, note ? { note } : {});
-                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await activitiesApi.register(activity.id, note ? { note } : {});
                         await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Register failed', e);
@@ -113,8 +103,7 @@ function UpcomingActivitiesSection() {
                     }}
                     onCancelRegister={async ({ activity, reason, note }) => {
                       try {
-                        const updated = await activitiesApi.cancel(activity.id, { reason, note });
-                        setActivities((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        await activitiesApi.cancel(activity.id, { reason, note });
                         await invalidateActivityQueries();
                       } catch (e) {
                         console.error('Cancel registration failed', e);

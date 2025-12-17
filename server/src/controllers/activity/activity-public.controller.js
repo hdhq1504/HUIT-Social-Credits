@@ -67,15 +67,19 @@ export const listActivities = async (req, res) => {
   let registrationMap = new Map();
   let faceProfileSummary = null;
   if (currentUserId && activities.length) {
-    const registrations = await prisma.dangKyHoatDong.findMany({
-      where: {
-        nguoiDungId: currentUserId,
-        hoatDongId: { in: activities.map((activity) => activity.id) },
-      },
-      include: REGISTRATION_INCLUDE,
-    });
+    const [registrations, faceProfile] = await Promise.all([
+      prisma.dangKyHoatDong.findMany({
+        where: {
+          nguoiDungId: currentUserId,
+          hoatDongId: { in: activities.map((activity) => activity.id) },
+        },
+        include: REGISTRATION_INCLUDE,
+      }),
+      userRole !== 'ADMIN'
+        ? prisma.faceProfile.findUnique({ where: { nguoiDungId: currentUserId } })
+        : Promise.resolve(null)
+    ]);
     registrationMap = new Map(registrations.map((registration) => [registration.hoatDongId, registration]));
-    const faceProfile = await prisma.faceProfile.findUnique({ where: { nguoiDungId: currentUserId } });
     faceProfileSummary = summarizeFaceProfile(faceProfile);
   }
 

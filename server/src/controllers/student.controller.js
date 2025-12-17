@@ -50,7 +50,8 @@ const compareNames = (nameA, nameB) => {
 export const getStudents = async (req, res) => {
   try {
     const { page = 1, pageSize = 10, search, khoaId, lopId, status } = req.query;
-    const skip = (page - 1) * pageSize;
+    const skip = (Number(page) - 1) * Number(pageSize);
+    const take = Number(pageSize);
 
     const where = {
       vaiTro: "SINHVIEN",
@@ -80,66 +81,55 @@ export const getStudents = async (req, res) => {
       where.lopHocId = lopId;
     }
 
-    // Lấy tổng số để phân trang
-    const total = await prisma.nguoiDung.count({ where });
-
-    // Lấy tất cả sinh viên thỏa điều kiện (không phân trang ở DB) để sort đúng
-    const allStudents = await prisma.nguoiDung.findMany({
-      where,
-      select: {
-        id: true,
-        maSV: true,
-        hoTen: true,
-        email: true,
-        ngaySinh: true,
-        gioiTinh: true,
-        soDT: true,
-        isActive: true,
-        lastLoginAt: true,
-        avatarUrl: true,
-        lopHoc: {
-          select: {
-            id: true,
-            tenLop: true,
-            maLop: true,
-            nganhHoc: {
-              select: {
-                id: true,
-                tenNganh: true,
-                khoa: {
-                  select: {
-                    id: true,
-                    tenKhoa: true,
-                    maKhoa: true
+    // Sử dụng Promise.all để chạy song song queries
+    const [students, total] = await Promise.all([
+      prisma.nguoiDung.findMany({
+        where,
+        select: {
+          id: true,
+          maSV: true,
+          hoTen: true,
+          email: true,
+          ngaySinh: true,
+          gioiTinh: true,
+          soDT: true,
+          isActive: true,
+          lastLoginAt: true,
+          avatarUrl: true,
+          lopHoc: {
+            select: {
+              id: true,
+              tenLop: true,
+              maLop: true,
+              nganhHoc: {
+                select: {
+                  id: true,
+                  tenNganh: true,
+                  khoa: {
+                    select: {
+                      id: true,
+                      tenKhoa: true,
+                      maKhoa: true
+                    }
                   }
                 }
               }
             }
           }
-        }
-      },
-    });
-
-    // Sort theo: Khoa -> Lớp -> Tên (chữ cuối)
-    allStudents.sort((a, b) => {
-      // 1. So sánh theo khoa
-      const khoaA = a.lopHoc?.nganhHoc?.khoa?.tenKhoa || '';
-      const khoaB = b.lopHoc?.nganhHoc?.khoa?.tenKhoa || '';
-      const khoaCompare = khoaA.localeCompare(khoaB, 'vi');
-      if (khoaCompare !== 0) return khoaCompare;
-
-      // 2. So sánh theo lớp
-      const lopA = a.lopHoc?.tenLop || '';
-      const lopB = b.lopHoc?.tenLop || '';
-      const lopCompare = lopA.localeCompare(lopB, 'vi');
-      if (lopCompare !== 0) return lopCompare;
-
-      // 3. So sánh theo tên (chữ cuối trước, sau đó họ + tên đệm)
-      return compareNames(a.hoTen, b.hoTen);
-    });
-
-    // Phân trang sau khi sort
-    const students = allStudents.slice(Number(skip), Number(skip) + Number(pageSize));
+        },
+        // Sắp xếp ở database level: Khoa -> Lớp -> Mã SV
+        // Note: Prisma không hỗ trợ sort theo tên Việt Nam (chữ cuối) ở DB level
+        // nên dùng maSV thay thế để đảm bảo thứ tự nhất quán
+        orderBy: [
+          { lopHoc: { nganhHoc: { khoa: { tenKhoa: 'asc' } } } },
+          { lopHoc: { tenLop: 'asc' } },
+          { maSV: 'asc' },
+        ],
+        skip,
+        take,
+      }),
+      prisma.nguoiDung.count({ where })
+    ]);
 
     const mappedStudents = students.map(student => ({
       id: student.id,

@@ -15,7 +15,7 @@ import {
   useToast,
 } from '@components/index';
 import Loading from '@/user/pages/Loading/Loading';
-import activitiesApi from '@api/activities.api';
+import activitiesApi, { ACTIVITIES_QUERY_KEY, MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
 import { fileToDataUrl } from '@utils/file';
 import { formatDate, formatDateTime, formatTimeRange } from '@utils/datetime';
 import { normalizeGuideItems, normalizeStringItems } from '@utils/content';
@@ -72,23 +72,25 @@ function ActivityDetailPage() {
   });
 
   // Gợi ý thêm hoạt động liên quan
-  const { data: relatedActivities = [] } = useQuery({
-    queryKey: ['activities', 'related', id],
-    queryFn: async () => {
-      const list = await activitiesApi.list();
-      return list.filter((item) => item.id !== id).slice(0, 4);
-    },
+  const { data: allActivities = [] } = useQuery({
+    queryKey: ACTIVITIES_QUERY_KEY,
+    queryFn: activitiesApi.list,
     enabled: !!id && !loading,
-    staleTime: 60000,
-    cacheTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
-  // Fetch user's registered activities to check for schedule conflicts
+  // Lọc ra các hoạt động liên quan từ cache
+  const relatedActivities = useMemo(() => {
+    return allActivities.filter((item) => item.id !== id).slice(0, 4);
+  }, [allActivities, id]);
+
+  // Sử dụng MY_ACTIVITIES_QUERY_KEY để share cache với PersonalActivitiesSection
   const { data: myRegistrations = [] } = useQuery({
-    queryKey: ['activities', 'mine'],
-    queryFn: () => activitiesApi.listMine({ status: 'DANG_KY' }),
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
+    queryFn: () => activitiesApi.listMine(),
     enabled: !!userId && !loading,
-    staleTime: 30000,
+    staleTime: 30 * 1000,
+    select: (data) => data.filter((r) => r.status === 'DANG_KY'),
   });
 
   const notFound = isError && error?.response?.status === 404;

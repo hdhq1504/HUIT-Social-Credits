@@ -143,7 +143,14 @@ const fetchStudentsWithScores = async (filters) => {
     ];
   }
 
-  // Lấy danh sách sinh viên
+  // Xây dựng bộ lọc hoạt động cho participations
+  const activityFilter = {
+    isPublished: true,
+    ...(namHocId && { namHocId }),
+    ...(hocKyId && { hocKyId }),
+  };
+
+  // Lấy danh sách sinh viên kèm theo participations
   const students = await prisma.nguoiDung.findMany({
     where: studentWhere,
     select: {
@@ -163,7 +170,24 @@ const fetchStudentsWithScores = async (filters) => {
             }
           }
         }
-      }
+      },
+      // Include participations trực tiếp trong query
+      dangKy: {
+        where: {
+          trangThai: "DA_THAM_GIA",
+          hoatDong: activityFilter,
+        },
+        select: {
+          hoatDong: {
+            select: {
+              tieuDe: true,
+              moTa: true,
+              diemCong: true,
+              nhomDiem: true,
+            },
+          },
+        },
+      },
     },
     orderBy: [
       { lopHoc: { nganhHoc: { khoa: { maKhoa: "asc" } } } },
@@ -176,47 +200,11 @@ const fetchStudentsWithScores = async (filters) => {
     return [];
   }
 
-  const studentIds = students.map((s) => s.id);
-
-  // Xây dựng bộ lọc hoạt động
-  const activityFilter = {
-    isPublished: true,
-  };
-  if (namHocId) activityFilter.namHocId = namHocId;
-  if (hocKyId) activityFilter.hocKyId = hocKyId;
-
-  // Lấy thông tin tham gia với điểm
-  const participations = await prisma.dangKyHoatDong.findMany({
-    where: {
-      nguoiDungId: { in: studentIds },
-      trangThai: "DA_THAM_GIA",
-      ...(Object.keys(activityFilter).length ? { hoatDong: activityFilter } : {}),
-    },
-    select: {
-      nguoiDungId: true,
-      hoatDong: {
-        select: {
-          tieuDe: true,
-          moTa: true,
-          diemCong: true,
-          nhomDiem: true,
-        },
-      },
-    },
-  });
-
-  // Nhóm tham gia theo sinh viên
-  const participationsByStudent = new Map();
-  participations.forEach((p) => {
-    if (!participationsByStudent.has(p.nguoiDungId)) {
-      participationsByStudent.set(p.nguoiDungId, []);
-    }
-    participationsByStudent.get(p.nguoiDungId).push(p);
-  });
-
   // Tính điểm cho từng sinh viên
   return students.map((student) => {
-    const studentParticipations = participationsByStudent.get(student.id) || [];
+    const studentParticipations = student.dangKy.map((dk) => ({
+      hoatDong: dk.hoatDong
+    }));
     const scores = calculateStudentScores(studentParticipations);
 
     return {

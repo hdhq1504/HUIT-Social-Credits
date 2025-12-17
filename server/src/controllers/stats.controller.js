@@ -316,7 +316,7 @@ const mapUpcomingActivities = (activities = []) =>
       location: activity.diaDiem ?? "Đang cập nhật",
       startTime: activity.batDauLuc?.toISOString() ?? null,
       attendanceMethod,
-      participantsCount: activity.dangKy?.length ?? 0,
+      participantsCount: activity._count?.dangKy ?? 0,
       maxCapacity: activity.sucChuaToiDa ?? null
     };
   });
@@ -380,9 +380,10 @@ export const getAdminDashboardOverview = async (req, res) => {
         isPublished: true
       },
       include: {
-        dangKy: {
-          where: { trangThai: { in: ACTIVE_REG_STATUSES } },
-          select: { id: true }
+        _count: {
+          select: {
+            dangKy: { where: { trangThai: { in: ACTIVE_REG_STATUSES } } }
+          }
         }
       },
       orderBy: { batDauLuc: "asc" },

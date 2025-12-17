@@ -142,12 +142,12 @@ export const listRegistrationsAdmin = async (req, res) => {
     prisma.dangKyHoatDong.count({ where }),
   ]);
 
-  const [totalAll, pendingCount, approvedCount, rejectedCount, facultiesRaw, classesRaw, activitiesRaw] =
+  const [statsGrouped, facultiesRaw, classesRaw, activitiesRaw] =
     await Promise.all([
-      prisma.dangKyHoatDong.count(),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "DANG_KY" } }),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "DA_THAM_GIA" } }),
-      prisma.dangKyHoatDong.count({ where: { trangThai: "VANG_MAT" } }),
+      prisma.dangKyHoatDong.groupBy({
+        by: ['trangThai'],
+        _count: { id: true }
+      }),
       prisma.khoa.findMany({
         where: { isActive: true },
         select: { maKhoa: true, tenKhoa: true },
@@ -163,6 +163,13 @@ export const listRegistrationsAdmin = async (req, res) => {
         select: { id: true, tieuDe: true },
       }),
     ]);
+
+  // Chuyển đổi groupBy thành stats object
+  const statsMap = new Map(statsGrouped.map(item => [item.trangThai, item._count.id]));
+  const pendingCount = statsMap.get("DANG_KY") ?? 0;
+  const approvedCount = statsMap.get("DA_THAM_GIA") ?? 0;
+  const rejectedCount = statsMap.get("VANG_MAT") ?? 0;
+  const totalAll = statsGrouped.reduce((sum, item) => sum + item._count.id, 0);
 
   const sortAlpha = (a, b) => a.localeCompare(b, "vi", { sensitivity: "base" });
 

@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames/bind';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Table, Spin, Button, Modal, Descriptions, Tag, Tooltip } from 'antd';
+import { Table, Spin, Button, Modal, Descriptions, Tag, Tooltip, Avatar } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faEye, faFileExport } from '@fortawesome/free-solid-svg-icons';
 import { TeacherPageContext } from '@/teacher/contexts/TeacherPageContext';
@@ -86,7 +86,15 @@ export default function TeacherStudentDetailPage() {
       title: 'Họ và tên',
       dataIndex: 'hoTen',
       key: 'hoTen',
-      width: 200,
+      width: 250,
+      render: (hoTen, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Avatar src={record.avatarUrl} size={36}>
+            {hoTen?.charAt(0)?.toUpperCase() || 'SV'}
+          </Avatar>
+          <span>{hoTen}</span>
+        </div>
+      ),
     },
     {
       title: 'Email',
@@ -177,6 +185,12 @@ export default function TeacherStudentDetailPage() {
     },
   ];
 
+  // Sắp xếp sinh viên theo MSSV
+  const students = useMemo(() => {
+    const rawStudents = data?.students || [];
+    return [...rawStudents].sort((a, b) => (a.maSV || '').localeCompare(b.maSV || ''));
+  }, [data?.students]);
+
   if (isLoading) {
     return (
       <div className={cx('student-detail__loading')}>
@@ -184,8 +198,6 @@ export default function TeacherStudentDetailPage() {
       </div>
     );
   }
-
-  const { students } = data || {};
 
   return (
     <div className={cx('student-detail')}>

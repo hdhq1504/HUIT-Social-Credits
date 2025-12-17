@@ -51,18 +51,14 @@ const statusIcons = {
 function ProofStatusSection() {
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const { contextHolder, open: toast } = useToast();
+  const { contextHolder } = useToast();
 
   const { data: registrations = [], isFetching } = useQuery({
-    queryKey: [...MY_ACTIVITIES_QUERY_KEY, 'proof-status'],
+    queryKey: MY_ACTIVITIES_QUERY_KEY,
     queryFn: () => activitiesApi.listMine(),
     enabled: isLoggedIn,
     staleTime: 30 * 1000,
     retry: 1,
-    onError: (error) => {
-      const message = error.response?.data?.error || 'Không thể tải trạng thái minh chứng.';
-      toast({ message, variant: 'danger' });
-    },
   });
 
   const proofItems = useMemo(() => {
