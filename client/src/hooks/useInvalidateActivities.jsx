@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ACTIVITIES_QUERY_KEY, MY_ACTIVITIES_QUERY_KEY } from '@api/activities.api';
+import { PROGRESS_QUERY_KEY } from '@api/stats.api';
 
 const normalizeKey = (key) => {
   if (!key) return null;
@@ -15,7 +16,7 @@ function useInvalidateActivities({ refetchMine = true } = {}) {
 
   return useCallback(
     async (...additionalKeys) => {
-      const keys = [ACTIVITIES_QUERY_KEY, MY_ACTIVITIES_QUERY_KEY, ...additionalKeys];
+      const keys = [ACTIVITIES_QUERY_KEY, MY_ACTIVITIES_QUERY_KEY, PROGRESS_QUERY_KEY, ...additionalKeys];
       const tasks = keys
         .map(normalizeKey)
         .filter(Boolean)

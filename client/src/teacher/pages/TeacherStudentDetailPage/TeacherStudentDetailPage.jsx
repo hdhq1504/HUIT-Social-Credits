@@ -58,7 +58,7 @@ export default function TeacherStudentDetailPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DiemRenLuyen_${data?.classInfo?.maLop}.xlsx`;
+      a.download = `CTXH_${data?.classInfo?.maLop}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -129,6 +129,40 @@ export default function TeacherStudentDetailPage() {
     },
   ];
 
+  // Map nhóm điểm
+  const GROUP_LABEL_MAP = {
+    NHOM_1: 'Nhóm 1',
+    NHOM_2: 'Nhóm 2',
+    NHOM_3: 'Nhóm 3',
+  };
+
+  const getGroupTag = (groupId) => {
+    const label = GROUP_LABEL_MAP[groupId] || groupId || '--';
+    return <Tag className={cx('student-detail__group-tag')}>{label}</Tag>;
+  };
+
+  const getStatusTag = (status) => {
+    switch (status) {
+      case 'APPROVED':
+        return <Tag className={cx('student-detail__status-tag', 'student-detail__status-tag--approved')}>Đã duyệt</Tag>;
+      case 'PENDING':
+        return <Tag className={cx('student-detail__status-tag', 'student-detail__status-tag--pending')}>Chờ duyệt</Tag>;
+      case 'REJECTED':
+        return <Tag className={cx('student-detail__status-tag', 'student-detail__status-tag--rejected')}>Từ chối</Tag>;
+      default:
+        return <Tag>{status || '--'}</Tag>;
+    }
+  };
+
+  const getAttendanceTag = (value) => {
+    if (value) {
+      return (
+        <Tag className={cx('student-detail__attendance-tag', 'student-detail__attendance-tag--present')}>Có mặt</Tag>
+      );
+    }
+    return <Tag className={cx('student-detail__attendance-tag', 'student-detail__attendance-tag--absent')}>Vắng</Tag>;
+  };
+
   const activityColumns = [
     {
       title: 'Tên hoạt động',
@@ -142,6 +176,7 @@ export default function TeacherStudentDetailPage() {
       align: 'center',
       key: 'loai',
       width: 150,
+      render: (loai) => getGroupTag(loai),
     },
     {
       title: 'Ngày tổ chức',
@@ -165,15 +200,7 @@ export default function TeacherStudentDetailPage() {
       key: 'trangThai',
       width: 120,
       align: 'center',
-      render: (status) => {
-        const statusMap = {
-          APPROVED: { text: 'Đã duyệt', color: 'success' },
-          PENDING: { text: 'Chờ duyệt', color: 'warning' },
-          REJECTED: { text: 'Từ chối', color: 'error' },
-        };
-        const config = statusMap[status] || { text: status, color: 'default' };
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
+      render: (status) => getStatusTag(status),
     },
     {
       title: 'Điểm danh',
@@ -181,7 +208,7 @@ export default function TeacherStudentDetailPage() {
       key: 'diemDanh',
       width: 150,
       align: 'center',
-      render: (value) => (value ? <Tag color="success">Có mặt</Tag> : <Tag>Vắng</Tag>),
+      render: (value) => getAttendanceTag(value),
     },
   ];
 

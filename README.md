@@ -6,31 +6,38 @@ Hệ thống quản lý điểm công tác xã hội tại Trường Đại họ
 
 - **Quản lý sinh viên**: Theo dõi thông tin, điểm công tác xã hội.
 - **Quản lý hoạt động**: Tạo và quản lý các hoạt động, sự kiện.
-- **Phản hồi sinh viên**: Phản hồi điểm của sinh viên tham gia hoạt động khi có sai sót.
-- **Thông báo nhắc nhở**: Gửi thông báo nhắc nhở cho sinh viên tham gia hoạt động.
-- **Chấm điểm tự động**: Tự động hóa quy trình chấm điểm và xếp loại.
-- **Điểm danh hoạt động**: Sử dụng thư viện face-api.js để điểm danh sinh viên tham gia hoạt động bằng nhận diện khuôn mặt.
-- **Báo cáo & Thống kê**: Xuất báo cáo và biểu đồ thống kê.
-- **Phân quyền người dùng**: Quản lý vai trò và quyền truy cập.
+- **Phản hồi sinh viên**: Phản hồi điểm khi có sai sót.
+- **Thông báo nhắc nhở**: Gửi thông báo nhắc nhở cho sinh viên.
+- **Điểm danh tự động**: Điểm danh tự động bằng nhận diện khuôn mặt.
+- **Báo cáo & Thống kê**: Xuất báo cáo PDF/Excel và biểu đồ thống kê.
+- **Hội đồng xét điểm**: Thành lập hội đồng xét điểm CTXH cho sinh viên.
+- **Progressive Web App (PWA)**: Hỗ trợ cài đặt ứng dụng trên thiết bị.
 
 ## Công nghệ sử dụng
 
 ### Frontend (Client)
 
-- **Core**: ReactJS + Vite
-- **UI Library**: Ant Design, Material UI (MUI)
-- **State Management**: Zustand, React Query
-- **Styling**: SCSS
-- **Utilities**: Axios, Recharts, face-api.js, React Webcam
+- **Core**: ReactJS 18 + Vite 7
+- **UI Library**: Ant Design 5, Material UI (MUI) 7
+- **State Management**: Zustand, TanStack Query
+- **Styling**: SCSS (sass-embedded)
+- **Icons**: Lucide React, Font Awesome
+- **Rich Text Editor**: React Quill
+- **Utilities**: Axios, Recharts, face-api.js, React Webcam, Swiper, DOMPurify
+- **PWA**: vite-plugin-pwa
 
 ### Backend (Server)
 
 - **Runtime**: Node.js
-- **Framework**: Express
+- **Framework**: Express 5
 - **Database**: PostgreSQL (via Prisma ORM)
 - **Storage & Auth**: Supabase
-- **Authentication**: JWT (JSON Web Token)
+- **Authentication**: JWT (JSON Web Token), bcrypt
+- **Security**: Helmet, express-rate-limit, sanitize-html
+- **Validation**: Yup
 - **Email**: Nodemailer
+- **Export**: PDFKit (PDF), xlsx (Excel)
+- **Testing**: Jest, Supertest
 
 ## Cài đặt và Chạy dự án
 
@@ -117,6 +124,15 @@ npm run dev
 
 Truy cập `http://localhost:5173` để xem ứng dụng.
 
+### 5. Chạy Tests (Optional)
+
+```bash
+cd server
+npm run test           # Chạy tất cả tests
+npm run test:watch     # Chạy tests ở chế độ watch
+npm run test:coverage  # Chạy tests với coverage report
+```
+
 ## 📂 Cấu trúc dự án
 
 ```
@@ -131,6 +147,7 @@ HUIT-Social-Credits/
 │   │   ├── context/        # React Context (AuthContext...)
 │   │   ├── hooks/          # Custom React Hooks
 │   │   ├── layouts/        # Layout chính của ứng dụng
+│   │   ├── pages/          # Trang dùng chung
 │   │   ├── routes/         # Cấu hình routing
 │   │   ├── services/       # Các service phức tạp (FaceAPI, Upload...)
 │   │   ├── stores/         # State management (Zustand)
@@ -140,12 +157,14 @@ HUIT-Social-Credits/
 ├── server/                 # Source code Backend
 │   ├── prisma/             # Prisma schema và migrations
 │   ├── src/
+│   │   ├── assets/         # Tài nguyên tĩnh (fonts, templates...)
 │   │   ├── controllers/    # Logic xử lý request
 │   │   ├── middlewares/    # Middleware (Auth, Upload, Error...)
 │   │   ├── routes/         # Định nghĩa API routes
 │   │   ├── seed/           # Script tạo dữ liệu mẫu
+│   │   ├── tests/          # Unit tests và integration tests
 │   │   ├── utils/          # Các hàm tiện ích
 │   │   ├── env.js          # Kiểm tra biến môi trường
-│   │   └── index.js        # Entry point của server
+│   │   └── prisma.js       # Prisma client instance
 └── README.md
 ```

@@ -100,6 +100,8 @@ export const restoreBackup = async (req, res) => {
       await tx.dangKyHoatDong.deleteMany();
       await tx.hoatDong.deleteMany();
       await tx.hocKy.deleteMany();
+      await tx.phanCong.deleteMany();
+      await tx.faceProfile.deleteMany();
       await tx.namHoc.deleteMany();
       await tx.nguoiDung.deleteMany();
 
@@ -141,7 +143,11 @@ export const restoreBackup = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: "Khôi phục dữ liệu thất bại. Vui lòng kiểm tra lại tệp backup." });
+    console.error("Restore backup error:", error);
+    res.status(500).json({
+      error: "Khôi phục dữ liệu thất bại. Vui lòng kiểm tra lại tệp backup.",
+      details: error.message
+    });
   }
 };
 

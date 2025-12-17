@@ -56,4 +56,67 @@
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
+
+  // Tag nhóm điểm
+  &__group-tag {
+    font-family: 'Montserrat';
+    font-size: 14px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 24px;
+    border: none;
+    background: var(--secondary-color);
+    color: var(--primary-color);
+  }
+
+  // Tag trạng thái
+  &__status-tag {
+    font-family: 'Montserrat';
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+
+    &--approved {
+      background-color: rgba(25, 120, 135, 0.12);
+      color: var(--success-color);
+    }
+
+    &--pending {
+      background: rgba(220, 119, 0, 0.12);
+      color: var(--warning-color);
+    }
+
+    &--rejected {
+      background-color: rgba(220, 53, 69, 0.12);
+      color: var(--danger-color);
+    }
+  }
+
+  // Tag điểm danh
+  &__attendance-tag {
+    font-family: 'Montserrat';
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+
+    &--present {
+      background-color: rgba(25, 120, 135, 0.12);
+      color: var(--success-color);
+    }
+
+    &--absent {
+      background-color: rgba(150, 150, 150, 0.12);
+      color: #8c8c8c;
+    }
+  }
 }

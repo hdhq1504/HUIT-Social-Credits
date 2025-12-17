@@ -36,6 +36,12 @@ export const login = async (req, res) => {
   const ok = await bcrypt.compare(password, user.matKhau);
   if (!ok) return res.status(401).json({ error: "Thông tin đăng nhập không hợp lệ" });
 
+  // Cập nhật thời gian đăng nhập cuối
+  prisma.nguoiDung.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() }
+  }).catch(err => console.error("Failed to update lastLoginAt:", err));
+
   const payload = { sub: user.id, email: user.email, role: user.vaiTro, name: user.hoTen };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken({ sub: user.id });

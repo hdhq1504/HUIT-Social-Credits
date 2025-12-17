@@ -110,7 +110,8 @@ const mapUserForResponse = (user) => ({
   classId: user.lopHoc?.id,
   majorId: user.lopHoc?.nganhHoc?.id,
   facultyId: user.khoa?.id || user.lopHoc?.nganhHoc?.khoa?.id,
-  gender: user.gioiTinh
+  gender: user.gioiTinh,
+  birthday: user.ngaySinh,
 });
 
 // Chuẩn hóa chuỗi (xóa khoảng trắng đầu cuối)
@@ -278,6 +279,7 @@ export const getUserById = async (req, res) => {
         createdAt: true,
         avatarUrl: true,
         gioiTinh: true,
+        ngaySinh: true,
         khoa: {
           select: {
             id: true,
@@ -331,13 +333,14 @@ export const createUser = async (req, res) => {
     return res.status(error.statusCode || 500).json({ error: error.message });
   }
 
-  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender, birthday } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
   const normalizedEmail = normalizeEmail(email);
   const normalizedRole = normalizeRoleInput(role) ?? "SINHVIEN";
   const normalizedGender = normalizeGender(gender);
+  const normalizedBirthday = birthday ? new Date(birthday) : null;
   const normalizedStudentCode = sanitizeString(studentCode) ?? null;
   const normalizedStaffCode = sanitizeString(staffCode) ?? null;
   const normalizedPhoneNumber = sanitizeString(phoneNumber) ?? null;
@@ -377,6 +380,7 @@ export const createUser = async (req, res) => {
         khoa: facultyId ? { connect: { id: facultyId } } : undefined,
         soDT: normalizedPhoneNumber,
         isActive: activeState,
+        ngaySinh: normalizedBirthday,
       },
       include: {
         khoa: true,
@@ -446,13 +450,14 @@ export const updateUser = async (req, res) => {
   }
 
   const { id } = req.params;
-  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender } =
+  const { fullName, email, role, password, studentCode, staffCode, lopHocId, facultyId, phoneNumber, isActive, avatarImage, gender, birthday } =
     req.body || {};
 
   const normalizedName = sanitizeString(fullName);
   const normalizedEmail = normalizeEmail(email);
   const normalizedRole = normalizeRoleInput(role);
   const normalizedGender = normalizeGender(gender);
+  const normalizedBirthday = birthday !== undefined ? (birthday ? new Date(birthday) : null) : undefined;
   const normalizedStudentCode = sanitizeString(studentCode);
   const normalizedStaffCode = sanitizeString(staffCode);
   const normalizedPhoneNumber = sanitizeString(phoneNumber);
@@ -489,6 +494,7 @@ export const updateUser = async (req, res) => {
       ...(normalizedEmail ? { email: normalizedEmail } : {}),
       ...(normalizedRole ? { vaiTro: normalizedRole } : {}),
       ...(normalizedGender ? { gioiTinh: normalizedGender } : {}),
+      ...(normalizedBirthday !== undefined ? { ngaySinh: normalizedBirthday } : {}),
       maSV: normalizedStudentCode ?? null,
       maCB: normalizedStaffCode ?? null,
       ...(lopHocId !== undefined ? { lopHoc: lopHocId ? { connect: { id: lopHocId } } : { disconnect: true } } : {}),

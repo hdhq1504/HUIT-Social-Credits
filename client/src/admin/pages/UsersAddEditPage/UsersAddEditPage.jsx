@@ -1,7 +1,8 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames/bind';
-import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar, Tag } from 'antd';
+import { Button, Col, Form, Input, Row, Select, Spin, Switch, Upload, Avatar, Tag, DatePicker } from 'antd';
+import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faFloppyDisk, faCamera, faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +34,7 @@ const buildPayloadFromValues = (values, avatarData) => ({
   isActive: values.isActive,
   avatarImage: avatarData,
   gender: values.gender,
+  birthday: values.birthday ? values.birthday.format('YYYY-MM-DD') : undefined,
 });
 
 const UsersAddEditPage = () => {
@@ -138,6 +140,7 @@ const UsersAddEditPage = () => {
       password: '',
       confirmPassword: '',
       gender: user.gender || user.gioiTinh || undefined,
+      birthday: user.birthday || user.ngaySinh ? dayjs(user.birthday || user.ngaySinh) : undefined,
     });
 
     if (user.facultyId) setSelectedFacultyId(user.facultyId);
@@ -331,7 +334,7 @@ const UsersAddEditPage = () => {
                         <Input placeholder="Nhập số điện thoại" allowClear />
                       </Form.Item>
                     </Col>
-                    <Col xs={24} md={12}>
+                    <Col xs={24} md={6}>
                       <Form.Item
                         label="Giới tính"
                         name="gender"
@@ -342,6 +345,16 @@ const UsersAddEditPage = () => {
                           <Select.Option value="Nữ">Nữ</Select.Option>
                           <Select.Option value="Khác">Khác</Select.Option>
                         </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                      <Form.Item label="Ngày sinh" name="birthday">
+                        <DatePicker
+                          placeholder="Chọn ngày sinh"
+                          format="DD/MM/YYYY"
+                          style={{ width: '100%' }}
+                          disabledDate={(current) => current && current > dayjs().endOf('day')}
+                        />
                       </Form.Item>
                     </Col>
                   </Row>
