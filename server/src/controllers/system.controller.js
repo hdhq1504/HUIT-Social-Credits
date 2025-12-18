@@ -17,7 +17,9 @@ const BACKUP_COLLECTIONS = [
   { key: "registrations", model: "dangKyHoatDong" },
   { key: "checkIns", model: "diemDanhNguoiDung" },
   { key: "feedbacks", model: "phanHoiHoatDong" },
-  { key: "notifications", model: "thongBao" }
+  { key: "notifications", model: "thongBao" },
+  { key: "assignments", model: "phanCong" },
+  { key: "faceProfiles", model: "faceProfile" },
 ];
 
 // Chuẩn hóa dữ liệu bản ghi
@@ -93,7 +95,9 @@ export const restoreBackup = async (req, res) => {
   }, {});
 
   try {
+    // Tăng timeout cho transaction vì restore có thể mất nhiều thời gian
     await prisma.$transaction(async (tx) => {
+      // Xóa các bảng có foreign key trước (theo thứ tự phụ thuộc)
       await tx.thongBao.deleteMany();
       await tx.diemDanhNguoiDung.deleteMany();
       await tx.phanHoiHoatDong.deleteMany();
@@ -129,6 +133,15 @@ export const restoreBackup = async (req, res) => {
       if (normalized.notifications.length) {
         await tx.thongBao.createMany({ data: normalized.notifications });
       }
+      if (normalized.assignments.length) {
+        await tx.phanCong.createMany({ data: normalized.assignments });
+      }
+      if (normalized.faceProfiles.length) {
+        await tx.faceProfile.createMany({ data: normalized.faceProfiles });
+      }
+    }, {
+      maxWait: 10000,  // Thời gian chờ tối đa để bắt đầu transaction (10s)
+      timeout: 60000,  // Thời gian tối đa cho transaction (60s)
     });
 
     const counts = Object.fromEntries(

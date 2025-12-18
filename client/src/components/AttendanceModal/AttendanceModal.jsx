@@ -265,9 +265,11 @@ function AttendanceModal({
     try {
       // Phân tích khuôn mặt để lấy face descriptor
       const descriptor = await computeDescriptorFromDataUrl(dataUrl);
+      let faceError = null;
+
       if (!descriptor || !descriptor.length) {
-        message.error('Không phát hiện được khuôn mặt rõ ràng trong ảnh điểm danh. Vui lòng chụp lại.');
-        return;
+        console.debug('[AttendanceModal] Không phát hiện khuôn mặt, sẽ gửi với faceError để chờ duyệt.');
+        faceError = 'NO_FACE_DETECTED';
       }
 
       // Gọi callback với dữ liệu đầy đủ
@@ -276,10 +278,17 @@ function AttendanceModal({
         previewUrl,
         dataUrl,
         faceDescriptor: descriptor,
+        faceError,
       });
     } catch (error) {
       console.error('Không thể trích xuất descriptor khuôn mặt trong điểm danh', error);
-      message.error('Không thể phân tích khuôn mặt. Vui lòng thử lại.');
+      onSubmit?.({
+        file,
+        previewUrl,
+        dataUrl,
+        faceDescriptor: null,
+        faceError: 'ANALYSIS_FAILED',
+      });
     }
   };
 

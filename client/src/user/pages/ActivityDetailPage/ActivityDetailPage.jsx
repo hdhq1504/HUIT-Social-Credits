@@ -261,20 +261,15 @@ function ActivityDetailPage() {
       }
 
       if (!faceDescriptorPayload?.length) {
-        const messageContent =
-          faceAnalysisError === 'ANALYSIS_FAILED'
-            ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
-            : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
-        toast({ message: messageContent, variant: 'danger' });
-        console.debug('[ActivityDetailPage] Huỷ gửi điểm danh do thiếu descriptor khuôn mặt.', {
+        console.debug('[ActivityDetailPage] Không phát hiện khuôn mặt, sẽ gửi với faceError để chờ duyệt.', {
           faceAnalysisError,
         });
-        return;
+        faceAnalysisError = faceAnalysisError || 'NO_FACE_DETECTED';
+      } else {
+        console.debug('[ActivityDetailPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+          descriptorLength: faceDescriptorPayload.length,
+        });
       }
-
-      console.debug('[ActivityDetailPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
-        descriptorLength: faceDescriptorPayload.length,
-      });
     }
 
     const payload = {
@@ -722,25 +717,17 @@ function ActivityDetailPage() {
                         }
 
                         if (!descriptorPayload?.length) {
-                          const messageContent =
-                            descriptorError === 'ANALYSIS_FAILED'
-                              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
-                              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
-                          toast({ message: messageContent, variant: 'danger' });
                           console.debug(
-                            '[ActivityDetailPage] Huỷ gửi điểm danh liên quan do thiếu descriptor khuôn mặt.',
-                            {
-                              descriptorError,
-                            },
+                            '[ActivityDetailPage] Không phát hiện khuôn mặt (hoạt động liên quan), sẽ gửi với faceError.',
+                            { descriptorError },
                           );
-                          throw new Error('ATTENDANCE_ABORTED');
+                          descriptorError = descriptorError || 'NO_FACE_DETECTED';
+                        } else {
+                          console.debug(
+                            '[ActivityDetailPage] Gửi điểm danh hoạt động liên quan với descriptor khuôn mặt.',
+                            { descriptorLength: descriptorPayload.length },
+                          );
                         }
-                        console.debug(
-                          '[ActivityDetailPage] Gửi điểm danh hoạt động liên quan với descriptor khuôn mặt.',
-                          {
-                            descriptorLength: descriptorPayload.length,
-                          },
-                        );
                       }
 
                       const result = await activitiesApi.attendance(item.id, {

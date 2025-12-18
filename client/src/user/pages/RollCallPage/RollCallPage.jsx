@@ -210,17 +210,15 @@ function RollCallPage() {
         }
 
         if (!descriptorPayload?.length) {
-          const msg =
-            faceErrorPayload === 'ANALYSIS_FAILED'
-              ? 'Không thể phân tích khuôn mặt. Vui lòng chụp lại.'
-              : 'Không nhận diện được khuôn mặt. Vui lòng chụp lại.';
-          toast({ message: msg, variant: 'danger' });
-          throw new Error('ATTENDANCE_ABORTED');
+          console.debug('[RollCallPage] Không phát hiện khuôn mặt, sẽ gửi với faceError để chờ duyệt.', {
+            faceErrorPayload,
+          });
+          faceErrorPayload = faceErrorPayload || 'NO_FACE_DETECTED';
+        } else {
+          console.debug('[RollCallPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
+            descriptorLength: descriptorPayload.length,
+          });
         }
-
-        console.debug('[RollCallPage] Chuẩn bị gửi điểm danh với descriptor khuôn mặt.', {
-          descriptorLength: descriptorPayload.length,
-        });
       }
 
       return attendanceMutation.mutateAsync({
